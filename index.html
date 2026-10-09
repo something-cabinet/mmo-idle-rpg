@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MMO Idle RPG</title>
+  </head>
+  <body>
+    <header>
+      <h1>MMO Idle RPG</h1>
+      <div class="account">
+        <span id="account-label" class="muted"></span>
+        <button id="login-btn" class="small" hidden>Log in to save progress</button>
+        <button id="logout-btn" class="small secondary" hidden>Log out</button>
+      </div>
+      <div class="connection">
+        <span id="status" data-ok="false">Starting…</span>
+        <button id="reconnect-btn" class="small secondary" hidden>Reconnect</button>
+      </div>
+    </header>
+
+    <section id="screen-loading" class="screen"><p class="muted">Loading…</p></section>
+
+    <section id="screen-create" class="screen panel narrow" hidden>
+      <h2>Create your character</h2>
+      <p class="muted">One character per account. Choose a name carefully.</p>
+      <form id="create-form">
+        <input id="create-name" placeholder="Name (3-16 letters, digits, _)" maxlength="16" />
+        <button type="submit">Create</button>
+      </form>
+    </section>
+
+    <section id="screen-elsewhere" class="screen panel narrow" hidden>
+      <h2>Playing in another tab</h2>
+      <p class="muted">Your character is active in another tab or device.</p>
+      <button id="play-here-btn">Play here instead</button>
+    </section>
+
+    <main id="screen-game" class="screen" hidden>
+      <section class="panel" id="character">
+        <h2 id="stat-name">—</h2>
+        <div class="row">Level <strong id="stat-level">—</strong></div>
+        <div class="bar"><div id="xp-bar"></div></div>
+        <div class="muted" id="xp-text"></div>
+        <div class="row">Gold <strong id="stat-gold">—</strong></div>
+        <div class="row">Power <strong id="stat-power">—</strong></div>
+        <div class="muted" id="stat-rates"></div>
+        <button id="upgrade-btn">Upgrade power</button>
+      </section>
+
+      <section class="panel" id="world">
+        <h2>Online (<span id="online-count">0</span>)</h2>
+        <ul id="online-list"></ul>
+      </section>
+
+      <section class="panel" id="chat">
+        <h2>Chat</h2>
+        <ul id="chat-log"></ul>
+        <form id="chat-form">
+          <input id="chat-input" placeholder="Say something…" maxlength="200" />
+        </form>
+      </section>
+    </main>
+
+    <div id="toast" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "name": "mmo-idle-rpg-server",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "spacetime build",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "spacetimedb": "^2.11.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}

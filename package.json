@@ -1,0 +1,29 @@
+{
+  "name": "mmo-idle-rpg",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p spacetimedb",
+    "server:install": "npm --prefix spacetimedb install",
+    "spacetime:start": "spacetime start",
+    "spacetime:generate": "spacetime generate --lang typescript --out-dir src/module_bindings --module-path spacetimedb",
+    "spacetime:publish:local": "spacetime publish --module-path spacetimedb --server local mmo-idle-rpg",
+    "spacetime:publish:local:reset": "spacetime publish --module-path spacetimedb --server local --delete-data mmo-idle-rpg",
+    "spacetime:logs:local": "spacetime logs --server local mmo-idle-rpg",
+    "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud",
+    "test:smoke": "tsx scripts/smoke-test.ts"
+  },
+  "dependencies": {
+    "oidc-client-ts": "^3.5.0",
+    "spacetimedb": "^2.11.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.4"
+  }
+}

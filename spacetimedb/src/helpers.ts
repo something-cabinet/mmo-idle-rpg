@@ -6,6 +6,7 @@ import { account, character, item, presence, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } from './game';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
+import { Effect } from './data/legendary';
 import { combatStats } from './combat';
 import { makeItem, rollDrops, seededRng } from './loot';
 
@@ -78,15 +79,17 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   let essence = ch.essence;
   if (target && p.kills > 0) {
     const filter = ctx.db.lootFilter.characterId.find(ch.id);
+    const stats = combatStats(ch.level, gear);
     // Seeded by (character, settle start), so the result is reproducible.
     const drops = rollDrops(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch), {
       kills: p.kills,
       enemy: target.enemy,
       tier: target.zone.tier,
       rewardScale: rewardScale(target.zone, target.enemy),
-      itemFind: combatStats(ch.level, gear).itemFind,
+      itemFind: stats.itemFind,
       filter: { minRarity: filter?.minRarity.tag ?? 'Magic', keepAffixes: filter?.keepAffixes ?? [] },
       bagFree: ch.bagSize - bagCount(ctx, ch.id),
+      fortune: stats.effects.has(Effect.FortunesFavor),
     });
     for (const it of drops.kept) {
       ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, uniqueId: undefined, locked: false, createdAt: ctx.timestamp });

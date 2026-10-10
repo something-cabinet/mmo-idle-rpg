@@ -6,6 +6,7 @@ import { LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
 import {
+  FORTUNE_CHANCE,
   FIRST_KILL_GOLD_MULT,
   KEEP_CAP_PER_SETTLE,
   firstKillReward,
@@ -148,6 +149,32 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('full bag salvages every kept drop', full.kept.length === 0 && full.overflow > 0);
   const none = rollDrops(seededRng(4n), session({ kills: 0 }));
   check('no kills, no drops', total(none) === 0 && none.essence === 0n);
+}
+
+// ---------------------------------------------------------------- Fortune's Favor
+
+{
+  // The upgrade rolls come after every drop roll, so the same seed keeps the same drops.
+  const pairs = Array.from({ length: 300 }, (_, i) => [
+    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [] }, kills: 600 })),
+    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [] }, kills: 600, fortune: true })),
+  ]);
+  let eligible = 0;
+  let raised = 0;
+  let wellFormed = true;
+  for (const [plain, lucky] of pairs) {
+    const before = plain.kept.map(it => it.rarity.tag).sort();
+    const after = lucky.kept.map(it => it.rarity.tag);
+    wellFormed &&= plain.kept.length === lucky.kept.length && lucky.essence === plain.essence;
+    for (const it of lucky.kept) {
+      wellFormed &&= it.affixes.length === REGULAR_AFFIXES[it.rarity.tag] && (it.rarity.tag === 'Legendary') === !!it.legendary;
+    }
+    eligible += before.filter(r => r !== 'Legendary').length;
+    raised += after.reduce((n, r) => n + rarityRank(r), 0) - before.reduce((n, r) => n + rarityRank(r), 0);
+  }
+  check("Fortune's Favor keeps the same drops and Essence", wellFormed);
+  check(`… and raises ~${FORTUNE_CHANCE * 100}% of kept drops one rarity`, near(raised / eligible, FORTUNE_CHANCE, 0.015),
+    `${raised} of ${eligible}`);
 }
 
 // ---------------------------------------------------------------- boss first kill

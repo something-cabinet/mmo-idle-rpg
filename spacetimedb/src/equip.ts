@@ -1,7 +1,7 @@
 // Equipping rules and auto-equip (equipment.md). Pure: shared by server and client.
 
 import { SLOTS, base } from './data/bases';
-import { combatStats, evasionChance, matchup, mitigation, type GearItem, type GearWeapon } from './combat';
+import { combatStats, matchup, type GearItem, type GearWeapon } from './combat';
 import type { EnemyDef } from './data/zones';
 
 /** An owned item: what equipping and scoring need from an `item` row. */
@@ -76,15 +76,13 @@ export interface LoadoutScore {
 export function scoreGear(level: number, gear: readonly (GearItem | undefined)[]): LoadoutScore {
   const s = combatStats(level, gear);
   const dummy = referenceDummy(level);
-  const m = matchup(s, dummy);
-  // Half the dummy's damage is physical, half magic.
-  const incoming =
-    (dummy.dps / 2) *
-    (2 - mitigation(s.armor, 0, level) - mitigation(s.resistance, 0, level)) *
-    (1 - evasionChance(s.evasionRating, level));
-  const net = incoming - s.regen - s.lifesteal * m.dps - m.hps;
+  // Half the dummy's damage is physical, half magic: the average of the two fights
+  // (everything in a matchup is linear in the incoming damage).
+  const phys = matchup(s, dummy);
+  const magic = matchup(s, { ...dummy, damageType: 'Magic' });
+  const net = (phys.netIncoming + magic.netIncoming) / 2;
   return {
-    dps: m.dps,
+    dps: (phys.dps + magic.dps) / 2,
     timeToDie: net <= 0 ? Infinity : s.maxHp / net,
     itemFind: s.itemFind,
     goldFind: s.goldFind,

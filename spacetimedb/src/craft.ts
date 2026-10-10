@@ -3,10 +3,10 @@
 // the drop rolls from loot.ts.
 
 import { BAG_MAX, BAG_START } from './game';
-import { RARITIES, rollAffix, rollLegendary, type NewItem, type RarityName, type Rng } from './loot';
+import { raiseRarity, rollAffix, type RaisableItem, type RarityName, type Rng } from './loot';
 
 /** What crafting needs from an item: an `item` row or a `NewItem`. */
-export type CraftItem = Pick<NewItem, 'baseId' | 'tier' | 'rarity' | 'affixes' | 'legendary'>;
+export type CraftItem = RaisableItem;
 
 export interface CraftCost {
   gold: bigint;
@@ -48,15 +48,9 @@ export function upgradeRarity<T extends CraftItem>(rng: Rng, it: T, removeIndex?
   if (UPGRADE_HOURS[it.rarity.tag] === undefined) {
     return it.rarity.tag === 'Unique' ? "Uniques can't be crafted" : 'Legendary is the highest craftable rarity';
   }
-  const rarity = { tag: RARITIES[RARITIES.indexOf(it.rarity.tag) + 1] };
-  if (it.rarity.tag !== 'Epic') return { ...it, rarity, affixes: [...it.affixes, rollAffix(rng, it.tier)] };
+  if (it.rarity.tag !== 'Epic') return raiseRarity(rng, it, 0);
   if (removeIndex === undefined || removeIndex >= it.affixes.length) return 'Pick an affix to remove';
-  return {
-    ...it,
-    rarity,
-    affixes: it.affixes.filter((_, i) => i !== removeIndex),
-    legendary: rollLegendary(rng, it.baseId, it.tier),
-  };
+  return raiseRarity(rng, it, removeIndex);
 }
 
 /** Slots per bag expansion. */

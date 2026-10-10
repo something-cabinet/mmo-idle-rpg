@@ -3,8 +3,10 @@
 //   npm run test:combat
 import { SLOTS, STARTER_ARMOR, STARTER_WEAPONS, base, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
-import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, RESPAWN_SECONDS } from '../spacetimedb/src/data/zones';
+import { Effect, LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
 import { MAX_LEVEL, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
+import { scoreGear } from '../spacetimedb/src/equip';
 import { project, xpToNext, type Progress } from '../spacetimedb/src/game';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
 
@@ -97,6 +99,109 @@ const warrior = gear({
   check('healing staff heals itself', matchup(healer, enemy(101)).hps > 0);
   check('heal stats do nothing on a weapon without heal',
     combatStats(1, gear({ MainHand: item(1, 1, [[Stat.Heal, 50]]) })).sources[0].heal === 0);
+}
+
+// ---------------------------------------------------------------- legendary effects (legendary.md)
+
+/** `it` with legendary effect `effect` and a zero stat bonus, so only the effect counts. */
+function withEffect(it: GearItem, effect: number): GearItem {
+  return { ...it, legendary: { effect, stat: LEGENDARIES_BY_ID.get(effect)!.bonusStat, value: 0n } };
+}
+{
+  const kit = (main: GearItem, extra: Partial<Record<Slot, GearItem>> = {}) =>
+    gear({ MainHand: main, Chest: item(35, 1), Feet: item(37, 1), ...extra });
+  const sword = item(1, 1, [[Stat.PhysDamagePct, 50], [Stat.MagicDamagePct, 30]]);
+  const plain = combatStats(10, kit(sword));
+  const rat = enemy(101);
+  const magicRat = { ...rat, damageType: 'Magic' as const };
+  const ring = (effect: number) => withEffect(item(50, 1), effect);
+
+  const sb = combatStats(10, kit(withEffect(sword, Effect.Spellblade)));
+  const both = 1 + 0.5 + 0.3 + 0.005 * 10 + 0.0045 * 10;
+  check('Spellblade: a sword deals magic damage with both damage-% groups',
+    sb.sources[0].hit.Physical === 0 && near(sb.sources[0].hit.Magic, 10 * both, 1e-9), f(sb.sources[0].hit.Magic));
+  const wand = combatStats(10, kit(withEffect(item(5, 1), Effect.Spellblade)));
+  check('Spellblade: a wand deals physical damage', wand.sources[0].hit.Magic === 0 && wand.sources[0].hit.Physical > 0);
+
+  const crit = item(1, 1, [[Stat.CritChancePct, 5000]]);
+  const cc = combatStats(10, kit(crit)).sources[0];
+  const oc = combatStats(10, kit(withEffect(crit, Effect.Overcrit))).sources[0];
+  check('Overcrit: excess crit chance becomes +2× crit damage', near(oc.critMult, 1.5 + 2 * (oc.critChance - 1), 1e-9) &&
+    near(cc.critMult, 1.5, 1e-9), `${f(cc.critMult)} → ${f(oc.critMult)}`);
+
+  const gc = combatStats(10, kit(withEffect(sword, Effect.GlassCannon)));
+  check('Glass Cannon: damage × 2, max HP × 0.5',
+    near(gc.sources[0].hit.Physical, 2 * plain.sources[0].hit.Physical, 1e-9) && near(gc.maxHp, plain.maxHp / 2, 1e-9));
+
+  const armored = { ...rat, armor: 500, resistance: 500 };
+  const vt = matchup(combatStats(10, kit(withEffect(sword, Effect.Voidtouched))), armored);
+  const raw = plain.sources[0].hit.Physical * plain.sources[0].attacksPerSec * plain.sources[0].critMult;
+  check('Voidtouched: ignores enemy mitigation for 25% less damage',
+    vt.enemyMitigation.Physical === 0 && near(vt.dps, raw * 0.75, 1e-9) && vt.dps > matchup(plain, armored).dps);
+
+  const staff = item(10, 1);
+  const heal = matchup(combatStats(10, kit(staff)), rat);
+  const zh = matchup(combatStats(10, kit(withEffect(staff, Effect.ZealotsOath))), rat);
+  const zDps = heal.dps + 0.5 * heal.hps * (1 - heal.enemyMitigation.Magic);
+  check("Zealot's Oath on a healer: heals hit for 50%, damage heals 5%",
+    near(zh.dps, zDps, 1e-9) && near(zh.hps, heal.hps + 0.05 * zDps, 1e-9), `dps ${f(heal.dps)} → ${f(zh.dps)}`);
+  const zs = matchup(combatStats(10, kit(withEffect(sword, Effect.ZealotsOath))), rat);
+  check("Zealot's Oath on a sword: 5% of damage heals", near(zs.hps, 0.05 * zs.dps, 1e-9) && zs.hps > 0);
+
+  const tank = (effect?: number) => {
+    const chest = item(39, 1, [[Stat.Armor, 200], [Stat.EvasionRating, 50]]);
+    return combatStats(10, kit(sword, { Chest: effect ? withEffect(chest, effect) : chest }));
+  };
+  const jug = matchup(tank(Effect.Juggernaut), magicRat);
+  const noJug = matchup(tank(), magicRat);
+  check('Juggernaut: armor reduces magic damage, no evasion',
+    jug.evasion === 0 && noJug.evasion > 0 && jug.playerMitigation > noJug.playerMitigation, `${f(noJug.playerMitigation)} → ${f(jug.playerMitigation)}`);
+  check('Juggernaut: physical damage is unchanged apart from evasion',
+    near(matchup(tank(Effect.Juggernaut), rat).playerMitigation, matchup(tank(), rat).playerMitigation, 1e-12));
+  const spellChest = withEffect(item(30, 1, [[Stat.Resistance, 200]]), Effect.Spellward);
+  const sw = matchup(combatStats(10, kit(sword, { Chest: spellChest })), rat);
+  check('Spellward: resistance reduces physical damage, no evasion', sw.evasion === 0 && sw.playerMitigation > 0.5, f(sw.playerMitigation));
+
+  const dodgy = (effect?: number) => {
+    const chest = item(35, 1, [[Stat.EvasionRating, 1e6]]);
+    return matchup(combatStats(10, kit(sword, { Chest: effect ? withEffect(chest, effect) : chest })), rat).evasion;
+  };
+  check('Phantom Step: evasion cap 60% → 75%', dodgy() === 0.6 && dodgy(Effect.PhantomStep) === 0.75);
+
+  const ts = matchup(combatStats(10, kit(sword, { Chest: withEffect(item(35, 1), Effect.Thornshell) })), rat);
+  const base = matchup(plain, rat);
+  check('Thornshell: reflects 40% of damage taken (physical)',
+    near(ts.dps, base.dps + 0.4 * base.incoming * (1 - base.enemyMitigation.Physical), 1e-9));
+  const reflect = (effect: number, enemyDef: typeof rat) => {
+    const chest = withEffect(item(35, 1), Effect.Thornshell);
+    const without = matchup(combatStats(10, kit(withEffect(sword, effect))), enemyDef);
+    const withT = matchup(combatStats(10, kit(withEffect(sword, effect), { Chest: chest })), enemyDef);
+    return { reflected: withT.dps - without.dps, incoming: withT.incoming, mit: withT.enemyMitigation.Physical };
+  };
+  const gcR = reflect(Effect.GlassCannon, armored);
+  check('Thornshell + Glass Cannon: reflected damage × 2', near(gcR.reflected, 0.4 * gcR.incoming * 2 * (1 - gcR.mit), 1e-9));
+  const vtR = reflect(Effect.Voidtouched, armored);
+  check('Thornshell + Voidtouched: reflected damage ignores armor for 25% less',
+    vtR.mit === 0 && near(vtR.reflected, 0.4 * vtR.incoming * 0.75, 1e-9));
+
+  const sh = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.SwiftHunter) })), rat);
+  check('Swift Hunter: respawn halved', near(sh.killRate, 1 / (sh.timeToKill + RESPAWN_SECONDS / 2), 1e-12) && sh.killRate > base.killRate);
+
+  const mid = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.MidasTouch) })), rat);
+  const sch = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.ScholarsFocus) })), rat);
+  const mixed = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.MidasTouch), Amulet: withEffect(item(57, 1), Effect.ScholarsFocus) })), rat);
+  check('Midas Touch: no XP, gold × 2.5', mid.xpPerKill === 0 && near(mid.goldPerKill, base.goldPerKill * 2.5, 1e-9));
+  check("Scholar's Focus: XP × 1.75, gold × 0.5", near(sch.xpPerKill, base.xpPerKill * 1.75, 1e-9) && near(sch.goldPerKill, base.goldPerKill / 2, 1e-9));
+  check('Midas + Scholar: no XP, gold × 1.25', mixed.xpPerKill === 0 && near(mixed.goldPerKill, base.goldPerKill * 1.25, 1e-9));
+  const twice = combatStats(10, kit(sword, { Ring1: ring(Effect.MidasTouch), Ring2: ring(Effect.MidasTouch) }));
+  check('the same effect twice applies once', twice.effects.size === 1 && near(matchup(twice, rat).goldPerKill, mid.goldPerKill, 1e-9));
+
+  const midasGear = kit(item(1, 1), { Ring1: ring(Effect.MidasTouch) });
+  const p = project({ level: 1, xp: 0n, gold: 0n, settledMicros: 0n }, { gear: midasGear, enemy: rat }, 3_600_000_000n);
+  check('settling with Midas Touch earns gold but no XP', p.xp === 0n && p.level === 1 && p.gold > 0n && p.kills > 0);
+
+  check('auto-equip scoring sees effects (Glass Cannon doubles dummy DPS)',
+    near(scoreGear(10, kit(withEffect(sword, Effect.GlassCannon))).dps, 2 * scoreGear(10, kit(sword)).dps, 1e-9));
 }
 
 // ---------------------------------------------------------------- XP curve and settlement

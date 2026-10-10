@@ -48,6 +48,7 @@ function previewStats(p: Player): CombatStats {
     itemFind: p.itemFind,
     goldFind: p.goldFind,
     xpGain: p.xpGain,
+    effects: new Set(),
   };
 }
 

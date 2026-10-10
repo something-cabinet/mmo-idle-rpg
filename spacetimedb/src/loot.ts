@@ -131,6 +131,25 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
   };
 }
 
+/** What a rarity step needs from an item: an `item` row or a `NewItem`. */
+export type RaisableItem = Pick<NewItem, 'baseId' | 'tier' | 'rarity' | 'affixes' | 'legendary'>;
+
+/**
+ * `it` one rarity higher (crafting and Fortune's Favor): up to Epic it gains a random
+ * affix; Epic → Legendary drops regular affix `removeIndex` and gains a legendary
+ * affix. Only for Common to Epic items.
+ */
+export function raiseRarity<T extends RaisableItem>(rng: Rng, it: T, removeIndex: number): T {
+  const rarity = { tag: RARITIES[rarityRank(it.rarity.tag) + 1] };
+  if (it.rarity.tag !== 'Epic') return { ...it, rarity, affixes: [...it.affixes, rollAffix(rng, it.tier)] };
+  return {
+    ...it,
+    rarity,
+    affixes: it.affixes.filter((_, i) => i !== removeIndex),
+    legendary: rollLegendary(rng, it.baseId, it.tier),
+  };
+}
+
 // ---------------------------------------------------------------- drops
 
 export interface LootFilter {
@@ -154,6 +173,9 @@ export function firstKillReward(rng: Rng, zone: ZoneDef, boss: EnemyDef): { gold
   };
 }
 
+/** Fortune's Favor: chance per kept drop to be raised one rarity (max Legendary). */
+export const FORTUNE_CHANCE = 0.15;
+
 export interface DropResult {
   /** Items to add to the bag, highest rarity first. */
   kept: NewItem[];
@@ -175,6 +197,8 @@ export interface DropInput {
   filter: LootFilter;
   /** Free bag slots. */
   bagFree: number;
+  /** Fortune's Favor is worn. */
+  fortune?: boolean;
 }
 
 /**
@@ -206,6 +230,15 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
       const item = makeItem(rng, pick(rng, d.enemy.drops), d.tier, rarity);
       if (passesFilter(item, d.filter)) kept.push(item);
       else salvage(rarity);
+    }
+  }
+
+  // Fortune's Favor upgrades kept drops only, before the cap (an upgrade ranks higher).
+  if (d.fortune) {
+    for (let i = 0; i < kept.length; i++) {
+      const it = kept[i];
+      if (rarityRank(it.rarity.tag) >= rarityRank('Legendary') || rng() >= FORTUNE_CHANCE) continue;
+      kept[i] = raiseRarity(rng, it, Math.floor(rng() * it.affixes.length));
     }
   }
 

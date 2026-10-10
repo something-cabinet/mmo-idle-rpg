@@ -16,8 +16,8 @@ Where the project stands and what to build next. Game design lives in
 | 5 | Equipment: equip, loadouts, auto-equip, lock | **Done** |
 | 6 | Bosses and zone unlocks | **Done** |
 | 7 | Crafting: reroll, rarity upgrade, bag expansion | **Done** |
-| 8 | Legendary effects in the formulas | **Next** |
-| 9 | UI on real data + away report | Todo |
+| 8 | Legendary effects in the formulas | **Done** |
+| 9 | UI on real data + away report | **Next** |
 | 10 | Tests for all of the above | Ongoing |
 
 The scaffold's prototype loop (`power`, `buyUpgrade`) is gone: idle progress comes from
@@ -99,19 +99,32 @@ fighting the target enemy with the active loadout.
   boss wins, a successful craft can't be reached in the smoke test (starter gold);
   it checks the refusals, and `test:craft` covers costs and rolls.
   `requireItem` moved to `helpers.ts`.
-- **Not yet**: Fortune's Favor (milestone 8); showing drops, the filter and the bag
-  with real data, the loot log and the away report (milestone 9).
+- **Legendary effects** (`Effect` IDs in data/legendary.ts): `combatStats` collects
+  worn effect IDs into `CombatStats.effects` (a set: the same effect twice applies
+  once; bonus stats still add up). Damage-side effects are in `combatStats`
+  (Spellblade, Overcrit, Glass Cannon, Voidtouched's ×0.75), enemy-side ones in
+  `matchup` (Voidtouched's zero mitigation, Zealot's Oath, Thornshell, Swift Hunter,
+  Midas Touch, Scholar's Focus) and `defenseAgainst` (Juggernaut, Spellward, Phantom
+  Step). Zealot and Thornshell damage count as your damage: enemy mitigation
+  (none with Voidtouched) and the Glass Cannon / Voidtouched multipliers apply. `scoreGear` is now the average of a
+  physical and a magic dummy matchup (same numbers as before), so auto-equip sees
+  every effect. Fortune's Favor: `rollDrops({ fortune })` raises each kept drop with
+  15% chance via `raiseRarity` (loot.ts, shared with crafting's `upgradeRarity`),
+  after the filter and before the per-settle cap; Epic → Legendary removes a random
+  affix.
+- **Not yet**: showing drops, the filter and the bag with real data, the loot log and
+  the away report (milestone 9); the item view's warning for Midas + Scholar worn
+  together (legendary.md).
 - **Client**: the Fight view's "Live progress" card and the top bar use the real
   formulas. The other screens still use `src/ui/preview-data.ts`; `src/ui/sim.ts` is
   now only an adapter that runs the shared `matchup()` on the preview player.
 
-## Next: milestone 8, legendary effects
+## Next: milestone 9, UI on real data
 
-Hook each effect ID (data/legendary.ts, legendary.md) into `combatStats` / `matchup`
-(Overcrit, Spellblade, Zealot's Oath, Juggernaut, Phantom Step, Thornshell,
-Voidtouched, Glass Cannon, Spellward), settlement (Swift Hunter, Midas Touch,
-Scholar's Focus) and drops (Fortune's Favor in `rollDrops`). Today only the bonus
-stat of a legendary affix counts.
+Replace `src/ui/preview-data.ts` usage screen by screen (bag, equipment, zones,
+crafting, loot filter) with the subscribed views, using the shared pure modules for
+numbers (`combat.ts`, `craft.ts` costs, `equip.ts`). Then the loot log and the away
+report on login (ui.md). From here on, schema changes must migrate (see Working notes).
 
 ### Open questions for the next session
 
@@ -119,10 +132,6 @@ stat of a legendary affix counts.
   with starter gear. Option: a dev-only reducer that grants items / sets level (admin
   only, or removed before milestone 9). Not decided.
 - **Reroll cost growth** (crafting.md "Open"): rerolls cost the same every time for now.
-
-## Later milestones (short notes)
-
-- **9 UI**: replace `preview-data.ts` usage screen by screen; away report on login.
 
 ## Working notes
 

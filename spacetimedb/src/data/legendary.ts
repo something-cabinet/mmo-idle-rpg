@@ -6,6 +6,23 @@
 import { Stat, type StatId } from './stats';
 import type { BaseKind } from './bases';
 
+/** Effect IDs, for the formulas that check them. */
+export const Effect = {
+  Overcrit: 1,
+  Spellblade: 2,
+  ZealotsOath: 3,
+  Juggernaut: 4,
+  PhantomStep: 5,
+  Thornshell: 6,
+  SwiftHunter: 7,
+  MidasTouch: 8,
+  FortunesFavor: 9,
+  Voidtouched: 10,
+  GlassCannon: 11,
+  Spellward: 12,
+  ScholarsFocus: 13,
+} as const;
+
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
 
 export interface LegendaryDef {

@@ -52,6 +52,8 @@ Voidtouched:  enemy mitigation = 0;  damage × 0.75
 Glass Cannon: damage × 2;  maxHP × 0.5
 ```
 
+- Damage from Zealot's Oath and Thornshell counts as your damage: Glass Cannon's ×2
+  and Voidtouched (no enemy mitigation, ×0.75) apply to it too.
 - Zealot's Oath is a healer's damage boost on a heal weapon and a 5% lifesteal on
   anything else (above the 3% lifesteal cap for affixes; legendary effects may exceed
   affix caps).

@@ -21,4 +21,9 @@ export default __t.row({
   power: __t.u32(),
   lastSettledAt: __t.timestamp().name("last_settled_at"),
   createdAt: __t.timestamp().name("created_at"),
+  essence: __t.u64(),
+  bagSize: __t.u16().name("bag_size"),
+  activeLoadout: __t.u8().name("active_loadout"),
+  zoneId: __t.u16().name("zone_id"),
+  targetEnemyId: __t.u16().name("target_enemy_id"),
 });

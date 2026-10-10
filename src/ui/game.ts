@@ -48,6 +48,7 @@ export function renderGame(conn: DbConnection, pres: Presence) {
     $('xp-text').textContent = `${ch.xp.toLocaleString()} / ${need.toLocaleString()}`;
     $('xp-bar').style.width = `${Number((ch.xp * 100n) / need)}%`;
     $('stat-gold').textContent = ch.gold.toLocaleString();
+    $('stat-essence').textContent = row.essence.toLocaleString();
 
     const power = maybe('stat-power');
     if (power) {

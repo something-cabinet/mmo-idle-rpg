@@ -32,6 +32,21 @@ export const AccountKind = __t.enum("AccountKind", {
 });
 export type AccountKind = __Infer<typeof AccountKind>;
 
+export const Affix = __t.object("Affix", {
+  stat: __t.u16(),
+  tier: __t.u8(),
+  value: __t.i64(),
+});
+export type Affix = __Infer<typeof Affix>;
+
+export const BossKill = __t.object("BossKill", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  zoneId: __t.u16(),
+  killedAt: __t.timestamp(),
+});
+export type BossKill = __Infer<typeof BossKill>;
+
 export const Character = __t.object("Character", {
   id: __t.u64(),
   owner: __t.identity(),
@@ -43,6 +58,11 @@ export const Character = __t.object("Character", {
   power: __t.u32(),
   lastSettledAt: __t.timestamp(),
   createdAt: __t.timestamp(),
+  essence: __t.u64(),
+  bagSize: __t.u16(),
+  activeLoadout: __t.u8(),
+  zoneId: __t.u16(),
+  targetEnemyId: __t.u16(),
 });
 export type Character = __Infer<typeof Character>;
 
@@ -55,6 +75,61 @@ export const ChatMessage = __t.object("ChatMessage", {
 });
 export type ChatMessage = __Infer<typeof ChatMessage>;
 
+// The tagged union or sum type for the algebraic type `DamageType`.
+export const DamageType = __t.enum("DamageType", {
+  Physical: __t.unit(),
+  Magic: __t.unit(),
+});
+export type DamageType = __Infer<typeof DamageType>;
+
+// The tagged union or sum type for the algebraic type `EquipProfile`.
+export const EquipProfile = __t.enum("EquipProfile", {
+  Damage: __t.unit(),
+  Survival: __t.unit(),
+  Loot: __t.unit(),
+});
+export type EquipProfile = __Infer<typeof EquipProfile>;
+
+// The tagged union or sum type for the algebraic type `HealTarget`.
+export const HealTarget = __t.enum("HealTarget", {
+  Single: __t.unit(),
+  All: __t.unit(),
+});
+export type HealTarget = __Infer<typeof HealTarget>;
+
+export const Item = __t.object("Item", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  baseId: __t.u16(),
+  tier: __t.u8(),
+  get rarity() {
+    return Rarity;
+  },
+  get implicits() {
+    return __t.array(StatValue);
+  },
+  get affixes() {
+    return __t.array(Affix);
+  },
+  get legendary() {
+    return __t.option(LegendaryAffix);
+  },
+  uniqueId: __t.option(__t.u16()),
+  get weapon() {
+    return __t.option(WeaponStats);
+  },
+  locked: __t.bool(),
+  createdAt: __t.timestamp(),
+});
+export type Item = __Infer<typeof Item>;
+
+export const LegendaryAffix = __t.object("LegendaryAffix", {
+  effect: __t.u16(),
+  stat: __t.u16(),
+  value: __t.i64(),
+});
+export type LegendaryAffix = __Infer<typeof LegendaryAffix>;
+
 export const LinkOffer = __t.object("LinkOffer", {
   guest: __t.identity(),
   target: __t.identity(),
@@ -62,8 +137,41 @@ export const LinkOffer = __t.object("LinkOffer", {
 });
 export type LinkOffer = __Infer<typeof LinkOffer>;
 
+export const Loadout = __t.object("Loadout", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  index: __t.u8(),
+  name: __t.string(),
+  get profile() {
+    return EquipProfile;
+  },
+  slots: __t.array(__t.u64()),
+});
+export type Loadout = __Infer<typeof Loadout>;
+
+export const LootFilter = __t.object("LootFilter", {
+  characterId: __t.u64(),
+  get minRarity() {
+    return Rarity;
+  },
+  keepAffixes: __t.array(__t.u16()),
+});
+export type LootFilter = __Infer<typeof LootFilter>;
+
 export const MyAccount = __t.object("MyAccount", {});
 export type MyAccount = __Infer<typeof MyAccount>;
+
+export const MyBossKills = __t.object("MyBossKills", {});
+export type MyBossKills = __Infer<typeof MyBossKills>;
+
+export const MyItems = __t.object("MyItems", {});
+export type MyItems = __Infer<typeof MyItems>;
+
+export const MyLoadouts = __t.object("MyLoadouts", {});
+export type MyLoadouts = __Infer<typeof MyLoadouts>;
+
+export const MyLootFilter = __t.object("MyLootFilter", {});
+export type MyLootFilter = __Infer<typeof MyLootFilter>;
 
 export const Presence = __t.object("Presence", {
   identity: __t.identity(),
@@ -75,10 +183,42 @@ export const Presence = __t.object("Presence", {
 });
 export type Presence = __Infer<typeof Presence>;
 
+// The tagged union or sum type for the algebraic type `Rarity`.
+export const Rarity = __t.enum("Rarity", {
+  Common: __t.unit(),
+  Magic: __t.unit(),
+  Rare: __t.unit(),
+  Epic: __t.unit(),
+  Legendary: __t.unit(),
+  Unique: __t.unit(),
+});
+export type Rarity = __Infer<typeof Rarity>;
+
 // The tagged union or sum type for the algebraic type `Role`.
 export const Role = __t.enum("Role", {
   Player: __t.unit(),
   Admin: __t.unit(),
 });
 export type Role = __Infer<typeof Role>;
+
+export const StatValue = __t.object("StatValue", {
+  stat: __t.u16(),
+  value: __t.i64(),
+});
+export type StatValue = __Infer<typeof StatValue>;
+
+export const WeaponStats = __t.object("WeaponStats", {
+  get damageType() {
+    return DamageType;
+  },
+  hit: __t.i64(),
+  speedMilli: __t.u32(),
+  baseCritBp: __t.u32(),
+  heal: __t.i64(),
+  get healTarget() {
+    return __t.option(HealTarget);
+  },
+  twoHanded: __t.bool(),
+});
+export type WeaponStats = __Infer<typeof WeaponStats>;
 

@@ -11,13 +11,15 @@ Vite + TypeScript browser client, SpacetimeDB (TypeScript module) backend.
 │  ├─ ui/                    # create-character and game screens
 │  └─ module_bindings/       # GENERATED client bindings (npm run spacetime:generate)
 ├─ scripts/smoke-test.ts     # end-to-end test against a local server
+├─ scripts/check-data.ts     # consistency checks for the static game data (npm run test:data)
 └─ spacetimedb/              # Server module (runs inside SpacetimeDB)
    └─ src/
       ├─ schema.ts           # tables
       ├─ config.ts           # SpacetimeAuth client IDs, admin list
       ├─ game.ts             # pure rules/formulas (shared with the client)
+      ├─ data/               # static game data with permanent IDs: stats, item bases, zones, legendaries
       ├─ helpers.ts          # auth checks, idle settlement, enter/leave world
-      ├─ reducers/           # account (connect, linking, bans), character, chat
+      ├─ reducers/           # account (connect, linking, bans), character, chat, per-player views
       └─ index.ts            # module entry
 ```
 

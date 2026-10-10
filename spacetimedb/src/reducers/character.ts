@@ -1,6 +1,7 @@
 import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
-import { upgradeCost, validateCharacterName } from '../game';
+import { BAG_START, upgradeCost, validateCharacterName } from '../game';
+import { STARTING_TARGET, STARTING_ZONE } from '../data/zones';
 import { enterWorld, requireAccount, requireActive, settle } from '../helpers';
 
 /** Creates the account's one character and enters the world with it. */
@@ -24,8 +25,13 @@ export const createCharacter = spacetimedb.reducer({ name: t.string() }, (ctx, {
     power: 1,
     lastSettledAt: ctx.timestamp,
     createdAt: ctx.timestamp,
+    essence: 0n,
+    bagSize: BAG_START,
+    activeLoadout: 0,
+    zoneId: STARTING_ZONE,
+    targetEnemyId: STARTING_TARGET,
   });
-  enterWorld(ctx);
+  enterWorld(ctx); // also creates loadouts and the loot filter
 });
 
 /** Plays on this connection, taking over from another open tab. */

@@ -3,7 +3,8 @@
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { account, character, presence, spacetimedb } from './schema';
-import { MAX_OFFLINE_MICROS, project } from './game';
+import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } from './game';
+import { SLOT_COUNT } from './data/bases';
 
 export type Ctx = ReducerCtx<(typeof spacetimedb)['schemaType']>;
 export type Account = Infer<typeof account.rowType>;
@@ -51,6 +52,37 @@ export function settle(ch: Character, now: Timestamp, capMicros?: bigint): Chara
 }
 
 /**
+ * Creates the per-character rows every character must have (loadouts, loot
+ * filter). Idempotent, so it also backfills characters made before they existed.
+ */
+export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
+  const have = new Set([...ctx.db.loadout.characterId.filter(characterId)].map(l => l.index));
+  for (let i = 0; i < LOADOUT_COUNT; i++) {
+    if (have.has(i)) continue;
+    ctx.db.loadout.insert({
+      id: 0n,
+      characterId,
+      index: i,
+      name: DEFAULT_LOADOUT_NAMES[i],
+      profile: { tag: 'Damage' },
+      slots: Array.from({ length: SLOT_COUNT }, () => 0n),
+    });
+  }
+  if (!ctx.db.lootFilter.characterId.find(characterId)) {
+    ctx.db.lootFilter.insert({ characterId, minRarity: { tag: 'Magic' }, keepAffixes: [] });
+  }
+}
+
+/** Deletes a character and everything it owns. */
+export function deleteCharacter(ctx: Ctx, characterId: bigint) {
+  ctx.db.item.characterId.delete(characterId);
+  ctx.db.loadout.characterId.delete(characterId);
+  ctx.db.bossKill.characterId.delete(characterId);
+  ctx.db.lootFilter.characterId.delete(characterId);
+  ctx.db.character.id.delete(characterId);
+}
+
+/**
  * Puts the caller's character into the world on this connection (taking over
  * from any other tab), granting its capped offline progress. No-op without a
  * character.
@@ -59,6 +91,7 @@ export function enterWorld(ctx: Ctx) {
   const ch = ctx.db.character.owner.find(ctx.sender);
   if (!ch || !ctx.connectionId) return;
   leaveWorld(ctx, ctx.sender);
+  ensureCharacterRows(ctx, ch.id);
   const settled = settle(ch, ctx.timestamp, MAX_OFFLINE_MICROS);
   ctx.db.character.id.update(settled);
   ctx.db.presence.insert({

@@ -48,6 +48,10 @@ import SetBannedReducer from "./set_banned_reducer";
 import CharacterRow from "./character_table";
 import ChatMessageRow from "./chat_message_table";
 import MyAccountRow from "./my_account_table";
+import MyBossKillsRow from "./my_boss_kills_table";
+import MyItemsRow from "./my_items_table";
+import MyLoadoutsRow from "./my_loadouts_table";
+import MyLootFilterRow from "./my_loot_filter_table";
 import PresenceRow from "./presence_table";
 
 /** Type-only namespace exports for generated type groups. */
@@ -106,6 +110,34 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyAccountRow),
+  myBossKills: __table({
+    name: 'my_boss_kills',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyBossKillsRow),
+  myItems: __table({
+    name: 'my_items',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyItemsRow),
+  myLoadouts: __table({
+    name: 'my_loadouts',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyLoadoutsRow),
+  myLootFilter: __table({
+    name: 'my_loot_filter',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyLootFilterRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
@@ -127,6 +159,14 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
   tables: typeof tablesSchema.schemaType.tables & {
     /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
     readonly "my_account": Omit<typeof tablesSchema.schemaType.tables["myAccount"], "accessorName"> & { readonly accessorName: "my_account" };
+    /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
+    readonly "my_boss_kills": Omit<typeof tablesSchema.schemaType.tables["myBossKills"], "accessorName"> & { readonly accessorName: "my_boss_kills" };
+    /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
+    readonly "my_items": Omit<typeof tablesSchema.schemaType.tables["myItems"], "accessorName"> & { readonly accessorName: "my_items" };
+    /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */
+    readonly "my_loadouts": Omit<typeof tablesSchema.schemaType.tables["myLoadouts"], "accessorName"> & { readonly accessorName: "my_loadouts" };
+    /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
+    readonly "my_loot_filter": Omit<typeof tablesSchema.schemaType.tables["myLootFilter"], "accessorName"> & { readonly accessorName: "my_loot_filter" };
   };
 };
 
@@ -146,6 +186,10 @@ const REMOTE_MODULE = {
 
 const tableAccessorAliases = {
   "my_account": "myAccount",
+  "my_boss_kills": "myBossKills",
+  "my_items": "myItems",
+  "my_loadouts": "myLoadouts",
+  "my_loot_filter": "myLootFilter",
 } as const;
 
 function __withTableAccessorAliases<T extends object>(target: T, freeze = false): T {
@@ -168,12 +212,28 @@ type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
   /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
   readonly "my_account": __DbViewBase["myAccount"];
+  /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
+  readonly "my_boss_kills": __DbViewBase["myBossKills"];
+  /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
+  readonly "my_items": __DbViewBase["myItems"];
+  /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */
+  readonly "my_loadouts": __DbViewBase["myLoadouts"];
+  /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
+  readonly "my_loot_filter": __DbViewBase["myLootFilter"];
 };
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
 export type Tables = __TablesBase & {
   /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
   readonly "my_account": __TablesBase["myAccount"];
+  /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
+  readonly "my_boss_kills": __TablesBase["myBossKills"];
+  /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
+  readonly "my_items": __TablesBase["myItems"];
+  /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */
+  readonly "my_loadouts": __TablesBase["myLoadouts"];
+  /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
+  readonly "my_loot_filter": __TablesBase["myLootFilter"];
 };
 
 /** The tables available in this remote SpacetimeDB module. Each table reference doubles as a query builder. */

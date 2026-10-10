@@ -7,3 +7,4 @@ export default spacetimedb;
 export * from './reducers/account';
 export * from './reducers/character';
 export * from './reducers/chat';
+export * from './reducers/views';

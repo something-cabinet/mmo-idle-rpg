@@ -59,13 +59,17 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
       tables.character.where(r => r.owner.eq(me)),
       tables.presence,
       tables.chatMessage,
+      tables.myItems,
+      tables.myLoadouts,
+      tables.myLootFilter,
+      tables.myBossKills,
     ]);
 }
 
 /** Calls `onChange` on any change to subscribed rows. */
 export function watchAll(conn: DbConnection, onChange: () => void) {
-  const { myAccount, character, presence, chatMessage } = conn.db;
-  for (const table of [myAccount, character, presence, chatMessage]) {
+  const { myAccount, character, presence, chatMessage, myItems, myLoadouts, myLootFilter, myBossKills } = conn.db;
+  for (const table of [myAccount, character, presence, chatMessage, myItems, myLoadouts, myLootFilter, myBossKills]) {
     table.onInsert(onChange);
     table.onDelete(onChange);
   }

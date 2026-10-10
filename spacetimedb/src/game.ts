@@ -11,6 +11,13 @@ export const CHAT_HISTORY = 200n;
 /** A guest's offer to merge into a logged-in account expires after this. */
 export const LINK_OFFER_TTL_MICROS = 10n * 60n * 1_000_000n;
 
+/** Saved gear sets per character. */
+export const LOADOUT_COUNT = 4;
+export const DEFAULT_LOADOUT_NAMES = ['Farm', 'Boss', 'Set 3', 'Set 4'];
+/** Bag slots: starts at 200, expands by 25 up to 400 (crafting.md). */
+export const BAG_START = 200;
+export const BAG_MAX = 400;
+
 const CHARACTER_NAME = /^[A-Za-z][A-Za-z0-9_]{2,15}$/;
 
 /** Returns an error message, or null if the name is allowed. */

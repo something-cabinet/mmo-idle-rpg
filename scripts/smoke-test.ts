@@ -53,6 +53,15 @@ await expectError('invalid name rejected', a.conn.reducers.createCharacter({ nam
 await a.conn.reducers.createCharacter({ name: `Alice_${suffix}` });
 await sleep(200);
 check('character created and in world', !!charOf(a) && !!presOf(a));
+{
+  const created = charOf(a)!;
+  const loadouts = [...a.conn.db.myLoadouts.iter()];
+  const filter = [...a.conn.db.myLootFilter.iter()][0];
+  check('new character starts in Greenhollow vs Field Rat', created.zoneId === 1 && created.targetEnemyId === 101);
+  check('new character has 4 empty loadouts', loadouts.length === 4 && loadouts.every(l => l.slots.length === 9 && l.slots.every(id => id === 0n)), `${loadouts.length} loadouts`);
+  check('new character has a loot filter (Magic+)', filter?.minRarity.tag === 'Magic');
+  check('new character has an empty bag', [...a.conn.db.myItems.iter()].length === 0 && created.bagSize === 200);
+}
 await expectError('second character rejected', a.conn.reducers.createCharacter({ name: `Other_${suffix}` }), 'already have');
 
 const b = await connect();

@@ -2,7 +2,7 @@ import { SenderError, t } from 'spacetimedb/server';
 import { account, spacetimedb } from '../schema';
 import { ADMIN_SUBJECTS, OIDC_CLIENT_IDS, SPACETIMEAUTH_ISSUER } from '../config';
 import { LINK_OFFER_TTL_MICROS } from '../game';
-import { enterWorld, leaveWorld, requireAccount, requireAdmin, type Account } from '../helpers';
+import { deleteCharacter, enterWorld, leaveWorld, requireAccount, requireAdmin, type Account } from '../helpers';
 
 /**
  * Every connection is either a guest (any token not issued by our
@@ -107,7 +107,7 @@ export const acceptLink = spacetimedb.reducer(
 
     leaveWorld(ctx, guest);
     if (guestChar) {
-      if (mine) ctx.db.character.id.delete(guestChar.id);
+      if (mine) deleteCharacter(ctx, guestChar.id);
       else ctx.db.character.id.update({ ...guestChar, owner: ctx.sender });
     }
     ctx.db.linkOffer.guest.delete(guest);

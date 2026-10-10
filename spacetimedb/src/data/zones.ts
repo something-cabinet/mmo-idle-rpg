@@ -109,4 +109,12 @@ export function previousZone(zone: ZoneDef): ZoneDef | undefined {
   return ZONES.find(z => z.tier === zone.tier - 1);
 }
 
+/**
+ * The enemy's reward multiplier `1.12^o` against the zone's average enemy
+ * (XP 20 × 2.9^(T−1), zones.md). Scales drop chances like XP and gold.
+ */
+export function rewardScale(zone: ZoneDef, enemy: EnemyDef): number {
+  return enemy.xp / (20 * 2.9 ** (zone.tier - 1));
+}
+
 export const bossOf = (zone: ZoneDef) => zone.enemies.find(e => e.boss);

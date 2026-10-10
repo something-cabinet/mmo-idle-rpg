@@ -17,7 +17,8 @@
     "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud",
     "test:smoke": "tsx scripts/smoke-test.ts",
     "test:data": "tsx scripts/check-data.ts",
-    "test:combat": "tsx scripts/check-combat.ts"
+    "test:combat": "tsx scripts/check-combat.ts",
+    "test:loot": "tsx scripts/check-loot.ts"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

@@ -1,11 +1,12 @@
 // Checks for the combat formulas and settlement (spacetimedb/src/combat.ts, game.ts).
 // No server needed:
 //   npm run test:combat
-import { SLOTS, base, implicitValue, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
+import { SLOTS, base, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 import { MAX_LEVEL, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { project, xpToNext, type Progress } from '../spacetimedb/src/game';
+import { makeItem, seededRng } from '../spacetimedb/src/loot';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -15,21 +16,10 @@ function check(name: string, ok: boolean, detail = '') {
 const near = (a: number, b: number, tol: number) => Math.abs(a - b) <= tol;
 const f = (n: number) => n.toFixed(2);
 
-/** An item of `baseId` at `tier` with affixes given in display units, stored like a real drop. */
+/** A Common item of `baseId` at `tier` with the given affixes (display units). */
 function item(baseId: number, tier: number, affixes: [number, number][] = []): GearItem {
-  const b = base(baseId);
-  const w = b.weapon && weaponValues(b.weapon, tier);
-  return {
-    implicits: b.implicits.map(i => ({ stat: i.stat, value: toStored(implicitValue(i, tier)) })),
-    affixes: affixes.map(([stat, v]) => ({ stat, value: toStored(v) })),
-    weapon: w && {
-      damageType: { tag: w.damageType },
-      hit: toStored(w.hit),
-      speedMilli: Math.round(w.speed * 1000),
-      baseCritBp: Math.round(w.baseCrit * 100),
-      heal: toStored(w.heal),
-    },
-  };
+  const it = makeItem(seededRng(0n), baseId, tier, 'Common');
+  return { ...it, affixes: affixes.map(([stat, v]) => ({ stat, tier, value: toStored(v) })) };
 }
 function gear(bySlot: Partial<Record<Slot, GearItem>>) {
   return SLOTS.map(s => bySlot[s]);

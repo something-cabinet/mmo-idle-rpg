@@ -68,6 +68,14 @@ const b = await connect();
 await expectError('name taken (case-insensitive)', b.conn.reducers.createCharacter({ name: `alice_${suffix}` }), 'taken');
 await expectError('chat without character rejected', b.conn.reducers.sendChat({ text: 'hi' }), 'Not in the world');
 
+await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6] });
+await sleep(200);
+{
+  const filter = [...a.conn.db.myLootFilter.iter()][0];
+  check('loot filter saved (deduplicated)', filter?.minRarity.tag === 'Rare' && filter.keepAffixes.join() === '22,6', filter?.keepAffixes.join());
+}
+await expectError('unknown affix in filter rejected', a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [999] }), 'Unknown affix');
+
 await sleep(1100);
 await a.conn.reducers.sendChat({ text: 'hello world' });
 await expectError('chat rate limit', a.conn.reducers.sendChat({ text: 'spam' }), 'Slow down');

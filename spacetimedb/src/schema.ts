@@ -175,6 +175,15 @@ export const bossKill = table(
   }
 );
 
+/** Drives `settleOnline`: one interval row, inserted by `init`. */
+export const settleTimer = table(
+  { name: 'settle_timer' },
+  {
+    scheduledId: t.u64().primaryKey().autoInc(),
+    scheduledAt: t.scheduleAt(),
+  }
+);
+
 /**
  * Who is in the world right now. A row exists while the account is connected
  * and has a character.
@@ -224,4 +233,5 @@ export const spacetimedb = schema({
   loadout,
   lootFilter,
   bossKill,
+  settleTimer,
 });

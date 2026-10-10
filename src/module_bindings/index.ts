@@ -40,6 +40,7 @@ import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
+import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetTargetReducer from "./set_target_reducer";
 
 // Import all procedure arg schemas
@@ -148,6 +149,7 @@ const reducersSchema = __reducers(
   __reducerSchema("play_here", PlayHereReducer),
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
+  __reducerSchema("set_loot_filter", SetLootFilterReducer),
   __reducerSchema("set_target", SetTargetReducer),
 );
 

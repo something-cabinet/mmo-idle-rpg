@@ -200,6 +200,12 @@ export const Role = __t.enum("Role", {
 });
 export type Role = __Infer<typeof Role>;
 
+export const SettleTimer = __t.object("SettleTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+});
+export type SettleTimer = __Infer<typeof SettleTimer>;
+
 export const StatValue = __t.object("StatValue", {
   stat: __t.u16(),
   value: __t.i64(),

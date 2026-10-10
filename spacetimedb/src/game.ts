@@ -6,6 +6,8 @@ import type { EnemyDef } from './data/zones';
 
 /** Offline progress is capped so a player can't come back to infinite loot. */
 export const MAX_OFFLINE_MICROS = 8n * 60n * 60n * 1_000_000n; // 8 hours
+/** Online characters are settled this often, so their drops show up while playing. */
+export const ONLINE_SETTLE_MICROS = 60n * 1_000_000n;
 
 export const MAX_CHAT_LENGTH = 200;
 export const CHAT_COOLDOWN_MICROS = 1_000_000n;
@@ -43,6 +45,11 @@ export interface Progress {
   settledMicros: bigint;
 }
 
+export interface Settled extends Progress {
+  /** Whole kills granted; drops are rolled from this. */
+  kills: number;
+}
+
 /** What the character is doing: fighting `enemy` with `gear` (undefined = no target). */
 export interface Activity {
   gear: Gear;
@@ -59,13 +66,14 @@ export interface Activity {
  * are recomputed at each level-up inside the elapsed time. If `capMicros` is hit,
  * or the fight isn't viable, the remaining time is discarded.
  */
-export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?: bigint): Progress {
+export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?: bigint): Settled {
   let elapsed = nowMicros - p.settledMicros;
-  if (elapsed <= 0n) return p;
+  if (elapsed <= 0n) return { ...p, kills: 0 };
   const capped = capMicros !== undefined && elapsed > capMicros;
   if (capped) elapsed = capMicros!;
 
   let { level, xp, gold } = p;
+  let total = 0;
   let left = elapsed;
   while (left > 0n) {
     const m = a.enemy ? matchup(combatStats(level, a.gear), a.enemy) : undefined;
@@ -81,6 +89,7 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
     if (!maxed && m.xpPerKill > 0) {
       kills = Math.min(kills, Math.ceil(Number(xpToNext(level) - xp) / m.xpPerKill));
     }
+    total += kills;
     if (!maxed) xp += BigInt(Math.floor(kills * m.xpPerKill));
     gold += BigInt(Math.floor(kills * m.goldPerKill));
     left -= BigInt(Math.ceil((kills / m.killRate) * 1e6));
@@ -94,5 +103,5 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
   }
 
   const settledMicros = capped ? nowMicros : p.settledMicros + elapsed - left;
-  return { level, xp, gold, settledMicros };
+  return { level, xp, gold, settledMicros, kills: total };
 }

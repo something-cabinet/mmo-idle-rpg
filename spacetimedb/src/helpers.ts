@@ -5,7 +5,9 @@ import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { account, character, item, presence, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } from './game';
 import { SLOT_COUNT } from './data/bases';
-import { ENEMIES_BY_ID, previousZone, type ZoneDef } from './data/zones';
+import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
+import { combatStats } from './combat';
+import { rollDrops, seededRng } from './loot';
 
 export type Ctx = ReducerCtx<(typeof spacetimedb)['schemaType']>;
 export type Account = Infer<typeof account.rowType>;
@@ -43,22 +45,54 @@ export function gearOf(ctx: Ctx, ch: Character): (Item | undefined)[] {
   return (lo?.slots ?? []).map(id => (id === 0n ? undefined : (ctx.db.item.id.find(id) ?? undefined)));
 }
 
+/** Items in the bag: owned and not in any loadout (equipped items don't count). */
+export function bagCount(ctx: Ctx, characterId: bigint): number {
+  const equipped = new Set([...ctx.db.loadout.characterId.filter(characterId)].flatMap(l => l.slots));
+  let n = 0;
+  for (const it of ctx.db.item.characterId.filter(characterId)) if (!equipped.has(it.id)) n++;
+  return n;
+}
+
 /**
  * Grants idle rewards earned since `lastSettledAt` (see `project`) with the
- * current gear and target. Call before anything that changes either.
+ * current gear and target: XP, gold, and drops (kept items go to the bag, the rest
+ * is salvaged into Essence). Call before anything that changes gear or target.
  */
 export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
+  const gear = gearOf(ctx, ch);
+  const target = ENEMIES_BY_ID.get(ch.targetEnemyId);
   const p = project(
     { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch },
-    { gear: gearOf(ctx, ch), enemy: ENEMIES_BY_ID.get(ch.targetEnemyId)?.enemy },
+    { gear, enemy: target?.enemy },
     ctx.timestamp.microsSinceUnixEpoch,
     capMicros
   );
+
+  let essence = ch.essence;
+  if (target && p.kills > 0) {
+    const filter = ctx.db.lootFilter.characterId.find(ch.id);
+    // Seeded by (character, settle start), so the result is reproducible.
+    const drops = rollDrops(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch), {
+      kills: p.kills,
+      enemy: target.enemy,
+      tier: target.zone.tier,
+      rewardScale: rewardScale(target.zone, target.enemy),
+      itemFind: combatStats(ch.level, gear).itemFind,
+      filter: { minRarity: filter?.minRarity.tag ?? 'Magic', keepAffixes: filter?.keepAffixes ?? [] },
+      bagFree: ch.bagSize - bagCount(ctx, ch.id),
+    });
+    for (const it of drops.kept) {
+      ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, uniqueId: undefined, locked: false, createdAt: ctx.timestamp });
+    }
+    essence += drops.essence;
+  }
+
   return {
     ...ch,
     level: p.level,
     xp: p.xp,
     gold: p.gold,
+    essence,
     lastSettledAt: new Timestamp(p.settledMicros),
   };
 }

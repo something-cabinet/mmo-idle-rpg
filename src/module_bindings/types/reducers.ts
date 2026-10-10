@@ -12,6 +12,7 @@ import OfferLinkReducer from "../offer_link_reducer";
 import PlayHereReducer from "../play_here_reducer";
 import SendChatReducer from "../send_chat_reducer";
 import SetBannedReducer from "../set_banned_reducer";
+import SetLootFilterReducer from "../set_loot_filter_reducer";
 import SetTargetReducer from "../set_target_reducer";
 
 export type AcceptLinkParams = __Infer<typeof AcceptLinkReducer>;
@@ -20,5 +21,6 @@ export type OfferLinkParams = __Infer<typeof OfferLinkReducer>;
 export type PlayHereParams = __Infer<typeof PlayHereReducer>;
 export type SendChatParams = __Infer<typeof SendChatReducer>;
 export type SetBannedParams = __Infer<typeof SetBannedReducer>;
+export type SetLootFilterParams = __Infer<typeof SetLootFilterReducer>;
 export type SetTargetParams = __Infer<typeof SetTargetReducer>;
 

@@ -11,8 +11,8 @@ Where the project stands and what to build next. Game design lives in
 | — | Client layout: shell, dark/light theme, all screens with preview data | Done |
 | 1 | Data model: game data as code, item/loadout/filter/boss tables, views | **Done** |
 | 2 | Combat and settlement | **Done** |
-| 3 | Drops and the loot filter | **Next** |
-| 4 | Character start: starter kit, target choice | Todo |
+| 3 | Drops and the loot filter | **Done** |
+| 4 | Character start: starter kit, target choice | **Next** |
 | 5 | Equipment: equip, loadouts, auto-equip, lock | Todo |
 | 6 | Bosses and zone unlocks | Todo |
 | 7 | Crafting: reroll, rarity upgrade, bag expansion | Todo |
@@ -51,27 +51,35 @@ fighting the target enemy with the active loadout.
   `helpers.ts` resolves the active loadout's items (`gearOf`).
 - **Reducer** `setTarget(enemyId)`: zone must be unlocked (`zoneUnlocked`: previous
   zone's boss killed), bosses need their own first kill; settles first.
+- **Drops** (`spacetimedb/src/loot.ts`, pure, shared): per settle, a Poisson count per
+  rarity from `kills × DROP_CHANCE × rewardScale × (1 + itemFind)` (`rewardScale` =
+  the enemy's `1.12^o`, from its XP vs the zone average; Unique chance rolls Legendary
+  until uniques exist). Bases uniform from the enemy's `drops`, tier = zone tier;
+  `makeItem` rolls affixes (weighted free pool, tier 1..N, value in its slice) and
+  legendaries (group by base kind, bonus 0.25–0.5 × ref). Then the loot filter
+  (rarity threshold or whitelisted affix), the 50-item per-settle cap and the bag
+  limit (lowest rarity salvaged first), and salvage to Essence. Seeded by (character
+  ID, settle start), so a settle is reproducible.
+- **Server**: `settle` inserts kept items and adds Essence; `bagCount` counts items
+  not in any loadout. `setLootFilter(minRarity, keepAffixes)` settles first. A
+  scheduled reducer `settleOnline` (table `settle_timer`, 60 s interval, inserted by
+  `init`) settles everyone in the world so drops arrive while playing.
+- **Not yet**: Fortune's Favor (milestone 8); showing drops, the filter and the bag
+  with real data, the loot log and the away report (milestone 9).
 - **Client**: the Fight view's "Live progress" card and the top bar use the real
   formulas. The other screens still use `src/ui/preview-data.ts`; `src/ui/sim.ts` is
   now only an adapter that runs the shared `matchup()` on the preview player.
 
-## Next: milestone 3, drops and the loot filter
+## Next: milestone 4, character start
 
-Settlement (`project()` in `spacetimedb/src/game.ts`) grants XP and gold only. Drops
-plug into the same loop: per settled segment, `kills × DROP_CHANCE × (1 + itemFind)`
-(`matchup().killRate` and `combatStats().itemFind` are already there). See the notes
-below.
-
-Note: until milestone 4 gives new characters a starter weapon, their main hand is
-empty, so they earn nothing.
+`createCharacter` takes a starter weapon (sword, bow, wand, healing staff), gives a
+Common Rawhide Vest + Boots and equips them in loadout 0. Use `makeItem` from
+`spacetimedb/src/loot.ts` to build them. Until then a new character's main hand is
+empty, so it earns nothing and gets no drops; with the kit, the smoke test can check
+end-to-end gains and drops.
 
 ## Later milestones (short notes)
 
-- **3 Drops**: per settle, sample a count per rarity (Poisson/binomial, seeded by
-  character + settle time), pick bases from the target's `drops`, roll affixes
-  (relative slices, free pools with weights, see equipment.md), apply the loot filter,
-  bag limit and the 50-item per-settle cap (salvage lowest rarity first), salvage to
-  Essence (crafting.md table).
 - **4 Character start**: `createCharacter` takes a starter weapon (sword, bow, wand,
   healing staff), gives Common Rawhide Vest + Boots, equips them in loadout 0.
 - **5 Equipment**: `equip`, `unequip`, `switchLoadout`, `renameLoadout`,
@@ -88,8 +96,8 @@ empty, so they earn nothing.
 - **Run locally**: `npm run spacetime:start` (own terminal), then
   `npm run spacetime:publish:local -- -y` (the prompt needs `-y` when the schema
   changes), `npm run spacetime:generate` after schema changes, `npm run dev`.
-- **Checks**: `npm run typecheck`, `npm run test:data` and `npm run test:combat` (no
-  server), `npm run test:smoke`
+- **Checks**: `npm run typecheck`, `npm run test:data`, `test:combat` and `test:loot`
+  (no server), `npm run test:smoke`
   (needs the local server with the module published).
 - **Stopping the dev server**: stopping `npm run dev` can leave Vite's node process
   listening on 5173; kill it by port.

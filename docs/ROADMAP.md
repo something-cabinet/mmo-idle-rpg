@@ -12,8 +12,8 @@ Where the project stands and what to build next. Game design lives in
 | 1 | Data model: game data as code, item/loadout/filter/boss tables, views | **Done** |
 | 2 | Combat and settlement | **Done** |
 | 3 | Drops and the loot filter | **Done** |
-| 4 | Character start: starter kit, target choice | **Next** |
-| 5 | Equipment: equip, loadouts, auto-equip, lock | Todo |
+| 4 | Character start: starter kit, target choice | **Done** |
+| 5 | Equipment: equip, loadouts, auto-equip, lock | **Next** |
 | 6 | Bosses and zone unlocks | Todo |
 | 7 | Crafting: reroll, rarity upgrade, bag expansion | Todo |
 | 8 | Legendary effects in the formulas | Todo |
@@ -64,27 +64,29 @@ fighting the target enemy with the active loadout.
   not in any loadout. `setLootFilter(minRarity, keepAffixes)` settles first. A
   scheduled reducer `settleOnline` (table `settle_timer`, 60 s interval, inserted by
   `init`) settles everyone in the world so drops arrive while playing.
+- **Character start**: `createCharacter(name, starterWeapon)` takes a base ID from
+  `STARTER_WEAPONS` (sword, bow, wand, healing staff; all beat the Field Rat at
+  level 1) and `grantStarterKit` adds it plus a Common Rawhide Vest and Boots,
+  equipped in loadout 0. The create screen has the weapon picker. Target choice is
+  the `setTarget` reducer (milestone 2); the Zones screen still uses preview data
+  (milestone 9).
 - **Not yet**: Fortune's Favor (milestone 8); showing drops, the filter and the bag
   with real data, the loot log and the away report (milestone 9).
 - **Client**: the Fight view's "Live progress" card and the top bar use the real
   formulas. The other screens still use `src/ui/preview-data.ts`; `src/ui/sim.ts` is
   now only an adapter that runs the shared `matchup()` on the preview player.
 
-## Next: milestone 4, character start
+## Next: milestone 5, equipment
 
-`createCharacter` takes a starter weapon (sword, bow, wand, healing staff), gives a
-Common Rawhide Vest + Boots and equips them in loadout 0. Use `makeItem` from
-`spacetimedb/src/loot.ts` to build them. Until then a new character's main hand is
-empty, so it earns nothing and gets no drops; with the kit, the smoke test can check
-end-to-end gains and drops.
+`equip`, `unequip`, `switchLoadout`, `renameLoadout`, `setProfile`, `autoEquip` (vs the
+reference dummy, never the target), `lockItem`, `salvage`. Validate slots (two-handed
+empties the off-hand; rings in either ring slot).
+
+Every reducer that changes gear settles first (`settle(ctx, ch)` in helpers.ts). Auto-equip
+can reuse `combatStats` + `matchup` against the reference dummy (equipment.md).
 
 ## Later milestones (short notes)
 
-- **4 Character start**: `createCharacter` takes a starter weapon (sword, bow, wand,
-  healing staff), gives Common Rawhide Vest + Boots, equips them in loadout 0.
-- **5 Equipment**: `equip`, `unequip`, `switchLoadout`, `renameLoadout`,
-  `setProfile`, `autoEquip` (vs the reference dummy, never the target), `lockItem`,
-  `salvage`. Validate slots (two-handed empties the off-hand; rings in either ring slot).
 - **6 Bosses**: `challengeBoss` (deterministic check), `boss_kill` row, first-kill
   Rare + 20× gold, zone unlock rule = previous zone's boss killed.
 - **7 Crafting**: `rerollAffix`, `upgradeRarity`, `expandBag`; costs in crafting.md.

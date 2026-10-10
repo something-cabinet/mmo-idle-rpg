@@ -2,11 +2,25 @@ import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
 import { BAG_START, validateCharacterName } from '../game';
 import { ENEMIES_BY_ID, STARTING_TARGET, STARTING_ZONE } from '../data/zones';
-import { enterWorld, hasKilledBoss, requireAccount, requireActive, settle, zoneUnlocked } from '../helpers';
+import { STARTER_WEAPONS } from '../data/bases';
+import {
+  ensureCharacterRows,
+  enterWorld,
+  grantStarterKit,
+  hasKilledBoss,
+  requireAccount,
+  requireActive,
+  settle,
+  zoneUnlocked,
+} from '../helpers';
 
-/** Creates the account's one character and enters the world with it. */
-export const createCharacter = spacetimedb.reducer({ name: t.string() }, (ctx, { name }) => {
+/**
+ * Creates the account's one character with its starter kit (`starterWeapon` is a
+ * base ID from STARTER_WEAPONS) and enters the world with it.
+ */
+export const createCharacter = spacetimedb.reducer({ name: t.string(), starterWeapon: t.u16() }, (ctx, { name, starterWeapon }) => {
   requireAccount(ctx);
+  if (!(STARTER_WEAPONS as readonly number[]).includes(starterWeapon)) throw new SenderError('Pick a starter weapon');
   if (ctx.db.character.owner.find(ctx.sender)) throw new SenderError('You already have a character');
   const trimmed = name.trim();
   const invalid = validateCharacterName(trimmed);
@@ -14,7 +28,7 @@ export const createCharacter = spacetimedb.reducer({ name: t.string() }, (ctx, {
   const nameKey = trimmed.toLowerCase();
   if (ctx.db.character.nameKey.find(nameKey)) throw new SenderError('Name is taken');
 
-  ctx.db.character.insert({
+  const ch = ctx.db.character.insert({
     id: 0n,
     owner: ctx.sender,
     name: trimmed,
@@ -30,7 +44,9 @@ export const createCharacter = spacetimedb.reducer({ name: t.string() }, (ctx, {
     zoneId: STARTING_ZONE,
     targetEnemyId: STARTING_TARGET,
   });
-  enterWorld(ctx); // also creates loadouts and the loot filter
+  ensureCharacterRows(ctx, ch.id);
+  grantStarterKit(ctx, ch.id, starterWeapon);
+  enterWorld(ctx);
 });
 
 /** Plays on this connection, taking over from another open tab. */

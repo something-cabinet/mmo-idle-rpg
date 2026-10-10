@@ -1,7 +1,7 @@
 // Checks for the combat formulas and settlement (spacetimedb/src/combat.ts, game.ts).
 // No server needed:
 //   npm run test:combat
-import { SLOTS, base, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
+import { SLOTS, STARTER_ARMOR, STARTER_WEAPONS, base, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 import { MAX_LEVEL, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
@@ -36,6 +36,13 @@ const starter = gear({ MainHand: item(1, 1), Chest: item(35, 1), Feet: item(37, 
   check('fresh level 1 + starter kit kills a Field Rat in ~3.4 s', near(m.timeToKill, 3.4, 0.15), f(m.timeToKill));
   check('… and would take ~106 s to die', near(m.timeToDie, 106, 4), f(m.timeToDie));
   check('… so the fight is viable', m.viable && m.killRate > 0);
+}
+
+for (const id of STARTER_WEAPONS) {
+  const kit = gear({ MainHand: item(id, 1), Chest: item(STARTER_ARMOR[0], 1), Feet: item(STARTER_ARMOR[1], 1) });
+  const m = matchup(combatStats(1, kit), enemy(101));
+  check(`starter ${base(id).name(1)} beats a Field Rat at level 1`, m.viable && m.timeToKill < 10,
+    `kill ${f(m.timeToKill)} s, die ${f(m.timeToDie)} s`);
 }
 
 // The average level-10 warrior in T1 Magic gear (preview-data.ts EQUIPPED).

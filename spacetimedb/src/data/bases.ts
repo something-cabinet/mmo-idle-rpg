@@ -177,6 +177,11 @@ export const BASE_LIST: BaseDef[] = [
   ...jewelryBases(),
 ];
 
+/** Starter weapons a new character picks from (zone-content.md): sword, bow, wand, healing staff. */
+export const STARTER_WEAPONS = [1, 8, 5, 10] as const;
+/** Every new character also gets these, Common T1: Rawhide Vest and Rawhide Boots. */
+export const STARTER_ARMOR = [35, 37] as const;
+
 export const BASES: ReadonlyMap<number, BaseDef> = new Map(BASE_LIST.map(b => [b.id, b]));
 
 export function base(id: number): BaseDef {

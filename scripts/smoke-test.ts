@@ -49,8 +49,10 @@ const acc = [...a.conn.db.myAccount.iter()][0];
 check('guest gets an account', acc?.kind.tag === 'Guest' && acc.role.tag === 'Player');
 check('new account has no character', !charOf(a) && !presOf(a));
 
-await expectError('invalid name rejected', a.conn.reducers.createCharacter({ name: 'x' }), 'Name must be');
-await a.conn.reducers.createCharacter({ name: `Alice_${suffix}` });
+await expectError('invalid name rejected', a.conn.reducers.createCharacter({ name: 'x', starterWeapon: 1 }), 'Name must be');
+await expectError('non-starter weapon rejected', a.conn.reducers.createCharacter({ name: `Alice_${suffix}`, starterWeapon: 7 }), 'starter weapon');
+await a.conn.reducers.createCharacter({ name: `Alice_${suffix}`, starterWeapon: 1 });
+const createdAt = Date.now();
 await sleep(200);
 check('character created and in world', !!charOf(a) && !!presOf(a));
 {
@@ -58,14 +60,22 @@ check('character created and in world', !!charOf(a) && !!presOf(a));
   const loadouts = [...a.conn.db.myLoadouts.iter()];
   const filter = [...a.conn.db.myLootFilter.iter()][0];
   check('new character starts in Greenhollow vs Field Rat', created.zoneId === 1 && created.targetEnemyId === 101);
-  check('new character has 4 empty loadouts', loadouts.length === 4 && loadouts.every(l => l.slots.length === 9 && l.slots.every(id => id === 0n)), `${loadouts.length} loadouts`);
+  const items = [...a.conn.db.myItems.iter()];
+  const kit = loadouts.find(l => l.index === 0)?.slots ?? [];
+  const idOf = (baseId: number) => items.find(i => i.baseId === baseId)?.id;
+  check('new character has 4 loadouts', loadouts.length === 4 && loadouts.every(l => l.slots.length === 9), `${loadouts.length} loadouts`);
+  check('starter kit: Common T1 sword, vest and boots', items.length === 3 &&
+    items.every(i => i.rarity.tag === 'Common' && i.tier === 1 && i.affixes.length === 0) &&
+    [1, 35, 37].every(id => idOf(id) !== undefined), items.map(i => i.baseId).join());
+  check('starter kit equipped in loadout 0 (main hand, chest, feet)',
+    kit[0] === idOf(1) && kit[3] === idOf(35) && kit[5] === idOf(37) && kit.filter(id => id !== 0n).length === 3);
   check('new character has a loot filter (Magic+)', filter?.minRarity.tag === 'Magic');
-  check('new character has an empty bag', [...a.conn.db.myItems.iter()].length === 0 && created.bagSize === 200);
+  check('bag size 200', created.bagSize === 200);
 }
-await expectError('second character rejected', a.conn.reducers.createCharacter({ name: `Other_${suffix}` }), 'already have');
+await expectError('second character rejected', a.conn.reducers.createCharacter({ name: `Other_${suffix}`, starterWeapon: 1 }), 'already have');
 
 const b = await connect();
-await expectError('name taken (case-insensitive)', b.conn.reducers.createCharacter({ name: `alice_${suffix}` }), 'taken');
+await expectError('name taken (case-insensitive)', b.conn.reducers.createCharacter({ name: `alice_${suffix}`, starterWeapon: 1 }), 'taken');
 await expectError('chat without character rejected', b.conn.reducers.sendChat({ text: 'hi' }), 'Not in the world');
 
 await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6] });
@@ -84,14 +94,16 @@ await expectError('unknown enemy rejected', a.conn.reducers.setTarget({ enemyId:
 await expectError('locked zone rejected', a.conn.reducers.setTarget({ enemyId: 201 }), 'Zone is locked');
 await expectError('boss needs a first kill', a.conn.reducers.setTarget({ enemyId: 106 }), 'Defeat the boss first');
 {
+  // A starter sword kills a Field Rat every ~8.3 s (3.3 s fight + 5 s respawn).
+  const wait = createdAt + 9_500 - Date.now();
+  console.log(`… waiting ${(wait / 1000).toFixed(1)} s for a rat kill`);
+  await sleep(wait);
   const before = charOf(a)!.lastSettledAt.microsSinceUnixEpoch;
-  await sleep(300);
   await a.conn.reducers.setTarget({ enemyId: 102 });
   await sleep(200);
   const ch = charOf(a)!;
   check('target change settles and switches target', ch.targetEnemyId === 102 && ch.lastSettledAt.microsSinceUnixEpoch > before);
-  // No starter kit until milestone 4: an empty main hand earns nothing.
-  check('no weapon: no idle gains', ch.gold === 0n && ch.xp === 0n && ch.level === 1, `gold=${ch.gold} xp=${ch.xp}`);
+  check('starter kit earns idle XP and gold from rats', ch.xp >= 7n && ch.gold >= 2n, `xp=${ch.xp} gold=${ch.gold}`);
 }
 
 // Second tab of the same account takes over; closing it leaves the world.

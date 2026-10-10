@@ -1090,6 +1090,15 @@ select:focus,
   gap: 12px;
   max-width: 560px;
 }
+fieldset.affix-pick {
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+fieldset.affix-pick legend {
+  padding: 0 0 4px;
+  font-size: 13px;
+}
 .affix-pick {
   display: grid;
   gap: 4px;

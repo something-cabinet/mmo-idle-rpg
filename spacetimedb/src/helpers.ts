@@ -4,10 +4,10 @@ import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { account, character, item, presence, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } from './game';
-import { SLOT_COUNT } from './data/bases';
+import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
 import { combatStats } from './combat';
-import { rollDrops, seededRng } from './loot';
+import { makeItem, rollDrops, seededRng } from './loot';
 
 export type Ctx = ReducerCtx<(typeof spacetimedb)['schemaType']>;
 export type Account = Infer<typeof account.rowType>;
@@ -128,6 +128,29 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
   if (!ctx.db.lootFilter.characterId.find(characterId)) {
     ctx.db.lootFilter.insert({ characterId, minRarity: { tag: 'Magic' }, keepAffixes: [] });
   }
+}
+
+/**
+ * Gives a new character its starter kit (Common T1 weapon + Rawhide Vest and Boots)
+ * and equips it in loadout 0. Needs the loadouts (`ensureCharacterRows`) first.
+ */
+export function grantStarterKit(ctx: Ctx, characterId: bigint, weaponBaseId: number) {
+  const lo = [...ctx.db.loadout.characterId.filter(characterId)].find(l => l.index === 0);
+  if (!lo) throw new Error('Loadouts missing');
+  const slots = [...lo.slots];
+  const rng = seededRng(characterId); // Common items roll nothing; required by makeItem
+  for (const baseId of [weaponBaseId, ...STARTER_ARMOR]) {
+    const row = ctx.db.item.insert({
+      ...makeItem(rng, baseId, 1, 'Common'),
+      id: 0n,
+      characterId,
+      uniqueId: undefined,
+      locked: false,
+      createdAt: ctx.timestamp,
+    });
+    slots[SLOTS.indexOf(base(baseId).slots[0])] = row.id;
+  }
+  ctx.db.loadout.id.update({ ...lo, slots });
 }
 
 /** Deletes a character and everything it owns. */

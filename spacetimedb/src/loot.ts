@@ -4,7 +4,7 @@
 
 import { base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
-import { STATS, affixRef, toStored, type StatDef } from './data/stats';
+import { STATS, affixRef, roundStat, toStored, type StatDef } from './data/stats';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
 export const RARITIES = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Unique'] as const;
@@ -91,13 +91,13 @@ export interface NewItem {
 const AFFIX_POOL: StatDef[] = Object.values(STATS).filter(d => d.ref !== undefined);
 const AFFIX_WEIGHT = AFFIX_POOL.reduce((sum, d) => sum + (d.weight ?? 100), 0);
 
-/** A regular affix on a tier-`tier` item: weighted free pool, tier 1..N, value in its slice. */
+/** A regular affix on a tier-`tier` item: weighted free pool, tier 1..N, value in its slice (then rounded). */
 export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
   let r = rng() * AFFIX_WEIGHT;
   const def = AFFIX_POOL.find(d => (r -= d.weight ?? 100) < 0) ?? AFFIX_POOL[AFFIX_POOL.length - 1];
   const k = 1 + Math.floor(rng() * tier);
   const value = (affixRef(def.id, tier) * (k - 1 + rng())) / tier;
-  return { stat: def.id, tier: k, value: toStored(value) };
+  return { stat: def.id, tier: k, value: toStored(roundStat(def.id, value)) };
 }
 
 /** A legendary affix from the base's group: equal weights, bonus in [0.25, 0.5] × ref. */
@@ -105,7 +105,7 @@ export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullab
   const group = legendaryGroup(baseId, base(baseId).kind);
   const def = pick(rng, LEGENDARIES.filter(l => l.group === group));
   const value = affixRef(def.bonusStat, tier) * (0.25 + 0.25 * rng());
-  return { effect: def.id, stat: def.bonusStat, value: toStored(value) };
+  return { effect: def.id, stat: def.bonusStat, value: toStored(roundStat(def.bonusStat, value)) };
 }
 
 /** An item of `baseId` at `tier`: base values computed and stored literally, affixes rolled. */

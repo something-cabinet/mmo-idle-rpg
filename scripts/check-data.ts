@@ -2,7 +2,7 @@
 //   npm run test:data
 import { BASE_LIST, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES } from '../spacetimedb/src/data/legendary';
-import { STATS, Stat, affixRef } from '../spacetimedb/src/data/stats';
+import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, ZONES } from '../spacetimedb/src/data/zones';
 
 let failed = 0;
@@ -35,12 +35,17 @@ check('T2 leather chest name', base(35).name(2) === 'Tanned Vest');
 check('T4 ruby ring name', base(50).name(4) === 'Rough Bloodstone Ring');
 check('T9 amber amulet name', base(57).name(9) === 'Flawless Dawnheart Amulet');
 check('T9 sword hit ≈ 3,782', near(Math.round(weaponValues(base(1).weapon!, 9).hit), 3782));
-check('T1 healing staff heal 7.5', near(weaponValues(base(10).weapon!, 1).heal, 7.5));
+check('T1 healing staff heal 7.5 → 8 (whole)', weaponValues(base(10).weapon!, 1).heal === 8);
+check('T1 dagger hit 4.75 → 5 (whole)', weaponValues(base(2).weapon!, 1).hit === 5);
 const breastplateT5 = base(39).implicits.map(i => [i.stat, implicitValue(i, 5)] as const);
 const v = (s: number) => breastplateT5.find(([id]) => id === s)?.[1] ?? NaN;
 check('T5 breastplate armor 60', near(v(Stat.Armor), 60));
-check('T5 breastplate Vitality ≈ 10.67', near(v(Stat.Vitality), 40 * 0.4 * (8 / 12)));
-check('T5 breastplate attack speed −3.2%', near(v(Stat.AttackSpeedPct), -3.2));
+check('T5 breastplate Vitality 10.67 → 11 (whole)', v(Stat.Vitality) === 11);
+check('T5 breastplate attack speed −3.2% → −3% (whole)', v(Stat.AttackSpeedPct) === -3);
+check('T1 cloth helm armor 1.2 → 1, never 0', implicitValue(base(30).implicits[0], 1) === 1);
+check('item values are whole except lifesteal and HP regen',
+  roundStat(Stat.MaxHp, 13.4) === 13 && roundStat(Stat.PhysDamage, 0.3) === 1 &&
+  roundStat(Stat.LifestealPct, 0.137) === 0.14 && roundStat(Stat.HpRegen, 0.256) === 0.26);
 check('max HP affix ref at T5 ≈ 131', near(Math.round(affixRef(Stat.MaxHp, 5)), 131));
 check('phys % affix ref at T1 = 10%', near(affixRef(Stat.PhysDamagePct, 1), 10));
 

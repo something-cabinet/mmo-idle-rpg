@@ -4,7 +4,7 @@
 // PERMANENT IDS: base IDs are stored on items and in loot tables; never reuse or
 // renumber them. Names and templates may change (they only affect new drops).
 
-import { MAX_TIER, Stat, curve, type Curve, type StatId } from './stats';
+import { MAX_TIER, Stat, curve, roundStat, wholeValue, type Curve, type StatId } from './stats';
 
 /** Equipment slots, in loadout order. Stored as indexes: never reorder. */
 export const SLOTS = ['MainHand', 'OffHand', 'Head', 'Chest', 'Hands', 'Feet', 'Ring1', 'Ring2', 'Amulet'] as const;
@@ -192,9 +192,9 @@ export function base(id: number): BaseDef {
 
 // ------------------------------------------------------------------ values at a tier
 
-/** An implicit's display value at tier t. */
+/** An implicit's value at tier t, rounded like every item value (`roundStat`). */
 export function implicitValue(imp: Implicit, t: number): number {
-  return imp.curve === 'fixed' ? imp.value : imp.value * curve(imp.curve, t);
+  return roundStat(imp.stat, imp.curve === 'fixed' ? imp.value : imp.value * curve(imp.curve, t));
 }
 
 export interface WeaponValues {
@@ -210,10 +210,10 @@ export interface WeaponValues {
 export function weaponValues(w: WeaponTemplate, t: number): WeaponValues {
   return {
     damageType: w.damageType,
-    hit: w.hit * curve('offense', t),
+    hit: wholeValue(w.hit * curve('offense', t)),
     speed: w.speed,
     baseCrit: w.baseCrit,
-    heal: (w.heal ?? 0) * curve('heal', t),
+    heal: wholeValue((w.heal ?? 0) * curve('heal', t)),
     healTarget: w.healTarget,
     twoHanded: w.twoHanded,
   };

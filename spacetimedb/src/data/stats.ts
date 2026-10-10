@@ -74,15 +74,18 @@ export interface StatDef {
   ref?: number;
   /** Relative drop weight as an affix (default 100). */
   weight?: number;
+  /** Item values keep two decimals; every other stat is a whole number on items. */
+  decimals?: boolean;
 }
 
-const s = (id: StatId, name: string, percent: boolean, c: Curve, ref?: number, weight?: number): StatDef => ({
+const s = (id: StatId, name: string, percent: boolean, c: Curve, ref?: number, weight?: number, decimals?: boolean): StatDef => ({
   id,
   name,
   percent,
   curve: c,
   ref,
   weight,
+  decimals,
 });
 
 export const STATS: Record<StatId, StatDef> = {
@@ -102,8 +105,8 @@ export const STATS: Record<StatId, StatDef> = {
   14: s(14, 'Resistance', false, 'linear', 5),
   15: s(15, 'Resistance', true, 'percent', 25),
   16: s(16, 'Evasion rating', false, 'linear', 5),
-  17: s(17, 'HP regen', false, 'life', 0.5),
-  18: s(18, 'Lifesteal', true, 'percent', 0.5, 10),
+  17: s(17, 'HP regen', false, 'life', 0.5, undefined, true),
+  18: s(18, 'Lifesteal', true, 'percent', 0.5, 10, true),
   19: s(19, 'Heal', false, 'heal', 2),
   20: s(20, 'Heal', true, 'percent', 30),
   21: s(21, 'Threat', true, 'percent', 30),
@@ -123,6 +126,20 @@ export const CAPS = {
   penetration: 75,
   lifesteal: 3,
 } as const;
+
+/**
+ * Rounds a value for an item: whole numbers, at least 1 away from zero, except for
+ * the very small stats marked `decimals` (lifesteal, HP regen), which keep hundredths.
+ */
+export function roundStat(stat: StatId, v: number): number {
+  if (STATS[stat].decimals) return Math.round(v * 100) / 100;
+  return wholeValue(v);
+}
+
+/** Nearest whole number, at least 1 away from zero (0 stays 0). */
+export function wholeValue(v: number): number {
+  return v === 0 ? 0 : Math.sign(v) * Math.max(1, Math.round(Math.abs(v)));
+}
 
 /** Display value → stored integer (hundredths). */
 export const toStored = (v: number): bigint => BigInt(Math.round(v * 100));

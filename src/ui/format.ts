@@ -29,7 +29,7 @@ export function fmt(n: number): string {
   if (a >= 1e6) return `${(n / 1e6).toFixed(1)}M`;
   if (a >= 1e4) return `${(n / 1e3).toFixed(1)}k`;
   if (a >= 100) return Math.round(n).toLocaleString();
-  if (a >= 10) return n.toFixed(0);
+  if (a >= 10 || Math.abs(n - Math.round(n)) < 0.005) return n.toFixed(0);
   return n.toFixed(1);
 }
 

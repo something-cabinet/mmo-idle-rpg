@@ -55,11 +55,14 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const rng = seededRng(2n);
   const rolls = Array.from({ length: 20_000 }, () => rollAffix(rng, 5));
   check('affix tiers are 1..N', rolls.every(r => r.tier >= 1 && r.tier <= 5));
-  check('affix values fall in their tier slice', rolls.every(r => {
+  check('affix values fall in their tier slice (± rounding)', rolls.every(r => {
     const ref = affixRef(r.stat as keyof typeof STATS, 5);
     const v = Number(r.value) / 100;
-    return v >= (ref * (r.tier - 1)) / 5 - 0.01 && v <= (ref * r.tier) / 5 + 0.01;
+    return (v >= (ref * (r.tier - 1)) / 5 - 0.5 || v === 1) && v <= Math.max(1, (ref * r.tier) / 5 + 0.5);
   }));
+  check('affix values are whole except lifesteal and HP regen', rolls.every(r =>
+    STATS[r.stat as keyof typeof STATS].decimals || (r.value % 100n === 0n && r.value >= 100n)));
+  check('lifesteal keeps decimals', rolls.some(r => r.stat === Stat.LifestealPct && r.value % 100n !== 0n));
   const hp = rolls.filter(r => r.stat === Stat.MaxHp).map(r => Number(r.value) / 100);
   check('max HP on T5 averages ref/2 ≈ 66', near(mean(hp), affixRef(Stat.MaxHp, 5) / 2, 4), mean(hp).toFixed(1));
   const lifesteal = rolls.filter(r => r.stat === Stat.LifestealPct).length;
@@ -83,7 +86,8 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     const def = LEGENDARIES_BY_ID.get(it.legendary!.effect)!;
     const ref = affixRef(def.bonusStat, 4);
     const v = Number(it.legendary!.value) / 100;
-    return { group: def.group, inRange: it.legendary!.stat === def.bonusStat && v >= ref * 0.25 - 0.01 && v <= ref * 0.5 + 0.01 };
+    const tol = STATS[def.bonusStat].decimals ? 0.01 : 0.5;
+    return { group: def.group, inRange: it.legendary!.stat === def.bonusStat && (v >= ref * 0.25 - tol || v === 1) && v <= Math.max(1, ref * 0.5 + tol) };
   };
   const sample = (id: number) => Array.from({ length: 30 }, () => groupOf(id));
   check('weapons and tome roll Offense legendaries', [1, 21].flatMap(sample).every(g => g.group === 'Offense'));

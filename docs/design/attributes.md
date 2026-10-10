@@ -180,8 +180,11 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 | Resistance | 5 | Linear | 45 | Same as armor |
 | Evasion rating | 5 | Linear | 45 | One best roll ≈ 5% evasion vs a matching enemy |
 
-Small values at T1 (a flat damage roll of 0–2) are stored in fixed point (hundredths) so
-rolls and sums stay smooth; the UI rounds.
+**Item values are whole numbers.** Every rolled or computed value on an item (affixes,
+implicits, legendary bonuses, weapon hit and heal) is rounded to the nearest whole
+number, and never below 1 (a T1 flat damage roll is 1 or 2). Only the very small stats
+keep two decimals: **lifesteal** (best T1 roll ≈ 0.17%) and **HP regen** (best T1 roll
+0.5/s). Values are still stored in hundredths, so those two fit the same column.
 
 ### Percent stats (*illustrative*)
 

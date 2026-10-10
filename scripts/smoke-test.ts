@@ -156,6 +156,16 @@ check('a lost challenge records no kill', [...a.conn.db.myBossKills.iter()].leng
     `essence ${essence} → ${charOf(a)!.essence}`);
 }
 
+// Crafting: a fresh character can't pay, so only the checks before payment are reachable.
+{
+  const vest = [...a.conn.db.myItems.iter()].find(i => i.baseId === 35)!.id;
+  await expectError('Common has no affix to reroll', a.conn.reducers.rerollAffix({ itemId: vest, affixIndex: 0 }), 'No such affix');
+  await expectError('upgrade needs gold (Common T1: 300)', a.conn.reducers.upgradeRarity({ itemId: vest, removeAffix: undefined }), 'Not enough gold: costs 300');
+  await expectError('bag expansion needs gold (50,000)', a.conn.reducers.expandBag({}), 'Not enough gold: costs 50000');
+  await expectError('unknown item cannot be crafted', a.conn.reducers.rerollAffix({ itemId: 999_999n, affixIndex: 0 }), 'No such item');
+  check('failed crafts change nothing', [...a.conn.db.myItems.iter()].find(i => i.id === vest)?.rarity.tag === 'Common' && charOf(a)!.bagSize === 200);
+}
+
 // Second tab of the same account takes over; closing it leaves the world.
 const a2 = await connect(a.token);
 await sleep(200);

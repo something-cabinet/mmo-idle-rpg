@@ -19,7 +19,8 @@
     "test:data": "tsx scripts/check-data.ts",
     "test:combat": "tsx scripts/check-combat.ts",
     "test:loot": "tsx scripts/check-loot.ts",
-    "test:equip": "tsx scripts/check-equip.ts"
+    "test:equip": "tsx scripts/check-equip.ts",
+    "test:craft": "tsx scripts/check-craft.ts"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

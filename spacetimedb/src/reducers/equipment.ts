@@ -4,7 +4,7 @@ import { LOADOUT_COUNT } from '../game';
 import { SLOT_COUNT } from '../data/bases';
 import { autoEquip as bestSlots, placeItem } from '../equip';
 import { salvageValue } from '../loot';
-import { requireActive, settle, type Character, type Ctx, type Item } from '../helpers';
+import { requireActive, requireItem, settle, type Character, type Ctx } from '../helpers';
 
 const MAX_LOADOUT_NAME = 20;
 
@@ -13,12 +13,6 @@ function requireLoadout(ctx: Ctx, ch: Character, index: number) {
   const lo = [...ctx.db.loadout.characterId.filter(ch.id)].find(l => l.index === index);
   if (!lo) throw new SenderError('No such loadout');
   return lo;
-}
-
-function requireItem(ctx: Ctx, ch: Character, itemId: bigint): Item {
-  const it = ctx.db.item.id.find(itemId);
-  if (!it || it.characterId !== ch.id) throw new SenderError('No such item');
-  return it;
 }
 
 /** Gear changes settle first, at the old stats (only the active loadout matters). */

@@ -39,6 +39,13 @@ export function requireActive(ctx: Ctx): { acc: Account; ch: Character; pres: Pr
   return { acc, ch, pres };
 }
 
+/** One of the character's items; throws if missing or someone else's. */
+export function requireItem(ctx: Ctx, ch: Character, itemId: bigint): Item {
+  const it = ctx.db.item.id.find(itemId);
+  if (!it || it.characterId !== ch.id) throw new SenderError('No such item');
+  return it;
+}
+
 /** The active loadout's items in slot order (undefined = empty slot). */
 export function gearOf(ctx: Ctx, ch: Character): (Item | undefined)[] {
   const lo = [...ctx.db.loadout.characterId.filter(ch.id)].find(l => l.index === ch.activeLoadout);

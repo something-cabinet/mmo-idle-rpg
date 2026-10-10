@@ -3,7 +3,7 @@
 Where the project stands and what to build next. Game design lives in
 [design/](design/README.md); this file is the build plan. Update it as milestones land.
 
-## Status (2026-10-10, branch `main`)
+## Status (2026-10-11, branch `main`)
 
 | # | Milestone | State |
 |---|---|---|
@@ -15,8 +15,8 @@ Where the project stands and what to build next. Game design lives in
 | 4 | Character start: starter kit, target choice | **Done** |
 | 5 | Equipment: equip, loadouts, auto-equip, lock | **Done** |
 | 6 | Bosses and zone unlocks | **Done** |
-| 7 | Crafting: reroll, rarity upgrade, bag expansion | **Next** |
-| 8 | Legendary effects in the formulas | Todo |
+| 7 | Crafting: reroll, rarity upgrade, bag expansion | **Done** |
+| 8 | Legendary effects in the formulas | **Next** |
 | 9 | UI on real data + away report | Todo |
 | 10 | Tests for all of the above | Ongoing |
 
@@ -86,27 +86,42 @@ fighting the target enemy with the active loadout.
   `firstKillReward` (loot.ts): 20× the boss's gold and a Rare of the zone's tier,
   outside the bag limit. A win can't be reached in the smoke test yet (starter gear
   loses); the reward is covered in `test:loot`.
+- **Crafting** (`spacetimedb/src/craft.ts`, pure, shared): `craftCost(hours, T)`
+  (`hours × 1,200 × 2.9^(T−1)` gold, `× 15` Essence, rounded), `rerollCost` /
+  `upgradeCost` from the hours tables in crafting.md, `rerollAffix` and
+  `upgradeRarity` (reuse `rollAffix` / `rollLegendary`; return an error string on a
+  refusal), `bagExpansionCost(bagSize)` (`50,000 × 4^n`, +25 slots up to 400).
+- **Reducers** (`reducers/crafting.ts`): `rerollAffix(itemId, affixIndex)`,
+  `upgradeRarity(itemId, removeAffix?)` (`removeAffix` is required for Epic →
+  Legendary), `expandBag()`. All settle first (idle gold counts, and an equipped
+  item's stats change at that point), then charge. Seeded by (character, item,
+  timestamp). Crafting works on equipped and locked items; uniques are refused. Like
+  boss wins, a successful craft can't be reached in the smoke test (starter gold);
+  it checks the refusals, and `test:craft` covers costs and rolls.
+  `requireItem` moved to `helpers.ts`.
 - **Not yet**: Fortune's Favor (milestone 8); showing drops, the filter and the bag
   with real data, the loot log and the away report (milestone 9).
 - **Client**: the Fight view's "Live progress" card and the top bar use the real
   formulas. The other screens still use `src/ui/preview-data.ts`; `src/ui/sim.ts` is
   now only an adapter that runs the shared `matchup()` on the preview player.
 
-## Next: milestone 7, crafting
+## Next: milestone 8, legendary effects
 
-`rerollAffix`, `upgradeRarity`, `expandBag`; costs in crafting.md
-(`hours × 1,200 × 2.9^(T−1)` gold, `hours × 15 × 2.9^(T−1)` Essence). Rolls reuse
-`rollAffix` / `rollLegendary` from loot.ts; uniques can't be crafted.
+Hook each effect ID (data/legendary.ts, legendary.md) into `combatStats` / `matchup`
+(Overcrit, Spellblade, Zealot's Oath, Juggernaut, Phantom Step, Thornshell,
+Voidtouched, Glass Cannon, Spellward), settlement (Swift Hunter, Midas Touch,
+Scholar's Focus) and drops (Fortune's Favor in `rollDrops`). Today only the bonus
+stat of a legendary affix counts.
 
 ### Open questions for the next session
 
 - **Dev reducer for tests?** A boss win and crafting can't be reached in the smoke test
   with starter gear. Option: a dev-only reducer that grants items / sets level (admin
   only, or removed before milestone 9). Not decided.
+- **Reroll cost growth** (crafting.md "Open"): rerolls cost the same every time for now.
 
 ## Later milestones (short notes)
 
-- **8 Legendary effects**: hook each effect ID into aggregation/matchup/settlement.
 - **9 UI**: replace `preview-data.ts` usage screen by screen; away report on login.
 
 ## Working notes
@@ -114,8 +129,8 @@ fighting the target enemy with the active loadout.
 - **Run locally**: `npm run spacetime:start` (own terminal), then
   `npm run spacetime:publish:local -- -y` (the prompt needs `-y` when the schema
   changes), `npm run spacetime:generate` after schema changes, `npm run dev`.
-- **Checks**: `npm run typecheck`, `npm run test:data`, `test:combat`, `test:loot` and
-  `test:equip`
+- **Checks**: `npm run typecheck`, `npm run test:data`, `test:combat`, `test:loot`,
+  `test:equip`, `test:craft`
   (no server), `npm run test:smoke`
   (needs the local server with the module published).
 - **Stopping the dev server**: stopping `npm run dev` can leave Vite's node process

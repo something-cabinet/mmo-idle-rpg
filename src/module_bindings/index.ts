@@ -39,10 +39,12 @@ import AutoEquipReducer from "./auto_equip_reducer";
 import ChallengeBossReducer from "./challenge_boss_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import EquipReducer from "./equip_reducer";
+import ExpandBagReducer from "./expand_bag_reducer";
 import LockItemReducer from "./lock_item_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
 import RenameLoadoutReducer from "./rename_loadout_reducer";
+import RerollAffixReducer from "./reroll_affix_reducer";
 import SalvageReducer from "./salvage_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
@@ -51,6 +53,7 @@ import SetProfileReducer from "./set_profile_reducer";
 import SetTargetReducer from "./set_target_reducer";
 import SwitchLoadoutReducer from "./switch_loadout_reducer";
 import UnequipReducer from "./unequip_reducer";
+import UpgradeRarityReducer from "./upgrade_rarity_reducer";
 
 // Import all procedure arg schemas
 
@@ -157,10 +160,12 @@ const reducersSchema = __reducers(
   __reducerSchema("challenge_boss", ChallengeBossReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("equip", EquipReducer),
+  __reducerSchema("expand_bag", ExpandBagReducer),
   __reducerSchema("lock_item", LockItemReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
   __reducerSchema("rename_loadout", RenameLoadoutReducer),
+  __reducerSchema("reroll_affix", RerollAffixReducer),
   __reducerSchema("salvage", SalvageReducer),
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
@@ -169,6 +174,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_target", SetTargetReducer),
   __reducerSchema("switch_loadout", SwitchLoadoutReducer),
   __reducerSchema("unequip", UnequipReducer),
+  __reducerSchema("upgrade_rarity", UpgradeRarityReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

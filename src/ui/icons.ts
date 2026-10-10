@@ -23,6 +23,26 @@ const PATHS: Record<string, string> = {
   star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2z',
   sparkles: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3zM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z',
   skull: 'M12 2a8 8 0 0 0-8 8c0 3 1.6 5.2 4 6.4V20h8v-3.6c2.4-1.2 4-3.4 4-6.4a8 8 0 0 0-8-8zM9 11h.01M15 11h.01M10 20v2M14 20v2',
+
+  // Item glyphs for the bag (placeholders until there is item art).
+  'i-sword': 'M20 4h-4L6 14l4 4L20 8V4zM5 13l6 6M3 21l4-4',
+  'i-dagger': 'M19 5h-3l-6 6 3 3 6-6V5zM8 10l6 6M5 19l3.5-3.5',
+  'i-mace': 'M16 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM13.5 10.5 4 20M16 2v2M22 8h-2M20 4l-1.4 1.4',
+  'i-scepter': 'M12 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM12 9v13M9 12h6',
+  'i-wand': 'M4 20 15 9M18 2v4M16 4h4M20 9h2M14 3l1 1',
+  'i-katana': 'M21 3C16 9 10 13 6 15M5 14l5 5M3 21l3.5-3.5',
+  'i-greatsword': 'M12 2l2 3v10h-4V5l2-3zM7 15h10M12 15v7',
+  'i-bow': 'M6 3a15 15 0 0 1 15 15M6 3l15 15M3 21l9-9M3 21h3M3 21v-3',
+  'i-fire-staff': 'M12 22V10M12 10c-2.5-2-2.5-5 0-8 2.5 3 2.5 6 0 8z',
+  'i-healing-staff': 'M12 22V11M12 2v7M8.5 5.5h7',
+  'i-shield': 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 2v20M4 10h16',
+  'i-tome': 'M5 4h11a3 3 0 0 1 3 3v14H8a3 3 0 0 1-3-3V4zM5 18a3 3 0 0 1 3-3h11M10 8h5',
+  'i-head': 'M4 17a8 8 0 0 1 16 0v3h-5v-4H9v4H4v-3zM12 9v5',
+  'i-chest': 'M9 3 4 6v5h3v10h10V11h3V6l-5-3a3 3 0 0 1-6 0z',
+  'i-hands': 'M8 21v-6l-3-4 1.5-1.5L9 12V4.5a1.5 1.5 0 0 1 3 0V11V3.5a1.5 1.5 0 0 1 3 0V11V5.5a1.5 1.5 0 0 1 3 0V15l-2 6H8z',
+  'i-feet': 'M7 3h6v10l6 3v5H5v-5l2-2V3zM5 18h14',
+  'i-ring': 'M12 21a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM9 6l3-3 3 3-3 3-3-3z',
+  'i-amulet': 'M5 3c0 6 3 9 7 11 4-2 7-5 7-11M12 14l-3 4 3 4 3-4-3-4z',
 };
 
 export function icon(name: string, cls = ''): string {

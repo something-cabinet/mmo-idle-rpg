@@ -15,7 +15,7 @@ import { $, call } from './dom';
 import { startFight } from './fight';
 import { esc, fmt, fmtBig, getNumberFormat, pct, secs, setNumberFormat, type NumberFormat } from './format';
 import { hydrateIcons, icon } from './icons';
-import { affixLabel, itemCard, itemName, rarityCls, statText } from './items';
+import { affixLabel, itemCard, itemIcon, itemName, rarityCls, statText } from './items';
 import { gearFor, type Snapshot } from './snapshot';
 import { setTheme, themePref, type ThemePref } from './theme';
 
@@ -27,7 +27,10 @@ const state = {
   dropsOf: undefined as number | undefined,
   /** Loadout shown on the Equipment view; undefined = the active one. */
   loadout: undefined as number | undefined,
-  pickSlot: undefined as number | undefined,
+  /** Equipment slot shown in the popup; `equipChange` = its replacement picker, `equipPick` = the item compared there. */
+  equipSlot: undefined as number | undefined,
+  equipChange: false,
+  equipPick: undefined as bigint | undefined,
   bagSelected: new Set<bigint>(),
   /** Last plainly or ctrl-clicked bag item: the start of a shift-click range. */
   bagAnchor: undefined as bigint | undefined,
@@ -35,6 +38,11 @@ const state = {
   autoSummary: undefined as { loadout: number; before: bigint[] } | undefined,
   bagSort: 'newest' as BagSort,
   bagKind: 'all' as BaseKind | 'all',
+  /** Bag item shown in the popup, and the slot it is compared against. */
+  bagOpen: undefined as bigint | undefined,
+  bagSlot: undefined as number | undefined,
+  /** Plain clicks select instead of opening the popup (for touch screens). */
+  bagSelectMode: false,
   craftItem: undefined as bigint | undefined,
   craftTab: 'reroll' as 'reroll' | 'upgrade',
   craftAffix: 0,
@@ -66,6 +74,25 @@ function zoneUnlocked(s: Snapshot, z: ZoneDef) {
   const prev = previousZone(z);
   return !prev || s.killedZones.has(prev.id);
 }
+
+/** Square item icon tile (bag, slot picker); `attrs` carries its click data. */
+function itemTile(it: Item, attrs: string, o: { selected?: boolean; badge?: string; title?: string } = {}) {
+  return `<button class="item-tile r-${rarityCls(it.rarity.tag)}${o.selected ? ' selected' : ''}" ${attrs} title="${o.title ?? `${it.rarity.tag} ${itemName(it)}`}">
+    ${itemIcon(it, 'tile-ico')}
+    <span class="tile-tier">T${it.tier}</span>
+    ${it.locked ? `<span class="tile-lock">${icon('lock')}</span>` : ''}
+    ${it.legendary ? `<span class="tile-leg">${icon('sparkles')}</span>` : ''}
+    ${o.badge ?? ''}
+  </button>`;
+}
+
+function closePopups() {
+  state.bagOpen = undefined;
+  state.equipSlot = undefined;
+}
+
+/** "bag" for an element inside #view-bag. */
+const viewOf = (el: Element) => el.closest('[id^="view-"]')?.id.slice(5) ?? '';
 
 function statRows(rows: [string, string, string?][]) {
   return rows
@@ -433,23 +460,21 @@ const slotItemName = (s: Snapshot, id: bigint) => {
   return it ? `<span class="c-${rarityCls(it.rarity.tag)}">${itemName(it)}</span>` : '<span class="muted">Empty</span>';
 };
 
-/** Equipped vs hovered item, and the loadout totals before → after the swap. */
-function renderCompare(s: Snapshot, lo: Snapshot['active'], slot: number, itemId: bigint) {
-  const it = s.items.get(itemId);
-  const box = document.getElementById('compare');
-  if (!it || !box) return;
-  const next = placeItem(lo.slots, slot, it, id => s.items.get(id));
-  if (typeof next === 'string') return;
+/** `it` next to what `slot` holds now, and the loadout totals before → after putting it there. */
+function swapPreview(s: Snapshot, lo: Snapshot['active'], slot: number, it: Item) {
   const cur = s.items.get(lo.slots[slot]);
-  const also = next.map((id, i) => [i, id] as const).filter(([i, id]) => i !== slot && id !== lo.slots[i]);
-  box.innerHTML = `
+  const next = placeItem(lo.slots, slot, it, id => s.items.get(id));
+  const also = typeof next === 'string' ? [] : next.map((id, i) => [i, id] as const).filter(([i, id]) => i !== slot && id !== lo.slots[i]);
+  return `
     <div class="compare-items">
-      <div><div class="slot-label">Equipped</div>${cur ? itemCard(cur, { compact: true }) : '<div class="item-card compact empty"><span class="muted">Empty</span></div>'}</div>
-      <div><div class="slot-label">Hovered</div>${itemCard(it, { compact: true, note: loadoutNote(s, it) })}</div>
+      <div><div class="slot-label">This item</div>${itemCard(it, { note: loadoutNote(s, it) })}</div>
+      <div><div class="slot-label">Equipped · ${SLOT_LABEL[slot]}</div>${cur ? itemCard(cur) : '<div class="item-card empty"><span class="muted">Empty</span></div>'}</div>
     </div>
     ${also.map(([i]) => `<p class="muted">Also empties ${SLOT_LABEL[i]} (${slotItemName(s, lo.slots[i])}).</p>`).join('')}
-    <div class="card-head"><h2>Loadout totals</h2>${s.target ? `<span class="muted">vs ${s.target.enemy.name}</span>` : ''}</div>
-    ${compareTable(totals(s, lo.slots), totals(s, next))}`;
+    ${typeof next === 'string'
+      ? `<p class="c-bad">${next}</p>`
+      : `<div class="card-head"><h2>${esc(lo.name)} totals</h2>${s.target ? `<span class="muted">vs ${s.target.enemy.name}</span>` : ''}</div>
+         ${compareTable(totals(s, lo.slots), totals(s, next))}`}`;
 }
 
 function autoSummary(s: Snapshot, lo: Snapshot['active']) {
@@ -471,33 +496,85 @@ function fightLine(m: Matchup | undefined) {
   return m ? `Kill ${secs(m.timeToKill)} · Die ${secs(m.timeToDie)} · ${result(m)}` : 'No target';
 }
 
-function slotPicker(s: Snapshot, lo: Snapshot['active'], slot: number) {
-  const lookup = (id: bigint) => s.items.get(id);
-  const now = s.target && matchup(combatStats(s.level, gearFor(lo.slots, s.items)), s.target.enemy);
-  const candidates = [...s.items.values()]
+interface Candidate {
+  it: Item;
+  /** The loadout's slots after the swap, or why it can't happen. */
+  next: bigint[] | string;
+  /** DPS change against the target; undefined without one. */
+  delta?: number;
+}
+
+/** Items that can replace `slot`, best DPS gain against the target first. */
+function candidates(s: Snapshot, lo: Snapshot['active'], slot: number): Candidate[] {
+  const enemy = s.target?.enemy;
+  const now = enemy && matchup(combatStats(s.level, gearFor(lo.slots, s.items)), enemy);
+  return [...s.items.values()]
     .filter(it => fitsSlot(it.baseId, slot) && it.id !== lo.slots[slot])
-    .sort((a, b) => b.tier - a.tier || rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag));
-  const rows = candidates.map(it => {
-    const next = placeItem(lo.slots, slot, it, lookup);
-    if (typeof next === 'string') return `<div class="list-item" title="${next}"><span class="item-name c-${rarityCls(it.rarity.tag)}">${itemName(it)}</span><span class="muted">${next}</span></div>`;
-    const m = s.target && matchup(combatStats(s.level, gearFor(next, s.items)), s.target.enemy);
-    const note = loadoutNote(s, it);
-    return `<button class="list-item" data-equip="${it.id}" title="${note ?? ''}">
-      <span class="item-name c-${rarityCls(it.rarity.tag)}">${itemName(it)} <span class="muted">T${it.tier} ${it.rarity.tag}${note ? ` · ${note}` : ''}</span></span>
-      <span class="muted">${m && now ? `Kill ${secs(now.timeToKill)} → ${secs(m.timeToKill)} · Die ${secs(now.timeToDie)} → ${secs(m.timeToDie)}` : ''}</span>
-    </button>`;
-  });
-  return `
-    <div class="card" id="slot-picker">
-      <div class="card-head"><h2>${SLOT_LABEL[slot]}</h2>
-        <span>${lo.slots[slot] !== 0n ? `<button class="btn small ghost" data-unequip="${slot}">Unequip</button>` : ''}
-        <button class="btn small ghost" data-pick-close>Close</button></span></div>
-      <div class="picker">
-        <div class="picker-list">${rows.join('') || '<p class="muted">No other items fit this slot.</p>'}</div>
-        <div class="compare" id="compare"><p class="muted">Hover an item to compare it with the equipped one.</p></div>
+    .map(it => {
+      const next = placeItem(lo.slots, slot, it, id => s.items.get(id));
+      const m = enemy && typeof next !== 'string' ? matchup(combatStats(s.level, gearFor(next, s.items)), enemy) : undefined;
+      return { it, next, delta: m && now ? m.dps - now.dps : undefined };
+    })
+    .sort((a, b) => (b.delta ?? -1e18) - (a.delta ?? -1e18) || b.it.tier - a.it.tier || rarityRank(b.it.rarity.tag) - rarityRank(a.it.rarity.tag));
+}
+
+function deltaBadge(c: Candidate) {
+  if (typeof c.next === 'string') return '<span class="tile-badge muted">✖</span>';
+  if (c.delta === undefined || Math.abs(c.delta) < 1e-6) return '';
+  return c.delta > 0 ? '<span class="tile-badge c-ok">▲</span>' : '<span class="tile-badge c-bad">▼</span>';
+}
+
+/** Popup for an equipment slot: the equipped item, or (after "Change equipment") the items that can replace it. */
+function slotPopup(s: Snapshot, lo: Snapshot['active'], slot: number) {
+  const cur = s.items.get(lo.slots[slot]);
+  let body: string;
+  if (!state.equipChange) {
+    body = `
+      ${cur ? itemCard(cur, { note: loadoutNote(s, cur) }) : '<div class="item-card empty"><span class="muted">Nothing equipped</span></div>'}
+      <div class="popup-actions">
+        <button class="btn primary" data-equip-change>Change equipment</button>
+        ${cur ? `<button class="btn small" data-unequip="${slot}">Unequip</button><button class="btn small" data-craft="${cur.id}">${icon('hammer')}Craft…</button>` : ''}
+      </div>`;
+  } else {
+    const list = candidates(s, lo, slot);
+    const pick = list.find(c => c.it.id === state.equipPick) ?? list.find(c => typeof c.next !== 'string') ?? list[0];
+    const tiles = list.map(c =>
+      itemTile(c.it, `data-equip-pick="${c.it.id}"`, {
+        selected: c === pick,
+        badge: deltaBadge(c),
+        title: `${c.it.rarity.tag} ${itemName(c.it)}${typeof c.next === 'string' ? ` · ${c.next}` : c.delta !== undefined ? ` · DPS ${c.delta >= 0 ? '+' : ''}${fmt(c.delta)}` : ''}`,
+      })
+    );
+    body = `
+      <div class="picker-tiles">${tiles.join('') || '<p class="muted">No other items fit this slot.</p>'}</div>
+      ${pick ? swapPreview(s, lo, slot, pick.it) : ''}
+      <div class="popup-actions">
+        <button class="btn small ghost" data-equip-back>Back</button>
+        <span class="spacer"></span>
+        ${pick ? `<button class="btn primary" data-equip="${pick.it.id}" ${typeof pick.next === 'string' ? 'disabled' : ''}>${icon('shield')}Equip</button>` : ''}
       </div>
-      ${s.target ? `<p class="muted hint">Kill and die times are against ${s.target.enemy.name} with this loadout.</p>` : ''}
+      ${s.target ? `<p class="muted hint">▲ / ▼: DPS against ${s.target.enemy.name} goes up / down with ${esc(lo.name)}.</p>` : ''}`;
+  }
+  return `
+    <div class="modal">
+      <div class="modal-card card item-popup" role="dialog" aria-modal="true">
+        <div class="card-head"><h2>${SLOT_LABEL[slot]}${state.equipChange ? ' · Change equipment' : ''}</h2><button class="btn small ghost" data-popup-close>Close</button></div>
+        ${body}
+      </div>
     </div>`;
+}
+
+/** Faded glyph shown in an empty slot. */
+const SLOT_ICON = ['i-sword', 'i-shield', 'i-head', 'i-chest', 'i-hands', 'i-feet', 'i-ring', 'i-ring', 'i-amulet'];
+
+function slotCell(gear: (Item | undefined)[], i: number) {
+  const it = gear[i];
+  const blocked = !it && i === 1 && gear[0]?.weapon?.twoHanded;
+  return `<div class="slot-cell">
+    <div class="slot-label">${SLOT_LABEL[i]}</div>
+    ${it ? itemTile(it, `data-slot="${i}"`, { selected: state.equipSlot === i }) : `<button class="item-tile empty${state.equipSlot === i ? ' selected' : ''}" data-slot="${i}" title="${SLOT_LABEL[i]}: empty">${icon(SLOT_ICON[i], 'tile-ico')}</button>`}
+    <div class="slot-name">${it ? `<span class="c-${rarityCls(it.rarity.tag)}">${itemName(it)}</span>` : `<span class="muted">${blocked ? 'Two-handed' : 'Empty'}</span>`}</div>
+  </div>`;
 }
 
 function renderEquipment(s: Snapshot) {
@@ -520,25 +597,18 @@ function renderEquipment(s: Snapshot) {
       <select id="profile">${['Damage', 'Survival', 'Loot'].map(p => `<option${p === lo.profile.tag ? ' selected' : ''}>${p}</option>`).join('')}</select>
       <button class="btn primary small" id="auto-equip">${icon('zap')}Auto-equip</button>
     </div>
-    <div class="equip-grid">
-      ${SLOTS.map((_, i) => {
-        const it = gear[i] && s.items.get(lo.slots[i]);
-        return `<div class="slot" data-slot="${i}"><div class="slot-label">${SLOT_LABEL[i]}</div>${
-          it ? itemCard(it, { compact: true, selected: state.pickSlot === i }) : `<div class="item-card compact empty${state.pickSlot === i ? ' selected' : ''}"><span class="muted">Empty</span></div>`
-        }</div>`;
-      }).join('')}
+    <div class="equip-layout">
+      <div class="card equip-slots">${SLOTS.map((_, i) => slotCell(gear, i)).join('')}</div>
+      <div class="card">
+        <div class="card-head"><h2>Totals</h2>${s.target ? `<span class="muted">vs ${s.target.enemy.name}</span>` : ''}</div>
+        ${statRows(totals(s, lo.slots).map(t => [t.label, t.show(t.value)]))}
+        <p class="${m?.viable ? 'c-ok' : 'c-bad'}">${fightLine(m)}</p>
+      </div>
     </div>
     ${autoSummary(s, lo)}
-    ${state.pickSlot !== undefined ? slotPicker(s, lo, state.pickSlot) : ''}
-    <div class="totals card">
-      <span>HP <strong>${fmt(stats.maxHp)}</strong></span>
-      <span>Armor <strong>${fmt(stats.armor)}</strong></span>
-      <span>Resistance <strong>${fmt(stats.resistance)}</strong></span>
-      <span>DPS <strong>${m ? fmt(m.dps) : '—'}</strong></span>
-      <span class="${m?.viable ? 'c-ok' : 'c-bad'}">${fightLine(m)}${s.target ? ` vs ${s.target.enemy.name}` : ''}</span>
-    </div>
     ${effectsCard(stats.effects)}
-    <p class="muted hint">Click a slot to change it. Auto-equip scores against a reference enemy of your level, not your target.</p>`;
+    <p class="muted hint">Click a slot to see its item or change it. Auto-equip scores against a reference enemy of your level, not your target.</p>
+    ${state.equipSlot !== undefined ? slotPopup(s, lo, state.equipSlot) : ''}`;
 }
 
 // ---------------------------------------------------------------- bag
@@ -554,9 +624,39 @@ function sortedBag(s: Snapshot): Item[] {
   return items.sort(by[state.bagSort]);
 }
 
+const bagTile = (it: Item) => itemTile(it, `data-bag-item="${it.id}"`, { selected: state.bagSelected.has(it.id) });
+
+/** Slots of the active loadout the item can go in. */
+const fittingSlots = (it: Item) => SLOTS.map((_, i) => i).filter(i => fitsSlot(it.baseId, i));
+
+/** Popup for one bag item: its stats, the equipped item it would replace, totals before → after, and actions. */
+function bagPopup(s: Snapshot, it: Item) {
+  const lo = s.active;
+  const slots = fittingSlots(it);
+  const slot = slots.includes(state.bagSlot ?? -1) ? state.bagSlot! : (slots.find(i => lo.slots[i] === 0n) ?? slots[0]);
+  const blocked = typeof placeItem(lo.slots, slot, it, id => s.items.get(id)) === 'string';
+  return `
+    <div class="modal">
+      <div class="modal-card card item-popup" role="dialog" aria-modal="true">
+        <div class="card-head"><h2><span class="c-${rarityCls(it.rarity.tag)}">${itemName(it)}</span></h2><button class="btn small ghost" data-popup-close>Close</button></div>
+        ${slots.length > 1 ? `<div class="seg">${slots.map(i => `<button class="seg-btn${i === slot ? ' active' : ''}" data-bag-slot="${i}">${SLOT_LABEL[i]}</button>`).join('')}</div>` : ''}
+        ${swapPreview(s, lo, slot, it)}
+        <div class="popup-actions">
+          <button class="btn primary" data-bag-equip="${slot}" ${blocked ? 'disabled' : ''}>${icon('shield')}Equip</button>
+          <button class="btn small" data-bag-lock>${icon('lock')}${it.locked ? 'Unlock' : 'Lock'}</button>
+          <button class="btn small" data-craft="${it.id}">${icon('hammer')}Craft…</button>
+          <span class="spacer"></span>
+          <button class="btn small danger" data-bag-salvage ${it.locked ? 'disabled title="Locked items can\'t be salvaged"' : ''}>Salvage → +${fmtBig(salvageValue(it.rarity.tag, it.tier))} Essence</button>
+        </div>
+      </div>
+    </div>`;
+}
+
 function renderBag(s: Snapshot) {
   // Drop selections of items that left the bag.
   for (const id of state.bagSelected) if (!s.bag.some(i => i.id === id)) state.bagSelected.delete(id);
+  const open = s.bag.find(i => i.id === state.bagOpen);
+  if (!open) state.bagOpen = undefined;
   const selected = s.bag.filter(i => state.bagSelected.has(i.id));
   const anyLocked = selected.some(i => i.locked);
   const essence = selected.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier), 0n);
@@ -573,16 +673,18 @@ function renderBag(s: Snapshot) {
       <select id="bag-sort">${opt('newest', 'Sort: Newest', state.bagSort)}${opt('rarity', 'Sort: Rarity', state.bagSort)}${opt('tier', 'Sort: Tier', state.bagSort)}${opt('slot', 'Sort: Slot', state.bagSort)}</select>
       <select id="bag-kind">${opt('all', 'All slots', state.bagKind)}${opt('weapon', 'Weapons', state.bagKind)}${opt('offhand', 'Off-hands', state.bagKind)}${opt('armor', 'Armor', state.bagKind)}${opt('jewelry', 'Jewelry', state.bagKind)}</select>
     </div>
-    <div class="item-grid">${sortedBag(s).map(it => itemCard(it, { select: true, selected: state.bagSelected.has(it.id), compact: true })).join('') || '<p class="muted">The bag is empty. Equipped items are on the Equipment screen.</p>'}</div>
+    <div class="bag-grid">${sortedBag(s).map(bagTile).join('') || '<p class="muted">The bag is empty. Equipped items are on the Equipment screen.</p>'}</div>
     <div class="action-bar card${selected.length ? '' : ' empty'}">
-      <span>${selected.length ? `<strong>${selected.length}</strong> selected` : 'Click to select · Ctrl-click to add · Shift-click for a range'}</span>
+      <button class="btn small${state.bagSelectMode ? ' primary' : ' ghost'}" id="bag-select-mode">Select</button>
+      <span>${selected.length ? `<strong>${selected.length}</strong> selected` : state.bagSelectMode ? 'Click items to select them' : 'Click to inspect · Ctrl-click to select · Shift-click for a range'}</span>
       ${selected.length ? '<button class="btn small ghost" id="bag-clear">Clear</button>' : ''}
       <button class="btn small ghost" id="bag-all">Select all shown</button>
       <span class="spacer"></span>
       <button class="btn small" id="bag-lock" ${selected.length ? '' : 'disabled'}>${icon('lock')}${selected.length && selected.every(i => i.locked) ? 'Unlock' : 'Lock'}</button>
       <button class="btn small" id="bag-craft" ${selected.length === 1 ? '' : 'disabled'}>${icon('hammer')}Craft…</button>
       <button class="btn small danger" id="bag-salvage" ${selected.length && !anyLocked ? '' : 'disabled'} ${anyLocked ? 'title="Locked items can\'t be salvaged"' : ''}>Salvage → +${fmtBig(essence)} Essence</button>
-    </div>`;
+    </div>
+    ${open ? bagPopup(s, open) : ''}`;
 }
 
 // ---------------------------------------------------------------- crafting
@@ -750,8 +852,14 @@ function setFilter(s: Snapshot, minRarity: string, keepAffixes: number[]) {
 /** One delegated click handler for all views. */
 export function bindViews() {
   $('content').addEventListener('click', ev => {
+    // A click on a popup's backdrop closes it.
+    const target = ev.target as HTMLElement;
+    if (target.classList.contains('modal')) {
+      closePopups();
+      return rerender(viewOf(target));
+    }
     const el = (ev.target as HTMLElement).closest<HTMLElement>(
-      '[data-zone],[data-fight],[data-boss],[data-row],[data-loadout],[data-slot],[data-equip],[data-unequip],[data-pick-close],[data-summary-close],[data-select],[data-craft],[data-craft-tab],[data-filter-rarity],[data-theme-pref],[data-number-format],#auto-equip,#use-loadout,#rename-loadout,#bag-salvage,#bag-lock,#bag-craft,#bag-clear,#bag-all,#bag-expand,#craft-go'
+      '[data-zone],[data-fight],[data-boss],[data-row],[data-loadout],[data-slot],[data-equip],[data-equip-change],[data-equip-back],[data-equip-pick],[data-unequip],[data-popup-close],[data-summary-close],[data-bag-item],[data-bag-slot],[data-bag-equip],[data-bag-lock],[data-bag-salvage],[data-craft],[data-craft-tab],[data-filter-rarity],[data-theme-pref],[data-number-format],#auto-equip,#use-loadout,#rename-loadout,#bag-salvage,#bag-lock,#bag-craft,#bag-clear,#bag-all,#bag-select-mode,#bag-expand,#craft-go'
     );
     const s = snap;
     if (!el || !s) return;
@@ -773,46 +881,70 @@ export function bindViews() {
       showDrops(z, z.enemies.find(e => e.id === state.dropsOf) ?? z.enemies[0]);
     } else if (d.loadout) {
       state.loadout = Number(d.loadout);
-      state.pickSlot = undefined;
+      state.equipSlot = undefined;
       state.autoSummary = undefined;
       rerender('equipment');
-    } else if (d.equip) {
+    } else if (d.equip && state.equipSlot !== undefined) {
       state.autoSummary = undefined;
-      call(r.equip({ loadout: lo, slot: state.pickSlot!, itemId: BigInt(d.equip) }));
+      call(r.equip({ loadout: lo, slot: state.equipSlot, itemId: BigInt(d.equip) }));
+      state.equipChange = false;
+      state.equipPick = undefined;
+      rerender('equipment');
+    } else if (d.equipChange !== undefined) {
+      state.equipChange = true;
+      state.equipPick = undefined;
+      rerender('equipment');
+    } else if (d.equipBack !== undefined) {
+      state.equipChange = false;
+      rerender('equipment');
+    } else if (d.equipPick) {
+      state.equipPick = BigInt(d.equipPick);
+      rerender('equipment');
     } else if (d.unequip) {
       state.autoSummary = undefined;
       call(r.unequip({ loadout: lo, slot: Number(d.unequip) }));
     } else if (el.dataset.summaryClose !== undefined) {
       state.autoSummary = undefined;
       rerender('equipment');
-    } else if (el.dataset.pickClose !== undefined) {
-      state.pickSlot = undefined;
-      rerender('equipment');
+    } else if (d.popupClose !== undefined) {
+      closePopups();
+      rerender(viewOf(el));
     } else if (d.slot) {
-      state.pickSlot = state.pickSlot === Number(d.slot) ? undefined : Number(d.slot);
+      state.equipSlot = Number(d.slot);
+      state.equipChange = false;
+      state.equipPick = undefined;
       rerender('equipment');
-    } else if (d.select) {
-      const id = BigInt(d.select);
+    } else if (d.bagItem) {
+      const id = BigInt(d.bagItem);
       const sel = state.bagSelected;
       const order = sortedBag(s).map(i => i.id);
       const [from, to] = [order.indexOf(state.bagAnchor ?? -1n), order.indexOf(id)];
       if (ev.shiftKey && from >= 0 && to >= 0) {
         for (const x of order.slice(Math.min(from, to), Math.max(from, to) + 1)) sel.add(x);
-      } else if (ev.ctrlKey || ev.metaKey) {
+      } else if (ev.ctrlKey || ev.metaKey || state.bagSelectMode) {
         if (sel.has(id)) sel.delete(id);
         else sel.add(id);
         state.bagAnchor = id;
       } else {
-        const only = sel.size === 1 && sel.has(id);
-        sel.clear();
-        if (!only) sel.add(id);
+        state.bagOpen = id;
+        state.bagSlot = undefined;
         state.bagAnchor = id;
       }
       rerender('bag');
+    } else if (d.bagSlot) {
+      state.bagSlot = Number(d.bagSlot);
+      rerender('bag');
+    } else if (d.bagEquip && state.bagOpen !== undefined) {
+      call(r.equip({ loadout: s.row.activeLoadout, slot: Number(d.bagEquip), itemId: state.bagOpen }));
+    } else if (d.bagLock !== undefined && state.bagOpen !== undefined) {
+      call(r.lockItem({ itemId: state.bagOpen, locked: !s.items.get(state.bagOpen)?.locked }));
+    } else if (d.bagSalvage !== undefined && state.bagOpen !== undefined) {
+      call(r.salvage({ itemIds: [state.bagOpen] }));
     } else if (d.craft) {
       ev.preventDefault();
       state.craftItem = BigInt(d.craft);
       state.craftAffix = 0;
+      closePopups();
       if (location.hash !== '#crafting') location.hash = '#crafting';
       else rerender('crafting');
     } else if (d.craftTab) {
@@ -829,7 +961,7 @@ export function bindViews() {
       rerender('settings');
     } else if (el.id === 'auto-equip') {
       const before = [...(s.loadouts.find(l => l.index === lo)?.slots ?? [])];
-      state.pickSlot = undefined;
+      state.equipSlot = undefined;
       call(
         r.autoEquip({ loadout: lo }).then(() => {
           state.autoSummary = { loadout: lo, before };
@@ -841,6 +973,10 @@ export function bindViews() {
     else if (el.id === 'rename-loadout') {
       const name = prompt('Loadout name', s.loadouts[lo]?.name ?? '');
       if (name !== null) call(r.renameLoadout({ loadout: lo, name }));
+    } else if (el.id === 'bag-select-mode') {
+      state.bagSelectMode = !state.bagSelectMode;
+      if (!state.bagSelectMode) state.bagSelected.clear();
+      rerender('bag');
     } else if (el.id === 'bag-clear') {
       state.bagSelected.clear();
       rerender('bag');
@@ -895,18 +1031,11 @@ export function bindViews() {
     }
   });
 
-  // Comparison panel in the slot picker.
-  let compared = '';
-  $('content').addEventListener('mouseover', ev => {
-    const el = (ev.target as HTMLElement).closest<HTMLElement>('[data-equip]');
-    const s = snap;
-    if (!el || !s || state.pickSlot === undefined || el.dataset.equip === compared) return;
-    compared = el.dataset.equip!;
-    const lo = s.loadouts.find(l => l.index === (state.loadout ?? s.row.activeLoadout)) ?? s.active;
-    renderCompare(s, lo, state.pickSlot, BigInt(compared));
-  });
-  $('content').addEventListener('mouseout', ev => {
-    if ((ev.target as HTMLElement).closest('[data-equip]')) compared = '';
+  document.addEventListener('keydown', ev => {
+    const modal = ev.key === 'Escape' && document.querySelector('#content .modal');
+    if (!modal) return;
+    closePopups();
+    rerender(viewOf(modal));
   });
 
   $('content').addEventListener('input', ev => {

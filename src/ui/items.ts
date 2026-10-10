@@ -10,6 +10,16 @@ import { icon } from './icons';
 export const rarityCls = (tag: string) => tag.toLowerCase();
 export const itemName = (it: { baseId: number; tier: number }) => base(it.baseId).name(it.tier);
 
+/** Bag glyph for an item: weapon/off-hand family, armor slot, or ring/amulet. */
+export function itemIcon(it: { baseId: number }, cls = ''): string {
+  const b = base(it.baseId);
+  const name =
+    b.kind === 'armor' ? b.slots[0].toLowerCase()
+    : b.kind === 'jewelry' ? (b.slots[0] === 'Amulet' ? 'amulet' : 'ring')
+    : b.family.toLowerCase().replace(/ /g, '-');
+  return icon(`i-${name}`, cls);
+}
+
 const num = (v: number) => String(Number(Math.abs(v).toFixed(2)));
 
 /** "+12 Max HP", "+5% Physical damage", "−8% Attack speed". */
@@ -38,8 +48,6 @@ function weaponLines(w: NonNullable<Item['weapon']>): string[] {
 }
 
 export interface CardOpts {
-  /** Makes the card clickable with `data-select`. */
-  select?: boolean;
   selected?: boolean;
   compact?: boolean;
   /** Extra line under the header, e.g. "In loadout 1". */
@@ -50,7 +58,7 @@ export function itemCard(it: Item, o: CardOpts = {}): string {
   const r = rarityCls(it.rarity.tag);
   const leg = it.legendary && LEGENDARIES_BY_ID.get(it.legendary.effect);
   return `
-  <div class="item-card r-${r}${o.selected ? ' selected' : ''}${o.compact ? ' compact' : ''}"${o.select ? ` data-select="${it.id}"` : ''}>
+  <div class="item-card r-${r}${o.selected ? ' selected' : ''}${o.compact ? ' compact' : ''}">
     <div class="item-head">
       <span class="item-name">${itemName(it)}</span>
       ${it.locked ? `<span class="lock" title="Locked">${icon('lock')}</span>` : ''}

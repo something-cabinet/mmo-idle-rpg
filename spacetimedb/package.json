@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "mmo-idle-rpg": "file:..",
     "spacetimedb": "^2.11.0"
   },
   "devDependencies": {

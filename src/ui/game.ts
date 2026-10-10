@@ -14,8 +14,14 @@ let clockOffset = 0n;
 let offsetFrom: bigint | null = null;
 const nowMicros = () => BigInt(Date.now()) * 1000n + clockOffset;
 
+/** Elements that only exist while their view is shown. */
+const maybe = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
+
 export function bindGame(conn: DbConnection) {
-  $('upgrade-btn').onclick = () => call(conn.reducers.buyUpgrade({}));
+  // The upgrade button lives in the Fight view, which is re-rendered: delegate.
+  $('content').addEventListener('click', e => {
+    if ((e.target as HTMLElement).closest('#upgrade-btn')) call(conn.reducers.buyUpgrade({}));
+  });
   $<HTMLFormElement>('chat-form').onsubmit = e => {
     e.preventDefault();
     const input = $<HTMLInputElement>('chat-input');
@@ -37,21 +43,26 @@ export function renderGame(conn: DbConnection, pres: Presence) {
   if (row) {
     const ch = project({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, nowMicros());
     const need = xpToNextLevel(ch.level);
-    const cost = upgradeCost(ch.power);
     $('stat-name').textContent = row.name;
     $('stat-level').textContent = String(ch.level);
-    $('xp-text').textContent = `${ch.xp} / ${need} XP`;
+    $('xp-text').textContent = `${ch.xp.toLocaleString()} / ${need.toLocaleString()}`;
     $('xp-bar').style.width = `${Number((ch.xp * 100n) / need)}%`;
     $('stat-gold').textContent = ch.gold.toLocaleString();
-    $('stat-power').textContent = String(ch.power);
-    $('stat-rates').textContent = `+${goldPerSecond(ch.power)} gold/s · +${xpPerSecond(ch.power)} xp/s`;
-    const upgrade = $<HTMLButtonElement>('upgrade-btn');
-    upgrade.textContent = `Upgrade power (${cost.toLocaleString()} gold)`;
-    upgrade.disabled = ch.gold < cost;
+
+    const power = maybe('stat-power');
+    if (power) {
+      const cost = upgradeCost(ch.power);
+      power.textContent = String(ch.power);
+      maybe('stat-rates')!.textContent = `+${goldPerSecond(ch.power)} gold/s · +${xpPerSecond(ch.power)} xp/s`;
+      const upgrade = maybe<HTMLButtonElement>('upgrade-btn')!;
+      upgrade.textContent = `Upgrade power (${cost.toLocaleString()} gold)`;
+      upgrade.disabled = ch.gold < cost;
+    }
   }
 
   const online = [...conn.db.presence.iter()];
   $('online-count').textContent = String(online.length);
+  $('online-count-2').textContent = String(online.length);
   $('online-list').replaceChildren(
     ...online.map(p => {
       const li = document.createElement('li');
@@ -69,7 +80,7 @@ export function renderGame(conn: DbConnection, pres: Presence) {
       const li = document.createElement('li');
       const who = document.createElement('strong');
       who.textContent = m.characterName;
-      li.append(who, `: ${m.text}`);
+      li.append(who, ` ${m.text}`);
       return li;
     })
   );

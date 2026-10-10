@@ -6,6 +6,8 @@ import { characterOf, guestToken, linkStoredGuest, openConnection, serverLabel, 
 import { $, setStatus, showScreen, toast } from './ui/dom';
 import { bindCreate } from './ui/create';
 import { bindGame, renderGame } from './ui/game';
+import { initShell } from './ui/shell';
+import { initTheme } from './ui/theme';
 
 let conn: DbConnection | null = null;
 let me: Identity | null = null;
@@ -66,6 +68,8 @@ function linkGuest(c: DbConnection, identity: Identity) {
 }
 
 async function start() {
+  initTheme();
+  initShell();
   $('login-btn').onclick = () => void auth.login();
   $('logout-btn').onclick = () => void auth.logout();
   $('reconnect-btn').onclick = () => window.location.reload();

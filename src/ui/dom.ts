@@ -12,11 +12,14 @@ export type Screen = (typeof SCREENS)[number];
 
 export function showScreen(screen: Screen) {
   for (const s of SCREENS) $(`screen-${s}`).hidden = s !== screen;
+  // Top-bar game info only makes sense once the character is in the world.
+  for (const id of ['top-stats', 'online-chip', 'chat-toggle']) $(id).hidden = screen !== 'game';
 }
 
-export function toast(message: string) {
+export function toast(message: string, kind: 'error' | 'info' = 'error') {
   const el = $('toast');
   el.textContent = message;
+  el.dataset.kind = kind;
   el.hidden = false;
   window.clearTimeout(Number(el.dataset.timer));
   el.dataset.timer = String(window.setTimeout(() => (el.hidden = true), 3000));

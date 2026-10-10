@@ -7,20 +7,36 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AcceptLinkReducer from "../accept_link_reducer";
+import AutoEquipReducer from "../auto_equip_reducer";
 import CreateCharacterReducer from "../create_character_reducer";
+import EquipReducer from "../equip_reducer";
+import LockItemReducer from "../lock_item_reducer";
 import OfferLinkReducer from "../offer_link_reducer";
 import PlayHereReducer from "../play_here_reducer";
+import RenameLoadoutReducer from "../rename_loadout_reducer";
+import SalvageReducer from "../salvage_reducer";
 import SendChatReducer from "../send_chat_reducer";
 import SetBannedReducer from "../set_banned_reducer";
 import SetLootFilterReducer from "../set_loot_filter_reducer";
+import SetProfileReducer from "../set_profile_reducer";
 import SetTargetReducer from "../set_target_reducer";
+import SwitchLoadoutReducer from "../switch_loadout_reducer";
+import UnequipReducer from "../unequip_reducer";
 
 export type AcceptLinkParams = __Infer<typeof AcceptLinkReducer>;
+export type AutoEquipParams = __Infer<typeof AutoEquipReducer>;
 export type CreateCharacterParams = __Infer<typeof CreateCharacterReducer>;
+export type EquipParams = __Infer<typeof EquipReducer>;
+export type LockItemParams = __Infer<typeof LockItemReducer>;
 export type OfferLinkParams = __Infer<typeof OfferLinkReducer>;
 export type PlayHereParams = __Infer<typeof PlayHereReducer>;
+export type RenameLoadoutParams = __Infer<typeof RenameLoadoutReducer>;
+export type SalvageParams = __Infer<typeof SalvageReducer>;
 export type SendChatParams = __Infer<typeof SendChatReducer>;
 export type SetBannedParams = __Infer<typeof SetBannedReducer>;
 export type SetLootFilterParams = __Infer<typeof SetLootFilterReducer>;
+export type SetProfileParams = __Infer<typeof SetProfileReducer>;
 export type SetTargetParams = __Infer<typeof SetTargetReducer>;
+export type SwitchLoadoutParams = __Infer<typeof SwitchLoadoutReducer>;
+export type UnequipParams = __Infer<typeof UnequipReducer>;
 

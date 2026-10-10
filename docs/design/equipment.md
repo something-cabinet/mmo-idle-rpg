@@ -206,7 +206,8 @@ looks at the current zone or target enemy, so its result only depends on the ite
 - **Reference dummy.** DPS and time to die are computed with the normal combat formulas
   against a fixed dummy instead of a real enemy:
   - level = the character's level;
-  - Balanced defenses (`25 × level` armor and resistance, so 33% mitigation);
+  - Balanced defenses (`2.5 × level` armor and resistance, so 33% mitigation);
+  - the average enemy's DPS for that level, `16 × 1.42^(level/10 − 1)` (zones.md);
   - deals 50% physical and 50% magic damage, so armor and resistance count equally.
 - **Search:** go slot by slot and try every bag item that fits; keep the best; repeat
   until nothing improves (2–3 passes). Hands are tried as whole options: one two-hander,

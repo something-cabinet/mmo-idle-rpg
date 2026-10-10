@@ -35,13 +35,21 @@ import {
 
 // Import all reducer arg schemas
 import AcceptLinkReducer from "./accept_link_reducer";
+import AutoEquipReducer from "./auto_equip_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
+import EquipReducer from "./equip_reducer";
+import LockItemReducer from "./lock_item_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
+import RenameLoadoutReducer from "./rename_loadout_reducer";
+import SalvageReducer from "./salvage_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
 import SetLootFilterReducer from "./set_loot_filter_reducer";
+import SetProfileReducer from "./set_profile_reducer";
 import SetTargetReducer from "./set_target_reducer";
+import SwitchLoadoutReducer from "./switch_loadout_reducer";
+import UnequipReducer from "./unequip_reducer";
 
 // Import all procedure arg schemas
 
@@ -144,13 +152,21 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
+  __reducerSchema("auto_equip", AutoEquipReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
+  __reducerSchema("equip", EquipReducer),
+  __reducerSchema("lock_item", LockItemReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
+  __reducerSchema("rename_loadout", RenameLoadoutReducer),
+  __reducerSchema("salvage", SalvageReducer),
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
   __reducerSchema("set_loot_filter", SetLootFilterReducer),
+  __reducerSchema("set_profile", SetProfileReducer),
   __reducerSchema("set_target", SetTargetReducer),
+  __reducerSchema("switch_loadout", SwitchLoadoutReducer),
+  __reducerSchema("unequip", UnequipReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

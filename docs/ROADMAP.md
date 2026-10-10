@@ -13,8 +13,8 @@ Where the project stands and what to build next. Game design lives in
 | 2 | Combat and settlement | **Done** |
 | 3 | Drops and the loot filter | **Done** |
 | 4 | Character start: starter kit, target choice | **Done** |
-| 5 | Equipment: equip, loadouts, auto-equip, lock | **Next** |
-| 6 | Bosses and zone unlocks | Todo |
+| 5 | Equipment: equip, loadouts, auto-equip, lock | **Done** |
+| 6 | Bosses and zone unlocks | **Next** |
 | 7 | Crafting: reroll, rarity upgrade, bag expansion | Todo |
 | 8 | Legendary effects in the formulas | Todo |
 | 9 | UI on real data + away report | Todo |
@@ -70,25 +70,31 @@ fighting the target enemy with the active loadout.
   equipped in loadout 0. The create screen has the weapon picker. Target choice is
   the `setTarget` reducer (milestone 2); the Zones screen still uses preview data
   (milestone 9).
+- **Equipment** (`spacetimedb/src/equip.ts`, pure, shared): `placeItem` (slot fits the
+  base, an item moves instead of filling two slots, a two-hander empties the off-hand,
+  no off-hand next to a two-hander); `scoreGear` against `referenceDummy(level)`
+  (33% mitigation, average enemy DPS for the level, half physical/half magic);
+  `autoEquip` (coordinate search over owned items, hands as whole options; matches
+  an exhaustive search in `test:equip`; ~40 ms for 200 items).
+- **Reducers** (`reducers/equipment.ts`): `equip`, `unequip`, `switchLoadout`,
+  `renameLoadout`, `setProfile`, `autoEquip`, `lockItem`, `salvage`. Changes to the
+  active loadout settle first. Salvage refuses locked items and items in any loadout.
 - **Not yet**: Fortune's Favor (milestone 8); showing drops, the filter and the bag
   with real data, the loot log and the away report (milestone 9).
 - **Client**: the Fight view's "Live progress" card and the top bar use the real
   formulas. The other screens still use `src/ui/preview-data.ts`; `src/ui/sim.ts` is
   now only an adapter that runs the shared `matchup()` on the preview player.
 
-## Next: milestone 5, equipment
+## Next: milestone 6, bosses and zone unlocks
 
-`equip`, `unequip`, `switchLoadout`, `renameLoadout`, `setProfile`, `autoEquip` (vs the
-reference dummy, never the target), `lockItem`, `salvage`. Validate slots (two-handed
-empties the off-hand; rings in either ring slot).
+`challengeBoss` (deterministic check), `boss_kill` row, first-kill Rare + 20× gold,
+zone unlock rule = previous zone's boss killed.
 
-Every reducer that changes gear settles first (`settle(ctx, ch)` in helpers.ts). Auto-equip
-can reuse `combatStats` + `matchup` against the reference dummy (equipment.md).
+`zoneUnlocked` and `hasKilledBoss` (helpers.ts) already gate `setTarget`; the boss
+fight is `matchup(combatStats(level, gear), boss).viable` with the active loadout.
 
 ## Later milestones (short notes)
 
-- **6 Bosses**: `challengeBoss` (deterministic check), `boss_kill` row, first-kill
-  Rare + 20× gold, zone unlock rule = previous zone's boss killed.
 - **7 Crafting**: `rerollAffix`, `upgradeRarity`, `expandBag`; costs in crafting.md.
 - **8 Legendary effects**: hook each effect ID into aggregation/matchup/settlement.
 - **9 UI**: replace `preview-data.ts` usage screen by screen; away report on login.
@@ -98,7 +104,8 @@ can reuse `combatStats` + `matchup` against the reference dummy (equipment.md).
 - **Run locally**: `npm run spacetime:start` (own terminal), then
   `npm run spacetime:publish:local -- -y` (the prompt needs `-y` when the schema
   changes), `npm run spacetime:generate` after schema changes, `npm run dev`.
-- **Checks**: `npm run typecheck`, `npm run test:data`, `test:combat` and `test:loot`
+- **Checks**: `npm run typecheck`, `npm run test:data`, `test:combat`, `test:loot` and
+  `test:equip`
   (no server), `npm run test:smoke`
   (needs the local server with the module published).
 - **Stopping the dev server**: stopping `npm run dev` can leave Vite's node process

@@ -106,6 +106,50 @@ await expectError('boss needs a first kill', a.conn.reducers.setTarget({ enemyId
   check('starter kit earns idle XP and gold from rats', ch.xp >= 7n && ch.gold >= 2n, `xp=${ch.xp} gold=${ch.gold}`);
 }
 
+// Equipment: slots, loadouts, auto-equip, lock and salvage.
+{
+  const lo = (i: number) => [...a.conn.db.myLoadouts.iter()].find(l => l.index === i)!;
+  const items = () => [...a.conn.db.myItems.iter()];
+  const idOf = (baseId: number) => items().find(i => i.baseId === baseId)!.id;
+  const vest = idOf(35);
+  const boots = idOf(37);
+
+  await expectError("item in the wrong slot rejected", a.conn.reducers.equip({ loadout: 0, slot: 2, itemId: vest }), "doesn't fit");
+  await expectError('unknown item rejected', a.conn.reducers.equip({ loadout: 0, slot: 3, itemId: 999_999n }), 'No such item');
+  await a.conn.reducers.unequip({ loadout: 0, slot: 3 });
+  await sleep(200);
+  check('unequip empties the slot', lo(0).slots[3] === 0n);
+  await a.conn.reducers.equip({ loadout: 0, slot: 3, itemId: vest });
+  await sleep(200);
+  check('equip fills the slot', lo(0).slots[3] === vest);
+
+  await a.conn.reducers.renameLoadout({ loadout: 1, name: '  Raid  ' });
+  await a.conn.reducers.setProfile({ loadout: 1, profile: { tag: 'Survival' } });
+  await expectError('empty loadout name rejected', a.conn.reducers.renameLoadout({ loadout: 1, name: ' ' }), 'Name must be');
+  await a.conn.reducers.autoEquip({ loadout: 1 });
+  await sleep(200);
+  check('rename and profile saved', lo(1).name === 'Raid' && lo(1).profile.tag === 'Survival');
+  check('auto-equip fills an empty loadout from owned items', lo(1).slots.filter(id => id !== 0n).length === 3, lo(1).slots.join());
+
+  await a.conn.reducers.switchLoadout({ loadout: 1 });
+  await sleep(200);
+  check('switch loadout', charOf(a)!.activeLoadout === 1);
+  await expectError('unknown loadout rejected', a.conn.reducers.switchLoadout({ loadout: 7 }), 'No such loadout');
+  await a.conn.reducers.switchLoadout({ loadout: 0 });
+
+  await expectError('equipped item cannot be salvaged', a.conn.reducers.salvage({ itemIds: [boots] }), 'in a loadout');
+  await a.conn.reducers.unequip({ loadout: 0, slot: 5 });
+  await a.conn.reducers.unequip({ loadout: 1, slot: 5 });
+  await a.conn.reducers.lockItem({ itemId: boots, locked: true });
+  await expectError('locked item cannot be salvaged', a.conn.reducers.salvage({ itemIds: [boots] }), 'locked');
+  await a.conn.reducers.lockItem({ itemId: boots, locked: false });
+  const essence = charOf(a)!.essence;
+  await a.conn.reducers.salvage({ itemIds: [boots] });
+  await sleep(200);
+  check('salvage turns a bag item into Essence', !items().some(i => i.id === boots) && charOf(a)!.essence === essence + 1n,
+    `essence ${essence} → ${charOf(a)!.essence}`);
+}
+
 // Second tab of the same account takes over; closing it leaves the world.
 const a2 = await connect(a.token);
 await sleep(200);

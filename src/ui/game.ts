@@ -1,25 +1,21 @@
 import type { DbConnection } from '../module_bindings';
-import type { Character, Presence } from '../module_bindings/types';
-import { combatStats, matchup, type Gear } from '../../spacetimedb/src/combat';
-import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
-import { project, xpToNext } from '../../spacetimedb/src/game';
+import type { Presence } from '../module_bindings/types';
+import { xpToNext } from '../../spacetimedb/src/game';
+import { showAwayReport } from './away';
 import { $, call } from './dom';
-import { fmt, secs } from './sim';
+import { fmtBig } from './format';
+import { currentView } from './shell';
+import { snapshot } from './snapshot';
+import { renderView, setSnapshot, updateActivity } from './views';
 
 /** serverTime ≈ clientTime + clockOffset (micros). */
 let clockOffset = 0n;
 let offsetFrom: bigint | null = null;
 const nowMicros = () => BigInt(Date.now()) * 1000n + clockOffset;
 
-/** Elements that only exist while their view is shown. */
-const maybe = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
-
-/** The active loadout's items in slot order, like the server's `gearOf`. */
-function activeGear(conn: DbConnection, ch: Character): Gear {
-  const lo = [...conn.db.myLoadouts.iter()].find(l => l.index === ch.activeLoadout);
-  const items = new Map([...conn.db.myItems.iter()].map(i => [i.id, i]));
-  return (lo?.slots ?? []).map(id => items.get(id));
-}
+/** Data version the current view was drawn with. */
+let drawnVersion = -1;
+let drawnView = '';
 
 export function bindGame(conn: DbConnection) {
   $<HTMLFormElement>('chat-form').onsubmit = e => {
@@ -30,7 +26,12 @@ export function bindGame(conn: DbConnection) {
   };
 }
 
-export function renderGame(conn: DbConnection, pres: Presence) {
+/**
+ * Draws the game screen. `version` counts server data changes: the top bar is
+ * redrawn on every call (idle numbers tick), the current view only when the data
+ * or the view changed.
+ */
+export function renderGame(conn: DbConnection, pres: Presence, version: number) {
   // `since` is the server's clock at the moment we entered the world. Use it
   // to correct the local clock, so we never show gold the server doesn't
   // think we have yet (latency only makes this err on the low side).
@@ -41,31 +42,24 @@ export function renderGame(conn: DbConnection, pres: Presence) {
 
   const row = conn.db.character.id.find(pres.characterId);
   if (row) {
-    const gear = activeGear(conn, row);
-    const enemy = ENEMIES_BY_ID.get(row.targetEnemyId)?.enemy;
-    const ch = project({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy }, nowMicros());
-    const need = xpToNext(ch.level);
+    const s = snapshot(conn, row, nowMicros());
+    setSnapshot(s);
+    const need = xpToNext(s.level);
     $('stat-name').textContent = row.name;
-    $('stat-level').textContent = String(ch.level);
-    $('xp-text').textContent = `${ch.xp.toLocaleString()} / ${need.toLocaleString()}`;
-    $('xp-bar').style.width = `${Number((ch.xp * 100n) / need)}%`;
-    $('stat-gold').textContent = ch.gold.toLocaleString();
-    $('stat-essence').textContent = row.essence.toLocaleString();
+    $('stat-level').textContent = String(s.level);
+    $('xp-text').textContent = `${s.xp.toLocaleString()} / ${need.toLocaleString()}`;
+    $('xp-bar').style.width = `${Number((s.xp * 100n) / need)}%`;
+    $('stat-gold').textContent = fmtBig(s.gold);
+    $('stat-essence').textContent = fmtBig(row.essence);
+    updateActivity(s);
 
-    const target = maybe('live-target');
-    if (target) {
-      const m = enemy && matchup(combatStats(ch.level, gear), enemy);
-      target.textContent = enemy ? `${enemy.name} (Lv ${enemy.level})` : 'None';
-      maybe('live-times')!.textContent = m ? `${secs(m.timeToKill)} / ${secs(m.timeToDie)}` : '—';
-      const perHour = (m?.killRate ?? 0) * 3600;
-      maybe('live-rates')!.textContent = !m
-        ? ''
-        : m.viable
-          ? `${fmt(perHour)} kills/h · +${fmt(perHour * m.xpPerKill)} xp/h · +${fmt(perHour * m.goldPerKill)} gold/h`
-          : m.dps === 0
-            ? 'No weapon equipped: no progress'
-            : 'Losing this fight: no progress';
+    const view = currentView();
+    if (version !== drawnVersion || view !== drawnView) {
+      drawnVersion = version;
+      drawnView = view;
+      renderView(view);
     }
+    showAwayReport(s, pres);
   }
 
   const online = [...conn.db.presence.iter()];

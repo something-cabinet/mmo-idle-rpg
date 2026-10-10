@@ -25,7 +25,7 @@ export function toast(message: string, kind: 'error' | 'info' = 'error') {
   el.dataset.timer = String(window.setTimeout(() => (el.hidden = true), 3000));
 }
 
-/** Runs a reducer call and shows the server's error message if it fails. */
-export function call(p: Promise<void>) {
-  p.catch((e: unknown) => toast(e instanceof Error ? e.message : String(e)));
+/** Runs a reducer call and shows the server's error message if it fails, or `ok` if it succeeds. */
+export function call(p: Promise<void>, ok?: string) {
+  p.then(() => ok && toast(ok, 'info')).catch((e: unknown) => toast(e instanceof Error ? e.message : String(e)));
 }

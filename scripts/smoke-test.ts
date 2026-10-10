@@ -104,6 +104,13 @@ await expectError('boss needs a first kill', a.conn.reducers.setTarget({ enemyId
   const ch = charOf(a)!;
   check('target change settles and switches target', ch.targetEnemyId === 102 && ch.lastSettledAt.microsSinceUnixEpoch > before);
   check('starter kit earns idle XP and gold from rats', ch.xp >= 7n && ch.gold >= 2n, `xp=${ch.xp} gold=${ch.gold}`);
+  const logs = [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1));
+  const login = logs.find(l => l.offline);
+  check('entering the world logs the login settle', !!login && login.at.microsSinceUnixEpoch === presOf(a)!.since.microsSinceUnixEpoch);
+  const last = logs.at(-1)!;
+  check('a settle with kills is logged with its rewards', !last.offline && last.kills > 0 && last.enemyId === 101 &&
+    last.xp === BigInt(last.kills * 7) && last.gold === BigInt(last.kills * 2) && last.viable &&
+    last.salvaged.length === 6 && last.levelFrom === 1, `kills=${last.kills} xp=${last.xp} gold=${last.gold}`);
 }
 
 // Bosses: a fresh character loses to Grubnak (winning needs gear the test can't get).

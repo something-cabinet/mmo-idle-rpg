@@ -172,6 +172,9 @@ export type MyLoadouts = __Infer<typeof MyLoadouts>;
 export const MyLootFilter = __t.object("MyLootFilter", {});
 export type MyLootFilter = __Infer<typeof MyLootFilter>;
 
+export const MySettleLog = __t.object("MySettleLog", {});
+export type MySettleLog = __Infer<typeof MySettleLog>;
+
 export const Presence = __t.object("Presence", {
   identity: __t.identity(),
   connectionId: __t.connectionId(),
@@ -199,6 +202,27 @@ export const Role = __t.enum("Role", {
   Admin: __t.unit(),
 });
 export type Role = __Infer<typeof Role>;
+
+export const SettleLog = __t.object("SettleLog", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  at: __t.timestamp(),
+  offline: __t.bool(),
+  elapsedMicros: __t.u64(),
+  capped: __t.bool(),
+  enemyId: __t.u16(),
+  viable: __t.bool(),
+  kills: __t.u32(),
+  levelFrom: __t.u32(),
+  levelTo: __t.u32(),
+  xp: __t.u64(),
+  gold: __t.u64(),
+  essence: __t.u64(),
+  keptItemIds: __t.array(__t.u64()),
+  salvaged: __t.array(__t.u32()),
+  overflow: __t.u32(),
+});
+export type SettleLog = __Infer<typeof SettleLog>;
 
 export const SettleTimer = __t.object("SettleTimer", {
   scheduledId: __t.u64(),

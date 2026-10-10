@@ -7,8 +7,11 @@ import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } fro
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
 import { Effect } from './data/legendary';
-import { combatStats } from './combat';
-import { makeItem, rollDrops, seededRng } from './loot';
+import { combatStats, matchup } from './combat';
+import { RARITIES, makeItem, rollDrops, seededRng, type DropResult } from './loot';
+
+/** Settle log rows kept per character. */
+export const SETTLE_LOG_KEEP = 30;
 
 export type Ctx = ReducerCtx<(typeof spacetimedb)['schemaType']>;
 export type Account = Infer<typeof account.rowType>;
@@ -65,6 +68,7 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
  * Grants idle rewards earned since `lastSettledAt` (see `project`) with the
  * current gear and target: XP, gold, and drops (kept items go to the bag, the rest
  * is salvaged into Essence). Call before anything that changes gear or target.
+ * `capMicros` is only passed for the login settle, which is always logged.
  */
 export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const gear = gearOf(ctx, ch);
@@ -77,11 +81,13 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   );
 
   let essence = ch.essence;
+  let drops: DropResult | undefined;
+  const keptItemIds: bigint[] = [];
   if (target && p.kills > 0) {
     const filter = ctx.db.lootFilter.characterId.find(ch.id);
     const stats = combatStats(ch.level, gear);
     // Seeded by (character, settle start), so the result is reproducible.
-    const drops = rollDrops(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch), {
+    drops = rollDrops(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch), {
       kills: p.kills,
       enemy: target.enemy,
       tier: target.zone.tier,
@@ -92,9 +98,35 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       fortune: stats.effects.has(Effect.FortunesFavor),
     });
     for (const it of drops.kept) {
-      ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, uniqueId: undefined, locked: false, createdAt: ctx.timestamp });
+      const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, uniqueId: undefined, locked: false, createdAt: ctx.timestamp });
+      keptItemIds.push(row.id);
     }
     essence += drops.essence;
+  }
+
+  const offline = capMicros !== undefined;
+  if (p.kills > 0 || offline) {
+    const elapsed = ctx.timestamp.microsSinceUnixEpoch - ch.lastSettledAt.microsSinceUnixEpoch;
+    ctx.db.settleLog.insert({
+      id: 0n,
+      characterId: ch.id,
+      at: ctx.timestamp,
+      offline,
+      elapsedMicros: elapsed > 0n ? elapsed : 0n,
+      capped: offline && elapsed > capMicros,
+      enemyId: ch.targetEnemyId,
+      viable: !!target && matchup(combatStats(ch.level, gear), target.enemy).viable,
+      kills: p.kills,
+      levelFrom: ch.level,
+      levelTo: p.level,
+      xp: p.xpGained,
+      gold: p.gold - ch.gold,
+      essence: essence - ch.essence,
+      keptItemIds,
+      salvaged: RARITIES.map(r => drops?.salvaged[r] ?? 0),
+      overflow: drops?.overflow ?? 0,
+    });
+    pruneSettleLog(ctx, ch.id);
   }
 
   return {
@@ -105,6 +137,13 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     essence,
     lastSettledAt: new Timestamp(p.settledMicros),
   };
+}
+
+function pruneSettleLog(ctx: Ctx, characterId: bigint) {
+  const rows = [...ctx.db.settleLog.characterId.filter(characterId)];
+  if (rows.length <= SETTLE_LOG_KEEP) return;
+  rows.sort((a, b) => (a.id < b.id ? -1 : 1));
+  for (const r of rows.slice(0, rows.length - SETTLE_LOG_KEEP)) ctx.db.settleLog.id.delete(r.id);
 }
 
 /** Whether `characterId` has killed the boss of zone `zoneId`. */
@@ -168,6 +207,7 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.item.characterId.delete(characterId);
   ctx.db.loadout.characterId.delete(characterId);
   ctx.db.bossKill.characterId.delete(characterId);
+  ctx.db.settleLog.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);
   ctx.db.character.id.delete(characterId);
 }

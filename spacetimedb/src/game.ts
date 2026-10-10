@@ -48,6 +48,8 @@ export interface Progress {
 export interface Settled extends Progress {
   /** Whole kills granted; drops are rolled from this. */
   kills: number;
+  /** XP granted (across level-ups). */
+  xpGained: bigint;
 }
 
 /** What the character is doing: fighting `enemy` with `gear` (undefined = no target). */
@@ -68,12 +70,13 @@ export interface Activity {
  */
 export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?: bigint): Settled {
   let elapsed = nowMicros - p.settledMicros;
-  if (elapsed <= 0n) return { ...p, kills: 0 };
+  if (elapsed <= 0n) return { ...p, kills: 0, xpGained: 0n };
   const capped = capMicros !== undefined && elapsed > capMicros;
   if (capped) elapsed = capMicros!;
 
   let { level, xp, gold } = p;
   let total = 0;
+  let xpGained = 0n;
   let left = elapsed;
   while (left > 0n) {
     const m = a.enemy ? matchup(combatStats(level, a.gear), a.enemy) : undefined;
@@ -90,7 +93,11 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
       kills = Math.min(kills, Math.ceil(Number(xpToNext(level) - xp) / m.xpPerKill));
     }
     total += kills;
-    if (!maxed) xp += BigInt(Math.floor(kills * m.xpPerKill));
+    if (!maxed) {
+      const gained = BigInt(Math.floor(kills * m.xpPerKill));
+      xp += gained;
+      xpGained += gained;
+    }
     gold += BigInt(Math.floor(kills * m.goldPerKill));
     left -= BigInt(Math.ceil((kills / m.killRate) * 1e6));
     if (left < 0n) left = 0n;
@@ -103,5 +110,5 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
   }
 
   const settledMicros = capped ? nowMicros : p.settledMicros + elapsed - left;
-  return { level, xp, gold, settledMicros, kills: total };
+  return { level, xp, gold, settledMicros, kills: total, xpGained };
 }

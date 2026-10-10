@@ -17,7 +17,7 @@ Where the project stands and what to build next. Game design lives in
 | 6 | Bosses and zone unlocks | **Done** |
 | 7 | Crafting: reroll, rarity upgrade, bag expansion | **Done** |
 | 8 | Legendary effects in the formulas | **Done** |
-| 9 | UI on real data + away report | **Next** |
+| 9 | UI on real data + away report | **Done** |
 | 10 | Tests for all of the above | Ongoing |
 
 The scaffold's prototype loop (`power`, `buyUpgrade`) is gone: idle progress comes from
@@ -112,19 +112,53 @@ fighting the target enemy with the active loadout.
   15% chance via `raiseRarity` (loot.ts, shared with crafting's `upgradeRarity`),
   after the filter and before the per-settle cap; Epic → Legendary removes a random
   affix.
-- **Not yet**: showing drops, the filter and the bag with real data, the loot log and
-  the away report (milestone 9); the item view's warning for Midas + Scholar worn
-  together (legendary.md).
-- **Client**: the Fight view's "Live progress" card and the top bar use the real
-  formulas. The other screens still use `src/ui/preview-data.ts`; `src/ui/sim.ts` is
-  now only an adapter that runs the shared `matchup()` on the preview player.
+- **Settle log** (table `settle_log`, view `my_settle_log`): one row per settle with
+  kills and per login settle (`offline`): elapsed time, cap hit, enemy, viable,
+  kills, levels, XP / gold / Essence gained (`project` now returns `xpGained`), kept
+  item IDs, salvaged counts per rarity, overflow. The newest 30 per character are
+  kept (`SETTLE_LOG_KEEP`). Feeds the loot log, the away report and the filter's
+  "last 8 hours".
+- **Client** (all screens on real data; `preview-data.ts` and `sim.ts` are gone):
+  - `snapshot.ts` gathers the player's rows once per render (projected level/XP/gold,
+    items, loadouts, bag, filter, boss kills, logs, stats and the target matchup).
+    `game.ts` redraws the top bar every tick but the current view only when server
+    data changes (`version` in main.ts) or the view changes, so inputs and the fight
+    scene survive the 250 ms tick. The fight scene restarts only when the fight's
+    numbers change.
+  - Views (`views.ts`): Fight (animation from the real stats, KPIs, loot log),
+    Zones (results vs the active loadout, Fight → `setTarget`, Challenge →
+    `challengeBoss`, locked zones, drops), Character (stats, mitigation vs target,
+    worn legendary effects, Midas + Scholar warning), Equipment (loadout tabs, use,
+    rename, profile, auto-equip, slot picker with kill/die time changes vs the
+    target), Bag (size, expand, sort/filter, select, lock, salvage, craft), Crafting
+    (all items, reroll / upgrade with real costs, disabled with the reason when
+    unaffordable, Epic → Legendary picks the affix), Loot filter (rarity, affix
+    whitelist, last 8 hours). Item text in `items.ts`, formatting in `format.ts`.
+  - Away report (`away.ts`): modal on login from the login settle's log row, when
+    away for over a minute.
+  - `net.ts` now also listens to `onUpdate`: rows with a primary key (views included)
+    change in place, which the client previously missed.
+  - Equipment: hovering an item in the slot picker shows it next to the equipped
+    one with the loadout totals before → after (hit, HP, armor, resistance, evasion,
+    find bonuses, DPS / kill / die vs the target; no item score), and any other slot
+    the swap empties. Auto-equip shows the swapped slots and the same totals.
+  - Bag: click selects one, Ctrl/⌘-click toggles, Shift-click selects a range,
+    "Select all shown".
+  - Character: every stat row's tooltip lists its base, primary bonuses, caps,
+    active legendary effects and the items that add to it.
+  - Settings: number format, short (1.2k) or full (1,234), in `format.ts`.
+- **Not yet** (ui.md): mobile layout.
+  The loot log and the away report's item lines were checked in code and the smoke
+  test, but not seen in the browser with real drops (they're rare early on).
 
-## Next: milestone 9, UI on real data
+## Next
 
-Replace `src/ui/preview-data.ts` usage screen by screen (bag, equipment, zones,
-crafting, loot filter) with the subscribed views, using the shared pure modules for
-numbers (`combat.ts`, `craft.ts` costs, `equip.ts`). Then the loot log and the away
-report on login (ui.md). From here on, schema changes must migrate (see Working notes).
+The planned milestones are done. Candidates, to pick with the user:
+
+- Mobile layout (ui.md "Open").
+- More content: zones 3+ (zone-content.md), uniques.
+- The dev reducer question below, so the smoke test can cover boss wins and crafting.
+- Schema changes must migrate from now on (see Working notes).
 
 ### Open questions for the next session
 

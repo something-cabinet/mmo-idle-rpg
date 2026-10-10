@@ -6,6 +6,7 @@ import { characterOf, guestToken, linkStoredGuest, openConnection, serverLabel, 
 import { $, setStatus, showScreen, toast } from './ui/dom';
 import { bindCreate } from './ui/create';
 import { bindGame, renderGame } from './ui/game';
+import { bindAwayReport } from './ui/away';
 import { initShell } from './ui/shell';
 import { initTheme } from './ui/theme';
 
@@ -13,6 +14,8 @@ let conn: DbConnection | null = null;
 let me: Identity | null = null;
 let ready = false;
 let renderQueued = false;
+/** Bumped on every server data change, so views know to redraw. */
+let version = 0;
 
 function requestRender() {
   if (renderQueued) return;
@@ -35,7 +38,7 @@ function render() {
     showScreen('elsewhere'); // another tab took over
   } else {
     showScreen('game');
-    renderGame(conn, pres);
+    renderGame(conn, pres, version);
   }
 }
 
@@ -70,6 +73,7 @@ function linkGuest(c: DbConnection, identity: Identity) {
 async function start() {
   initTheme();
   initShell();
+  bindAwayReport();
   $('login-btn').onclick = () => void auth.login();
   $('logout-btn').onclick = () => void auth.logout();
   $('reconnect-btn').onclick = () => window.location.reload();
@@ -88,7 +92,10 @@ async function start() {
 
       bindCreate(c);
       bindGame(c);
-      watchAll(c, requestRender);
+      watchAll(c, () => {
+        version++;
+        requestRender();
+      });
       subscribeAll(c, identity, () => {
         ready = true;
         render();

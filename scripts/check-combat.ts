@@ -231,6 +231,9 @@ const rats = { gear: starter, enemy: enemy(101) };
   const lvl = project(start, rats, 3600n * S);
   check('an hour on rats levels up past level 2', lvl.level >= 2, `level ${lvl.level}`);
   check('… with XP below the next threshold', lvl.xp < xpToNext(lvl.level));
+  let spent = 0n;
+  for (let l = 1; l < lvl.level; l++) spent += xpToNext(l);
+  check('xpGained counts XP across level-ups', lvl.xpGained === spent + lvl.xp, `${lvl.xpGained} vs ${spent + lvl.xp}`);
 
   const naked = project(start, { gear: gear({}), enemy: enemy(101) }, 3600n * S);
   check('a losing fight grants nothing and discards the time',

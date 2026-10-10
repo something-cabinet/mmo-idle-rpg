@@ -175,6 +175,40 @@ export const bossKill = table(
   }
 );
 
+/**
+ * What one settle granted, for the loot log and the away report. Written for every
+ * settle with kills and for every login (`offline`); the newest SETTLE_LOG_KEEP per
+ * character are kept. Private; owners read theirs via `my_settle_log`.
+ */
+export const settleLog = table(
+  { name: 'settle_log' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    at: t.timestamp(),
+    /** The login settle (time away, capped at MAX_OFFLINE_MICROS). */
+    offline: t.bool(),
+    /** Time since the previous settle, before the offline cap. */
+    elapsedMicros: t.u64(),
+    capped: t.bool(),
+    enemyId: t.u16(),
+    /** The target could be beaten with the gear worn (false: no rewards). */
+    viable: t.bool(),
+    kills: t.u32(),
+    levelFrom: t.u32(),
+    levelTo: t.u32(),
+    xp: t.u64(),
+    gold: t.u64(),
+    essence: t.u64(),
+    /** Items added to the bag (they may since have been salvaged). */
+    keptItemIds: t.array(t.u64()),
+    /** Salvaged drops per rarity, in loot.ts RARITIES order. */
+    salvaged: t.array(t.u32()),
+    /** Kept by the filter but salvaged for the per-settle cap or a full bag. */
+    overflow: t.u32(),
+  }
+);
+
 /** Drives `settleOnline`: one interval row, inserted by `init`. */
 export const settleTimer = table(
   { name: 'settle_timer' },
@@ -233,5 +267,6 @@ export const spacetimedb = schema({
   loadout,
   lootFilter,
   bossKill,
+  settleLog,
   settleTimer,
 });

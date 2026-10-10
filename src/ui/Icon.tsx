@@ -1,5 +1,5 @@
 // Placeholder line icons (24×24, stroke = currentColor). Swap for a real icon set later
-// without touching markup: elements just carry data-icon="name".
+// without touching the components: they just name an icon.
 
 const PATHS: Record<string, string> = {
   swords: 'M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M9.5 6.5 13 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2',
@@ -45,16 +45,10 @@ const PATHS: Record<string, string> = {
   'i-amulet': 'M5 3c0 6 3 9 7 11 4-2 7-5 7-11M12 14l-3 4 3 4 3-4-3-4z',
 };
 
-export function icon(name: string, cls = ''): string {
-  const d = PATHS[name] ?? PATHS.star;
-  return `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true"><path d="${d}"/></svg>`;
-}
-
-/** Replaces every `[data-icon]` element's content with its SVG. */
-export function hydrateIcons(root: ParentNode = document) {
-  root.querySelectorAll<HTMLElement>('[data-icon]').forEach(el => {
-    if (el.dataset.iconDone === el.dataset.icon) return;
-    el.innerHTML = icon(el.dataset.icon!);
-    el.dataset.iconDone = el.dataset.icon;
-  });
+export function Icon({ name, className = '' }: { name: string; className?: string }) {
+  return (
+    <svg className={`ico ${className}`} viewBox="0 0 24 24" aria-hidden="true">
+      <path d={PATHS[name] ?? PATHS.star} />
+    </svg>
+  );
 }

@@ -1,9 +1,9 @@
-import { $ } from './dom';
-import { hydrateIcons } from './icons';
+import { useSyncExternalStore } from 'react';
 
 export type ThemePref = 'system' | 'dark' | 'light';
 const KEY = 'theme';
 const media = window.matchMedia('(prefers-color-scheme: light)');
+const listeners = new Set<() => void>();
 
 export function themePref(): ThemePref {
   try {
@@ -15,7 +15,7 @@ export function themePref(): ThemePref {
   return 'system';
 }
 
-function effective(pref: ThemePref): 'dark' | 'light' {
+export function effectiveTheme(pref = themePref()): 'dark' | 'light' {
   return pref === 'system' ? (media.matches ? 'light' : 'dark') : pref;
 }
 
@@ -30,17 +30,27 @@ export function setTheme(pref: ThemePref) {
 }
 
 function apply() {
-  const theme = effective(themePref());
-  document.documentElement.dataset.theme = theme;
-  const btn = $('theme-btn');
-  btn.querySelector('i')!.dataset.icon = theme === 'dark' ? 'sun' : 'moon';
-  btn.title = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
-  hydrateIcons(btn);
-  document.dispatchEvent(new CustomEvent('themechange'));
+  document.documentElement.dataset.theme = effectiveTheme();
+  listeners.forEach(l => l());
 }
 
 export function initTheme() {
-  $('theme-btn').onclick = () => setTheme(effective(themePref()) === 'dark' ? 'light' : 'dark');
   media.addEventListener('change', () => themePref() === 'system' && apply());
   apply();
+}
+
+let cached = { pref: themePref(), theme: effectiveTheme() };
+function current() {
+  const pref = themePref();
+  const theme = effectiveTheme(pref);
+  if (pref !== cached.pref || theme !== cached.theme) cached = { pref, theme };
+  return cached;
+}
+
+/** The saved preference and the theme in effect; re-renders when either changes. */
+export function useTheme() {
+  return useSyncExternalStore(l => {
+    listeners.add(l);
+    return () => void listeners.delete(l);
+  }, current);
 }

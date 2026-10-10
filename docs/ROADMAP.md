@@ -121,20 +121,22 @@ fighting the target enemy with the active loadout.
 - **Client** (all screens on real data; `preview-data.ts` and `sim.ts` are gone):
   - `snapshot.ts` gathers the player's rows once per render (projected level/XP/gold,
     items, loadouts, bag, filter, boss kills, logs, stats and the target matchup).
-    `game.ts` redraws the top bar every tick but the current view only when server
-    data changes (`version` in main.ts) or the view changes, so inputs and the fight
-    scene survive the 250 ms tick. The fight scene restarts only when the fight's
-    numbers change.
-  - Views (`views.ts`): Fight (animation from the real stats, KPIs, loot log),
+    The client is React (TSX). `Game.tsx` redraws the top bar every tick but the
+    current view only when server data changes (`version` in `store.ts`, bumped from
+    main.tsx) or the view changes; views are memoized on that snapshot. The fight
+    scene (`fight.ts`, imperative) restarts only when the fight's numbers change.
+  - Views (`ui/views/*.tsx`): Fight (animation from the real stats, KPIs, loot log),
     Zones (results vs the active loadout, Fight → `setTarget`, Challenge →
     `challengeBoss`, locked zones, drops), Character (stats, mitigation vs target,
     worn legendary effects, Midas + Scholar warning), Equipment (loadout tabs, use,
-    rename, profile, auto-equip, slot picker with kill/die time changes vs the
-    target), Bag (size, expand, sort/filter, select, lock, salvage, craft), Crafting
+    rename, profile, auto-equip; 3×3 slot tiles, a slot popup with Change equipment:
+    tiles with DPS ▲/▼ vs the target and a before → after comparison), Bag (icon
+    tiles, item popup with comparison and Equip, sort/filter, ctrl/shift or Select
+    mode for bulk lock / salvage / craft), Crafting
     (all items, reroll / upgrade with real costs, disabled with the reason when
     unaffordable, Epic → Legendary picks the affix), Loot filter (rarity, affix
-    whitelist, last 8 hours). Item text in `items.ts`, formatting in `format.ts`.
-  - Away report (`away.ts`): modal on login from the login settle's log row, when
+    whitelist, last 8 hours). Item text and cards in `items.tsx`, shared pieces in `shared.tsx`, formatting in `format.ts`.
+  - Away report (`AwayReport.tsx`): modal on login from the login settle's log row, when
     away for over a minute.
   - `net.ts` now also listens to `onUpdate`: rows with a primary key (views included)
     change in place, which the client previously missed.

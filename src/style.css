@@ -1164,6 +1164,11 @@ select:focus,
   overflow-y: auto;
   padding: 4px;
 }
+.bag-grid > p,
+.picker-tiles > p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
 .equip-layout {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -1200,8 +1205,13 @@ select:focus,
 }
 .modal-card.item-popup {
   width: min(760px, 100%);
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+/* Taller than the screen: the card scrolls, its parts keep their height. */
+.item-popup > * {
+  flex-shrink: 0;
 }
 .item-popup .seg,
 .item-popup .compare-items {

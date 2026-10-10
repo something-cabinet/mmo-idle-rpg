@@ -1,14 +1,16 @@
 # MMO Idle RPG
 
-Vite + TypeScript browser client, SpacetimeDB (TypeScript module) backend.
+Vite + React (TSX) browser client, SpacetimeDB (TypeScript module) backend.
 
 ```
 .
 ├─ index.html, src/          # Vite client
-│  ├─ main.ts                # entry: login → connect → screens
+│  ├─ main.tsx               # entry: login → connect, mounts the React app
+│  ├─ store.ts               # connection state, data version, toasts, sticky view state
 │  ├─ auth.ts                # SpacetimeAuth (OIDC) login/logout
 │  ├─ net.ts                 # connection, guest token, subscriptions, guest linking
-│  ├─ ui/                    # create-character and game screens
+│  ├─ ui/                    # App (screens), Game (shell), shared components
+│  │  └─ views/              # one component per game view
 │  └─ module_bindings/       # GENERATED client bindings (npm run spacetime:generate)
 ├─ scripts/smoke-test.ts     # end-to-end test against a local server
 ├─ scripts/check-data.ts     # consistency checks for the static game data (npm run test:data)

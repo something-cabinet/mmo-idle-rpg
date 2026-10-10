@@ -4,10 +4,27 @@
 
 import type { CombatStats, Matchup } from '../../spacetimedb/src/combat';
 import { RESPAWN_SECONDS, type EnemyDef } from '../../spacetimedb/src/data/zones';
-import { $ } from './dom';
 import { fmt } from './format';
 
 let timer = 0;
+const $ = (id: string) => document.getElementById(id)!;
+
+const FLOATS_KEY = 'floatNumbers';
+/** Settings › Floating damage numbers. */
+export function floatsOn() {
+  try {
+    return localStorage.getItem(FLOATS_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+export function setFloats(on: boolean) {
+  try {
+    localStorage.setItem(FLOATS_KEY, on ? 'on' : 'off');
+  } catch {
+    // storage blocked: the setting lasts for this page only
+  }
+}
 
 export function stopFight() {
   window.clearInterval(timer);
@@ -32,13 +49,6 @@ export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
   let last = performance.now();
 
   const el = (who: string, sel: string) => $(`fighter-${who}`).querySelector<HTMLElement>(sel)!;
-  const floatsOn = () => {
-    try {
-      return localStorage.getItem('floatNumbers') !== 'off';
-    } catch {
-      return true;
-    }
-  };
 
   function float(who: 'you' | 'enemy', text: string, cls: string) {
     if (!floatsOn()) return;

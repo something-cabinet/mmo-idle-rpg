@@ -35,12 +35,12 @@ import {
 
 // Import all reducer arg schemas
 import AcceptLinkReducer from "./accept_link_reducer";
-import BuyUpgradeReducer from "./buy_upgrade_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
+import SetTargetReducer from "./set_target_reducer";
 
 // Import all procedure arg schemas
 
@@ -143,12 +143,12 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
-  __reducerSchema("buy_upgrade", BuyUpgradeReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
+  __reducerSchema("set_target", SetTargetReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

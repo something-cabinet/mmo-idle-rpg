@@ -1,11 +1,11 @@
-// Client-side copy of the combat formulas (docs/design/combat.md) for previews.
-// When combat lands on the server, these move into spacetimedb/src/game.ts and are shared.
+// Preview adapter: runs the shared combat formulas (spacetimedb/src/combat.ts) on the
+// preview player and enemies until the views use real data (roadmap milestone 9).
 
-import { RESPAWN, type Enemy, type PREVIEW_PLAYER } from './preview-data';
+import { matchup as sharedMatchup, type CombatStats } from '../../spacetimedb/src/combat';
+import type { EnemyDef } from '../../spacetimedb/src/data/zones';
+import type { Enemy, PREVIEW_PLAYER } from './preview-data';
 
 type Player = typeof PREVIEW_PLAYER;
-
-export const mitigation = (def: number, level: number) => Math.min(0.85, def / (def + 5 * level));
 
 export interface Matchup {
   enemyMit: number;
@@ -22,31 +22,61 @@ export interface Matchup {
   goldPerHour: number;
 }
 
-export function matchup(p: Player, e: Enemy): Matchup {
-  const enemyMit =
-    p.dmg === 'Phys' ? mitigation(e.armor * (1 - p.armorPen), e.level) : mitigation(e.resist, e.level);
-  const critMult = 1 + Math.min(1, p.crit) * (p.critDmg - 1);
-  const dps = p.hit * p.speed * critMult * (1 - enemyMit);
-  const playerMit = mitigation(e.dmg === 'Phys' ? p.armor : p.resist, p.level);
-  const incoming = e.dps * (1 - playerMit) * (1 - p.evasion);
-  const net = incoming - p.regen;
-  const ttk = e.hp / dps;
-  const ttd = net <= 0 ? Infinity : p.hp / net;
-  const win = ttk < ttd;
-  const killsPerHour = win ? 3600 / (ttk + RESPAWN) : 0;
+function previewStats(p: Player): CombatStats {
+  const type = p.dmg === 'Phys' ? 'Physical' : 'Magic';
   return {
-    enemyMit,
-    playerMit,
-    critMult,
-    dps,
-    incoming,
-    ttk,
-    ttd,
-    win,
-    margin: ttd / ttk,
-    killsPerHour,
-    xpPerHour: killsPerHour * e.xp * (1 + p.xpGain),
-    goldPerHour: killsPerHour * e.gold * (1 + p.goldFind),
+    level: p.level,
+    sources: [
+      {
+        hit: { Physical: type === 'Physical' ? p.hit : 0, Magic: type === 'Magic' ? p.hit : 0 },
+        heal: 0,
+        attacksPerSec: p.speed,
+        critChance: p.crit,
+        critMult: 1 + Math.min(1, p.crit) * (p.critDmg - 1),
+      },
+    ],
+    critDamage: p.critDmg,
+    armorPen: p.armorPen,
+    magicPen: 0,
+    maxHp: p.hp,
+    regen: p.regen,
+    armor: p.armor,
+    resistance: p.resist,
+    evasionRating: 0, // the preview player has no evasion
+    lifesteal: 0,
+    threat: 0,
+    itemFind: p.itemFind,
+    goldFind: p.goldFind,
+    xpGain: p.xpGain,
+  };
+}
+
+const previewEnemy = (e: Enemy): EnemyDef => ({
+  ...e,
+  id: 0,
+  damageType: e.dmg === 'Phys' ? 'Physical' : 'Magic',
+  defense: e.def,
+  resistance: e.resist,
+  drops: [],
+});
+
+export function matchup(p: Player, e: Enemy): Matchup {
+  const stats = previewStats(p);
+  const m = sharedMatchup(stats, previewEnemy(e));
+  const perHour = m.killRate * 3600;
+  return {
+    enemyMit: m.enemyMitigation[p.dmg === 'Phys' ? 'Physical' : 'Magic'],
+    playerMit: m.playerMitigation,
+    critMult: stats.sources[0].critMult,
+    dps: m.dps,
+    incoming: m.incoming,
+    ttk: m.timeToKill,
+    ttd: m.timeToDie,
+    win: m.viable,
+    margin: m.timeToDie / m.timeToKill,
+    killsPerHour: perHour,
+    xpPerHour: perHour * m.xpPerKill,
+    goldPerHour: perHour * m.goldPerKill,
   };
 }
 

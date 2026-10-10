@@ -45,7 +45,6 @@ export const character = table(
     level: t.u32(),
     xp: t.u64(),
     gold: t.u64(),
-    power: t.u32(),
     lastSettledAt: t.timestamp(),
     createdAt: t.timestamp(),
     // New columns need defaults so existing rows migrate.

@@ -55,7 +55,6 @@ export const Character = __t.object("Character", {
   level: __t.u32(),
   xp: __t.u64(),
   gold: __t.u64(),
-  power: __t.u32(),
   lastSettledAt: __t.timestamp(),
   createdAt: __t.timestamp(),
   essence: __t.u64(),

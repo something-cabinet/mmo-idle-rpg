@@ -1,4 +1,4 @@
-// Renders the in-game views. Everything except the Fight view's prototype card and
+// Renders the in-game views. Everything except the Fight view's live progress card and
 // the top bar is preview data from docs/design until the matching systems exist.
 
 import { $, toast } from './dom';
@@ -112,11 +112,11 @@ function renderFight() {
         <ul class="loot-log" id="loot-log"><li class="muted">No drops yet. Drops are rare: about 1 every 2 minutes.</li></ul>
       </div>
       <div class="card">
-        <div class="card-head"><h2>Prototype progress</h2><span class="tag ok">Live</span></div>
-        <p class="muted">The scaffold's idle loop (server data) until combat replaces it.</p>
-        <div class="row"><span>Power</span><strong id="stat-power">—</strong></div>
-        <div class="row"><span>Rates</span><span id="stat-rates" class="muted"></span></div>
-        <button id="upgrade-btn" class="btn primary block">Upgrade power</button>
+        <div class="card-head"><h2>Live progress</h2><span class="tag ok">Live</span></div>
+        <p class="muted">Server data: your active loadout against your target. The rest of this view is preview data.</p>
+        <div class="row"><span>Target</span><strong id="live-target">—</strong></div>
+        <div class="row"><span>Kill / die</span><strong id="live-times">—</strong></div>
+        <div class="row"><span>Rates</span><span id="live-rates" class="muted"></span></div>
       </div>
     </div>`;
   updateActivity();

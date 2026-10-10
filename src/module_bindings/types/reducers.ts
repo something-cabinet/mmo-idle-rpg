@@ -7,18 +7,18 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AcceptLinkReducer from "../accept_link_reducer";
-import BuyUpgradeReducer from "../buy_upgrade_reducer";
 import CreateCharacterReducer from "../create_character_reducer";
 import OfferLinkReducer from "../offer_link_reducer";
 import PlayHereReducer from "../play_here_reducer";
 import SendChatReducer from "../send_chat_reducer";
 import SetBannedReducer from "../set_banned_reducer";
+import SetTargetReducer from "../set_target_reducer";
 
 export type AcceptLinkParams = __Infer<typeof AcceptLinkReducer>;
-export type BuyUpgradeParams = __Infer<typeof BuyUpgradeReducer>;
 export type CreateCharacterParams = __Infer<typeof CreateCharacterReducer>;
 export type OfferLinkParams = __Infer<typeof OfferLinkReducer>;
 export type PlayHereParams = __Infer<typeof PlayHereReducer>;
 export type SendChatParams = __Infer<typeof SendChatReducer>;
 export type SetBannedParams = __Infer<typeof SetBannedReducer>;
+export type SetTargetParams = __Infer<typeof SetTargetReducer>;
 

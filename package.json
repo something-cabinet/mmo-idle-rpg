@@ -16,7 +16,8 @@
     "spacetime:logs:local": "spacetime logs --server local mmo-idle-rpg",
     "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud",
     "test:smoke": "tsx scripts/smoke-test.ts",
-    "test:data": "tsx scripts/check-data.ts"
+    "test:data": "tsx scripts/check-data.ts",
+    "test:combat": "tsx scripts/check-combat.ts"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

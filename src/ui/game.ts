@@ -1,13 +1,10 @@
 import type { DbConnection } from '../module_bindings';
-import type { Presence } from '../module_bindings/types';
-import {
-  goldPerSecond,
-  project,
-  upgradeCost,
-  xpPerSecond,
-  xpToNextLevel,
-} from '../../spacetimedb/src/game';
+import type { Character, Presence } from '../module_bindings/types';
+import { combatStats, matchup, type Gear } from '../../spacetimedb/src/combat';
+import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
+import { project, xpToNext } from '../../spacetimedb/src/game';
 import { $, call } from './dom';
+import { fmt, secs } from './sim';
 
 /** serverTime ≈ clientTime + clockOffset (micros). */
 let clockOffset = 0n;
@@ -17,11 +14,14 @@ const nowMicros = () => BigInt(Date.now()) * 1000n + clockOffset;
 /** Elements that only exist while their view is shown. */
 const maybe = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T | null;
 
+/** The active loadout's items in slot order, like the server's `gearOf`. */
+function activeGear(conn: DbConnection, ch: Character): Gear {
+  const lo = [...conn.db.myLoadouts.iter()].find(l => l.index === ch.activeLoadout);
+  const items = new Map([...conn.db.myItems.iter()].map(i => [i.id, i]));
+  return (lo?.slots ?? []).map(id => items.get(id));
+}
+
 export function bindGame(conn: DbConnection) {
-  // The upgrade button lives in the Fight view, which is re-rendered: delegate.
-  $('content').addEventListener('click', e => {
-    if ((e.target as HTMLElement).closest('#upgrade-btn')) call(conn.reducers.buyUpgrade({}));
-  });
   $<HTMLFormElement>('chat-form').onsubmit = e => {
     e.preventDefault();
     const input = $<HTMLInputElement>('chat-input');
@@ -41,8 +41,10 @@ export function renderGame(conn: DbConnection, pres: Presence) {
 
   const row = conn.db.character.id.find(pres.characterId);
   if (row) {
-    const ch = project({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, nowMicros());
-    const need = xpToNextLevel(ch.level);
+    const gear = activeGear(conn, row);
+    const enemy = ENEMIES_BY_ID.get(row.targetEnemyId)?.enemy;
+    const ch = project({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy }, nowMicros());
+    const need = xpToNext(ch.level);
     $('stat-name').textContent = row.name;
     $('stat-level').textContent = String(ch.level);
     $('xp-text').textContent = `${ch.xp.toLocaleString()} / ${need.toLocaleString()}`;
@@ -50,14 +52,19 @@ export function renderGame(conn: DbConnection, pres: Presence) {
     $('stat-gold').textContent = ch.gold.toLocaleString();
     $('stat-essence').textContent = row.essence.toLocaleString();
 
-    const power = maybe('stat-power');
-    if (power) {
-      const cost = upgradeCost(ch.power);
-      power.textContent = String(ch.power);
-      maybe('stat-rates')!.textContent = `+${goldPerSecond(ch.power)} gold/s · +${xpPerSecond(ch.power)} xp/s`;
-      const upgrade = maybe<HTMLButtonElement>('upgrade-btn')!;
-      upgrade.textContent = `Upgrade power (${cost.toLocaleString()} gold)`;
-      upgrade.disabled = ch.gold < cost;
+    const target = maybe('live-target');
+    if (target) {
+      const m = enemy && matchup(combatStats(ch.level, gear), enemy);
+      target.textContent = enemy ? `${enemy.name} (Lv ${enemy.level})` : 'None';
+      maybe('live-times')!.textContent = m ? `${secs(m.timeToKill)} / ${secs(m.timeToDie)}` : '—';
+      const perHour = (m?.killRate ?? 0) * 3600;
+      maybe('live-rates')!.textContent = !m
+        ? ''
+        : m.viable
+          ? `${fmt(perHour)} kills/h · +${fmt(perHour * m.xpPerKill)} xp/h · +${fmt(perHour * m.goldPerKill)} gold/h`
+          : m.dps === 0
+            ? 'No weapon equipped: no progress'
+            : 'Losing this fight: no progress';
     }
   }
 

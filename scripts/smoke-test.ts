@@ -68,17 +68,23 @@ const b = await connect();
 await expectError('name taken (case-insensitive)', b.conn.reducers.createCharacter({ name: `alice_${suffix}` }), 'taken');
 await expectError('chat without character rejected', b.conn.reducers.sendChat({ text: 'hi' }), 'Not in the world');
 
-await expectError('upgrade without gold rejected', a.conn.reducers.buyUpgrade({}), 'Not enough gold');
 await sleep(1100);
 await a.conn.reducers.sendChat({ text: 'hello world' });
 await expectError('chat rate limit', a.conn.reducers.sendChat({ text: 'spam' }), 'Slow down');
 
-console.log('… waiting 10s of idle time for 10 gold');
-await sleep(10_500);
-await a.conn.reducers.buyUpgrade({});
-await sleep(200);
-const ch = charOf(a)!;
-check('idle gold earned and spent on upgrade', ch.power === 2, `power=${ch.power} gold=${ch.gold}`);
+await expectError('unknown enemy rejected', a.conn.reducers.setTarget({ enemyId: 999 }), 'No such enemy');
+await expectError('locked zone rejected', a.conn.reducers.setTarget({ enemyId: 201 }), 'Zone is locked');
+await expectError('boss needs a first kill', a.conn.reducers.setTarget({ enemyId: 106 }), 'Defeat the boss first');
+{
+  const before = charOf(a)!.lastSettledAt.microsSinceUnixEpoch;
+  await sleep(300);
+  await a.conn.reducers.setTarget({ enemyId: 102 });
+  await sleep(200);
+  const ch = charOf(a)!;
+  check('target change settles and switches target', ch.targetEnemyId === 102 && ch.lastSettledAt.microsSinceUnixEpoch > before);
+  // No starter kit until milestone 4: an empty main hand earns nothing.
+  check('no weapon: no idle gains', ch.gold === 0n && ch.xp === 0n && ch.level === 1, `gold=${ch.gold} xp=${ch.xp}`);
+}
 
 // Second tab of the same account takes over; closing it leaves the world.
 const a2 = await connect(a.token);

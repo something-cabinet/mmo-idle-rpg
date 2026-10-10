@@ -18,7 +18,6 @@ export default __t.row({
   level: __t.u32(),
   xp: __t.u64(),
   gold: __t.u64(),
-  power: __t.u32(),
   lastSettledAt: __t.timestamp().name("last_settled_at"),
   createdAt: __t.timestamp().name("created_at"),
   essence: __t.u64(),

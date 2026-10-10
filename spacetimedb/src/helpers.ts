@@ -2,14 +2,16 @@
 // may only export reducers/views.
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
-import { account, character, presence, spacetimedb } from './schema';
+import { account, character, item, presence, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } from './game';
 import { SLOT_COUNT } from './data/bases';
+import { ENEMIES_BY_ID, previousZone, type ZoneDef } from './data/zones';
 
 export type Ctx = ReducerCtx<(typeof spacetimedb)['schemaType']>;
 export type Account = Infer<typeof account.rowType>;
 export type Character = Infer<typeof character.rowType>;
 export type Presence = Infer<typeof presence.rowType>;
+export type Item = Infer<typeof item.rowType>;
 
 /** The caller's account; throws if missing or banned. */
 export function requireAccount(ctx: Ctx): Account {
@@ -35,11 +37,21 @@ export function requireActive(ctx: Ctx): { acc: Account; ch: Character; pres: Pr
   return { acc, ch, pres };
 }
 
-/** Grants idle rewards earned since `lastSettledAt` (see `project`). */
-export function settle(ch: Character, now: Timestamp, capMicros?: bigint): Character {
+/** The active loadout's items in slot order (undefined = empty slot). */
+export function gearOf(ctx: Ctx, ch: Character): (Item | undefined)[] {
+  const lo = [...ctx.db.loadout.characterId.filter(ch.id)].find(l => l.index === ch.activeLoadout);
+  return (lo?.slots ?? []).map(id => (id === 0n ? undefined : (ctx.db.item.id.find(id) ?? undefined)));
+}
+
+/**
+ * Grants idle rewards earned since `lastSettledAt` (see `project`) with the
+ * current gear and target. Call before anything that changes either.
+ */
+export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const p = project(
     { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch },
-    now.microsSinceUnixEpoch,
+    { gear: gearOf(ctx, ch), enemy: ENEMIES_BY_ID.get(ch.targetEnemyId)?.enemy },
+    ctx.timestamp.microsSinceUnixEpoch,
     capMicros
   );
   return {
@@ -49,6 +61,17 @@ export function settle(ch: Character, now: Timestamp, capMicros?: bigint): Chara
     gold: p.gold,
     lastSettledAt: new Timestamp(p.settledMicros),
   };
+}
+
+/** Whether `characterId` has killed the boss of zone `zoneId`. */
+export function hasKilledBoss(ctx: Ctx, characterId: bigint, zoneId: number): boolean {
+  return [...ctx.db.bossKill.characterId.filter(characterId)].some(k => k.zoneId === zoneId);
+}
+
+/** A zone is open once the previous zone's boss is dead (the first zone always is). */
+export function zoneUnlocked(ctx: Ctx, characterId: bigint, zone: ZoneDef): boolean {
+  const prev = previousZone(zone);
+  return !prev || hasKilledBoss(ctx, characterId, prev.id);
 }
 
 /**
@@ -92,7 +115,7 @@ export function enterWorld(ctx: Ctx) {
   if (!ch || !ctx.connectionId) return;
   leaveWorld(ctx, ctx.sender);
   ensureCharacterRows(ctx, ch.id);
-  const settled = settle(ch, ctx.timestamp, MAX_OFFLINE_MICROS);
+  const settled = settle(ctx, ch, MAX_OFFLINE_MICROS);
   ctx.db.character.id.update(settled);
   ctx.db.presence.insert({
     identity: ctx.sender,
@@ -109,6 +132,6 @@ export function leaveWorld(ctx: Ctx, who: Identity) {
   const pres = ctx.db.presence.identity.find(who);
   if (!pres) return;
   const ch = ctx.db.character.id.find(pres.characterId);
-  if (ch) ctx.db.character.id.update(settle(ch, ctx.timestamp));
+  if (ch) ctx.db.character.id.update(settle(ctx, ch));
   ctx.db.presence.identity.delete(who);
 }

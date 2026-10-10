@@ -15,6 +15,12 @@
 - **Consequence:** viability is deterministic. There are no unlucky online deaths, and
   offline results always match online.
 
+### Legendary effects
+
+Legendary affixes (legendary.md) plug into the formulas below by changing one term each
+(damage type, crit damage, evasion cap, extra DPS, respawn time, rewards). Each effect
+applies at most once per character.
+
 ### Rule for new mechanics
 
 Every mechanic needs a closed-form expected value. Avoid chained procs, on-kill
@@ -32,9 +38,13 @@ flat and percent sums (see attributes.md).
 ## Formulas
 
 ```
-mitigation(def, pen, level) = min(0.85, d / (d + 50 × level))   where d = def × (1 − pen)
+mitigation(def, pen, level) = min(0.85, d / (d + 5 × level))   where d = def × (1 − pen)
 
-critMult = 1 + critChance × (critDamage − 1)                     // damage and heals
+evasion  = min(0.60, r / (r + 10 × enemyLevel))                  // r = evasion rating
+
+// Crit is per source: base crit comes from the weapon (attributes.md).
+critChance(s) = s.weapon.baseCrit × (1 + Σ increasedCrit%)        // uncapped
+critMult(s)   = 1 + min(1, critChance(s)) × (critDamage − 1)      // excess over 100% unused              // damage and heals
 
 // Attack sources: each equipped weapon that attacks, with a speed factor.
 // Today: sources = [ { weapon: mainHand, speedFactor: 1 } ]
@@ -43,14 +53,14 @@ attacksPerSec(s) = max(s.weapon.speed × (1 + attackSpeed%), 0.25 × s.weapon.sp
 
 DPS_you  = Σ sources s   Σ damage types t
              s.weapon.damage_t × scale_t × (1 − mitigation(enemyDef_t, pen_t, enemyLevel))
-             × attacksPerSec(s) × critMult
+             × attacksPerSec(s) × critMult(s)
 
-HPS_self = Σ sources s   s.weapon.heal × healScale × attacksPerSec(s) × critMult
+HPS_self = Σ sources s   s.weapon.heal × healScale × attacksPerSec(s) × critMult(s)
                                                        // solo: heals land on yourself
 
 DPS_enemy   = enemyDamage × enemySpeed
               × (1 − mitigation(yourDef_{enemyType}, 0, yourLevel)) × (1 − evasion)
-netIncoming = DPS_enemy − hpRegen − lifesteal × DPS_you − HPS_self
+netIncoming = DPS_enemy − hpRegen − lifesteal × DPS_you − HPS_self   // lifesteal cap 3%
 
 timeToKill = enemyHP / DPS_you
 timeToDie  = netIncoming ≤ 0 ? ∞ : maxHP / netIncoming
@@ -59,7 +69,10 @@ viable   = timeToKill < timeToDie          // otherwise: zero gain
 killRate = 1 / (timeToKill + respawnTime)
 ```
 
-- `scale_t` is the final multiplier from damage stats of that type; `healScale` from heal stats.
+- `s.weapon.damage_t` = the weapon's base hit + `addedFlat_t × 1.0 / s.weapon.baseSpeed`.
+  Flat added damage is defined per hit at 1.0/s, so it gives the same DPS on every
+  weapon instead of favoring fast ones. Flat heal works the same way.
+- `scale_t` is the final multiplier from damage-% stats of that type; `healScale` from heal-% stats.
 - Two damage types, **Physical** (vs Armor) and **Magic** (vs Resistance).
 - **Attack sources.** Today only the main-hand weapon attacks; off-hands (shield, focus)
   contribute stats only. The formulas sum over sources so other attackers can be added
@@ -75,13 +88,16 @@ killRate = 1 / (timeToKill + respawnTime)
 kills  = elapsed × killRate
 xp     = kills × enemyXp × (1 + xpGain%)
 gold   = kills × enemyGold × (1 + goldFind%)
-drops  = per rarity tier: sample(kills × dropChance[tier] × (1 + itemFind%))
+drops  = per rarity: sample(kills × dropChance[rarity] × (1 + itemFind%))
+         // each drop: base picked from the enemy's base weights, tier = zone tier
 ```
 
 - Settlement follows the existing `project()` pattern: state is a snapshot as of
   `lastSettledAt`, and gains are computed from elapsed time.
-- **Anything that changes stats settles first** at the old stats: equipping, switching
-  loadouts, changing zones, leveling.
+- The player fights one chosen **target enemy** (zones.md). `enemyXp`, `enemyGold`
+  and `dropChance` come from that enemy.
+- **Anything that changes stats or the target settles first** at the old values:
+  equipping, switching loadouts, changing zone or target enemy, leveling.
 - Offline time is capped (8h today).
 - Drop sampling uses a seed derived from (character, settle time), so the server's
   result is reproducible.

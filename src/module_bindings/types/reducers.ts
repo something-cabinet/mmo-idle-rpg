@@ -8,6 +8,7 @@ import { type Infer as __Infer } from "spacetimedb";
 // Import all reducer arg schemas
 import AcceptLinkReducer from "../accept_link_reducer";
 import AutoEquipReducer from "../auto_equip_reducer";
+import ChallengeBossReducer from "../challenge_boss_reducer";
 import CreateCharacterReducer from "../create_character_reducer";
 import EquipReducer from "../equip_reducer";
 import LockItemReducer from "../lock_item_reducer";
@@ -25,6 +26,7 @@ import UnequipReducer from "../unequip_reducer";
 
 export type AcceptLinkParams = __Infer<typeof AcceptLinkReducer>;
 export type AutoEquipParams = __Infer<typeof AutoEquipReducer>;
+export type ChallengeBossParams = __Infer<typeof ChallengeBossReducer>;
 export type CreateCharacterParams = __Infer<typeof CreateCharacterReducer>;
 export type EquipParams = __Infer<typeof EquipReducer>;
 export type LockItemParams = __Infer<typeof LockItemReducer>;

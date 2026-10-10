@@ -63,6 +63,7 @@ const warrior = gear({
   // 287 HP with the Might/Vitality HP% rules (zone-content.md).
   check('… and dies in ~19 s', near(m.timeToDie, 19, 1), f(m.timeToDie));
   check('… just wins', m.viable && m.timeToDie / m.timeToKill < 1.3);
+  check('a fresh level-1 starter loses to Grubnak', !matchup(combatStats(1, starter), enemy(106)).viable);
 }
 
 // ---------------------------------------------------------------- formula details

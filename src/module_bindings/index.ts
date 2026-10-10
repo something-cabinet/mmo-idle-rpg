@@ -36,6 +36,7 @@ import {
 // Import all reducer arg schemas
 import AcceptLinkReducer from "./accept_link_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
+import ChallengeBossReducer from "./challenge_boss_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import EquipReducer from "./equip_reducer";
 import LockItemReducer from "./lock_item_reducer";
@@ -153,6 +154,7 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
+  __reducerSchema("challenge_boss", ChallengeBossReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("equip", EquipReducer),
   __reducerSchema("lock_item", LockItemReducer),

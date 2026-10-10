@@ -4,9 +4,11 @@
 import { BASE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, toStored } from '../spacetimedb/src/data/stats';
-import { ENEMIES_BY_ID, rewardScale } from '../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
 import {
+  FIRST_KILL_GOLD_MULT,
   KEEP_CAP_PER_SETTLE,
+  firstKillReward,
   RARITIES,
   REGULAR_AFFIXES,
   makeItem,
@@ -146,6 +148,17 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('full bag salvages every kept drop', full.kept.length === 0 && full.overflow > 0);
   const none = rollDrops(seededRng(4n), session({ kills: 0 }));
   check('no kills, no drops', total(none) === 0 && none.essence === 0n);
+}
+
+// ---------------------------------------------------------------- boss first kill
+
+for (const zone of ZONES_BY_ID.values()) {
+  const boss = bossOf(zone)!;
+  const rewards = Array.from({ length: 50 }, (_, i) => firstKillReward(seededRng(BigInt(i)), zone, boss));
+  check(`${zone.name}: first kill gives ${FIRST_KILL_GOLD_MULT}× gold and a Rare of tier ${zone.tier} from the zone`,
+    rewards.every(r => r.gold === BigInt(boss.gold * FIRST_KILL_GOLD_MULT) && r.item.rarity.tag === 'Rare' &&
+      r.item.tier === zone.tier && r.item.affixes.length === 2 && boss.drops.includes(r.item.baseId)) &&
+    new Set(rewards.map(r => r.item.baseId)).size > 10);
 }
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

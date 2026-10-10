@@ -3,7 +3,7 @@
 Where the project stands and what to build next. Game design lives in
 [design/](design/README.md); this file is the build plan. Update it as milestones land.
 
-## Status (2026-10-11, branch `game-design`)
+## Status (2026-10-10, branch `main`)
 
 | # | Milestone | State |
 |---|---|---|
@@ -14,8 +14,8 @@ Where the project stands and what to build next. Game design lives in
 | 3 | Drops and the loot filter | **Done** |
 | 4 | Character start: starter kit, target choice | **Done** |
 | 5 | Equipment: equip, loadouts, auto-equip, lock | **Done** |
-| 6 | Bosses and zone unlocks | **Next** |
-| 7 | Crafting: reroll, rarity upgrade, bag expansion | Todo |
+| 6 | Bosses and zone unlocks | **Done** |
+| 7 | Crafting: reroll, rarity upgrade, bag expansion | **Next** |
 | 8 | Legendary effects in the formulas | Todo |
 | 9 | UI on real data + away report | Todo |
 | 10 | Tests for all of the above | Ongoing |
@@ -79,23 +79,33 @@ fighting the target enemy with the active loadout.
 - **Reducers** (`reducers/equipment.ts`): `equip`, `unequip`, `switchLoadout`,
   `renameLoadout`, `setProfile`, `autoEquip`, `lockItem`, `salvage`. Changes to the
   active loadout settle first. Salvage refuses locked items and items in any loadout.
+- **Bosses** (`reducers/boss.ts`): `challengeBoss(zoneId)` settles, then runs the
+  normal check with the active loadout. A loss fails with the numbers ("… wins: you
+  need 19.9 s to kill it but die in 10.8 s") and costs nothing. The first win inserts
+  `boss_kill` (unlocks the next zone, makes the boss a farmable target) and gives
+  `firstKillReward` (loot.ts): 20× the boss's gold and a Rare of the zone's tier,
+  outside the bag limit. A win can't be reached in the smoke test yet (starter gear
+  loses); the reward is covered in `test:loot`.
 - **Not yet**: Fortune's Favor (milestone 8); showing drops, the filter and the bag
   with real data, the loot log and the away report (milestone 9).
 - **Client**: the Fight view's "Live progress" card and the top bar use the real
   formulas. The other screens still use `src/ui/preview-data.ts`; `src/ui/sim.ts` is
   now only an adapter that runs the shared `matchup()` on the preview player.
 
-## Next: milestone 6, bosses and zone unlocks
+## Next: milestone 7, crafting
 
-`challengeBoss` (deterministic check), `boss_kill` row, first-kill Rare + 20× gold,
-zone unlock rule = previous zone's boss killed.
+`rerollAffix`, `upgradeRarity`, `expandBag`; costs in crafting.md
+(`hours × 1,200 × 2.9^(T−1)` gold, `hours × 15 × 2.9^(T−1)` Essence). Rolls reuse
+`rollAffix` / `rollLegendary` from loot.ts; uniques can't be crafted.
 
-`zoneUnlocked` and `hasKilledBoss` (helpers.ts) already gate `setTarget`; the boss
-fight is `matchup(combatStats(level, gear), boss).viable` with the active loadout.
+### Open questions for the next session
+
+- **Dev reducer for tests?** A boss win and crafting can't be reached in the smoke test
+  with starter gear. Option: a dev-only reducer that grants items / sets level (admin
+  only, or removed before milestone 9). Not decided.
 
 ## Later milestones (short notes)
 
-- **7 Crafting**: `rerollAffix`, `upgradeRarity`, `expandBag`; costs in crafting.md.
 - **8 Legendary effects**: hook each effect ID into aggregation/matchup/settlement.
 - **9 UI**: replace `preview-data.ts` usage screen by screen; away report on login.
 

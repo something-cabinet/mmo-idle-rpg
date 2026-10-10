@@ -5,7 +5,7 @@
 import { base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
 import { STATS, affixRef, toStored, type StatDef } from './data/stats';
-import { DROP_CHANCE, type EnemyDef } from './data/zones';
+import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
 export const RARITIES = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Unique'] as const;
 export type RarityName = (typeof RARITIES)[number];
@@ -141,6 +141,17 @@ export interface LootFilter {
 
 export function passesFilter(item: NewItem, f: LootFilter): boolean {
   return rarityRank(item.rarity.tag) >= rarityRank(f.minRarity) || item.affixes.some(a => f.keepAffixes.includes(a.stat));
+}
+
+/** First kill of a zone boss: 20× its gold (zone-content.md). */
+export const FIRST_KILL_GOLD_MULT = 20;
+
+/** First-kill reward: 20× the boss's gold and a guaranteed Rare of the zone's tier from any of its bases. */
+export function firstKillReward(rng: Rng, zone: ZoneDef, boss: EnemyDef): { gold: bigint; item: NewItem } {
+  return {
+    gold: BigInt(Math.round(boss.gold * FIRST_KILL_GOLD_MULT)),
+    item: makeItem(rng, pick(rng, boss.drops), zone.tier, 'Rare'),
+  };
 }
 
 export interface DropResult {

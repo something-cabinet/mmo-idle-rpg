@@ -106,6 +106,12 @@ await expectError('boss needs a first kill', a.conn.reducers.setTarget({ enemyId
   check('starter kit earns idle XP and gold from rats', ch.xp >= 7n && ch.gold >= 2n, `xp=${ch.xp} gold=${ch.gold}`);
 }
 
+// Bosses: a fresh character loses to Grubnak (winning needs gear the test can't get).
+await expectError('unknown zone rejected', a.conn.reducers.challengeBoss({ zoneId: 9 }), 'No such zone');
+await expectError('locked zone boss rejected', a.conn.reducers.challengeBoss({ zoneId: 2 }), 'Zone is locked');
+await expectError('starter kit loses to Grubnak, with the numbers', a.conn.reducers.challengeBoss({ zoneId: 1 }), 'Grubnak, Goblin Chief wins');
+check('a lost challenge records no kill', [...a.conn.db.myBossKills.iter()].length === 0);
+
 // Equipment: slots, loadouts, auto-equip, lock and salvage.
 {
   const lo = (i: number) => [...a.conn.db.myLoadouts.iter()].find(l => l.index === i)!;

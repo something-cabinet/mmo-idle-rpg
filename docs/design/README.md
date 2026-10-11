@@ -48,7 +48,7 @@ not decisions.
 | 2026-10-10 | No upgrade score shown on items; players compare kept items themselves. |
 | 2026-10-10 | Equipping is manual and online only, with one "equip upgrades" button. No auto-equip offline. |
 | 2026-10-10 | Auto-equip button with per-loadout profiles (Damage, Survival, Loot), evaluated against a fixed reference dummy at the character's level, never the current target. Equips directly on click. |
-| 2026-10-10 | One base per family per tier for now; room to add more later. Each tier renames the base (Copper Sword → Bronze Sword). |
+| 2026-10-10 | One base per family per tier for now; room to add more later. Each tier renames the base (Rusted Sword → Bogiron Sword). |
 | 2026-10-10 | Armor slot split: chest 40%, head/hands/feet 20% each. |
 | 2026-10-10 | Heal weapons heal most but not all incoming damage solo (healing staff 130T/hit, scepter 170T/hit). |
 | 2026-10-10 | Flat heal affix c = 26/tier (not 80), so it adds the same share to a heal weapon as flat damage does to a damage weapon. |
@@ -70,6 +70,7 @@ not decisions.
 | 2026-10-11 | Uniques: stats roll in [0.8, 1.4] × value (widened from [0.9, 1] for more exciting rolls) and are stored on the item like other stats; effects stored as a list of effect IDs. A legendary effect on a unique counts as one stacking copy. |
 | 2026-10-11 | Uniques drop globally (replaces per-enemy uniques): in a tier-N zone, any unique of tier ≤ N, each tier lower at half weight. Uniques are always kept by the loot filter. First 7 for T1–T2. |
 | 2026-10-11 | Unique color is magenta (was gold-brown, too close to Rare, Legendary and the gold accent). |
+| 2026-10-11 | Tier names T1–T4 reworked for a fantasy feel with a clear tone ladder (cheap, cheap, solid, a little fancy): metal Rusted, Bogiron, Dwarven, Elven; wood Driftwood, Gnarled, Heartoak, Silverbark; cloth Sackcloth, Homespun, Spidersilk, Mageweave; leather Ratskin, Boarhide, Wolfhide, Owlbear; tome Tattered, Dog-eared, Scholar's, Gilded. |
 | 2026-10-11 | UI: desktop first, mostly text and icons, simple fight view with floating damage numbers, placeholder art. |
 | 2026-10-10 | 4 gems, one per primary; each gem is its own ring and amulet base. Gem names change every 3 tiers (Ruby → Bloodstone → Magmaheart). |
 | 2026-10-10 | Rarities: Common, Magic, Rare, Epic, Legendary, Unique. Legendary is randomly generated; Unique is handcrafted. |

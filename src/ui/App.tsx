@@ -53,7 +53,7 @@ function CreateCharacter() {
           >
             <input placeholder="Name (3-16 letters, digits, _)" maxLength={16} value={name} onChange={e => setName(e.target.value)} />
             <fieldset className="affix-pick">
-              <legend className="muted">Starter weapon (you also get a Rawhide Vest and Boots)</legend>
+              <legend className="muted">Starter weapon (you also get a Ratskin Vest and Boots)</legend>
               {STARTER_WEAPONS.map(id => {
                 const b = base(id);
                 const w = weaponValues(b.weapon!, 1);

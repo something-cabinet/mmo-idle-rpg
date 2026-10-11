@@ -50,12 +50,13 @@ export interface BaseDef {
 
 // ------------------------------------------------------------------ names
 
-const TRACKS = {
-  metal: ['Copper', 'Bronze', 'Iron', 'Steel', 'Mithril', 'Adamant', 'Runic', 'Dragonbone', 'Celestial'],
-  wood: ['Gnarled', 'Oak', 'Ash', 'Yew', 'Ironwood', 'Elderwood', 'Ghostwood', 'Dragonwood', 'Worldroot'],
-  cloth: ['Linen', 'Wool', 'Silk', 'Mageweave', 'Runeweave', 'Moonsilk', 'Spellsilk', 'Voidweave', 'Starweave'],
-  leather: ['Rawhide', 'Tanned', 'Hardened', 'Studded', 'Drakehide', 'Shadowhide', 'Wyrmscale', 'Phoenixhide', 'Starhide'],
-  tome: ['Worn', "Scribe's", "Scholar's", "Sage's", "Arcanist's", "Archmage's", 'Runebound', 'Astral', 'Celestial'],
+/** Tier name tracks: T1–T2 sound cheap, T3 solid, T4 a little fancy, T5+ legendary materials. */
+export const TRACKS = {
+  metal: ['Rusted', 'Bogiron', 'Dwarven', 'Elven', 'Mithril', 'Adamant', 'Runic', 'Dragonbone', 'Celestial'],
+  wood: ['Driftwood', 'Gnarled', 'Heartoak', 'Silverbark', 'Ironwood', 'Elderwood', 'Ghostwood', 'Dragonwood', 'Worldroot'],
+  cloth: ['Sackcloth', 'Homespun', 'Spidersilk', 'Mageweave', 'Runeweave', 'Moonsilk', 'Spellsilk', 'Voidweave', 'Starweave'],
+  leather: ['Ratskin', 'Boarhide', 'Wolfhide', 'Owlbear', 'Drakehide', 'Shadowhide', 'Wyrmscale', 'Phoenixhide', 'Starhide'],
+  tome: ['Tattered', 'Dog-eared', "Scholar's", 'Gilded', "Arcanist's", "Archmage's", 'Runebound', 'Astral', 'Celestial'],
 } as const;
 
 const tracked = (track: keyof typeof TRACKS, piece: string) => (t: number) => `${TRACKS[track][t - 1]} ${piece}`;
@@ -179,7 +180,7 @@ export const BASE_LIST: BaseDef[] = [
 
 /** Starter weapons a new character picks from (zone-content.md): sword, bow, wand, healing staff. */
 export const STARTER_WEAPONS = [1, 8, 5, 10] as const;
-/** Every new character also gets these, Common T1: Rawhide Vest and Rawhide Boots. */
+/** Every new character also gets these, Common T1: Ratskin Vest and Ratskin Boots. */
 export const STARTER_ARMOR = [35, 37] as const;
 
 export const BASES: ReadonlyMap<number, BaseDef> = new Map(BASE_LIST.map(b => [b.id, b]));

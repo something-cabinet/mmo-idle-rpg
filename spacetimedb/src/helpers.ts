@@ -231,7 +231,7 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
 }
 
 /**
- * Gives a new character its starter kit (Common T1 weapon + Rawhide Vest and Boots)
+ * Gives a new character its starter kit (Common T1 weapon + Ratskin Vest and Boots)
  * and equips it in loadout 0. Needs the loadouts (`ensureCharacterRows`) first.
  */
 export function grantStarterKit(ctx: Ctx, characterId: bigint, weaponBaseId: number) {

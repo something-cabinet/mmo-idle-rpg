@@ -1,6 +1,6 @@
 // Consistency checks for the static game data (spacetimedb/src/data). No server needed:
 //   npm run test:data
-import { BASE_LIST, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
+import { BASE_LIST, TRACKS, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
@@ -42,8 +42,14 @@ for (const zone of ZONES) {
 check('enemy lookup', ENEMIES_BY_ID.get(101)?.enemy.name === 'Field Rat');
 
 // Spot checks against docs/design/bases.md and zone-content.md.
-check('T1 sword name', base(1).name(1) === 'Copper Sword');
-check('T2 leather chest name', base(35).name(2) === 'Tanned Vest');
+check('T1 sword name', base(1).name(1) === 'Rusted Sword');
+check('T2 leather chest name', base(35).name(2) === 'Boarhide Vest');
+{
+  // A tier word means the same tier on every track, so names never hint at the wrong tier.
+  const tierOf = new Map<string, Set<number>>();
+  for (const track of Object.values(TRACKS)) track.forEach((w, i) => tierOf.set(w, (tierOf.get(w) ?? new Set()).add(i + 1)));
+  check('tier words: 9 per track, each word at one tier only', Object.values(TRACKS).every(t => t.length === 9) && [...tierOf.values()].every(t => t.size === 1));
+}
 check('T4 ruby ring name', base(50).name(4) === 'Rough Bloodstone Ring');
 check('T9 amber amulet name', base(57).name(9) === 'Flawless Dawnheart Amulet');
 check('T9 sword hit ≈ 3,782', near(Math.round(weaponValues(base(1).weapon!, 9).hit), 3782));

@@ -6,10 +6,10 @@ Concrete zones built on the rules in zones.md. All numbers *illustrative*.
 
 ### New player start
 
-- A new character picks a **starter weapon** (Common, T1): Copper Sword, Gnarled Bow,
-  Gnarled Wand or Gnarled Healing Staff. It is only a starting point; any gear can be
+- A new character picks a **starter weapon** (Common, T1): Rusted Sword, Driftwood Bow,
+  Driftwood Wand or Driftwood Healing Staff. It is only a starting point; any gear can be
   used later.
-- Everyone also gets a Common **Rawhide Vest** and **Rawhide Boots**.
+- Everyone also gets a Common **Ratskin Vest** and **Ratskin Boots**.
 - Level 1: 100 HP, 1 of each primary (attributes.md).
 
 ### Tutorial curve (T1 only)
@@ -48,7 +48,7 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 
 **Checks** (simulated):
 
-- Fresh level 1 with Copper Sword + starter kit vs Field Rat: kills in ~3.4 s, would
+- Fresh level 1 with Rusted Sword + starter kit vs Field Rat: kills in ~3.4 s, would
   take ~106 s to die. About 28 rats (~4 min) to reach level 2.
 - Average level-10 warrior (287 HP) vs Grubnak: kills in 15.7 s, dies in ~19 s. Just wins.
 - The Wild Boar is armored and the Bog Wisp is warded, so players meet both damage
@@ -58,11 +58,11 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 
 | Enemy | Bases |
 |---|---|
-| Field Rat (7) | Copper Dagger, Gnarled Wand, Rawhide Cap, Linen Shoes, Copper Gauntlets, Rough Emerald Ring, Rough Amber Amulet |
-| Wild Boar (7) | Copper Mace, Gnarled Bow, Copper Helm, Rawhide Boots, Linen Robe, Copper Shield, Rough Ruby Ring |
-| Goblin Scout (6) | Copper Sword, Copper Katana, Rawhide Bracers, Linen Hood, Rough Sapphire Amulet, Rough Emerald Amulet |
-| Bog Wisp (6) | Gnarled Fire Staff, Gnarled Healing Staff, Worn Tome, Linen Gloves, Rough Sapphire Ring, Rough Ruby Amulet |
-| Goblin Brute (6) | Copper Greatsword, Copper Scepter, Copper Breastplate, Copper Greaves, Rawhide Vest, Rough Amber Ring |
+| Field Rat (7) | Rusted Dagger, Driftwood Wand, Ratskin Cap, Sackcloth Shoes, Rusted Gauntlets, Rough Emerald Ring, Rough Amber Amulet |
+| Wild Boar (7) | Rusted Mace, Driftwood Bow, Rusted Helm, Ratskin Boots, Sackcloth Robe, Rusted Shield, Rough Ruby Ring |
+| Goblin Scout (6) | Rusted Sword, Rusted Katana, Ratskin Bracers, Sackcloth Hood, Rough Sapphire Amulet, Rough Emerald Amulet |
+| Bog Wisp (6) | Driftwood Fire Staff, Driftwood Healing Staff, Tattered Tome, Sackcloth Gloves, Rough Sapphire Ring, Rough Ruby Amulet |
+| Goblin Brute (6) | Rusted Greatsword, Rusted Scepter, Rusted Breastplate, Rusted Greaves, Ratskin Vest, Rough Amber Ring |
 | Grubnak (boss) | Any T1 base |
 
 ## T2: Thornwood
@@ -86,11 +86,11 @@ A dark, overgrown forest where bandits and beasts hide. Levels 16–25.
 
 | Enemy | Bases |
 |---|---|
-| Thornback Spider (7) | Bronze Dagger, Oak Bow, Wool Gloves, Tanned Boots, Bronze Helm, Cut Emerald Ring, Cut Sapphire Amulet |
-| Bandit Cutthroat (7) | Bronze Sword, Bronze Katana, Tanned Cap, Tanned Vest, Wool Shoes, Cut Ruby Ring, Cut Emerald Amulet |
-| Briar Shaman (6) | Oak Wand, Oak Fire Staff, Scribe's Tome, Wool Hood, Wool Robe, Cut Sapphire Ring |
-| Ironbark Treant (6) | Bronze Greatsword, Oak Healing Staff, Bronze Breastplate, Bronze Greaves, Bronze Shield, Cut Amber Ring |
-| Dire Wolf (6) | Bronze Mace, Bronze Scepter, Tanned Bracers, Bronze Gauntlets, Cut Ruby Amulet, Cut Amber Amulet |
+| Thornback Spider (7) | Bogiron Dagger, Gnarled Bow, Homespun Gloves, Boarhide Boots, Bogiron Helm, Cut Emerald Ring, Cut Sapphire Amulet |
+| Bandit Cutthroat (7) | Bogiron Sword, Bogiron Katana, Boarhide Cap, Boarhide Vest, Homespun Shoes, Cut Ruby Ring, Cut Emerald Amulet |
+| Briar Shaman (6) | Gnarled Wand, Gnarled Fire Staff, Dog-eared Tome, Homespun Hood, Homespun Robe, Cut Sapphire Ring |
+| Ironbark Treant (6) | Bogiron Greatsword, Gnarled Healing Staff, Bogiron Breastplate, Bogiron Greaves, Bogiron Shield, Cut Amber Ring |
+| Dire Wolf (6) | Bogiron Mace, Bogiron Scepter, Boarhide Bracers, Bogiron Gauntlets, Cut Ruby Amulet, Cut Amber Amulet |
 | Morgra (boss) | Any T2 base |
 
 ## Open

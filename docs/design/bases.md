@@ -7,7 +7,7 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
 - **One base per family per tier** for now. A base is (family, tier); more than one base
   per family and tier can be added later without changing storage, since every item
   stores its final values.
-- **Each tier renames the base** from the family's name track (Copper Sword → Bronze
+- **Each tier renames the base** from the family's name track (Rusted Sword → Bogiron
   Sword). The name is data on the base, never computed from a formula, so any name can
   be changed or overridden per family.
 - **Scaling** uses the curves in attributes.md:
@@ -23,10 +23,10 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
 
 | Tier | Metal | Wood | Cloth | Leather | Tome |
 |---|---|---|---|---|---|
-| 1 | Copper | Gnarled | Linen | Rawhide | Worn |
-| 2 | Bronze | Oak | Wool | Tanned | Scribe's |
-| 3 | Iron | Ash | Silk | Hardened | Scholar's |
-| 4 | Steel | Yew | Mageweave | Studded | Sage's |
+| 1 | Rusted | Driftwood | Sackcloth | Ratskin | Tattered |
+| 2 | Bogiron | Gnarled | Homespun | Boarhide | Dog-eared |
+| 3 | Dwarven | Heartoak | Spidersilk | Wolfhide | Scholar's |
+| 4 | Elven | Silverbark | Mageweave | Owlbear | Gilded |
 | 5 | Mithril | Ironwood | Runeweave | Drakehide | Arcanist's |
 | 6 | Adamant | Elderwood | Moonsilk | Shadowhide | Archmage's |
 | 7 | Runic | Ghostwood | Spellsilk | Wyrmscale | Runebound |
@@ -35,8 +35,10 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
 
 - **Metal:** sword, dagger, mace, scepter (holy mace), katana, greatsword, shield, plate.
 - **Wood:** bow, wand, fire staff, healing staff.
-- Item name = `<track> <piece>`, e.g. Iron Greatsword, Ash Bow, Silk Robe,
-  Hardened Vest, Sage's Tome.
+- Item name = `<track> <piece>`, e.g. Dwarven Greatsword, Heartoak Bow, Spidersilk Robe,
+  Wolfhide Vest, Gilded Tome.
+- **Tone by tier:** T1–T2 sound cheap or crude, T3 solid and ordinary, T4 a little fancy,
+  T5+ legendary materials. A word means the same tier on every track.
 
 **Armor pieces:**
 

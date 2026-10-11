@@ -64,8 +64,8 @@ Used for item names, icon borders and loot log lines.
 │ Per hour: 254 kills · 7.1k XP · 1.8k gold · 12 drops│
 ├─────────────────────────────────────────────────────┤
 │ Loot log                                            │
-│  Rare  Copper Breastplate of the Bear      kept     │
-│  Magic Rawhide Vest                        salvaged │
+│  Rare  Rusted Breastplate of the Bear      kept     │
+│  Magic Ratskin Vest                        salvaged │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -90,7 +90,7 @@ Used for item names, icon borders and loot log lines.
 │ Goblin Brute    13  Phys  Arm   Lose ✖      —      —       6 ▸  │
 │ ★ Grubnak       15  Phys  Bal   Lose ✖                [Challenge]│
 ├─────────────────────────────────────────────────────────────────┤
-│ Selected: Bog Wisp — drops: Gnarled Fire Staff, Worn Tome, …    │
+│ Selected: Bog Wisp — drops: Driftwood Fire Staff, Tattered Tome, …│
 │                                              [ Fight this ]     │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -170,7 +170,7 @@ Used for item names, icon borders and loot log lines.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Item: [Rare Copper Breastplate ▾]                           │
+│ Item: [Rare Rusted Breastplate ▾]                           │
 │ [ Reroll affix ] [ Upgrade rarity ]                         │
 ├─────────────────────────────────────────────────────────────┤
 │ ( ) +18 max HP           T5                                 │
@@ -200,7 +200,7 @@ Shown once on login after offline time.
 │ Goblin Brute × 1,812 kills                                  │
 │ +128,400 XP   Level 14 → 16                                 │
 │ +12,700 gold   +210 essence                                 │
-│ Items kept (12):  Rare Copper Greaves …   [View in bag]     │
+│ Items kept (12):  Rare Rusted Greaves …   [View in bag]     │
 │ Salvaged: 57 Common, 26 Magic                               │
 │ ⚠ Bag is full: 4 items were salvaged                         │
 │                                                  [ OK ]     │

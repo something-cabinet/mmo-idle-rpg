@@ -67,7 +67,7 @@ fighting the target enemy with the active loadout.
   `init`) settles everyone in the world so drops arrive while playing.
 - **Character start**: `createCharacter(name, starterWeapon)` takes a base ID from
   `STARTER_WEAPONS` (sword, bow, wand, healing staff; all beat the Field Rat at
-  level 1) and `grantStarterKit` adds it plus a Common Rawhide Vest and Boots,
+  level 1) and `grantStarterKit` adds it plus a Common Ratskin Vest and Boots,
   equipped in loadout 0. The create screen has the weapon picker. Target choice is
   the `setTarget` reducer (milestone 2); the Zones screen still uses preview data
   (milestone 9).

@@ -41,4 +41,5 @@ export default __t.row({
   },
   locked: __t.bool(),
   createdAt: __t.timestamp().name("created_at"),
+  effects: __t.array(__t.u16()),
 });

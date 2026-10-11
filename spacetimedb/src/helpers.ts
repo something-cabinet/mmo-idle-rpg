@@ -107,7 +107,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       fortune: effectAmount(stats.effects, Effect.FortunesFavor),
     });
     for (const it of drops.kept) {
-      const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, uniqueId: undefined, locked: false, createdAt: ctx.timestamp });
+      const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp });
       keptItemIds.push(row.id);
     }
     essence += drops.essence;
@@ -117,7 +117,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   if (target?.enemy.boss && p.kills > 0 && !hasKilledBoss(ctx, ch.id, target.zone.id)) {
     const reward = firstKillReward(seededRng(ch.id, BigInt(target.zone.id), ctx.timestamp.microsSinceUnixEpoch), target.zone, target.enemy);
     // The guaranteed item ignores the bag limit (it only limits drops).
-    const row = ctx.db.item.insert({ ...reward.item, id: 0n, characterId: ch.id, uniqueId: undefined, locked: false, createdAt: ctx.timestamp });
+    const row = ctx.db.item.insert({ ...reward.item, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp });
     keptItemIds.push(row.id);
     ctx.db.bossKill.insert({ id: 0n, characterId: ch.id, zoneId: target.zone.id, killedAt: ctx.timestamp });
     gold += reward.gold;
@@ -244,7 +244,6 @@ export function grantStarterKit(ctx: Ctx, characterId: bigint, weaponBaseId: num
       ...makeItem(rng, baseId, 1, 'Common'),
       id: 0n,
       characterId,
-      uniqueId: undefined,
       locked: false,
       createdAt: ctx.timestamp,
     });

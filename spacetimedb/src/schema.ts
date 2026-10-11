@@ -79,7 +79,7 @@ export const StatValue = t.object('StatValue', {
 
 export const Affix = t.object('Affix', {
   stat: t.u16(),
-  /** 1..item tier: which slice of the item's range this rolled in. */
+  /** 1..item tier: which slice of the item's range this rolled in; 0 for a unique's stats. */
   tier: t.u8(),
   value: t.i64(),
 });
@@ -123,12 +123,14 @@ export const item = table(
     implicits: t.array(StatValue),
     affixes: t.array(Affix),
     legendary: LegendaryAffix.optional(),
-    /** Set on handcrafted uniques. */
+    /** Set on handcrafted uniques (data/uniques.ts); its stats are in `affixes` with tier 0. */
     uniqueId: t.u16().optional(),
     weapon: WeaponStats.optional(),
     /** Protected from salvage. */
     locked: t.bool(),
     createdAt: t.timestamp(),
+    /** A unique's effect IDs (data/legendary.ts); empty on other items. */
+    effects: t.array(t.u16()).default([]),
   }
 );
 

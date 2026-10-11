@@ -4,11 +4,13 @@ import type { Item } from '../module_bindings/types';
 import { base } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID } from '../../spacetimedb/src/data/legendary';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
+import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
 import { fmt } from './format';
 import { Icon } from './Icon';
 
 export const rarityCls = (tag: string) => tag.toLowerCase();
-export const itemName = (it: { baseId: number; tier: number }) => base(it.baseId).name(it.tier);
+export const itemName = (it: { baseId: number; tier: number; uniqueId?: number }) =>
+  (it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier);
 
 /** Bag glyph for an item: weapon/off-hand family, armor slot, or ring/amulet. */
 export function itemIconName(it: { baseId: number }): string {
@@ -65,7 +67,7 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
       </div>
       <div className="item-sub">
         <span>{it.rarity.tag}</span>
-        <span>{base(it.baseId).family}</span>
+        <span>{it.uniqueId !== undefined ? base(it.baseId).name(it.tier) : base(it.baseId).family}</span>
       </div>
       {note && (
         <div className="item-sub">
@@ -87,12 +89,24 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
           <span className="muted">{statText(it.legendary!.stat, it.legendary!.value)}</span>
         </div>
       )}
+      {it.effects.map(id => {
+        const e = EFFECTS_BY_ID.get(id);
+        return (
+          <div className="item-legendary" key={id}>
+            <strong>
+              <Icon name="sparkles" />
+              {e?.name ?? `Effect ${id}`}
+            </strong>
+            <span>{e?.text}</span>
+          </div>
+        );
+      })}
       {it.affixes.length > 0 && (
         <div className="item-affixes">
           {it.affixes.map((a, i) => (
             <div className="affix" key={i}>
               <span>{statText(a.stat, a.value)}</span>
-              <span className="affix-tier">T{a.tier}</span>
+              {a.tier > 0 && <span className="affix-tier">T{a.tier}</span>}
             </div>
           ))}
         </div>
@@ -118,7 +132,7 @@ export function ItemTile({ it, selected, badge, title, onClick }: { it: Item; se
           <Icon name="lock" />
         </span>
       )}
-      {it.legendary && (
+      {(it.legendary || it.effects.length > 0) && (
         <span className="tile-leg">
           <Icon name="sparkles" />
         </span>

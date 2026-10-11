@@ -95,5 +95,4 @@ A dark, overgrown forest where bandits and beasts hide. Levels 16–25.
 
 ## Open
 
-- Uniques: none planned for T1–T2 yet.
 - Enemy and boss art (placeholders for now).

@@ -3,7 +3,9 @@
 import { BASE_LIST, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
+import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { ENEMIES_BY_ID, ZONES } from '../spacetimedb/src/data/zones';
+import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -22,6 +24,11 @@ for (const g of ['Offense', 'Defense', 'Utility'] as const) {
   check(`${g}: at least 4 legendary effects`, LEGENDARIES.filter(l => l.group === g).length >= 4);
 }
 check('legendary bonus stats can roll as affixes', LEGENDARIES.every(l => STATS[l.bonusStat].ref !== undefined));
+check('unique IDs unique', unique(UNIQUES.map(u => u.id)));
+check('uniques: base exists, tier 1–9, effects exist and are distinct, stats can roll', UNIQUES.every(u =>
+  BASE_LIST.some(b => b.id === u.baseId) && u.tier >= 1 && u.tier <= 9 && u.effects.length > 0 && unique(u.effects) &&
+  u.effects.every(e => EFFECTS_BY_ID.has(e)) && u.stats.length > 0 && u.stats.every(s => STATS[s.stat].ref !== undefined)));
+check('every unique-only effect is on some unique', UNIQUE_EFFECTS.every(e => UNIQUES.some(u => u.effects.includes(e.id))));
 check('stat IDs match keys', Object.entries(STATS).every(([k, d]) => Number(k) === d.id));
 
 for (const zone of ZONES) {

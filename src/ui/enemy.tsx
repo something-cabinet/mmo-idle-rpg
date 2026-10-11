@@ -4,7 +4,8 @@ import { useState } from 'react';
 import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
 import { DROP_CHANCE, rewardScale, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
-import { RARITIES } from '../../spacetimedb/src/loot';
+import { UNIQUES, uniqueWeight } from '../../spacetimedb/src/data/uniques';
+import { RARITIES, hasUniques } from '../../spacetimedb/src/loot';
 import { fmt, pct } from './format';
 import { Icon } from './Icon';
 import { itemIconName, rarityCls } from './items';
@@ -68,12 +69,15 @@ function EnemyStats({ e, m }: { e: EnemyDef; m: Matchup }) {
 /** An enemy's rewards and drop chances for the player in `s`. */
 function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m: Matchup }) {
   const scale = rewardScale(z, e) * (1 + s.stats.itemFind);
-  // Uniques are not in the game yet: their chance rolls Legendary.
-  const rarities = RARITIES.filter(r => r !== 'Unique').map(r => ({
+  // Uniques drop from any enemy (every unique of the zone's tier and below); with none yet, their chance rolls Legendary.
+  const uniques = hasUniques(z.tier);
+  const uniquePool = UNIQUES.filter(u => uniqueWeight(u, z.tier) > 0);
+  const rarities = RARITIES.filter(r => r !== 'Unique' || uniques).map(r => ({
     r,
-    mean: scale * (DROP_CHANCE[r] + (r === 'Legendary' ? DROP_CHANCE.Unique : 0)),
+    mean: scale * (DROP_CHANCE[r] + (r === 'Legendary' && !uniques ? DROP_CHANCE.Unique : 0)),
   }));
   const anyItem = rarities.reduce((sum, x) => sum + x.mean, 0);
+  const baseItems = anyItem - (uniques ? scale * DROP_CHANCE.Unique : 0);
   return (
     <>
       <div className="drop-group">
@@ -102,9 +106,16 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
             <li key={d}>
               <Icon name={itemIconName({ baseId: d })} />
               <span>{base(d).name(z.tier)}</span>
-              <span className="num muted">{chanceText(atLeastOne(anyItem / e.drops.length))}</span>
+              <span className="num muted">{chanceText(atLeastOne(baseItems / e.drops.length))}</span>
             </li>
           ))}
+          {uniques && (
+            <li title={uniquePool.map(u => `${u.name} (T${u.tier})`).join('\n')}>
+              <Icon name="sparkles" className="c-unique" />
+              <span>Any of {uniquePool.length} uniques</span>
+              <span className="num muted">{chanceText(atLeastOne(scale * DROP_CHANCE.Unique))}</span>
+            </li>
+          )}
         </ul>
         <div className="drop-rarities" title="Share of item drops by rarity">
           {rarities.map(({ r, mean }) => (

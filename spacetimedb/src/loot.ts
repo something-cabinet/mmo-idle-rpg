@@ -5,6 +5,7 @@
 import { BASE_LIST, base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
 import { STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
+import { UNIQUES, UNIQUE_ROLL_MIN, uniqueWeight, type UniqueDef } from './data/uniques';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
 export const RARITIES = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Unique'] as const;
@@ -75,6 +76,10 @@ export interface NewItem {
   implicits: { stat: number; value: bigint }[];
   affixes: { stat: number; tier: number; value: bigint }[];
   legendary: { effect: number; stat: number; value: bigint } | undefined;
+  /** Set on uniques (data/uniques.ts). */
+  uniqueId: number | undefined;
+  /** A unique's effect IDs; empty otherwise. */
+  effects: number[];
   weapon:
     | {
         damageType: { tag: DamageType };
@@ -122,6 +127,8 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
     implicits: b.implicits.map(i => ({ stat: i.stat, value: toStored(implicitValue(i, tier)) })),
     affixes: Array.from({ length: REGULAR_AFFIXES[rarity] }, () => rollAffix(rng, tier)),
     legendary: rarity === 'Legendary' ? rollLegendary(rng, baseId, tier) : undefined,
+    uniqueId: undefined,
+    effects: [],
     weapon: w && {
       damageType: { tag: w.damageType },
       hit: toStored(w.hit),
@@ -133,6 +140,32 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
     },
   };
 }
+
+/**
+ * Unique `u`: its base at its tier, its stats rolled in [UNIQUE_ROLL_MIN, 1] × value
+ * and stored as affixes of tier 0 (not a regular affix tier), its effects.
+ */
+export function makeUnique(rng: Rng, u: UniqueDef): NewItem {
+  return {
+    ...makeItem(rng, u.baseId, u.tier, 'Unique'),
+    affixes: u.stats.map(s => {
+      const value = affixRef(s.stat, u.tier) * (s.x ?? 1) * (UNIQUE_ROLL_MIN + (1 - UNIQUE_ROLL_MIN) * rng());
+      return { stat: s.stat, tier: 0, value: toStored(roundStat(s.stat, value)) };
+    }),
+    uniqueId: u.id,
+    effects: [...u.effects],
+  };
+}
+
+/** A unique that can drop in a tier-`zoneTier` zone, weighted by `uniqueWeight`; undefined if none. */
+export function pickUnique(rng: Rng, zoneTier: number): UniqueDef | undefined {
+  const pool = UNIQUES.filter(u => uniqueWeight(u, zoneTier) > 0);
+  let r = rng() * pool.reduce((sum, u) => sum + uniqueWeight(u, zoneTier), 0);
+  return pool.find(u => (r -= uniqueWeight(u, zoneTier)) < 0) ?? pool[pool.length - 1];
+}
+
+/** Whether any unique can drop in a tier-`zoneTier` zone (if not, the Unique chance rolls Legendary). */
+export const hasUniques = (zoneTier: number) => UNIQUES.some(u => u.tier <= zoneTier);
 
 /** What a rarity step needs from an item: an `item` row or a `NewItem`. */
 export type RaisableItem = Pick<NewItem, 'baseId' | 'tier' | 'rarity' | 'affixes' | 'legendary'>;
@@ -224,16 +257,24 @@ export interface DropInput {
 export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const salvaged = Object.fromEntries(RARITIES.map(r => [r, 0])) as Record<RarityName, number>;
   let essence = 0n;
-  const salvage = (r: RarityName) => {
+  const salvage = (r: RarityName, tier = d.tier) => {
     salvaged[r]++;
-    essence += salvageValue(r, d.tier);
+    essence += salvageValue(r, tier);
   };
 
   const scale = d.kills * d.rewardScale * (1 + d.itemFind);
   const kept: NewItem[] = [];
+  const uniques = hasUniques(d.tier);
   for (const rarity of RARITIES) {
-    if (rarity === 'Unique') continue; // no uniques yet: their chance rolls Legendary
-    const chance = DROP_CHANCE[rarity] + (rarity === 'Legendary' ? DROP_CHANCE.Unique : 0);
+    if (rarity === 'Unique') {
+      // Uniques drop from any enemy: every unique of the zone's tier and below. Always kept.
+      if (!uniques) continue;
+      const count = samplePoisson(rng, scale * DROP_CHANCE.Unique);
+      for (let i = 0; i < count; i++) kept.push(makeUnique(rng, pickUnique(rng, d.tier)!));
+      continue;
+    }
+    // With no unique to drop yet, the Unique chance rolls Legendary.
+    const chance = DROP_CHANCE[rarity] + (rarity === 'Legendary' && !uniques ? DROP_CHANCE.Unique : 0);
     const count = samplePoisson(rng, scale * chance);
     // Drops below the threshold are salvaged without rolling them.
     const skip = rarityRank(rarity) < rarityRank(d.filter.minRarity);
@@ -261,6 +302,6 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   kept.sort((a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag));
   const room = Math.max(0, Math.min(KEEP_CAP_PER_SETTLE, d.bagFree));
   const over = kept.splice(room);
-  over.forEach(item => salvage(item.rarity.tag));
+  over.forEach(item => salvage(item.rarity.tag, item.tier));
   return { kept, salvaged, essence, overflow: over.length };
 }

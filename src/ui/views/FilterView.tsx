@@ -102,7 +102,7 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
       <div className="grid-2">
         <div className="card">
           <CardHead title="Keep rarity" />
-          <p className="muted">Drops below this rarity are salvaged into Essence automatically.</p>
+          <p className="muted">Drops below this rarity are salvaged into Essence automatically. Uniques are always kept.</p>
           <div className="seg wrap">
             {RARITIES.slice(0, 5).map(r => (
               <button key={r} className={`seg-btn c-${rarityCls(r)}${r === f.minRarity.tag ? ' active' : ''}`} onClick={() => setFilter({ minRarity: { tag: r } })}>

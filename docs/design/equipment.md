@@ -114,7 +114,7 @@ affix rolls tier 1 to N (N = item tier, 1–9).
 | Rare | 2 regular |
 | Epic | 3 regular |
 | Legendary | 2 regular + 1 legendary |
-| Unique | Handcrafted; exists at one tier only, no scaling |
+| Unique | Handcrafted; exists at one tier only, no scaling (uniques.md) |
 
 - Legendary is not strictly better than Epic: it trades one regular affix for a
   legendary affix. Intended.

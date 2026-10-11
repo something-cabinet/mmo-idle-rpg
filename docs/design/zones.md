@@ -147,9 +147,9 @@ Each rarity has its own chance per kill, scaled by `1.12^o` and `(1 + item find%
 - Settlement samples a count per rarity from these chances (one draw per rarity, not
   one per kill), so cost doesn't grow with kills.
 
-- **Uniques:** a unique drop picks from the uniques assigned to that enemy. An enemy
-  with none rolls Legendary instead.
-- Dropped items are always the zone's tier.
+- **Uniques** drop globally, not per enemy: in a tier-N zone, any unique of tier N or
+  below, weighted toward tier N (uniques.md). They keep their own tier and are always kept.
+- Other dropped items are always the zone's tier.
 
 ### Base distribution
 

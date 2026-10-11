@@ -103,7 +103,7 @@ Prosperity:      gold × (1 + a)
 
 ## Unique effects
 
-Handcrafted uniques (equipment.md) carry these. They never roll on Legendary items and
+Handcrafted uniques (uniques.md) carry these. They never roll on Legendary items and
 apply **once** however many items carry them. Legendary items that rolled them before
 this split keep working.
 
@@ -136,5 +136,4 @@ Scholar's:    xp × 1.75;  gold × 0.5
 
 ## Open
 
-- Uniques themselves (items, stats, which enemies drop them) come next.
 - Per-copy amounts and caps are starting values to tune with simulation.

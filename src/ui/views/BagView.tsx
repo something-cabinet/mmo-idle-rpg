@@ -15,7 +15,7 @@ import type { Snapshot } from '../snapshot';
 type BagSort = 'newest' | 'rarity' | 'tier' | 'slot';
 
 /** Rarities that can drop today (no uniques yet). */
-const BAG_RARITIES = RARITIES.filter(r => r !== 'Unique');
+const BAG_RARITIES = RARITIES;
 /** Slot filter buttons; rings go in either ring slot, so one button covers both. */
 const SLOT_FILTERS: [Slot, string][] = [
   ['MainHand', 'Main hand'], ['OffHand', 'Off-hand'], ['Head', 'Head'], ['Chest', 'Chest'],

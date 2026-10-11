@@ -31,6 +31,8 @@ export interface GearItem {
   implicits: readonly GearStat[];
   affixes: readonly GearStat[];
   legendary?: GearStat & { effect: number };
+  /** A unique's effects. */
+  effects?: readonly number[];
   weapon?: GearWeapon;
 }
 /** Equipped items in SLOTS order (a loadout's slots resolved to rows). */
@@ -98,6 +100,8 @@ export function combatStats(level: number, gear: Gear): CombatStats {
       add(item.legendary);
       effects.set(item.legendary.effect, (effects.get(item.legendary.effect) ?? 0) + 1);
     }
+    // A legendary effect on a unique counts as one copy; unique-only effects apply once anyway.
+    for (const e of item.effects ?? []) effects.set(e, (effects.get(e) ?? 0) + 1);
   }
   const has = (e: number) => effects.has(e);
   const amount = (e: number) => effectAmount(effects, e);

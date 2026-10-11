@@ -54,8 +54,8 @@ fighting the target enemy with the active loadout.
   zone's boss killed), bosses need their own first kill; settles first.
 - **Drops** (`spacetimedb/src/loot.ts`, pure, shared): per settle, a Poisson count per
   rarity from `kills × DROP_CHANCE × rewardScale × (1 + itemFind)` (`rewardScale` =
-  the enemy's `1.12^o`, from its XP vs the zone average; Unique chance rolls Legendary
-  until uniques exist). Bases uniform from the enemy's `drops`, tier = zone tier;
+  the enemy's `1.12^o`, from its XP vs the zone average; Unique chance rolls a global
+  unique of tier ≤ zone tier, uniques.md). Bases uniform from the enemy's `drops`, tier = zone tier;
   `makeItem` rolls affixes (weighted free pool, tier 1..N, value in its slice) and
   legendaries (group by base kind, bonus 0.25–0.5 × ref). Then the loot filter
   (rarity threshold or whitelisted affix), the 50-item per-settle cap and the bag
@@ -161,7 +161,7 @@ fighting the target enemy with the active loadout.
 The planned milestones are done. Candidates, to pick with the user:
 
 - Mobile layout (ui.md "Open").
-- More content: zones 3+ (zone-content.md), uniques.
+- More content: zones 3+ (zone-content.md), uniques for T3+.
 - The dev reducer question below, so the smoke test can cover boss wins and crafting.
 - Schema changes must migrate from now on (see Working notes).
 

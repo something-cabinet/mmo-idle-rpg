@@ -272,6 +272,10 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const p = project({ level: 1, xp: 0n, gold: 0n, settledMicros: 0n }, { gear: midasGear, enemy: rat }, 3_600_000_000n);
   check('settling with Midas Touch earns gold but no XP', p.xp === 0n && p.level === 1 && p.gold > 0n && p.kills > 0);
 
+  const uniqueChest = { ...item(35, 1), effects: [Effect.Thornshell, Effect.Juggernaut] };
+  const ue = combatStats(10, kit(sword, { Chest: uniqueChest, Head: withEffect(item(34, 1), Effect.Thornshell) }));
+  check("a unique's effects count: its legendary effect as one copy", ue.effects.get(Effect.Thornshell) === 2 && ue.effects.has(Effect.Juggernaut));
+
   check('auto-equip scoring sees effects (Glass Cannon doubles dummy DPS)',
     near(scoreGear(10, kit(withEffect(sword, Effect.GlassCannon))).dps, 2 * scoreGear(10, kit(sword)).dps, 1e-9));
 }

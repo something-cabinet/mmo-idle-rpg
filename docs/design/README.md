@@ -13,6 +13,7 @@ not decisions.
 | [zones.md](zones.md) | Zones, enemy levels, enemy stats, rewards, loot tables |
 | [zone-content.md](zone-content.md) | T1 Greenhollow and T2 Thornwood: enemies, bosses, drops, starter kit |
 | [legendary.md](legendary.md) | Legendary affixes: effects, slot pools, formulas |
+| [uniques.md](uniques.md) | Uniques: rules, global drops, the list |
 | [ui.md](ui.md) | Desktop layout and screens (wireframes) |
 
 ## Pillars
@@ -66,6 +67,8 @@ not decisions.
 | 2026-10-11 | Legendary pools by equip type: weapons + tome roll Offense, armor + shield roll Defense, jewelry rolls Utility. Effects are generic so no roll is dead. Added Voidtouched, Glass Cannon, Spellward, Scholar's Focus (13 total). |
 | 2026-10-11 | Legendary effects are positive-only and stack up to a cap (one copy is already worth it; copies past the cap are wasted). Effects with a trade-off are unique-only and don't stack: Spellblade, Juggernaut, Midas Touch, Voidtouched, Glass Cannon, Spellward, Scholar's Focus. (Replaces "same legendary effect twice applies once".) |
 | 2026-10-11 | New legendary effects: Executioner, Rending, Spellbreaker (Offense); Second Wind, Ironclad, Runeguard (Defense); Seasoned, Prosperity (Utility). Zealot's Oath loses its lifesteal (no heal ↔ damage loop); Swift Hunter is −40% walk time per copy. |
+| 2026-10-11 | Uniques: stats roll in a small range ([0.9, 1] × value) and are stored on the item like other stats; effects stored as a list of effect IDs. A legendary effect on a unique counts as one stacking copy. |
+| 2026-10-11 | Uniques drop globally (replaces per-enemy uniques): in a tier-N zone, any unique of tier ≤ N, each tier lower at half weight. Uniques are always kept by the loot filter. First 7 for T1–T2. |
 | 2026-10-11 | UI: desktop first, mostly text and icons, simple fight view with floating damage numbers, placeholder art. |
 | 2026-10-10 | 4 gems, one per primary; each gem is its own ring and amulet base. Gem names change every 3 tiers (Ruby → Bloodstone → Magmaheart). |
 | 2026-10-10 | Rarities: Common, Magic, Rare, Epic, Legendary, Unique. Legendary is randomly generated; Unique is handcrafted. |

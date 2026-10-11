@@ -127,6 +127,7 @@ export const Item = __t.object("Item", {
   },
   locked: __t.bool(),
   createdAt: __t.timestamp(),
+  effects: __t.array(__t.u16()),
 });
 export type Item = __Infer<typeof Item>;
 

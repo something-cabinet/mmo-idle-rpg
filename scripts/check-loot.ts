@@ -4,12 +4,16 @@
 import { BASE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, LEGENDARIES_BY_ID, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRange, affixRef, toStored } from '../spacetimedb/src/data/stats';
-import { ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
+import { UNIQUES, UNIQUES_BY_ID, UNIQUE_ROLL_MIN, uniqueWeight } from '../spacetimedb/src/data/uniques';
+import { DROP_CHANCE, ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
 import {
   AFFIX_STAT_IDS,
   FIRST_KILL_GOLD_MULT,
   KEEP_CAP_PER_SETTLE,
   firstKillReward,
+  hasUniques,
+  makeUnique,
+  pickUnique,
   RARITIES,
   REGULAR_AFFIXES,
   makeItem,
@@ -140,10 +144,11 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('8 h on the average enemy: ~145 drops', near(drops, 145, 7), drops.toFixed(1));
   check('… keeping Rare+: ~17 kept', near(kept, 17, 2), kept.toFixed(1));
   check('kept items pass the filter', runs.every(r => r.kept.every(it => rarityRank(it.rarity.tag) >= rarityRank('Rare'))));
-  check('drops come from the enemy\'s bases at the zone tier', runs.every(r => r.kept.every(it => wisp.enemy.drops.includes(it.baseId) && it.tier === 1)));
+  check('drops come from the enemy\'s bases at the zone tier (uniques aside)',
+    runs.every(r => r.kept.every(it => it.uniqueId !== undefined || (wisp.enemy.drops.includes(it.baseId) && it.tier === 1))));
   check('Essence is the sum of salvage values', runs.every(r =>
     r.essence === RARITIES.reduce((sum, rar) => sum + BigInt(r.salvaged[rar]) * salvageValue(rar, 1), 0n)));
-  check('no uniques yet', runs.every(r => r.salvaged.Unique === 0 && r.kept.every(it => it.rarity.tag !== 'Unique')));
+  check('uniques are never salvaged by the filter', runs.every(r => r.salvaged.Unique === 0));
 
   const again = rollDrops(seededRng(5n), session());
   check('drops are reproducible from the seed', JSON.stringify(again, (_k, v) => typeof v === 'bigint' ? String(v) : v) ===
@@ -204,14 +209,51 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
     const after = lucky.kept.map(it => it.rarity.tag);
     wellFormed &&= plain.kept.length === lucky.kept.length && lucky.essence === plain.essence;
     for (const it of lucky.kept) {
+      if (it.uniqueId !== undefined) continue;
       wellFormed &&= it.affixes.length === REGULAR_AFFIXES[it.rarity.tag] && (it.rarity.tag === 'Legendary') === !!it.legendary;
     }
-    eligible += before.filter(r => r !== 'Legendary').length;
+    eligible += before.filter(r => r !== 'Legendary' && r !== 'Unique').length;
     raised += after.reduce((n, r) => n + rarityRank(r), 0) - before.reduce((n, r) => n + rarityRank(r), 0);
   }
   check("Fortune's Favor keeps the same drops and Essence", wellFormed);
   check(`… and raises ~${FORTUNE * 100}% of kept drops one rarity`, near(raised / eligible, FORTUNE, 0.015),
     `${raised} of ${eligible}`);
+}
+
+// ---------------------------------------------------------------- uniques (uniques.md)
+
+{
+  const rng = seededRng(77n);
+  for (const u of UNIQUES) {
+    const items = Array.from({ length: 50 }, () => makeUnique(rng, u));
+    const ok = items.every(it =>
+      it.rarity.tag === 'Unique' && it.uniqueId === u.id && it.tier === u.tier && it.baseId === u.baseId && !it.legendary &&
+      it.effects.join() === u.effects.join() && it.affixes.length === u.stats.length &&
+      it.affixes.every((a, i) => {
+        const top = affixRef(u.stats[i].stat, u.tier) * (u.stats[i].x ?? 1);
+        const v = Number(a.value) / 100;
+        const tol = STATS[u.stats[i].stat].decimals ? 0.01 : 0.5;
+        return a.tier === 0 && a.stat === u.stats[i].stat && v >= top * UNIQUE_ROLL_MIN - tol && v <= top + tol;
+      }));
+    check(`${u.name}: its base, tier and effects; stats in [${UNIQUE_ROLL_MIN}, 1] × value`, ok);
+  }
+
+  check('T1 zone drops only T1 uniques', Array.from({ length: 300 }, () => pickUnique(rng, 1)!).every(u => u.tier === 1));
+  const t2 = Array.from({ length: 6000 }, () => pickUnique(rng, 2)!);
+  const shareT1 = t2.filter(u => u.tier === 1).length / t2.length;
+  const n1 = UNIQUES.filter(u => u.tier === 1).length;
+  const n2 = UNIQUES.filter(u => u.tier === 2).length;
+  check('T2 zone drops T1 and T2 uniques, lower tiers at half weight', near(shareT1, (n1 * 0.5) / (n1 * 0.5 + n2), 0.02), shareT1.toFixed(3));
+  check('higher-tier uniques never drop', uniqueWeight(UNIQUES.find(u => u.tier === 2)!, 1) === 0);
+  check('every zone tier with uniques has some', hasUniques(1) && hasUniques(9) && !hasUniques(0));
+
+  // A big session with a filter that keeps nothing else: every unique is kept, from any enemy.
+  const keepNone = { minRarity: 'Legendary' as const, keepAffixes: [], keepBases: [], minAffixTier: 9 };
+  const runs = Array.from({ length: 40 }, (_, i) => rollDrops(seededRng(BigInt(1000 + i)), session({ kills: 200_000, tier: 2, filter: keepNone })));
+  const uniq = runs.flatMap(r => r.kept.filter(it => it.rarity.tag === 'Unique'));
+  const expected = 40 * 200_000 * DROP_CHANCE.Unique;
+  check('uniques drop at the Unique chance and are always kept', near(uniq.length, expected, 4 * Math.sqrt(expected)), `${uniq.length} vs ~${expected.toFixed(0)}`);
+  check('… from the T1 and T2 pool', uniq.every(it => UNIQUES_BY_ID.get(it.uniqueId!)!.tier <= 2) && new Set(uniq.map(it => it.uniqueId)).size === UNIQUES.length);
 }
 
 // ---------------------------------------------------------------- boss first kill

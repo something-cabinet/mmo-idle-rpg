@@ -1,13 +1,12 @@
-import { memo, useState } from 'react';
+import { Fragment, memo, useState } from 'react';
 import { matchup } from '../../../spacetimedb/src/combat';
-import { base } from '../../../spacetimedb/src/data/bases';
 import { ZONES, ZONES_BY_ID, bossOf, previousZone, type ZoneDef } from '../../../spacetimedb/src/data/zones';
 import { call, useSticky } from '../../store';
-import { fmt, secs } from '../format';
+import { fmt } from '../format';
 import { Icon } from '../Icon';
-import { CardHead, perHour, result, ViewHeader } from '../shared';
+import { DmgTag, EnemyDetail } from '../enemy';
+import { ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
-import { DmgTag } from './FightView';
 
 const zoneLevels = (z: ZoneDef) => `${Math.min(...z.enemies.map(e => e.level))}–${Math.max(...z.enemies.map(e => e.level))}`;
 
@@ -18,14 +17,13 @@ function zoneUnlocked(s: Snapshot, z: ZoneDef) {
 
 export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
   const [zoneId, setZoneId] = useSticky<number | undefined>('zoneId', undefined);
-  const [dropsOf, setDropsOf] = useState<number>();
+  const [open, setOpen] = useState<number>();
   const z = ZONES_BY_ID.get(zoneId ?? s.row.zoneId) ?? ZONES[0];
   const unlocked = zoneUnlocked(s, z);
   const bossDown = s.killedZones.has(z.id);
   const prev = previousZone(z);
   const prevBoss = prev && bossOf(prev);
   const r = s.conn.reducers;
-  const shown = z.enemies.find(e => e.id === dropsOf) ?? z.enemies.find(e => e.id === s.row.targetEnemyId) ?? z.enemies[0];
 
   return (
     <>
@@ -37,7 +35,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
             className={`seg-btn${zz === z ? ' active' : ''}`}
             onClick={() => {
               setZoneId(zz.id);
-              setDropsOf(undefined);
+              setOpen(undefined);
             }}
           >
             {!zoneUnlocked(s, zz) && <Icon name="lock" />}T{zz.tier} {zz.name}
@@ -59,8 +57,8 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
           <table className={`table${unlocked ? '' : ' locked'}`}>
             <thead>
               <tr>
-                <th>Enemy</th><th>Lv</th><th>Dmg</th><th>Defense</th><th className="num">HP</th><th className="num">DPS</th>
-                <th>Your result</th><th className="num">Kill</th><th className="num">XP/h</th><th className="num">Gold/h</th><th className="num">Bases</th><th />
+                <th>Enemy</th><th>Lv</th><th>Dmg</th><th>Defense</th><th className="num">HP</th>
+                <th className="num" title="Enemy damage per second after your mitigation and evasion">DPS taken</th><th />
               </tr>
             </thead>
             <tbody>
@@ -74,43 +72,42 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
                     Challenge
                   </button>
                 ) : active ? (
-                  <span className="tag ok">Fighting</span>
+                  <span className="btn small fighting">Fighting</span>
                 ) : (
-                  <button className="btn small" onClick={() => call(r.setTarget({ enemyId: e.id }).then(() => void (location.hash = '#fight')))}>
+                  <button className="btn small" onClick={() => call(r.setTarget({ enemyId: e.id }).then(() => void (location.hash = '#combat')))}>
                     Fight
                   </button>
                 );
+                const expanded = open === e.id;
                 return (
-                  <tr key={e.id} className={`${active ? 'active' : ''}${e.boss ? ' boss' : ''}`} onClick={ev => !(ev.target as HTMLElement).closest('button') && setDropsOf(e.id)}>
-                    <td className="name">{e.boss && <Icon name="skull" className="boss" />}{e.name}</td>
-                    <td>{e.level}</td>
-                    <td><DmgTag magic={e.damageType === 'Magic'} /></td>
-                    <td>{e.defense}</td>
-                    <td className="num">{fmt(e.hp)}</td>
-                    <td className="num">{fmt(e.dps)}</td>
-                    <td><span className={`result ${m.viable ? 'ok' : 'bad'}`}>{result(m)}</span></td>
-                    <td className="num">{m.viable ? secs(m.timeToKill) : '—'}</td>
-                    <td className="num">{m.viable ? fmt(perHour(m) * m.xpPerKill) : '—'}</td>
-                    <td className="num">{m.viable ? fmt(perHour(m) * m.goldPerKill) : '—'}</td>
-                    <td className="num">{e.boss ? 'All' : e.drops.length}</td>
-                    <td className="actions">{action}</td>
-                  </tr>
+                  <Fragment key={e.id}>
+                    <tr
+                      data-row
+                      className={`${active ? 'active' : ''}${e.boss ? ' boss' : ''}${expanded ? ' expanded' : ''}`}
+                      onClick={ev => !(ev.target as HTMLElement).closest('button') && setOpen(expanded ? undefined : e.id)}
+                    >
+                      <td className="name"><span className="caret">▸</span>{e.boss && <Icon name="skull" className="boss" />}{e.name}</td>
+                      <td>{e.level}</td>
+                      <td><DmgTag magic={e.damageType === 'Magic'} /></td>
+                      <td>{e.defense}</td>
+                      <td className="num">{fmt(e.hp)}</td>
+                      <td className="num" title={`${fmt(e.dps)} before your defenses`}>
+                        <span className={`result ${m.viable ? 'ok' : 'bad'}`}>{fmt(m.incoming)}</span>
+                      </td>
+                      <td className="actions">{action}</td>
+                    </tr>
+                    {expanded && (
+                      <tr className="detail-row">
+                        <td colSpan={7}><EnemyDetail s={s} z={z} e={e} m={m} /></td>
+                      </tr>
+                    )}
+                  </Fragment>
                 );
               })}
             </tbody>
           </table>
         </div>
-        <p className="muted hint">Results use your active loadout ({s.active.name}).</p>
-      </div>
-      <div className="card">
-        <CardHead title={`${shown.name} drops`}>
-          <span className="muted">{shown.boss ? 'Every base of the zone' : 'Each base drops from exactly one enemy in the zone'}</span>
-        </CardHead>
-        <div className="chips">
-          {shown.drops.map(d => (
-            <span className="chip" key={d}>{base(d).name(z.tier)}</span>
-          ))}
-        </div>
+        <p className="muted hint">Click an enemy for its rewards and drops. Numbers use your active loadout ({s.active.name}).</p>
       </div>
     </>
   );

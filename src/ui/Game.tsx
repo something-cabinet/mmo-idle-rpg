@@ -7,38 +7,23 @@ import * as auth from '../auth';
 import { xpToNext } from '../../spacetimedb/src/game';
 import { call, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
+import { nowMicros, syncClock } from './clock';
 import { TopBar } from './TopBar';
-import { fmt, fmtBig, secs } from './format';
+import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
-import { perHour, result } from './shared';
+import { perHour } from './shared';
 import { snapshot, type Snapshot } from './snapshot';
 import { BagView } from './views/BagView';
 import { CharacterView } from './views/CharacterView';
+import { CombatView } from './views/CombatView';
 import { CraftingView } from './views/CraftingView';
 import { EquipmentView } from './views/EquipmentView';
-import { FightView } from './views/FightView';
 import { FilterView } from './views/FilterView';
 import { SettingsView } from './views/SettingsView';
 import { ZonesView } from './views/ZonesView';
 
-/** serverTime ≈ clientTime + clockOffset (micros). */
-let clockOffset = 0n;
-let offsetFrom: bigint | null = null;
-const nowMicros = () => BigInt(Date.now()) * 1000n + clockOffset;
-
-/**
- * `since` is the server's clock at the moment we entered the world. Use it to correct
- * the local clock, so we never show gold the server doesn't think we have yet (latency
- * only makes this err on the low side).
- */
-function syncClock(pres: Presence) {
-  if (offsetFrom === pres.since.microsSinceUnixEpoch) return;
-  offsetFrom = pres.since.microsSinceUnixEpoch;
-  clockOffset = offsetFrom - BigInt(Date.now()) * 1000n;
-}
-
 const NAV: [string, [View, string, string][]][] = [
-  ['Adventure', [['fight', 'swords', 'Fight'], ['zones', 'map', 'Zones']]],
+  ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones']]],
   ['Character', [['character', 'user', 'Character'], ['equipment', 'shield', 'Equipment'], ['bag', 'bag', 'Bag']]],
   ['Workshop', [['crafting', 'hammer', 'Crafting'], ['filter', 'filter', 'Loot filter']]],
   ['System', [['settings', 'settings', 'Settings']]],
@@ -61,10 +46,10 @@ function TopStats({ s }: { s: Snapshot }) {
       <span className="chip stat" title="Gold"><Icon name="coins" className="c-gold" /><strong>{fmtBig(s.gold)}</strong></span>
       <span className="chip stat" title="Essence"><Icon name="gem" className="c-essence" /><strong>{fmtBig(s.row.essence)}</strong></span>
       <span className="divider" />
-      <button className="chip activity" title="Current activity" onClick={() => (location.hash = '#fight')}>
+      <button className="chip activity" title="Current activity" onClick={() => (location.hash = '#combat')}>
         <span className={`dot ${m?.viable ? 'ok' : 'bad'}`} />
         <span>{s.target ? `${s.target.zone.name} › ${s.target.enemy.name}` : 'No target'}</span>
-        <span className="activity-rate">{!m ? '' : m.viable ? `${secs(m.timeToKill)} · ${fmt(perHour(m))}/h · ${result(m)}` : 'Lose ✖'}</span>
+        <span className="activity-rate">{m?.viable ? `${fmt(perHour(m))} kills/h` : ''}</span>
       </button>
     </div>
   );
@@ -161,7 +146,7 @@ function Social({ conn, pres, open }: { conn: DbConnection; pres: Presence; open
 
 function CurrentView({ view, s }: { view: View; s: Snapshot }) {
   switch (view) {
-    case 'fight': return <FightView s={s} />;
+    case 'combat': return <CombatView s={s} />;
     case 'zones': return <ZonesView s={s} />;
     case 'character': return <CharacterView s={s} />;
     case 'equipment': return <EquipmentView s={s} />;

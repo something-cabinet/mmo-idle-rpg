@@ -5,13 +5,12 @@ import { ZONES_BY_ID, bossOf } from '../data/zones';
 import { firstKillReward, seededRng } from '../loot';
 import { gearOf, hasKilledBoss, requireActive, settle, zoneUnlocked } from '../helpers';
 
-const secs = (s: number) => (Number.isFinite(s) ? `${s.toFixed(1)} s` : 'never');
-
 /**
  * Challenges a zone's boss with the active loadout (zone-content.md): the normal
- * deterministic check, time to kill < time to die. Losing costs nothing and fails
- * with the numbers. The first win unlocks the next zone, makes the boss farmable and
- * gives 20× its gold plus a guaranteed Rare of the zone's tier.
+ * deterministic check, time to kill < time to die. Losing costs nothing; the error
+ * leaves out the numbers, which players never see. The first win unlocks the next
+ * zone, makes the boss farmable and gives 20× its gold plus a guaranteed Rare of the
+ * zone's tier.
  */
 export const challengeBoss = spacetimedb.reducer({ zoneId: t.u16() }, (ctx, { zoneId }) => {
   const { ch } = requireActive(ctx);
@@ -24,7 +23,7 @@ export const challengeBoss = spacetimedb.reducer({ zoneId: t.u16() }, (ctx, { zo
   const settled = settle(ctx, ch);
   const m = matchup(combatStats(settled.level, gearOf(ctx, settled)), boss);
   if (!m.viable) {
-    throw new SenderError(`${boss.name} wins: you need ${secs(m.timeToKill)} to kill it but die in ${secs(m.timeToDie)}`);
+    throw new SenderError(`${boss.name} is too strong for your gear`);
   }
 
   const reward = firstKillReward(seededRng(ch.id, BigInt(zone.id), ctx.timestamp.microsSinceUnixEpoch), zone, boss);

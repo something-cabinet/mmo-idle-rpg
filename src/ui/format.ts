@@ -37,7 +37,6 @@ export function fmt(n: number): string {
 export const fmtBig = (n: bigint) => (numberFormat === 'full' || n < 100_000n ? n.toLocaleString() : fmt(Number(n)));
 
 export const pct = (x: number, digits = 0) => `${(x * 100).toFixed(digits)}%`;
-export const secs = (s: number) => (Number.isFinite(s) ? `${s.toFixed(1)} s` : '∞');
 
 /** "7h 42m", "3m 10s". */
 export function duration(micros: bigint): string {

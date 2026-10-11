@@ -10,9 +10,10 @@ import { Icon } from '../Icon';
 import { EmptyCard, ItemCard, ItemTile, itemName, rarityCls } from '../items';
 import {
   CardHead, CompareTable, EffectsCard, Modal, SLOT_LABEL, SlotItemName, StatRows, SwapPreview, ViewHeader,
-  fightLine, loadoutNote, openCraft, totals, type Loadout,
+  loadoutNote, openCraft, totals, type Loadout,
 } from '../shared';
 import { gearFor, type Snapshot } from '../snapshot';
+import { sourcesByLabel, statSheet } from '../statSheet';
 
 interface Candidate {
   it: Item;
@@ -178,6 +179,7 @@ export const EquipmentView = memo(function EquipmentView({ s }: { s: Snapshot })
   const gear = gearFor(lo.slots, s.items);
   const stats = combatStats(s.level, gear);
   const m = s.target && matchup(stats, s.target.enemy);
+  const sources = sourcesByLabel(statSheet(s.level, gear, stats, s.target?.enemy.level ?? s.level, m?.dps));
   const isActive = lo.index === s.row.activeLoadout;
 
   return (
@@ -241,8 +243,7 @@ export const EquipmentView = memo(function EquipmentView({ s }: { s: Snapshot })
         </div>
         <div className="card">
           <CardHead title="Totals">{s.target && <span className="muted">vs {s.target.enemy.name}</span>}</CardHead>
-          <StatRows rows={totals(s, lo.slots).map(t => [t.label, t.show(t.value)])} />
-          <p className={m?.viable ? 'c-ok' : 'c-bad'}>{fightLine(m)}</p>
+          <StatRows rows={totals(s, lo.slots).map(t => [t.label, t.show(t.value), sources.get(t.label)])} />
         </div>
       </div>
       {summary && summary.loadout === lo.index && <AutoSummary s={s} lo={lo} before={summary.before} onClose={() => setSummary(undefined)} />}

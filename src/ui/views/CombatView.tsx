@@ -1,15 +1,18 @@
 import { memo, useEffect } from 'react';
 import type { SettleLog } from '../../module_bindings/types';
-import type { Matchup } from '../../../spacetimedb/src/combat';
+import { sessionStart, sessionTotals, sinceTargetChange } from '../../session';
+import { useTick } from '../../store';
+import { MAX_LEVEL } from '../../../spacetimedb/src/combat';
+import { xpToNext } from '../../../spacetimedb/src/game';
 import { RARITIES } from '../../../spacetimedb/src/loot';
+import { nowMicros } from '../clock';
+import { DmgTag, EnemyDetail } from '../enemy';
 import { startFight, stopFight } from '../fight';
-import { fmt, fmtBig, secs } from '../format';
+import { duration, fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { itemName, rarityCls } from '../items';
-import { CardHead, openCraft, perHour, result, ViewHeader } from '../shared';
-import type { Snapshot } from '../snapshot';
-
-export const DmgTag = ({ magic }: { magic: boolean }) => <span className={`tag ${magic ? 'magic' : 'phys'}`}>{magic ? 'Magic' : 'Phys'}</span>;
+import { CardHead, openCraft, perHour, ViewHeader } from '../shared';
+import { snapshot, type Snapshot } from '../snapshot';
 
 function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?: number }) {
   const lines: React.ReactNode[] = [];
@@ -47,15 +50,38 @@ function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?
   return <>{lines.length ? lines.slice(0, max) : <li className="muted">No drops yet. Drops are rare: about 1 every 2 minutes.</li>}</>;
 }
 
-function FightKpis({ m }: { m: Matchup }) {
+/** This session's gains (since entering the world or changing target) and the current rates. Ticks on its own: views only redraw on data changes. */
+function SessionCard({ s }: { s: Snapshot }) {
+  useTick(1000);
+  const now = nowMicros();
+  const live = snapshot(s.conn, s.row, now);
+  const since = sessionStart([...s.conn.db.presence.iter()].find(p => p.characterId === s.row.id)?.since.microsSinceUnixEpoch ?? now);
+  const t = sessionTotals(since, s.row.targetEnemyId);
+  const m = live.fight;
+  const kph = m ? perHour(m) : 0;
+  const xph = m ? kph * m.xpPerKill : 0;
+  const nextLevel =
+    live.level >= MAX_LEVEL ? 'Max level' : xph > 0 ? `~${duration(BigInt(Math.ceil((Number(xpToNext(live.level) - live.xp) / xph) * 3600e6)))}` : '—';
+  const row = (label: string, session: React.ReactNode, hourly = '') => (
+    <div className="stat-row session-row">
+      <span>{label}</span>
+      <strong>{session}</strong>
+      <strong>{hourly}</strong>
+    </div>
+  );
   return (
-    <div className="kpis">
-      <div className="kpi"><span>Time to kill</span><strong>{secs(m.timeToKill)}</strong></div>
-      <div className="kpi"><span>Time to die</span><strong>{secs(m.timeToDie)}</strong></div>
-      <div className={`kpi ${m.viable ? 'ok' : 'bad'}`}><span>Result</span><strong>{result(m)}</strong></div>
-      <div className="kpi"><span>Kills / h</span><strong>{fmt(perHour(m))}</strong></div>
-      <div className="kpi"><span>XP / h</span><strong>{fmt(perHour(m) * m.xpPerKill)}</strong></div>
-      <div className="kpi"><span>Gold / h</span><strong>{fmt(perHour(m) * m.goldPerKill)}</strong></div>
+    <div className="card">
+      <CardHead title="Session"><span className="muted">{duration(now > since ? now - since : 0n)}</span></CardHead>
+      <div className="stat-row session-row head">
+        <span />
+        <span>This session</span>
+        <span>Per hour</span>
+      </div>
+      {row('Kills', fmt(t.kills + live.pending.kills), fmt(kph))}
+      {row('XP', fmtBig(t.xp + live.pending.xp), fmt(xph))}
+      {row('Gold', fmtBig(t.gold + live.pending.gold), fmt(m ? kph * m.goldPerKill : 0))}
+      {row('Items kept', <>{fmt(t.kept)}{t.salvaged > 0 && <span className="muted"> +{fmt(t.salvaged)} salvaged</span>}</>)}
+      {row('Next level', nextLevel)}
     </div>
   );
 }
@@ -99,11 +125,11 @@ const FightScene = memo(
   () => true
 );
 
-export const FightView = memo(function FightView({ s }: { s: Snapshot }) {
+export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
   if (!s.target || !s.fight) {
     return (
       <>
-        <ViewHeader title="Fight" icon="swords" />
+        <ViewHeader title="Combat" icon="swords" />
         <div className="card">
           <p className="muted">No target. Pick an enemy on the Zones screen.</p>
           <a className="btn small" href="#zones"><Icon name="map" />Zones</a>
@@ -116,7 +142,7 @@ export const FightView = memo(function FightView({ s }: { s: Snapshot }) {
   const sceneKey = `${e.id}|${s.level}|${m.dps}|${m.timeToDie}|${s.stats.maxHp}`;
   return (
     <>
-      <ViewHeader title="Fight" icon="swords" />
+      <ViewHeader title="Combat" icon="swords" />
       <div className="fight-target">
         <div>
           <div className="crumb">{zone.name} <span className="muted">T{zone.tier}</span></div>
@@ -130,10 +156,16 @@ export const FightView = memo(function FightView({ s }: { s: Snapshot }) {
         <a className="btn small ghost" href="#zones"><Icon name="map" />Change target</a>
       </div>
       <FightScene key={sceneKey} s={s} />
-      <FightKpis m={m} />
+      <div className="grid-2">
+        <SessionCard s={s} />
+        <div className="card">
+          <CardHead title="Drops"><span className="muted">{e.name}</span></CardHead>
+          <EnemyDetail s={s} z={zone} e={e} m={m} />
+        </div>
+      </div>
       <div className="card">
         <CardHead title="Loot log"><span className="muted">{keepLabel(s)}</span></CardHead>
-        <ul className="loot-log"><LootLines s={s} logs={s.logs} /></ul>
+        <ul className="loot-log"><LootLines s={s} logs={sinceTargetChange(s.logs, e.id)} /></ul>
       </div>
     </>
   );

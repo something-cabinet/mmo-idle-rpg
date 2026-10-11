@@ -14,6 +14,8 @@ export interface Snapshot {
   level: number;
   xp: bigint;
   gold: bigint;
+  /** Gains since the last settle (not yet in `row` or a settle log). */
+  pending: { kills: number; xp: bigint; gold: bigint };
   items: Map<bigint, Item>;
   /** By index. */
   loadouts: Loadout[];
@@ -54,6 +56,7 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     level: p.level,
     xp: p.xp,
     gold: p.gold,
+    pending: { kills: p.kills, xp: p.xpGained, gold: p.gold - row.gold },
     items,
     loadouts,
     active,

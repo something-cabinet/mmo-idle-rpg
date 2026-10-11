@@ -5,6 +5,7 @@ import type { Identity } from 'spacetimedb';
 import type { DbConnection } from './module_bindings';
 import * as auth from './auth';
 import { guestToken, linkStoredGuest, openConnection, serverLabel, subscribeAll, watchAll } from './net';
+import { trackSettles } from './session';
 import { app, toast } from './store';
 import { App } from './ui/App';
 import { initTheme } from './ui/theme';
@@ -57,6 +58,7 @@ async function start() {
       if (!user) guestToken.save(token);
       app.set({ conn: c, me: identity, status: { text: 'Connected', ok: true } });
       watchAll(c, dataChanged);
+      trackSettles(c);
       subscribeAll(c, identity, () => {
         app.set({ ready: true });
         if (user) linkGuest(c, identity);

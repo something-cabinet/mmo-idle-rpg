@@ -105,12 +105,12 @@ export function useTick(ms: number) {
   return n;
 }
 
-/** The view named in the URL hash (#bag), or 'fight'. */
-export const VIEWS = ['fight', 'zones', 'character', 'equipment', 'bag', 'crafting', 'filter', 'settings'] as const;
+/** The view named in the URL hash (#bag), or 'combat'. */
+export const VIEWS = ['combat', 'zones', 'character', 'equipment', 'bag', 'crafting', 'filter', 'settings'] as const;
 export type View = (typeof VIEWS)[number];
 const hashView = (): View => {
   const h = location.hash.slice(1) as View;
-  return VIEWS.includes(h) ? h : 'fight';
+  return VIEWS.includes(h) ? h : 'combat';
 };
 export function useView(): View {
   return useSyncExternalStore(l => {

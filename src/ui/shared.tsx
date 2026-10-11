@@ -7,10 +7,11 @@ import type { CraftCost } from '../../spacetimedb/src/craft';
 import { Effect, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
 import { placeItem } from '../../spacetimedb/src/equip';
 import { setSticky } from '../store';
-import { fmt, fmtBig, pct, secs } from './format';
+import { fmt, fmtBig, pct } from './format';
 import { Icon } from './Icon';
 import { EmptyCard, ItemCard, itemName, rarityCls } from './items';
 import { gearFor, type Snapshot } from './snapshot';
+import { STAT_HELP } from './statSheet';
 
 export type Loadout = Snapshot['active'];
 
@@ -28,18 +29,20 @@ export function ViewHeader({ title, icon, children }: { title: string; icon: str
   );
 }
 
-export const margin = (m: Matchup) => m.timeToDie / m.timeToKill;
-export const result = (m: Matchup | undefined) => (!m ? '—' : m.viable ? `Win ${fmt(margin(m))}×` : 'Lose ✖');
+// Time to kill / die and the win margin drive offline settlement only: never shown to players.
 export const perHour = (m: Matchup) => m.killRate * 3600;
-export const fightLine = (m: Matchup | undefined) => (m ? `Kill ${secs(m.timeToKill)} · Die ${secs(m.timeToDie)} · ${result(m)}` : 'No target');
 
-/** [label, value, hover text] rows. */
-export function StatRows({ rows }: { rows: [string, ReactNode, string?][] }) {
+/** A stat name; hovering it shows `help` (what the stat does), underlined when there is some. */
+export const StatLabel = ({ label, help = STAT_HELP[label] }: { label: string; help?: string }) =>
+  help ? <span className="tip" title={help}>{label}</span> : <span>{label}</span>;
+
+/** [label, value, row hover text, label hover text] rows; the label's text defaults to STAT_HELP. */
+export function StatRows({ rows }: { rows: [string, ReactNode, string?, string?][] }) {
   return (
     <>
-      {rows.map(([k, v, hint]) => (
+      {rows.map(([k, v, hint, help]) => (
         <div className="stat-row" title={hint || undefined} key={k}>
-          <span>{k}</span>
+          <StatLabel label={k} help={help} />
           <strong>{v}</strong>
         </div>
       ))}
@@ -122,13 +125,7 @@ export function totals(s: Snapshot, slots: readonly bigint[]): Total[] {
     { label: 'Item find', value: st.itemFind, show: p },
     { label: 'Gold find', value: st.goldFind, show: p },
     { label: 'XP gain', value: st.xpGain, show: p },
-    ...(m
-      ? [
-          { label: 'DPS', value: m.dps, show: fmt },
-          { label: 'Kill', value: m.timeToKill, show: secs, lowerBetter: true },
-          { label: 'Die', value: m.timeToDie, show: secs },
-        ]
-      : []),
+    ...(m ? [{ label: 'DPS', value: m.dps, show: fmt }] : []),
   ];
 }
 
@@ -141,7 +138,7 @@ export function CompareTable({ before, after }: { before: Total[]; after: Total[
         const better = a.lowerBetter ? a.value < b.value : a.value > b.value;
         return (
           <div className={`stat-row${same ? ' dim' : ''}`} key={b.label}>
-            <span>{b.label}</span>
+            <StatLabel label={b.label} />
             <strong>
               {b.show(b.value)}
               {!same && (

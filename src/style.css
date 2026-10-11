@@ -742,31 +742,6 @@ select:focus,
   color: var(--muted);
 }
 
-.kpis {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-}
-.kpi {
-  display: grid;
-  gap: 2px;
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface);
-}
-.kpi span {
-  font-size: 11px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.kpi strong {
-  font-size: 17px;
-  font-variant-numeric: tabular-nums;
-}
-.kpi.ok strong { color: var(--ok); }
-.kpi.bad strong { color: var(--bad); }
 
 .loot-log {
   max-height: 180px;
@@ -852,6 +827,78 @@ select:focus,
 }
 .table .actions {
   text-align: right;
+}
+.table .actions .btn {
+  min-width: 72px;
+}
+.btn.fighting {
+  background: color-mix(in srgb, var(--ok) 15%, transparent);
+  border-color: color-mix(in srgb, var(--ok) 40%, transparent);
+  color: var(--ok);
+  cursor: default;
+}
+.table .caret {
+  display: inline-block;
+  width: 14px;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.table tr.expanded .caret {
+  transform: rotate(90deg);
+}
+.table tr.expanded td {
+  border-bottom-color: transparent;
+}
+.table tr.detail-row:hover {
+  background: none;
+}
+.table tr.detail-row > td {
+  padding: 2px 8px 12px 30px;
+  white-space: normal;
+}
+.enemy-detail {
+  display: grid;
+  gap: 10px;
+}
+.drop-rarities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.drop-group h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.drop-group h4 .muted {
+  margin-left: 6px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+.drop-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 2px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.drop-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.drop-list li .num {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 .table.locked tbody {
   opacity: 0.55;
@@ -1060,11 +1107,41 @@ select:focus,
   gap: 8px;
   margin-bottom: 8px;
 }
+/* session card: label, this session, per hour */
+.session-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, auto) 90px;
+}
+.session-row > :not(:first-child) {
+  text-align: right;
+  min-width: 90px;
+}
+.session-row .muted {
+  font-weight: 400;
+}
+.session-row.head {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: none;
+}
 .stat-row.dim {
   opacity: 0.6;
 }
 .stat-row[title] {
   cursor: help;
+}
+/* text with a hover tooltip: dotted underline that lights up on hover */
+.tip {
+  text-decoration: underline dotted var(--muted);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  cursor: help;
+}
+[title]:hover > .tip,
+.tip:hover {
+  text-decoration-color: var(--text);
 }
 
 /* square item tiles (bag, equipment) and the item popups */
@@ -1350,9 +1427,6 @@ fieldset.affix-pick legend {
   }
   .social.open {
     transform: none;
-  }
-  .kpis {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));

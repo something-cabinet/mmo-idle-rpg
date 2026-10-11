@@ -94,11 +94,17 @@ identity on first publish.
 
 ## Local development
 
-Every session:
+First time only, publish the module to the local server (with `spacetime:start` running):
+
+```sh
+npm run spacetime:publish:local
+```
+
+The local server keeps published modules and their data on disk, so after that every
+session is just:
 
 ```sh
 npm run spacetime:start            # terminal 1: local SpacetimeDB on :3000 (keep running)
-npm run spacetime:publish:local    # terminal 2: build + publish the module
 npm run dev                        # terminal 2: open http://localhost:5173
 ```
 

@@ -20,6 +20,7 @@ import { CombatView } from './views/CombatView';
 import { CraftingView } from './views/CraftingView';
 import { EquipmentView } from './views/EquipmentView';
 import { FilterView } from './views/FilterView';
+import { ItemIndexView } from './views/ItemIndexView';
 import { SettingsView } from './views/SettingsView';
 import { ZonesView } from './views/ZonesView';
 
@@ -27,6 +28,7 @@ const NAV: [string, [View, string, string][]][] = [
   ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones']]],
   ['Character', [['character', 'user', 'Character'], ['equipment', 'shield', 'Equipment'], ['bag', 'bag', 'Bag']]],
   ['Workshop', [['crafting', 'hammer', 'Crafting'], ['filter', 'filter', 'Loot filter']]],
+  ['Codex', [['index', 'book', 'Item index']]],
   ['System', [['settings', 'settings', 'Settings']]],
 ];
 
@@ -154,6 +156,7 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
     case 'bag': return <BagView s={s} />;
     case 'crafting': return <CraftingView s={s} />;
     case 'filter': return <FilterView s={s} />;
+    case 'index': return <ItemIndexView s={s} />;
     case 'settings': return <SettingsView />;
   }
 }

@@ -1049,6 +1049,35 @@ select:focus,
 .toolbar-label strong {
   color: var(--text);
 }
+/* Item index: tabs centered in the header, the tier picker and the unique cards. */
+.view-head {
+  position: relative;
+}
+.view-head-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+}
+.table td.wrap {
+  white-space: normal;
+}
+.index-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+}
+.index-toolbar .seg {
+  margin: 0;
+}
+.index-uniques {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
 /* Bag filters: a label column and a column of toggle buttons (several can be on). */
 .bag-filters {
   display: grid;

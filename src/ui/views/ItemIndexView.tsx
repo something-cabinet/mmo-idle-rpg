@@ -1,0 +1,257 @@
+// Item index: every base's stats at a chosen tier, every affix's roll ranges, and every unique.
+
+import { memo } from 'react';
+import { BASE_LIST, implicitValue, weaponValues, type BaseDef, type BaseKind, type WeaponValues } from '../../../spacetimedb/src/data/bases';
+import { EFFECTS_BY_ID, LEGENDARIES, type LegendaryGroup } from '../../../spacetimedb/src/data/legendary';
+import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatId } from '../../../spacetimedb/src/data/stats';
+import { AFFIX_STAT_IDS } from '../../../spacetimedb/src/loot';
+import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, type UniqueDef } from '../../../spacetimedb/src/data/uniques';
+import { useSticky } from '../../store';
+import { fmt } from '../format';
+import { Icon } from '../Icon';
+import { affixLabel, itemIconName, statText } from '../items';
+import { CardHead, ViewHeader } from '../shared';
+import type { Snapshot } from '../snapshot';
+
+const KIND_TITLE: Record<BaseKind, string> = { weapon: 'Weapons', offhand: 'Off-hands', armor: 'Armor', jewelry: 'Jewelry' };
+const SLOT_LABEL: Record<string, string> = { MainHand: 'Main hand', OffHand: 'Off-hand', Ring1: 'Ring', Ring2: 'Ring' };
+const slotText = (b: BaseDef) => [...new Set(b.slots.map(s => SLOT_LABEL[s] ?? s))].join(', ');
+
+/** A base's implicit lines at tier `t`. */
+const implicitLines = (b: BaseDef, t: number) => b.implicits.map(imp => statText(imp.stat, toStored(implicitValue(imp, t))));
+
+const damageText = (w: WeaponValues) => `${fmt(w.hit)} ${w.damageType === 'Physical' ? 'phys' : 'magic'}`;
+const healText = (w: WeaponValues) => (w.heal > 0 ? `${fmt(w.heal)}${w.healTarget === 'All' ? ' (all)' : ''}` : '');
+
+function WeaponTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Name</th><th>Hands</th><th className="num">Damage</th><th className="num">Speed</th>
+            <th className="num" title="Damage × speed, before crits and stats">DPS</th><th className="num">Crit</th><th className="num">Heal</th><th>Implicits</th>
+          </tr>
+        </thead>
+        <tbody>
+          {bases.map(b => {
+            const w = weaponValues(b.weapon!, tier);
+            return (
+              <tr key={b.id}>
+                <td className="name"><Icon name={itemIconName({ baseId: b.id })} />{b.name(tier)}</td>
+                <td>{w.twoHanded ? '2H' : '1H'}</td>
+                <td className="num">{damageText(w)}</td>
+                <td className="num">{w.speed}/s</td>
+                <td className="num">{fmt(w.hit * w.speed)}</td>
+                <td className="num">{w.baseCrit}%</td>
+                <td className="num">{healText(w)}</td>
+                <td className="muted">{implicitLines(b, tier).join(' · ')}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function BaseTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr><th>Name</th><th>Type</th><th>Slot</th><th>Implicits</th></tr>
+        </thead>
+        <tbody>
+          {bases.map(b => (
+            <tr key={b.id}>
+              <td className="name"><Icon name={itemIconName({ baseId: b.id })} />{b.name(tier)}</td>
+              <td>{b.family.split(' · ')[0]}</td>
+              <td>{slotText(b)}</td>
+              <td className="muted">{implicitLines(b, tier).join(' · ')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const num = (v: number) => String(Number(v.toFixed(2)));
+const TIERS = Array.from({ length: MAX_TIER }, (_, i) => i + 1);
+const AFFIX_WEIGHT = AFFIX_STAT_IDS.reduce((sum, id) => sum + (STATS[id as StatId].weight ?? 100), 0);
+
+/** Every regular affix: its chance to be picked and its value range per affix tier. */
+function AffixTable() {
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>Affix</th>
+            <th className="num" title="Chance that a rolled affix is this one">Chance</th>
+            {TIERS.map(k => <th key={k} className="num">T{k}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {AFFIX_STAT_IDS.map(id => {
+            const stat = id as StatId;
+            return (
+              <tr key={id}>
+                <td className="name">{affixLabel(id)}</td>
+                <td className="num">{num((100 * (STATS[stat].weight ?? 100)) / AFFIX_WEIGHT)}%</td>
+                {TIERS.map(k => {
+                  const [lo, hi] = affixRange(stat, k);
+                  return <td key={k} className="num">{num(roundStat(stat, lo))}–{num(roundStat(stat, hi))}</td>;
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const GROUP_SLOTS: Record<LegendaryGroup, string> = { Offense: 'Weapons and tome', Defense: 'Armor and shield', Utility: 'Rings and amulet' };
+
+/** Every legendary affix by group: its stat bonus, what one copy does and its stacking cap. */
+function LegendaryTable() {
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr><th>Effect</th><th>Bonus stat</th><th>One copy</th><th>Cap</th></tr>
+        </thead>
+        <tbody>
+          {(Object.keys(GROUP_SLOTS) as LegendaryGroup[]).flatMap(g => [
+            <tr key={g} className="boss"><td colSpan={4} className="muted">{g}: {GROUP_SLOTS[g]}</td></tr>,
+            ...LEGENDARIES.filter(l => l.group === g).map(l => (
+              <tr key={l.id}>
+                <td className="name"><Icon name="sparkles" />{l.name}</td>
+                <td>{affixLabel(l.bonusStat)}</td>
+                <td className="wrap">{l.text}</td>
+                <td className="wrap">{Number.isFinite(l.cap) ? l.describe(l.cap) : 'None'}</td>
+              </tr>
+            )),
+          ])}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** "+24–42% Physical damage": a unique stat's roll range. */
+function rangeText(stat: UniqueDef['stats'][number], tier: number): string {
+  const d = STATS[stat.stat];
+  const top = affixRef(stat.stat, tier) * (stat.x ?? 1);
+  const [lo, hi] = [roundStat(stat.stat, top * UNIQUE_ROLL_MIN), roundStat(stat.stat, top * UNIQUE_ROLL_MAX)];
+  return `+${num(lo)}–${num(hi)}${d.percent ? '%' : ''} ${d.name}`;
+}
+
+function UniqueCard({ u }: { u: UniqueDef }) {
+  const b = BASE_LIST.find(x => x.id === u.baseId)!;
+  const w = b.weapon && weaponValues(b.weapon, u.tier);
+  const baseLines = [
+    ...(w ? [w.twoHanded ? 'Two-handed' : 'One-handed', `Damage ${damageText(w)} · ${w.speed}/s`, `Crit ${w.baseCrit}%`, ...(w.heal > 0 ? [`Heal ${healText(w)}`] : [])] : []),
+    ...implicitLines(b, u.tier),
+  ];
+  return (
+    <div className="item-card r-unique">
+      <div className="item-head">
+        <span className="item-name">{u.name}</span>
+        <span className="badge r-unique">T{u.tier}</span>
+      </div>
+      <div className="item-sub">
+        <span>Unique</span>
+        <span>{b.name(u.tier)}</span>
+      </div>
+      <div className="item-implicits">
+        {baseLines.map((t, i) => <span key={i}>{t}</span>)}
+      </div>
+      {u.effects.map(id => {
+        const e = EFFECTS_BY_ID.get(id);
+        return (
+          <div className="item-legendary" key={id}>
+            <strong><Icon name="sparkles" />{e?.name ?? `Effect ${id}`}</strong>
+            <span>{e?.text}</span>
+          </div>
+        );
+      })}
+      <div className="item-affixes">
+        {u.stats.map((st, i) => (
+          <div className="affix" key={i}><span>{rangeText(st, u.tier)}</span></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot }) {
+  const [tab, setTab] = useSticky<'bases' | 'affixes' | 'uniques'>('indexTab', 'bases');
+  const [tier, setTier] = useSticky('indexTier', s.target?.zone.tier ?? 1);
+  const uniques = [...UNIQUES].sort((a, b) => a.tier - b.tier || a.id - b.id);
+
+  return (
+    <>
+      <ViewHeader title="Item index" icon="book">
+        <div className="seg view-head-center">
+          <button className={`seg-btn${tab === 'bases' ? ' active' : ''}`} onClick={() => setTab('bases')}>Bases</button>
+          <button className={`seg-btn${tab === 'affixes' ? ' active' : ''}`} onClick={() => setTab('affixes')}>Affixes</button>
+          <button className={`seg-btn c-unique${tab === 'uniques' ? ' active' : ''}`} onClick={() => setTab('uniques')}>Uniques</button>
+        </div>
+      </ViewHeader>
+      {tab === 'affixes' ? (
+        <>
+          <div className="card">
+            <CardHead title="Affixes" />
+            <p className="muted">
+              Any affix can roll on any item, duplicates allowed. A tier-N item rolls affix tiers 1 to N with equal chance;
+              each tier's range is the same on every item.
+            </p>
+            <AffixTable />
+          </div>
+          <div className="card">
+            <CardHead title="Legendary affixes" />
+            <p className="muted">
+              A Legendary item has 2 affixes plus one legendary affix from its slot's group: a small stat bonus and an
+              effect. Wearing more copies adds the effect again, up to its cap.
+            </p>
+            <LegendaryTable />
+          </div>
+        </>
+      ) : tab === 'bases' ? (
+        <>
+          <div className="card index-toolbar">
+            <span className="toolbar-label">Tier</span>
+            <div className="seg wrap">
+              {Array.from({ length: MAX_TIER }, (_, i) => i + 1).map(t => (
+                <button key={t} className={`seg-btn${t === tier ? ' active' : ''}`} onClick={() => setTier(t)}>T{t}</button>
+              ))}
+            </div>
+            <span className="muted">Base stats only: affixes roll on top (Magic and up).</span>
+          </div>
+          {(Object.keys(KIND_TITLE) as BaseKind[]).map(kind => {
+            const bases = BASE_LIST.filter(b => b.kind === kind);
+            return (
+              <div className="card" key={kind}>
+                <CardHead title={KIND_TITLE[kind]} />
+                {kind === 'weapon' ? <WeaponTable bases={bases} tier={tier} /> : <BaseTable bases={bases} tier={tier} />}
+              </div>
+            );
+          })}
+        </>
+      ) : (
+        <>
+          <p className="muted">
+            Uniques drop from any enemy in a zone of their tier or higher, and are always kept. Each stat rolls in the range
+            shown; effects with a cost apply once however many items carry them.
+          </p>
+          <div className="index-uniques">
+            {uniques.map(u => <UniqueCard key={u.id} u={u} />)}
+          </div>
+        </>
+      )}
+    </>
+  );
+});

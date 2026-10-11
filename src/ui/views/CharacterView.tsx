@@ -30,8 +30,7 @@ export const CharacterView = memo(function CharacterView({ s }: { s: Snapshot })
       </div>
       <EffectsCard effects={s.stats.effects} />
       <p className="muted hint">
-        Hover a stat name to see what it does, or the rest of its row to see where it comes from. Evasion is against Lv {enemyLevel}
-        {s.target ? ` (${s.target.enemy.name})` : ''}.
+        Hover a stat name to see what it does, or the rest of its row to see where it comes from. Evasion is against an average Lv {enemyLevel} enemy.
       </p>
     </>
   );

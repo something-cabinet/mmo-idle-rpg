@@ -166,10 +166,13 @@ export function SlotItemName({ s, id }: { s: Snapshot; id: bigint }) {
 }
 
 /** `it` next to what `slot` holds now, and the loadout totals before → after putting it there. */
-export function SwapPreview({ s, lo, slot, it }: { s: Snapshot; lo: Loadout; slot: number; it: Item }) {
+export function SwapPreview({ s, lo, slot, it, changedOnly }: { s: Snapshot; lo: Loadout; slot: number; it: Item; changedOnly?: boolean }) {
   const cur = s.items.get(lo.slots[slot]);
   const next = placeItem(lo.slots, slot, it, id => s.items.get(id));
   const also = typeof next === 'string' ? [] : next.map((id, i) => [i, id] as const).filter(([i, id]) => i !== slot && id !== lo.slots[i]);
+  const before = totals(s, lo.slots);
+  const after = typeof next === 'string' ? before : totals(s, next);
+  const unchanged = after.every((a, i) => Math.abs(a.value - before[i].value) < 1e-9);
   return (
     <>
       <div className="compare-items">
@@ -192,7 +195,13 @@ export function SwapPreview({ s, lo, slot, it }: { s: Snapshot; lo: Loadout; slo
       ) : (
         <>
           <CardHead title={`${lo.name} totals`} />
-          <CompareTable before={totals(s, lo.slots)} after={totals(s, next)} />
+          {changedOnly && unchanged ? (
+            <p className="muted">No stat changes.</p>
+          ) : (
+            <div>
+              <CompareTable before={before} after={after} changedOnly={changedOnly} />
+            </div>
+          )}
         </>
       )}
     </>

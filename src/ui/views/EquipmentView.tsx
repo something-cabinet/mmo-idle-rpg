@@ -57,8 +57,8 @@ function SlotPopup({ s, lo, slot, onClose }: { s: Snapshot; lo: Loadout; slot: n
           <button className="btn primary" onClick={() => setChanging(true)}>Change equipment</button>
           {cur && (
             <>
-              <button className="btn small" onClick={() => call(r.unequip({ loadout: lo.index, slot }))}>Unequip</button>
-              <button className="btn small" onClick={() => openCraft(cur.id)}><Icon name="hammer" />Craft…</button>
+              <button className="btn" onClick={() => call(r.unequip({ loadout: lo.index, slot }))}>Unequip</button>
+              <button className="btn" onClick={() => openCraft(cur.id)}><Icon name="hammer" />Craft…</button>
             </>
           )}
         </div>
@@ -66,7 +66,7 @@ function SlotPopup({ s, lo, slot, onClose }: { s: Snapshot; lo: Loadout; slot: n
     );
   } else {
     const list = candidates(s, lo, slot);
-    const pick = list.find(c => c.it.id === pickId) ?? list.find(c => typeof c.next !== 'string') ?? list[0];
+    const pick = list.find(c => c.it.id === pickId);
     body = (
       <>
         <div className="picker-tiles">
@@ -85,10 +85,13 @@ function SlotPopup({ s, lo, slot, onClose }: { s: Snapshot; lo: Loadout; slot: n
             <p className="muted">No other items fit this slot.</p>
           )}
         </div>
-        {pick && <SwapPreview s={s} lo={lo} slot={slot} it={pick.it} />}
+        {pick ? (
+          <SwapPreview s={s} lo={lo} slot={slot} it={pick.it} changedOnly />
+        ) : (
+          list.length > 0 && <p className="muted">Pick an item to compare it with what's equipped.</p>
+        )}
         <div className="popup-actions">
-          <button className="btn small ghost" onClick={() => setChanging(false)}>Back</button>
-          <span className="spacer" />
+          <button className="btn" onClick={() => setChanging(false)}><Icon name="back" />Back</button>
           {pick && (
             <button
               className="btn primary"
@@ -110,7 +113,7 @@ function SlotPopup({ s, lo, slot, onClose }: { s: Snapshot; lo: Loadout; slot: n
   return (
     <Modal onClose={onClose} className="item-popup">
       <CardHead title={`${SLOT_LABEL[slot]}${changing ? ' · Change equipment' : ''}`}>
-        <button className="btn small ghost" onClick={onClose}>Close</button>
+        <button className="btn" onClick={onClose}><Icon name="x" />Close</button>
       </CardHead>
       {body}
     </Modal>

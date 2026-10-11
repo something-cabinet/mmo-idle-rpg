@@ -39,7 +39,7 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
   return (
     <Modal onClose={onClose} className="item-popup">
       <CardHead title={<span className={`c-${rarityCls(it.rarity.tag)}`}>{itemName(it)}</span>}>
-        <button className="btn small ghost" onClick={onClose}>Close</button>
+        <button className="btn" onClick={onClose}><Icon name="x" />Close</button>
       </CardHead>
       {slots.length > 1 && (
         <div className="seg">
@@ -55,13 +55,12 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
         <button className="btn primary" disabled={blocked} onClick={() => call(r.equip({ loadout: lo.index, slot, itemId: it.id }))}>
           <Icon name="shield" />Equip
         </button>
-        <button className="btn small" onClick={() => call(r.lockItem({ itemId: it.id, locked: !it.locked }))}>
+        <button className="btn" onClick={() => call(r.lockItem({ itemId: it.id, locked: !it.locked }))}>
           <Icon name="lock" />{it.locked ? 'Unlock' : 'Lock'}
         </button>
-        <button className="btn small" onClick={() => openCraft(it.id)}><Icon name="hammer" />Craft…</button>
-        <span className="spacer" />
+        <button className="btn" onClick={() => openCraft(it.id)}><Icon name="hammer" />Craft…</button>
         <button
-          className="btn small danger"
+          className="btn danger"
           disabled={it.locked}
           title={it.locked ? "Locked items can't be salvaged" : undefined}
           onClick={() => call(r.salvage({ itemIds: [it.id] }))}

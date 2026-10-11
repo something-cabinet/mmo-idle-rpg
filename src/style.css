@@ -1306,11 +1306,15 @@ select:focus,
   margin: 0;
 }
 .popup-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 8px;
   padding-top: 4px;
+}
+.popup-actions .btn {
+  width: 100%;
+  min-height: 38px;
+  text-align: center;
 }
 
 /* crafting */

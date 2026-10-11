@@ -20,7 +20,8 @@
     "test:combat": "tsx scripts/check-combat.ts",
     "test:loot": "tsx scripts/check-loot.ts",
     "test:equip": "tsx scripts/check-equip.ts",
-    "test:craft": "tsx scripts/check-craft.ts"
+    "test:craft": "tsx scripts/check-craft.ts",
+    "test:sim": "tsx scripts/check-sim.ts"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

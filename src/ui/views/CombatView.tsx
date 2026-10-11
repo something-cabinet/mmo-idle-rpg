@@ -96,7 +96,12 @@ const FightScene = memo(
   function FightScene({ s }: { s: Snapshot }) {
     const { enemy: e } = s.target!;
     useEffect(() => {
-      startFight(s.stats, s.fight!, e, s.fightSince);
+      if (!s.current) return;
+      // Each next fight comes from a fresh projection, so it uses the latest row and gear.
+      startFight(s.current, now => {
+        const row = s.conn.db.character.id.find(s.row.id);
+        return row ? snapshot(s.conn, row, now).current : undefined;
+      });
       return stopFight;
     }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once per fight (keyed by the parent)
     const fighter = (who: 'you' | 'enemy', portrait: React.ReactNode, name: React.ReactNode) => (

@@ -7,15 +7,28 @@
 - **One enemy at a time.** Each fight starts at full HP; recovering between fights is
   part of the walk time.
 - **One model, two evaluations:**
-  - The **server** settles rewards with the expected-value formulas below, both online
-    and offline. It never simulates individual fights.
-  - The **client** animates fights for the online view (swings, crits, dodges, damage
-    numbers) using a seeded random generator. This is presentation only and never
-    affects rewards.
-- **Consequence:** viability is deterministic. There are no unlucky online deaths, and
-  offline results always match online.
-- **Defeat:** a fight that isn't viable kills the character `timeToDie` after it starts,
-  online or offline. The character then goes **idle** (no target, no gains) until the
+  - **Online: live fights** (`sim.ts`). Fights are played hit by hit: swings on each
+    side's timer, crits, dodges, heals, regen, lifesteal, ±10% damage. Each fight's rolls
+    come from a generator seeded by (character, fight start), so a fight is fully
+    determined by when it starts. The server settles online time by playing the fights
+    since the last settle; the client plays the very same fights to animate them and to
+    show progress. The client never reports results: the server computes them itself.
+    Only finished fights are settled; the one in progress replays identically next time,
+    so settling at any cadence gives the same fights.
+  - **Offline: expected values.** The login settle grants the time away with the
+    formulas below (`project`), no fights played.
+- **Matching averages.** Per swing, a live fight uses the formulas' numbers (your hit =
+  DPS split over attacks and crits, heal = HPS per attack, the enemy's hit after your
+  mitigation, dodged at your evasion), and swing timers start half a period in, so an
+  average live fight lasts `timeToKill`. Online and offline earn the same on average.
+- **Online variance.** Unlike the formulas, a live fight can be lost by bad luck when the
+  matchup is close, and overhealing above max HP is lost.
+- **Fights per settle are cheap:** a 60 s online settle plays a few fights (well under
+  1 ms); writes happen only on settles, as before. Raids will use the same model: one
+  seeded fight per raid, replayed by every client, written at milestones.
+- **Stalemate:** a live fight not over after 600 s ends with no effect (time passes).
+- **Defeat:** a fight that isn't viable kills the character `timeToDie` after it starts
+  offline; online, when its HP reaches 0. The character then goes **idle** (no target, no gains) until the
   player picks a new target, so a bad pick before logging off wastes the time away.
   Players can also go idle on purpose with **Flee**.
 - Time to kill, time to die and the win margin are internal: the UI never shows them.
@@ -28,8 +41,9 @@ applies at most once per character.
 
 ### Rule for new mechanics
 
-Every mechanic needs a closed-form expected value. Avoid chained procs, on-kill
-stacking buffs and conditional triggers unless they have an averaged formula.
+Every mechanic needs a closed-form expected value for offline settling, and a per-hit
+version in `sim.ts` for live fights whose average matches it. Avoid chained procs,
+on-kill stacking buffs and conditional triggers unless they have an averaged formula.
 
 ## Stat aggregation
 

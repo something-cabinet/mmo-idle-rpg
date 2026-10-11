@@ -72,8 +72,8 @@ Used for item names, icon borders and loot log lines.
 - Two portraits (placeholder icons), HP bars, attack timer bars.
 - **Floating numbers:** white = hit, large yellow with "!" = crit, grey "Dodge" = evaded,
   green "+n" = heal, red = damage you take.
-- The animation uses the client's seeded random generator and is presentation only
-  (combat.md); the stat lines below it are the real expected values.
+- The animation replays the live fights the server settles (combat.md, `sim.ts`): what
+  you see is what you get. The per-hour rates below it are expected values.
 - Loot log shows kept items (clickable) and salvaged ones (dimmed).
 
 ### Zones

@@ -9,6 +9,7 @@ import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/z
 import { Effect } from './data/legendary';
 import { combatStats, matchup } from './combat';
 import { RARITIES, firstKillReward, makeItem, rollDrops, seededRng, type DropResult } from './loot';
+import { simulate } from './sim';
 
 /** Settle log rows kept per character. */
 export const SETTLE_LOG_KEEP = 30;
@@ -66,22 +67,22 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
 }
 
 /**
- * Grants idle rewards earned since `lastSettledAt` (see `project`) with the
- * current gear and target: XP, gold, and drops (kept items go to the bag, the rest
- * is salvaged into Essence). A boss's first kill grants its reward and unlocks the
- * next zone (zone-content.md); a lost fight clears the target (idle). Call before
- * anything that changes gear or target. `capMicros` is only passed for the login
- * settle, which is always logged.
+ * Grants the rewards earned since `lastSettledAt` with the current gear and target:
+ * XP, gold, and drops (kept items go to the bag, the rest is salvaged into Essence).
+ * Online time is played as live fights (sim.ts `simulate`, the fights the client
+ * animates); offline time uses the expected-value formulas (game.ts `project`). A
+ * boss's first kill grants its reward and unlocks the next zone (zone-content.md); a
+ * lost fight clears the target (idle). Call before anything that changes gear or
+ * target. `capMicros` is only passed for the login settle, which covers the time
+ * away and is always logged.
  */
 export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const gear = gearOf(ctx, ch);
   const target = ENEMIES_BY_ID.get(ch.targetEnemyId);
-  const p = project(
-    { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch },
-    { gear, enemy: target?.enemy },
-    ctx.timestamp.microsSinceUnixEpoch,
-    capMicros
-  );
+  const progress = { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch };
+  const activity = { gear, enemy: target?.enemy };
+  const now = ctx.timestamp.microsSinceUnixEpoch;
+  const p = capMicros === undefined ? simulate(progress, activity, now, ch.id) : project(progress, activity, now, capMicros);
 
   let essence = ch.essence;
   let drops: DropResult | undefined;

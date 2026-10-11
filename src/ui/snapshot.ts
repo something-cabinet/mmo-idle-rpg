@@ -4,7 +4,7 @@ import type { DbConnection } from '../module_bindings';
 import type { Character, Item, Loadout, LootFilter, SettleLog } from '../module_bindings/types';
 import { combatStats, matchup, type CombatStats, type Matchup } from '../../spacetimedb/src/combat';
 import { ENEMIES_BY_ID, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
-import { project } from '../../spacetimedb/src/game';
+import { simulate, type Simulated } from '../../spacetimedb/src/sim';
 
 export interface Snapshot {
   conn: DbConnection;
@@ -41,11 +41,8 @@ export interface Snapshot {
   stats: CombatStats;
   /** Against the target; undefined without one. */
   fight: Matchup | undefined;
-  /**
-   * Server time the current fight cycle started: the last granted kill (projected), or
-   * when a fight that grants none began. The fight animation runs from it.
-   */
-  fightSince: bigint;
+  /** The latest live fight (sim.ts `simulate`), which the fight scene animates; undefined when idle. */
+  current: Simulated['current'];
 }
 
 export const gearFor = (slots: readonly bigint[], items: Map<bigint, Item>): (Item | undefined)[] => slots.map(id => items.get(id));
@@ -56,7 +53,8 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const active = loadouts.find(l => l.index === row.activeLoadout) ?? loadouts[0];
   const gear = gearFor(active?.slots ?? [], items);
   const fighting = ENEMIES_BY_ID.get(row.targetEnemyId);
-  const p = project({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy: fighting?.enemy }, nowMicros);
+  // We're online: progress is the live fights the server will settle (sim.ts), not the offline formulas.
+  const p = simulate({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy: fighting?.enemy }, nowMicros, row.id);
   const defeated = p.defeatedAt !== undefined;
   const target = defeated ? undefined : fighting;
 
@@ -89,7 +87,6 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     firstBossKill: !!target?.enemy.boss && p.kills > 0 && !killedZones.has(target.zone.id),
     stats,
     fight: target && matchup(stats, target.enemy),
-    // A lost or endless fight settles nothing: it runs from the last settle.
-    fightSince: p.kills > 0 ? p.settledMicros : row.lastSettledAt.microsSinceUnixEpoch,
+    current: p.current,
   };
 }

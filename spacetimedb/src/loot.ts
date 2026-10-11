@@ -2,7 +2,7 @@
 // legendary.md, crafting.md). Pure: shared by server and client, and every roll
 // comes from a seeded generator so a settle is reproducible.
 
-import { base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
+import { BASE_LIST, base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
 import { STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
@@ -90,6 +90,8 @@ export interface NewItem {
 
 const AFFIX_POOL: StatDef[] = Object.values(STATS).filter(d => d.ref !== undefined);
 const AFFIX_WEIGHT = AFFIX_POOL.reduce((sum, d) => sum + (d.weight ?? 100), 0);
+/** Stat IDs of every regular affix: the loot filter's default (keep any affix). */
+export const AFFIX_STAT_IDS: readonly number[] = AFFIX_POOL.map(d => d.id);
 
 /** A regular affix on a tier-`tier` item: weighted free pool, affix tier 1..N, value uniform in that tier's range (then rounded). */
 export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
@@ -155,12 +157,27 @@ export function raiseRarity<T extends RaisableItem>(rng: Rng, it: T, removeIndex
 
 export interface LootFilter {
   minRarity: RarityName;
-  /** Stat IDs: a drop with any of these affixes is kept below the threshold. */
+  /**
+   * Stat IDs (distinct): a drop at or above the threshold is kept only with one of
+   * these affixes. Empty or every affix means no affix restriction.
+   */
   keepAffixes: readonly number[];
+  /** Base IDs (distinct): drops are kept only of these families. Empty or every base means any. */
+  keepBases: readonly number[];
+  /** Drops are kept only with a regular affix of at least this tier; 1 means any. */
+  minAffixTier: number;
 }
 
+/** The filter restricts affixes: some, but not all, are selected. */
+export const restrictsAffixes = (f: Pick<LootFilter, 'keepAffixes'>) => f.keepAffixes.length > 0 && f.keepAffixes.length < AFFIX_STAT_IDS.length;
+/** The filter restricts families: some, but not all, are selected. */
+export const restrictsBases = (f: Pick<LootFilter, 'keepBases'>) => f.keepBases.length > 0 && f.keepBases.length < BASE_LIST.length;
+
 export function passesFilter(item: NewItem, f: LootFilter): boolean {
-  return rarityRank(item.rarity.tag) >= rarityRank(f.minRarity) || item.affixes.some(a => f.keepAffixes.includes(a.stat));
+  if (rarityRank(item.rarity.tag) < rarityRank(f.minRarity)) return false;
+  if (restrictsBases(f) && !f.keepBases.includes(item.baseId)) return false;
+  if (f.minAffixTier > 1 && !item.affixes.some(a => a.tier >= f.minAffixTier)) return false;
+  return !restrictsAffixes(f) || item.affixes.some(a => f.keepAffixes.includes(a.stat));
 }
 
 /** First kill of a zone boss: 20× its gold (zone-content.md). */
@@ -221,8 +238,8 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
     if (rarity === 'Unique') continue; // no uniques yet: their chance rolls Legendary
     const chance = DROP_CHANCE[rarity] + (rarity === 'Legendary' ? DROP_CHANCE.Unique : 0);
     const count = samplePoisson(rng, scale * chance);
-    // Without a whitelist, drops below the threshold are salvaged without rolling them.
-    const skip = rarityRank(rarity) < rarityRank(d.filter.minRarity) && d.filter.keepAffixes.length === 0;
+    // Drops below the threshold are salvaged without rolling them.
+    const skip = rarityRank(rarity) < rarityRank(d.filter.minRarity);
     for (let i = 0; i < count; i++) {
       if (skip) {
         salvage(rarity);

@@ -162,6 +162,8 @@ export const LootFilter = __t.object("LootFilter", {
     return Rarity;
   },
   keepAffixes: __t.array(__t.u16()),
+  keepBases: __t.array(__t.u16()),
+  minAffixTier: __t.u8(),
 });
 export type LootFilter = __Infer<typeof LootFilter>;
 

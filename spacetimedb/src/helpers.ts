@@ -4,11 +4,11 @@ import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { account, character, item, presence, settleLog, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } from './game';
-import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
+import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
 import { Effect } from './data/legendary';
 import { combatStats, matchup } from './combat';
-import { RARITIES, firstKillReward, makeItem, rollDrops, seededRng, type DropResult } from './loot';
+import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, seededRng, type DropResult } from './loot';
 import { simulate } from './sim';
 
 /** Settle log rows kept per character. */
@@ -97,7 +97,12 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       tier: target.zone.tier,
       rewardScale: rewardScale(target.zone, target.enemy),
       itemFind: stats.itemFind,
-      filter: { minRarity: filter?.minRarity.tag ?? 'Magic', keepAffixes: filter?.keepAffixes ?? [] },
+      filter: {
+        minRarity: filter?.minRarity.tag ?? 'Magic',
+        keepAffixes: filter?.keepAffixes ?? [],
+        keepBases: filter?.keepBases ?? [],
+        minAffixTier: filter?.minAffixTier ?? 1,
+      },
       bagFree: ch.bagSize - bagCount(ctx, ch.id),
       fortune: stats.effects.has(Effect.FortunesFavor),
     });
@@ -215,7 +220,13 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
     });
   }
   if (!ctx.db.lootFilter.characterId.find(characterId)) {
-    ctx.db.lootFilter.insert({ characterId, minRarity: { tag: 'Magic' }, keepAffixes: [] });
+    ctx.db.lootFilter.insert({
+      characterId,
+      minRarity: { tag: 'Magic' },
+      keepAffixes: [...AFFIX_STAT_IDS],
+      keepBases: BASE_LIST.map(b => b.id),
+      minAffixTier: 1,
+    });
   }
 }
 

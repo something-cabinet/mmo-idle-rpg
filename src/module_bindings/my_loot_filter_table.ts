@@ -20,4 +20,6 @@ export default __t.row({
     return Rarity.name("min_rarity");
   },
   keepAffixes: __t.array(__t.u16()).name("keep_affixes"),
+  keepBases: __t.array(__t.u16()).name("keep_bases"),
+  minAffixTier: __t.u8().name("min_affix_tier"),
 });

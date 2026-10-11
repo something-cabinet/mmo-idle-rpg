@@ -85,13 +85,18 @@ const b = await connect();
 await expectError('name taken (case-insensitive)', b.conn.reducers.createCharacter({ name: `alice_${suffix}`, starterWeapon: 1 }), 'taken');
 await expectError('chat without character rejected', b.conn.reducers.sendChat({ text: 'hi' }), 'Not in the world');
 
-await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6] });
+await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6], keepBases: [1, 1, 8], minAffixTier: 3 });
 await sleep(200);
 {
   const filter = [...a.conn.db.myLootFilter.iter()][0];
-  check('loot filter saved (deduplicated)', filter?.minRarity.tag === 'Rare' && filter.keepAffixes.join() === '22,6', filter?.keepAffixes.join());
+  check('loot filter saved (deduplicated)',
+    filter?.minRarity.tag === 'Rare' && filter.keepAffixes.join() === '22,6' && filter.keepBases.join() === '1,8' && filter.minAffixTier === 3,
+    `${filter?.keepAffixes.join()} / ${filter?.keepBases.join()} / ${filter?.minAffixTier}`);
 }
-await expectError('unknown affix in filter rejected', a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [999] }), 'Unknown affix');
+const badFilter = { minRarity: { tag: 'Rare' as const }, keepAffixes: [], keepBases: [], minAffixTier: 1 };
+await expectError('unknown affix in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, keepAffixes: [999] }), 'Unknown affix');
+await expectError('unknown base in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, keepBases: [999] }), 'Unknown base');
+await expectError('affix tier 0 in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, minAffixTier: 0 }), 'Bad affix tier');
 
 await sleep(1100);
 await a.conn.reducers.sendChat({ text: 'hello world' });
@@ -124,13 +129,19 @@ await expectError('locked zone boss rejected', a.conn.reducers.setTarget({ enemy
 await a.conn.reducers.setTarget({ enemyId: 106 });
 check('a boss can be challenged as a target', charOf(a)!.targetEnemyId === 106);
 {
-  const m = matchup(combatStats(charOf(a)!.level, starterGear(a)), ENEMIES_BY_ID.get(106)!.enemy);
-  await sleep(Math.ceil(m.timeToDie * 1000) + 500);
-  await a.conn.reducers.settleNow({});
-  await sleep(200);
-  const defeat = [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
+  const stats = combatStats(charOf(a)!.level, starterGear(a));
+  const m = matchup(stats, ENEMIES_BY_ID.get(106)!.enemy);
+  // The live fight starts after the walk and varies in length: settle until it ends.
+  const expected = stats.walkTime + m.timeToDie;
+  await sleep(Math.ceil(expected * 1000));
+  const lastLog = () => [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
+  for (let i = 0; i < 20 && !lastLog().defeated; i++) {
+    await a.conn.reducers.settleNow({});
+    await sleep(500);
+  }
+  const defeat = lastLog();
   check('the starter kit loses to Grubnak after the fight: a logged defeat', defeat.defeated && defeat.enemyId === 106 && !defeat.offline,
-    `after ${m.timeToDie.toFixed(1)} s`);
+    `expected after ${expected.toFixed(1)} s`);
   check('… which leaves the character idle', charOf(a)!.targetEnemyId === 0);
   check('a lost challenge records no kill', [...a.conn.db.myBossKills.iter()].length === 0);
 }

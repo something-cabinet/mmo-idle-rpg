@@ -1402,6 +1402,20 @@ fieldset.affix-pick legend {
   margin: 8px 0 10px;
   font-size: 13px;
 }
+.filter-warn {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  color: var(--gold);
+}
+.checks-group {
+  grid-column: 1 / -1;
+  margin: 8px 8px 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
 .checks {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

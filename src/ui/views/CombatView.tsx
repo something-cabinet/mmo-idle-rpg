@@ -4,7 +4,7 @@ import { sessionStart, sessionTotals, sinceTargetChange } from '../../session';
 import { call, useTick } from '../../store';
 import { MAX_LEVEL } from '../../../spacetimedb/src/combat';
 import { xpToNext } from '../../../spacetimedb/src/game';
-import { RARITIES } from '../../../spacetimedb/src/loot';
+import { RARITIES, restrictsAffixes, restrictsBases } from '../../../spacetimedb/src/loot';
 import { nowMicros } from '../clock';
 import { DmgTag, EnemyDetail } from '../enemy';
 import { startFight, stopFight } from '../fight';
@@ -86,7 +86,15 @@ function SessionCard({ s }: { s: Snapshot }) {
   );
 }
 
-const keepLabel = (s: Snapshot) => `Keeping ${s.filter?.minRarity.tag ?? 'Magic'}+${s.filter?.keepAffixes.length ? ` and ${s.filter.keepAffixes.length} affixes` : ''}`;
+function keepLabel(s: Snapshot) {
+  const f = s.filter;
+  const limits = [
+    f && restrictsAffixes(f) && `${f.keepAffixes.length} affixes`,
+    f && restrictsBases(f) && `${f.keepBases.length} families`,
+    f && f.minAffixTier > 1 && `T${f.minAffixTier}+ affix`,
+  ].filter(Boolean);
+  return `Keeping ${f?.minRarity.tag ?? 'Magic'}+${limits.length ? ` · ${limits.join(' · ')}` : ''}`;
+}
 
 /**
  * The animated fight. fight.ts drives its bars and floating numbers directly, so React

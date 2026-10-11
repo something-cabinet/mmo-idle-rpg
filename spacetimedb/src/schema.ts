@@ -153,14 +153,18 @@ export const loadout = table(
   }
 );
 
-/** Drops below `minRarity` are salvaged unless they carry a whitelisted affix. */
+/** Which drops are kept; the rest are salvaged (loot.ts `passesFilter`). */
 export const lootFilter = table(
   { name: 'loot_filter' },
   {
     characterId: t.u64().primaryKey(),
     minRarity: Rarity,
-    /** Stat IDs: a drop with any of these affixes is always kept. */
+    /** Stat IDs: drops are kept only with one of these affixes (empty or all = any). */
     keepAffixes: t.array(t.u16()),
+    /** Base IDs: drops are kept only of these families (empty or all = any). */
+    keepBases: t.array(t.u16()).default([]),
+    /** Drops are kept only with an affix of at least this tier (1 = any). */
+    minAffixTier: t.u8().default(1),
   }
 );
 

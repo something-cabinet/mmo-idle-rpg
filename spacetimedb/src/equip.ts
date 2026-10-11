@@ -102,10 +102,20 @@ function ranking(p: Profile, s: LoadoutScore): number[] {
   }
 }
 
-function better(a: number[], b: number[]): boolean {
+/** Values within this fraction of each other tie, so the next value decides. */
+const NEAR_TIE = 0.01;
+
+/**
+ * Whether `a` ranks above `b`. With `nearTie`, a gap under 1% in a value is a tie and
+ * falls through to the next one, so a sliver of DPS can't outweigh a big survival gain.
+ * The last value decides on any real difference.
+ */
+function better(a: number[], b: number[], nearTie: boolean): boolean {
   for (let i = 0; i < a.length; i++) {
     if (a[i] === b[i]) continue;
-    return a[i] > b[i] + 1e-9 * Math.abs(b[i]);
+    const tol = (nearTie && i < a.length - 1 ? NEAR_TIE : 1e-9) * Math.max(Math.abs(a[i]), Math.abs(b[i]));
+    if (Number.isFinite(tol) && Math.abs(a[i] - b[i]) <= tol) continue;
+    return a[i] > b[i];
   }
   return false;
 }
@@ -117,45 +127,54 @@ function better(a: number[], b: number[]): boolean {
  * slot, try every item that fits (or empty) and keep the best, until a pass changes
  * nothing. Hands are tried as whole options: a two-hander alone, or a one-hander
  * with each off-hand. Never looks at the target enemy.
+ *
+ * Two searches: a strict one finds the best goal value, then a near-tie one trades
+ * slivers of the goal for the tie-breakers, never ending more than 1% below that best
+ * (so small trades can't add up).
  */
 export function autoEquip(level: number, items: readonly OwnedItem[], slots: readonly bigint[], profile: Profile): bigint[] {
   const byId = new Map(items.map(i => [i.id, i]));
   const gearOf = (ids: readonly bigint[]) => ids.map(id => byId.get(id));
   const rank = (ids: readonly bigint[]) => ranking(profile, scoreGear(level, gearOf(ids)));
-
-  let best = slots.map(id => (byId.has(id) ? id : 0n));
-  let bestRank = rank(best);
-  const consider = (ids: bigint[]) => {
-    const r = rank(ids);
-    if (better(r, bestRank)) {
-      best = ids;
-      bestRank = r;
-    }
-  };
   const fitting = (slot: number) => items.filter(i => fitsSlot(i.baseId, slot));
   const offHands = [undefined, ...fitting(OFF)];
 
-  for (let pass = 0; pass < 4; pass++) {
-    const before = best.join();
-    // Hands as whole options.
-    for (const main of [undefined, ...fitting(MAIN)]) {
-      for (const off of twoHanded(main) ? [undefined] : offHands) {
-        const ids = best.map(id => (id === main?.id || id === off?.id ? 0n : id));
-        ids[MAIN] = main?.id ?? 0n;
-        ids[OFF] = off?.id ?? 0n;
-        consider(ids);
+  const search = (start: bigint[], nearTie: boolean, floor: number): bigint[] => {
+    let best = start;
+    let bestRank = rank(best);
+    const consider = (ids: bigint[]) => {
+      const r = rank(ids);
+      if (r[0] >= floor && better(r, bestRank, nearTie)) {
+        best = ids;
+        bestRank = r;
       }
-    }
-    // Every other slot on its own.
-    for (let slot = 0; slot < SLOTS.length; slot++) {
-      if (slot === MAIN || slot === OFF) continue;
-      for (const it of [undefined, ...fitting(slot)]) {
-        const ids = best.map(id => (id === it?.id ? 0n : id));
-        ids[slot] = it?.id ?? 0n;
-        consider(ids);
+    };
+    for (let pass = 0; pass < 4; pass++) {
+      const before = best.join();
+      // Hands as whole options.
+      for (const main of [undefined, ...fitting(MAIN)]) {
+        for (const off of twoHanded(main) ? [undefined] : offHands) {
+          const ids = best.map(id => (id === main?.id || id === off?.id ? 0n : id));
+          ids[MAIN] = main?.id ?? 0n;
+          ids[OFF] = off?.id ?? 0n;
+          consider(ids);
+        }
       }
+      // Every other slot on its own.
+      for (let slot = 0; slot < SLOTS.length; slot++) {
+        if (slot === MAIN || slot === OFF) continue;
+        for (const it of [undefined, ...fitting(slot)]) {
+          const ids = best.map(id => (id === it?.id ? 0n : id));
+          ids[slot] = it?.id ?? 0n;
+          consider(ids);
+        }
+      }
+      if (best.join() === before) break;
     }
-    if (best.join() === before) break;
-  }
-  return best;
+    return best;
+  };
+
+  const strict = search(slots.map(id => (byId.has(id) ? id : 0n)), false, -Infinity);
+  const goal = rank(strict)[0];
+  return search(strict, true, Number.isFinite(goal) ? goal * (1 - NEAR_TIE) : goal);
 }

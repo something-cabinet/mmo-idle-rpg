@@ -128,7 +128,7 @@ export function totals(s: Snapshot, slots: readonly bigint[]): Total[] {
     { label: 'Item find', value: st.itemFind, show: p },
     { label: 'Gold find', value: st.goldFind, show: p },
     { label: 'XP gain', value: st.xpGain, show: p },
-    { label: 'DPS', value: scoreGear(s.level, gear).dps, show: fmt },
+    { label: 'DPS', value: scoreGear(s.level, gear).dps, show: n => (Math.abs(n) < 1000 ? n.toFixed(1) : fmt(n)) },
   ];
 }
 

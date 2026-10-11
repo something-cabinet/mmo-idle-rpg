@@ -50,7 +50,7 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
           ))}
         </div>
       )}
-      <SwapPreview s={s} lo={lo} slot={slot} it={it} />
+      <SwapPreview s={s} lo={lo} slot={slot} it={it} changedOnly />
       <div className="popup-actions">
         <button className="btn primary" disabled={blocked} onClick={() => call(r.equip({ loadout: lo.index, slot, itemId: it.id }))}>
           <Icon name="shield" />Equip

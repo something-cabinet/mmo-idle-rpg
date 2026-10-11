@@ -5,6 +5,7 @@ import type { Item } from '../module_bindings/types';
 import { combatStats, defenseAgainst, type Matchup } from '../../spacetimedb/src/combat';
 import type { CraftCost } from '../../spacetimedb/src/craft';
 import { Effect, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
+import { Stat, fromStored } from '../../spacetimedb/src/data/stats';
 import { placeItem, scoreGear } from '../../spacetimedb/src/equip';
 import { setSticky } from '../store';
 import { fmt, fmtBig, pct } from './format';
@@ -134,10 +135,22 @@ export function totals(s: Snapshot, slots: readonly bigint[]): Total[] {
   const st = combatStats(s.level, gear);
   const src = st.sources[0];
   const p = (x: number) => pct(x, 1);
+  /** A primary attribute: `level` from levels plus gear. */
+  const primary = (id: number) =>
+    s.level +
+    gear.reduce((sum, it) => sum + (it ? [...it.implicits, ...it.affixes, ...(it.legendary ? [it.legendary] : [])] : [])
+      .reduce((n, g) => n + (g.stat === id ? fromStored(g.value) : 0), 0), 0);
   return [
+    { label: 'Might', value: primary(Stat.Might), show: fmt },
+    { label: 'Finesse', value: primary(Stat.Finesse), show: fmt },
+    { label: 'Mind', value: primary(Stat.Mind), show: fmt },
+    { label: 'Vitality', value: primary(Stat.Vitality), show: fmt },
     { label: 'Damage', value: src ? src.hit.Physical + src.hit.Magic : 0, show: fmt },
     { label: 'Attack speed', value: src?.attacksPerSec ?? 0, show: n => `${n.toFixed(2)} /s` },
     { label: 'Crit chance', value: src?.critChance ?? 0, show: p },
+    { label: 'Crit damage', value: st.critDamage, show: x => pct(x) },
+    { label: 'Armor pen', value: st.armorPen, show: p },
+    { label: 'Magic pen', value: st.magicPen, show: p },
     { label: 'DPS', value: scoreGear(s.level, gear).dps, show: n => (Math.abs(n) < 1000 ? n.toFixed(1) : fmt(n)) },
     { label: 'Heal', value: src?.heal ?? 0, show: fmt },
     { label: 'Max HP', value: st.maxHp, show: fmt },
@@ -149,6 +162,7 @@ export function totals(s: Snapshot, slots: readonly bigint[]): Total[] {
     { label: 'Item find', value: st.itemFind, show: p },
     { label: 'Gold find', value: st.goldFind, show: p },
     { label: 'XP gain', value: st.xpGain, show: p },
+    { label: 'Threat', value: st.threat, show: p },
     { label: 'Walk time', value: st.walkTime, show: n => `${Number(n.toFixed(2))} s`, lowerBetter: true },
   ];
 }

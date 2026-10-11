@@ -27,6 +27,8 @@ export const STAT_HELP: Record<string, string> = {
   'Crit chance': 'Chance for an attack to be a critical hit, which deals crit damage instead of normal damage.',
   'Crit damage': 'Damage of a critical hit, as a share of a normal hit.',
   'Armor / magic pen': "Ignores this share of the enemy's armor (physical) and resistance (magic).",
+  'Armor pen': "Ignores this share of the enemy's armor (physical damage).",
+  'Magic pen': "Ignores this share of the enemy's resistance (magic damage).",
   DPS: 'Average damage per second against a reference enemy of your level (average armor and resistance), with crits.',
   'Max HP': 'Damage you can take before dying.',
   'HP regen': 'HP restored per second.',

@@ -1,8 +1,7 @@
 import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
-import { combatStats, matchup } from '../../../spacetimedb/src/combat';
-import { SLOTS } from '../../../spacetimedb/src/data/bases';
-import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
+import { combatStats } from '../../../spacetimedb/src/combat';
+import { fitsSlot, placeItem, scoreGear } from '../../../spacetimedb/src/equip';
 import { rarityRank } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmt } from '../format';
@@ -19,20 +18,19 @@ interface Candidate {
   it: Item;
   /** The loadout's slots after the swap, or why it can't happen. */
   next: bigint[] | string;
-  /** DPS change against the target; undefined without one. */
+  /** DPS change against the reference enemy of your level; undefined if it can't be equipped. */
   delta?: number;
 }
 
-/** Items that can replace `slot`, best DPS gain against the target first. */
+/** Items that can replace `slot`, best DPS gain against the reference enemy first. */
 function candidates(s: Snapshot, lo: Loadout, slot: number): Candidate[] {
-  const enemy = s.target?.enemy;
-  const now = enemy && matchup(combatStats(s.level, gearFor(lo.slots, s.items)), enemy);
+  const dps = (slots: readonly bigint[]) => scoreGear(s.level, gearFor(slots, s.items)).dps;
+  const now = dps(lo.slots);
   return [...s.items.values()]
     .filter(it => fitsSlot(it.baseId, slot) && it.id !== lo.slots[slot])
     .map(it => {
       const next = placeItem(lo.slots, slot, it, id => s.items.get(id));
-      const m = enemy && typeof next !== 'string' ? matchup(combatStats(s.level, gearFor(next, s.items)), enemy) : undefined;
-      return { it, next, delta: m && now ? m.dps - now.dps : undefined };
+      return { it, next, delta: typeof next === 'string' ? undefined : dps(next) - now };
     })
     .sort((a, b) => (b.delta ?? -1e18) - (a.delta ?? -1e18) || b.it.tier - a.it.tier || rarityRank(b.it.rarity.tag) - rarityRank(a.it.rarity.tag));
 }
@@ -105,7 +103,7 @@ function SlotPopup({ s, lo, slot, onClose }: { s: Snapshot; lo: Loadout; slot: n
             </button>
           )}
         </div>
-        {s.target && <p className="muted hint">▲ / ▼: DPS against {s.target.enemy.name} goes up / down with {lo.name}.</p>}
+        <p className="muted hint">▲ / ▼: DPS against an average Lv {s.level} enemy goes up / down with {lo.name}.</p>
       </>
     );
   }
@@ -118,6 +116,9 @@ function SlotPopup({ s, lo, slot, onClose }: { s: Snapshot; lo: Loadout; slot: n
     </Modal>
   );
 }
+
+/** Slot indexes in grid order, three per row: Hands left of Chest, which sits in the middle. */
+const SLOT_GRID = [0, 1, 2, 4, 3, 5, 6, 7, 8];
 
 /** Faded glyph shown in an empty slot. */
 const SLOT_ICON = ['i-sword', 'i-shield', 'i-head', 'i-chest', 'i-hands', 'i-feet', 'i-ring', 'i-ring', 'i-amulet'];
@@ -159,9 +160,8 @@ function AutoSummary({ s, lo, before, onClose }: { s: Snapshot; lo: Loadout; bef
           ))}
           <div className="card-head" style={{ marginTop: 12 }}>
             <h2>Totals before → after</h2>
-            {s.target && <span className="muted">vs {s.target.enemy.name}</span>}
           </div>
-          <CompareTable before={totals(s, before)} after={totals(s, lo.slots)} />
+          <CompareTable before={totals(s, before)} after={totals(s, lo.slots)} changedOnly />
         </>
       ) : (
         <p className="muted">Already the best gear you own for this profile: nothing changed.</p>
@@ -178,8 +178,7 @@ export const EquipmentView = memo(function EquipmentView({ s }: { s: Snapshot })
   const lo = s.loadouts.find(l => l.index === (loadoutIdx ?? s.row.activeLoadout)) ?? s.active;
   const gear = gearFor(lo.slots, s.items);
   const stats = combatStats(s.level, gear);
-  const m = s.target && matchup(stats, s.target.enemy);
-  const sources = sourcesByLabel(statSheet(s.level, gear, stats, s.target?.enemy.level ?? s.level, m?.dps));
+  const sources = sourcesByLabel(statSheet(s.level, gear, stats, s.level, undefined));
   const isActive = lo.index === s.row.activeLoadout;
 
   return (
@@ -237,18 +236,18 @@ export const EquipmentView = memo(function EquipmentView({ s }: { s: Snapshot })
       </div>
       <div className="equip-layout">
         <div className="card equip-slots">
-          {SLOTS.map((_, i) => (
+          {SLOT_GRID.map(i => (
             <SlotCell key={i} gear={gear} i={i} selected={openSlot === i} onOpen={() => setOpenSlot(i)} />
           ))}
         </div>
         <div className="card">
-          <CardHead title="Totals">{s.target && <span className="muted">vs {s.target.enemy.name}</span>}</CardHead>
+          <CardHead title="Totals" />
           <StatRows rows={totals(s, lo.slots).map(t => [t.label, t.show(t.value), sources.get(t.label)])} />
         </div>
       </div>
       {summary && summary.loadout === lo.index && <AutoSummary s={s} lo={lo} before={summary.before} onClose={() => setSummary(undefined)} />}
       <EffectsCard effects={stats.effects} />
-      <p className="muted hint">Click a slot to see its item or change it. Auto-equip scores against a reference enemy of your level, not your target.</p>
+      <p className="muted hint">Click a slot to see its item or change it. Totals don't depend on your target: evasion and DPS are against an average enemy of your level (Lv {s.level}), the same one auto-equip scores against.</p>
       {openSlot !== undefined && <SlotPopup key={`${lo.index}:${openSlot}`} s={s} lo={lo} slot={openSlot} onClose={() => setOpenSlot(undefined)} />}
     </>
   );

@@ -14,6 +14,11 @@
     affects rewards.
 - **Consequence:** viability is deterministic. There are no unlucky online deaths, and
   offline results always match online.
+- **Defeat:** a fight that isn't viable kills the character `timeToDie` after it starts,
+  online or offline. The character then goes **idle** (no target, no gains) until the
+  player picks a new target, so a bad pick before logging off wastes the time away.
+  Players can also go idle on purpose with **Flee**.
+- Time to kill, time to die and the win margin are internal: the UI never shows them.
 
 ### Legendary effects
 
@@ -65,13 +70,12 @@ netIncoming = DPS_enemy − hpRegen − lifesteal × DPS_you − HPS_self   // l
 timeToKill = enemyHP / DPS_you
 timeToDie  = netIncoming ≤ 0 ? ∞ : maxHP / netIncoming
 
-viable   = timeToKill < timeToDie          // otherwise: zero gain
+viable   = timeToKill < timeToDie          // otherwise: defeat at timeToDie, then idle
 killRate = 1 / (timeToKill + respawnTime)
 ```
 
-- `s.weapon.damage_t` = the weapon's base hit + `addedFlat_t × 1.0 / s.weapon.baseSpeed`.
-  Flat added damage is defined per hit at 1.0/s, so it gives the same DPS on every
-  weapon instead of favoring fast ones. Flat heal works the same way.
+- `s.weapon.damage_t` = the weapon's base hit + `addedFlat_t`. Flat added damage is a
+  straight bonus per hit, so fast weapons get more DPS from it. Flat heal works the same way.
 - `scale_t` is the final multiplier from damage-% stats of that type; `healScale` from heal-% stats.
 - Two damage types, **Physical** (vs Armor) and **Magic** (vs Resistance).
 - **Attack sources.** Today only the main-hand weapon attacks; off-hands (shield, focus)

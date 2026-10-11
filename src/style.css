@@ -128,6 +128,7 @@ ul {
 }
 
 .c-gold { color: var(--gold); }
+.c-xp { color: var(--info); }
 .c-essence { color: var(--essence); }
 .c-ok { color: var(--ok); }
 .c-bad { color: var(--bad); }
@@ -860,7 +861,20 @@ select:focus,
   display: grid;
   gap: 10px;
 }
+.enemy-detail .seg {
+  justify-self: start;
+  margin-bottom: 0;
+}
+.enemy-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  column-gap: 28px;
+}
+.enemy-stats .stat-row {
+  background: none;
+}
 .drop-rarities {
+  margin-top: 6px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px 14px;
@@ -875,12 +889,6 @@ select:focus,
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-}
-.drop-group h4 .muted {
-  margin-left: 6px;
-  text-transform: none;
-  letter-spacing: 0;
-  font-weight: 400;
 }
 .drop-list {
   display: grid;
@@ -1151,8 +1159,11 @@ select:focus,
   gap: 8px;
   user-select: none;
 }
-.item-tile {
+/* Zero specificity, so the .r-* rarity classes above override it. */
+:where(.item-tile) {
   --rc: var(--r-common);
+}
+.item-tile {
   position: relative;
   aspect-ratio: 1;
   display: grid;

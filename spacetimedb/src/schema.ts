@@ -53,7 +53,7 @@ export const character = table(
     bagSize: t.u16().default(200),
     /** Index (0-3) of the loadout in use. */
     activeLoadout: t.u8().default(0),
-    /** Zone and enemy being farmed (IDs from data/zones.ts). */
+    /** Zone and enemy being farmed (IDs from data/zones.ts); enemy 0 = idle (fled or defeated). */
     zoneId: t.u16().default(1),
     targetEnemyId: t.u16().default(101),
   }
@@ -175,6 +175,17 @@ export const bossKill = table(
   }
 );
 
+/** Lifetime kills of one enemy by one character, online and offline. */
+export const enemyKill = table(
+  { name: 'enemy_kill' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    enemyId: t.u16(),
+    kills: t.u64(),
+  }
+);
+
 /**
  * What one settle granted, for the loot log and the away report. Written for every
  * settle with kills and for every login (`offline`); the newest SETTLE_LOG_KEEP per
@@ -206,6 +217,10 @@ export const settleLog = table(
     salvaged: t.array(t.u32()),
     /** Kept by the filter but salvaged for the per-settle cap or a full bag. */
     overflow: t.u32(),
+    /** `enemyId` killed the character; it went idle. */
+    defeated: t.bool().default(false),
+    /** Time spent idle after the defeat, up to this settle. */
+    idleMicros: t.u64().default(0n),
   }
 );
 
@@ -267,6 +282,7 @@ export const spacetimedb = schema({
   loadout,
   lootFilter,
   bossKill,
+  enemyKill,
   settleLog,
   settleTimer,
 });

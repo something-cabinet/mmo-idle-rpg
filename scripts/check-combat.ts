@@ -79,8 +79,9 @@ const warrior = gear({
   const addedDps = (s: typeof sword, hit: number) => (s.sources[0].hit.Physical - hit) * s.sources[0].attacksPerSec;
   const daggerHit = weaponValues(base(2).weapon!, 1).hit * (1 + 0.005);
   const swordHit = weaponValues(base(1).weapon!, 1).hit * (1 + 0.005);
-  check('flat added damage gives the same DPS on fast and slow weapons',
-    near(addedDps(dagger, daggerHit), addedDps(sword, swordHit), 1e-9));
+  check('flat added damage is a straight bonus per hit',
+    near(dagger.sources[0].hit.Physical - daggerHit, 2 * 1.005, 1e-9) && near(sword.sources[0].hit.Physical - swordHit, 2 * 1.005, 1e-9));
+  check('… so fast weapons get more DPS from it', addedDps(dagger, daggerHit) > addedDps(sword, swordHit));
 
   const plated = combatStats(1, gear({ MainHand: item(1, 1, [[Stat.AttackSpeedPct, -500]]) }));
   check('attack speed floors at 25% of the weapon', near(plated.sources[0].attacksPerSec, 0.25, 1e-9));
@@ -97,6 +98,8 @@ const warrior = gear({
 
   const healer = combatStats(1, gear({ MainHand: item(10, 1) }));
   check('healing staff heals itself', matchup(healer, enemy(101)).hps > 0);
+  const staffHeal = (extra: number) => combatStats(1, gear({ MainHand: item(10, 1, [[Stat.Heal, extra]]) })).sources[0].heal;
+  check('flat added heal is a straight bonus per hit', near(staffHeal(2) - staffHeal(0), 2 * (1 + 0.0045), 1e-9));
   check('heal stats do nothing on a weapon without heal',
     combatStats(1, gear({ MainHand: item(1, 1, [[Stat.Heal, 50]]) })).sources[0].heal === 0);
 }
@@ -235,9 +238,18 @@ const rats = { gear: starter, enemy: enemy(101) };
   for (let l = 1; l < lvl.level; l++) spent += xpToNext(l);
   check('xpGained counts XP across level-ups', lvl.xpGained === spent + lvl.xp, `${lvl.xpGained} vs ${spent + lvl.xp}`);
 
-  const naked = project(start, { gear: gear({}), enemy: enemy(101) }, 3600n * S);
-  check('a losing fight grants nothing and discards the time',
-    naked.xp === 0n && naked.gold === 0n && naked.settledMicros === 3600n * S);
+  const nakedFight = { gear: gear({}), enemy: enemy(101) };
+  const ttd = matchup(combatStats(1, nakedFight.gear), enemy(101)).timeToDie;
+  const naked = project(start, nakedFight, 3600n * S);
+  check('a losing fight ends in a defeat at time to die, with nothing gained',
+    naked.xp === 0n && naked.gold === 0n && naked.settledMicros === 3600n * S && naked.defeatedAt === BigInt(Math.ceil(ttd * 1e6)),
+    `defeated at ${naked.defeatedAt}, ttd ${ttd}`);
+  const early = project(start, nakedFight, BigInt(Math.floor(ttd / 2 * 1e6)));
+  check('… before that the fight goes on unsettled', early.defeatedAt === undefined && early.settledMicros === 0n);
+  let r = start;
+  for (let t = 1n; t <= 600n && r.defeatedAt === undefined; t++) r = project(r, nakedFight, t * S);
+  check('… and settling every second still dies on time', r.defeatedAt === naked.defeatedAt, `${r.defeatedAt}`);
+  check('the starter kit beats rats, so no defeat there', once.defeatedAt === undefined);
   const noTarget = project(start, { gear: starter, enemy: undefined }, 60n * S);
   check('no target grants nothing', noTarget.gold === 0n && noTarget.settledMicros === 60n * S);
 

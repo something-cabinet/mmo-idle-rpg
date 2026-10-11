@@ -38,12 +38,12 @@ export const RESPAWN_SECONDS = 5;
 
 /** Per-kill drop chance by rarity (zones.md). */
 export const DROP_CHANCE = {
-  Common: 0.03,
-  Magic: 0.015,
-  Rare: 0.005,
-  Epic: 0.001,
-  Legendary: 0.0001,
-  Unique: 0.00002,
+  Common: 0.045,
+  Magic: 0.0225,
+  Rare: 0.0075,
+  Epic: 0.0015,
+  Legendary: 0.00015,
+  Unique: 0.00003,
 } as const;
 
 // Base IDs (bases.ts): weapons 1-10, shield 20, tome 21, cloth 30-33, leather 34-37,

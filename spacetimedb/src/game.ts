@@ -18,7 +18,7 @@ export const LINK_OFFER_TTL_MICROS = 10n * 60n * 1_000_000n;
 
 /** Saved gear sets per character. */
 export const LOADOUT_COUNT = 4;
-export const DEFAULT_LOADOUT_NAMES = ['Farm', 'Boss', 'Set 3', 'Set 4'];
+export const DEFAULT_LOADOUT_NAMES = Array.from({ length: LOADOUT_COUNT }, (_, i) => `Set ${i + 1}`);
 /** Bag slots: starts at 200, expands by 25 up to 400 (crafting.md). */
 export const BAG_START = 200;
 export const BAG_MAX = 400;
@@ -50,9 +50,14 @@ export interface Settled extends Progress {
   kills: number;
   /** XP granted (across level-ups). */
   xpGained: bigint;
+  /**
+   * The enemy killed the character at this time (micros): it is idle from then on
+   * and the caller must clear the target. Undefined if still alive.
+   */
+  defeatedAt?: bigint;
 }
 
-/** What the character is doing: fighting `enemy` with `gear` (undefined = no target). */
+/** What the character is doing: fighting `enemy` with `gear` (undefined = idle). */
 export interface Activity {
   gear: Gear;
   enemy: EnemyDef | undefined;
@@ -66,23 +71,39 @@ export interface Activity {
  *
  * Only whole kills are granted; the time toward the next kill carries over. Stats
  * are recomputed at each level-up inside the elapsed time. If `capMicros` is hit,
- * or the fight isn't viable, the remaining time is discarded.
+ * the remaining time is discarded.
+ *
+ * A losing fight (not viable) kills the character `timeToDie` after it started
+ * (`defeatedAt`); until then nothing is settled, so the fight's clock keeps running
+ * across settles. If neither side can ever win, time passes with no effect.
  */
 export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?: bigint): Settled {
   let elapsed = nowMicros - p.settledMicros;
   if (elapsed <= 0n) return { ...p, kills: 0, xpGained: 0n };
+  const start = p.settledMicros;
   const capped = capMicros !== undefined && elapsed > capMicros;
   if (capped) elapsed = capMicros!;
 
   let { level, xp, gold } = p;
   let total = 0;
   let xpGained = 0n;
+  let defeatedAt: bigint | undefined;
   let left = elapsed;
   while (left > 0n) {
     const m = a.enemy ? matchup(combatStats(level, a.gear), a.enemy) : undefined;
-    if (!m || m.killRate <= 0) {
-      left = 0n;
+    if (!m || (!m.viable && !Number.isFinite(m.timeToDie))) {
+      left = 0n; // idle, or a stalemate
       break;
+    }
+    if (!m.viable) {
+      // Stats can turn a fight into a loss at a level-up (mitigation scales with level).
+      const fightStart = start + elapsed - left;
+      const dieAt = fightStart + BigInt(Math.ceil(m.timeToDie * 1e6));
+      if (dieAt <= fightStart + left) {
+        defeatedAt = dieAt;
+        left = 0n;
+      }
+      break; // still fighting: `left` stays unsettled
     }
     const available = Math.floor((Number(left) / 1e6) * m.killRate);
     if (available <= 0) break;
@@ -109,6 +130,6 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
     if (kills === available) break;
   }
 
-  const settledMicros = capped ? nowMicros : p.settledMicros + elapsed - left;
-  return { level, xp, gold, settledMicros, kills: total, xpGained };
+  const settledMicros = capped ? nowMicros : start + elapsed - left;
+  return { level, xp, gold, settledMicros, kills: total, xpGained, defeatedAt };
 }

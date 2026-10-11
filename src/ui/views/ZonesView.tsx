@@ -58,24 +58,24 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
             <thead>
               <tr>
                 <th>Enemy</th><th>Lv</th><th>Dmg</th><th>Defense</th><th className="num">HP</th>
-                <th className="num" title="Enemy damage per second after your mitigation and evasion">DPS taken</th><th />
+                <th className="num" title="Enemy damage per second after your mitigation and evasion">DPS taken</th><th className="num" title="Lifetime kills, online and offline">Kills</th><th />
               </tr>
             </thead>
             <tbody>
               {z.enemies.map(e => {
                 const m = matchup(s.stats, e);
                 const active = s.row.targetEnemyId === e.id;
+                const challenge = e.boss && !bossDown;
                 const action = !unlocked ? (
                   <span className="muted"><Icon name="lock" /></span>
-                ) : e.boss && !bossDown ? (
-                  <button className="btn small danger" onClick={() => call(r.challengeBoss({ zoneId: z.id }), `${bossOf(z)!.name} defeated! The next zone is open.`)}>
-                    Challenge
-                  </button>
                 ) : active ? (
                   <span className="btn small fighting">Fighting</span>
                 ) : (
-                  <button className="btn small" onClick={() => call(r.setTarget({ enemyId: e.id }).then(() => void (location.hash = '#combat')))}>
-                    Fight
+                  <button
+                    className={`btn small${challenge ? ' danger' : ''}`}
+                    onClick={() => call(r.setTarget({ enemyId: e.id }).then(() => void (location.hash = '#combat')))}
+                  >
+                    {challenge ? 'Challenge' : 'Fight'}
                   </button>
                 );
                 const expanded = open === e.id;
@@ -94,11 +94,12 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
                       <td className="num" title={`${fmt(e.dps)} before your defenses`}>
                         <span className={`result ${m.viable ? 'ok' : 'bad'}`}>{fmt(m.incoming)}</span>
                       </td>
+                      <td className="num">{fmt(s.kills.get(e.id) ?? 0)}</td>
                       <td className="actions">{action}</td>
                     </tr>
                     {expanded && (
                       <tr className="detail-row">
-                        <td colSpan={7}><EnemyDetail s={s} z={z} e={e} m={m} /></td>
+                        <td colSpan={8}><EnemyDetail s={s} z={z} e={e} m={m} /></td>
                       </tr>
                     )}
                   </Fragment>

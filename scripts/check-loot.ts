@@ -123,8 +123,8 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   const runs = Array.from({ length: 200 }, (_, i) => rollDrops(seededRng(BigInt(i)), session()));
   const drops = mean(runs.map(total));
   const kept = mean(runs.map(r => r.kept.length));
-  check('8 h on the average enemy: ~95 drops', near(drops, 95, 5), drops.toFixed(1));
-  check('… keeping Rare+: ~12 kept', near(kept, 12, 2), kept.toFixed(1));
+  check('8 h on the average enemy: ~145 drops', near(drops, 145, 7), drops.toFixed(1));
+  check('… keeping Rare+: ~17 kept', near(kept, 17, 2), kept.toFixed(1));
   check('kept items pass the filter', runs.every(r => r.kept.every(it => rarityRank(it.rarity.tag) >= rarityRank('Rare'))));
   check('drops come from the enemy\'s bases at the zone tier', runs.every(r => r.kept.every(it => wisp.enemy.drops.includes(it.baseId) && it.tier === 1)));
   check('Essence is the sum of salvage values', runs.every(r =>
@@ -136,16 +136,16 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
     JSON.stringify(runs[5], (_k, v) => typeof v === 'bigint' ? String(v) : v));
 
   const found = mean(Array.from({ length: 200 }, (_, i) => total(rollDrops(seededRng(BigInt(i)), session({ itemFind: 1 })))));
-  check('+100% item find doubles drops', near(found, 190, 10), found.toFixed(1));
+  check('+100% item find doubles drops', near(found, 290, 14), found.toFixed(1));
   const rats = mean(Array.from({ length: 200 }, (_, i) => total(rollDrops(seededRng(BigInt(i)), session({ rewardScale: 0.35 })))));
-  check('weaker enemies drop less (reward scale)', near(rats, 95 * 0.35, 3), rats.toFixed(1));
+  check('weaker enemies drop less (reward scale)', near(rats, 145 * 0.35, 4), rats.toFixed(1));
 
   const wl = rollDrops(seededRng(9n), session({ filter: { minRarity: 'Epic', keepAffixes: [Stat.ItemFindPct] } }));
   check('whitelisted affix keeps drops below the threshold',
     wl.kept.length > 0 && wl.kept.every(it => it.rarity.tag === 'Epic' || it.rarity.tag === 'Legendary' || it.affixes.some(a => a.stat === Stat.ItemFindPct)),
     `${wl.kept.length} kept`);
 
-  const flood = rollDrops(seededRng(3n), session({ kills: 30_000, filter: { minRarity: 'Common', keepAffixes: [] } }));
+  const flood = rollDrops(seededRng(3n), session({ kills: 20_000, filter: { minRarity: 'Common', keepAffixes: [] } }));
   check(`per-settle cap keeps ${KEEP_CAP_PER_SETTLE}`, flood.kept.length === KEEP_CAP_PER_SETTLE && flood.overflow > 0, `overflow ${flood.overflow}`);
   check('… salvaging the lowest rarities first', flood.salvaged.Epic === 0 && flood.salvaged.Legendary === 0 &&
     flood.kept.every((it, i, xs) => i === 0 || rarityRank(xs[i - 1].rarity.tag) >= rarityRank(it.rarity.tag)));

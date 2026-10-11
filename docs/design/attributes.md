@@ -171,11 +171,11 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 
 | Stat | ref at T1 | Curve | ref at T9 | Notes |
 |---|---|---|---|---|
-| Physical damage (added) | 2 | Offense | 756 | Per hit at 1.0/s, adjusted by weapon speed |
+| Physical damage (added) | 2 | Offense | 756 | Straight bonus per hit: worth more on fast weapons |
 | Magic damage (added) | 2 | Offense | 756 | Same |
 | Max HP | 20 | Life | 860 | |
 | HP regen (/s) | 0.5 | Life | 21 | |
-| Heal (added) | 2 | Heal | 20 | Per hit at 1.0/s, adjusted by weapon speed |
+| Heal (added) | 2 | Heal | 20 | Straight bonus per hit: worth more on fast weapons |
 | Armor | 5 | Linear | 45 | One best roll ≈ 9% mitigation vs a matching enemy |
 | Resistance | 5 | Linear | 45 | Same as armor |
 | Evasion rating | 5 | Linear | 45 | One best roll ≈ 5% evasion vs a matching enemy |

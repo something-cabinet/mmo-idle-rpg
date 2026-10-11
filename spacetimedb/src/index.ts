@@ -9,6 +9,5 @@ export * from './reducers/character';
 export * from './reducers/chat';
 export * from './reducers/loot';
 export * from './reducers/equipment';
-export * from './reducers/boss';
 export * from './reducers/crafting';
 export * from './reducers/views';

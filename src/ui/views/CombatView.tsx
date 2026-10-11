@@ -1,7 +1,7 @@
 import { memo, useEffect } from 'react';
 import type { SettleLog } from '../../module_bindings/types';
 import { sessionStart, sessionTotals, sinceTargetChange } from '../../session';
-import { useTick } from '../../store';
+import { call, useTick } from '../../store';
 import { MAX_LEVEL } from '../../../spacetimedb/src/combat';
 import { xpToNext } from '../../../spacetimedb/src/game';
 import { RARITIES } from '../../../spacetimedb/src/loot';
@@ -131,7 +131,8 @@ export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
       <>
         <ViewHeader title="Combat" icon="swords" />
         <div className="card">
-          <p className="muted">No target. Pick an enemy on the Zones screen.</p>
+          <p>You're idle{s.defeated ? ': you were defeated' : ''}.</p>
+          <p className="muted">No XP, gold or drops until you pick an enemy on the Zones screen.</p>
           <a className="btn small" href="#zones"><Icon name="map" />Zones</a>
         </div>
       </>
@@ -153,7 +154,10 @@ export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
             <span className="tag">{e.defense}</span>
           </div>
         </div>
-        <a className="btn small ghost" href="#zones"><Icon name="map" />Change target</a>
+        <div className="row">
+          <button className="btn small danger" onClick={() => call(s.conn.reducers.flee({}))}>Flee</button>
+          <a className="btn small ghost" href="#zones"><Icon name="map" />Change target</a>
+        </div>
       </div>
       <FightScene key={sceneKey} s={s} />
       <div className="grid-2">

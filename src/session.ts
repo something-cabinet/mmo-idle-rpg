@@ -4,6 +4,8 @@
 
 import type { DbConnection } from './module_bindings';
 import type { SettleLog } from './module_bindings/types';
+import { ZONES_BY_ID, bossOf } from '../spacetimedb/src/data/zones';
+import { toast } from './store';
 
 /** Online settles (not the login one, which is time away), by ID. */
 const settles = new Map<bigint, SettleLog>();
@@ -13,6 +15,13 @@ let targetChangedAt = 0n;
 export function trackSettles(conn: DbConnection) {
   conn.db.mySettleLog.onInsert((_ctx, log) => {
     if (!log.offline) settles.set(log.id, log);
+  });
+  // A boss's first kill (not the rows loaded on connect) unlocks the next zone.
+  conn.db.myBossKills.onInsert((ctx, kill) => {
+    if (ctx.event.tag === 'SubscribeApplied') return;
+    const zone = ZONES_BY_ID.get(kill.zoneId);
+    const boss = zone && bossOf(zone);
+    if (boss) toast(`${boss.name} defeated! The next zone is open.`, 'info');
   });
   // We only subscribe to our own character row.
   conn.db.character.onUpdate((_ctx, old, row) => {

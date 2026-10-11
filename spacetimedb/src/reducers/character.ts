@@ -7,7 +7,6 @@ import {
   ensureCharacterRows,
   enterWorld,
   grantStarterKit,
-  hasKilledBoss,
   requireAccount,
   requireActive,
   settle,
@@ -57,8 +56,9 @@ export const playHere = spacetimedb.reducer(ctx => {
 });
 
 /**
- * Chooses the enemy to farm. Its zone must be unlocked; a boss becomes farmable
- * after its first kill (challenged separately). Settles at the old target first.
+ * Chooses the enemy to fight. Its zone must be unlocked. Any enemy can be picked,
+ * bosses included (a challenge until the first kill); a losing fight ends in a
+ * defeat. Settles at the old target first.
  */
 export const setTarget = spacetimedb.reducer({ enemyId: t.u16() }, (ctx, { enemyId }) => {
   const { ch } = requireActive(ctx);
@@ -66,6 +66,20 @@ export const setTarget = spacetimedb.reducer({ enemyId: t.u16() }, (ctx, { enemy
   if (!found) throw new SenderError('No such enemy');
   const { zone, enemy } = found;
   if (!zoneUnlocked(ctx, ch.id, zone)) throw new SenderError('Zone is locked');
-  if (enemy.boss && !hasKilledBoss(ctx, ch.id, zone.id)) throw new SenderError('Defeat the boss first');
   ctx.db.character.id.update({ ...settle(ctx, ch), zoneId: zone.id, targetEnemyId: enemy.id });
+});
+
+/** Stops fighting: settles, then goes idle (no target, no gains). */
+export const flee = spacetimedb.reducer(ctx => {
+  const { ch } = requireActive(ctx);
+  ctx.db.character.id.update({ ...settle(ctx, ch), targetEnemyId: 0 });
+});
+
+/**
+ * Settles now. The client calls it when its projection shows a defeat, so the
+ * server records it (and the client gets the report) without waiting for the timer.
+ */
+export const settleNow = spacetimedb.reducer(ctx => {
+  const { ch } = requireActive(ctx);
+  ctx.db.character.id.update(settle(ctx, ch));
 });

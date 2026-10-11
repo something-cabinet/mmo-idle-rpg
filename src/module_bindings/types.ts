@@ -81,6 +81,14 @@ export const DamageType = __t.enum("DamageType", {
 });
 export type DamageType = __Infer<typeof DamageType>;
 
+export const EnemyKill = __t.object("EnemyKill", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  enemyId: __t.u16(),
+  kills: __t.u64(),
+});
+export type EnemyKill = __Infer<typeof EnemyKill>;
+
 // The tagged union or sum type for the algebraic type `EquipProfile`.
 export const EquipProfile = __t.enum("EquipProfile", {
   Damage: __t.unit(),
@@ -163,6 +171,9 @@ export type MyAccount = __Infer<typeof MyAccount>;
 export const MyBossKills = __t.object("MyBossKills", {});
 export type MyBossKills = __Infer<typeof MyBossKills>;
 
+export const MyEnemyKills = __t.object("MyEnemyKills", {});
+export type MyEnemyKills = __Infer<typeof MyEnemyKills>;
+
 export const MyItems = __t.object("MyItems", {});
 export type MyItems = __Infer<typeof MyItems>;
 
@@ -221,6 +232,8 @@ export const SettleLog = __t.object("SettleLog", {
   keptItemIds: __t.array(__t.u64()),
   salvaged: __t.array(__t.u32()),
   overflow: __t.u32(),
+  defeated: __t.bool(),
+  idleMicros: __t.u64(),
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

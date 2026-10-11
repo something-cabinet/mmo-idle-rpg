@@ -22,9 +22,10 @@ are almost free wins. Rewards keep `1.12^o`. Other zones follow zones.md unchang
 
 - Each zone has a **boss**, level `10T + 5`, with stats `× 1.08^7` (≈1.7× the average
   enemy) and rewards `× 1.12^7`.
-- **Challenge:** an online action. The fight is the normal deterministic check (time to
-  kill < time to die) against the current loadout and is shown in the fight view. Losing
-  costs nothing; the player can retry any time.
+- **Challenge:** target the boss like any other enemy; the fight plays out in the fight
+  view. It's the normal deterministic check (time to kill < time to die) against the
+  current loadout. Losing is a defeat: the character goes idle (see combat.md) and can
+  retry any time.
 - **First kill** unlocks the next zone and gives a reward: one guaranteed **Rare** item of
   the zone's tier (random base from the zone) and 20× the boss's gold.
 - After the first kill the boss is also a **farmable target** like any other enemy,

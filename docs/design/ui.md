@@ -125,7 +125,7 @@ Used for item names, icon borders and loot log lines.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Loadouts: [1 Farm ✔] [2 Boss] [3 —] [4 —]        ✎ rename   │
+│ Loadouts: [1 Set 1 ✔] [2 Set 2] [3 —] [4 —]        ✎ rename   │
 │ Profile: [Damage ▾]   [ Auto-equip ]                        │
 ├─────────────────────────────────────────────────────────────┤
 │        [Head]                    [Amulet]                   │
@@ -208,8 +208,8 @@ Shown once on login after offline time.
 ```
 
 - If away longer than the cap: "Offline progress is capped at 8 h".
-- A loadout that couldn't beat its target shows "0 kills: your build loses to Goblin
-  Brute" so the zero isn't a mystery.
+- A defeat shows "Goblin Brute killed you. You spent the last 7h 52m idle", so the
+  wasted time isn't a mystery. Defeats while playing get their own "Defeated" popup.
 
 ### Account and settings
 

@@ -2,6 +2,8 @@
 //   npm run spacetime:start; npm run spacetime:publish:local:reset; npm run test:smoke
 import { DbConnection } from '../src/module_bindings';
 import type { Identity } from 'spacetimedb';
+import { combatStats, matchup } from '../spacetimedb/src/combat';
+import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 
 const HOST = process.env.SPACETIMEDB_HOST ?? 'ws://localhost:3000';
 const DB = process.env.SPACETIMEDB_DB_NAME ?? 'mmo-idle-rpg';
@@ -42,6 +44,11 @@ async function expectError(name: string, p: Promise<unknown>, match: string) {
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 const charOf = (c: Client) => [...c.conn.db.character.iter()].find(ch => ch.owner.isEqual(c.me));
 const presOf = (c: Client) => c.conn.db.presence.identity.find(c.me);
+/** The active loadout's items, as the server's combat formulas see them. */
+const starterGear = (c: Client) => {
+  const lo = [...c.conn.db.myLoadouts.iter()].find(l => l.index === charOf(c)!.activeLoadout)!;
+  return lo.slots.map(id => (id === 0n ? undefined : c.conn.db.myItems.id.find(id) ?? undefined));
+};
 const suffix = Date.now().toString(36).slice(-5);
 
 const a = await connect();
@@ -92,7 +99,6 @@ await expectError('chat rate limit', a.conn.reducers.sendChat({ text: 'spam' }),
 
 await expectError('unknown enemy rejected', a.conn.reducers.setTarget({ enemyId: 999 }), 'No such enemy');
 await expectError('locked zone rejected', a.conn.reducers.setTarget({ enemyId: 201 }), 'Zone is locked');
-await expectError('boss needs a first kill', a.conn.reducers.setTarget({ enemyId: 106 }), 'Defeat the boss first');
 {
   // A starter sword kills a Field Rat every ~8.3 s (3.3 s fight + 5 s respawn).
   const wait = createdAt + 9_500 - Date.now();
@@ -114,10 +120,27 @@ await expectError('boss needs a first kill', a.conn.reducers.setTarget({ enemyId
 }
 
 // Bosses: a fresh character loses to Grubnak (winning needs gear the test can't get).
-await expectError('unknown zone rejected', a.conn.reducers.challengeBoss({ zoneId: 9 }), 'No such zone');
-await expectError('locked zone boss rejected', a.conn.reducers.challengeBoss({ zoneId: 2 }), 'Zone is locked');
-await expectError('starter kit loses to Grubnak, with the numbers', a.conn.reducers.challengeBoss({ zoneId: 1 }), 'Grubnak, Goblin Chief wins');
-check('a lost challenge records no kill', [...a.conn.db.myBossKills.iter()].length === 0);
+await expectError('locked zone boss rejected', a.conn.reducers.setTarget({ enemyId: 206 }), 'Zone is locked');
+await a.conn.reducers.setTarget({ enemyId: 106 });
+check('a boss can be challenged as a target', charOf(a)!.targetEnemyId === 106);
+{
+  const m = matchup(combatStats(charOf(a)!.level, starterGear(a)), ENEMIES_BY_ID.get(106)!.enemy);
+  await sleep(Math.ceil(m.timeToDie * 1000) + 500);
+  await a.conn.reducers.settleNow({});
+  await sleep(200);
+  const defeat = [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
+  check('the starter kit loses to Grubnak after the fight: a logged defeat', defeat.defeated && defeat.enemyId === 106 && !defeat.offline,
+    `after ${m.timeToDie.toFixed(1)} s`);
+  check('… which leaves the character idle', charOf(a)!.targetEnemyId === 0);
+  check('a lost challenge records no kill', [...a.conn.db.myBossKills.iter()].length === 0);
+}
+
+// Flee: back to a target, then idle on purpose.
+await a.conn.reducers.setTarget({ enemyId: 101 });
+await a.conn.reducers.flee({});
+await sleep(200);
+check('flee goes idle', charOf(a)!.targetEnemyId === 0);
+await a.conn.reducers.setTarget({ enemyId: 101 });
 
 // Equipment: slots, loadouts, auto-equip, lock and salvage.
 {

@@ -36,10 +36,10 @@ import {
 // Import all reducer arg schemas
 import AcceptLinkReducer from "./accept_link_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
-import ChallengeBossReducer from "./challenge_boss_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import EquipReducer from "./equip_reducer";
 import ExpandBagReducer from "./expand_bag_reducer";
+import FleeReducer from "./flee_reducer";
 import LockItemReducer from "./lock_item_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
@@ -51,6 +51,7 @@ import SetBannedReducer from "./set_banned_reducer";
 import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetProfileReducer from "./set_profile_reducer";
 import SetTargetReducer from "./set_target_reducer";
+import SettleNowReducer from "./settle_now_reducer";
 import SwitchLoadoutReducer from "./switch_loadout_reducer";
 import UnequipReducer from "./unequip_reducer";
 import UpgradeRarityReducer from "./upgrade_rarity_reducer";
@@ -62,6 +63,7 @@ import CharacterRow from "./character_table";
 import ChatMessageRow from "./chat_message_table";
 import MyAccountRow from "./my_account_table";
 import MyBossKillsRow from "./my_boss_kills_table";
+import MyEnemyKillsRow from "./my_enemy_kills_table";
 import MyItemsRow from "./my_items_table";
 import MyLoadoutsRow from "./my_loadouts_table";
 import MyLootFilterRow from "./my_loot_filter_table";
@@ -131,6 +133,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyBossKillsRow),
+  myEnemyKills: __table({
+    name: 'my_enemy_kills',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyEnemyKillsRow),
   myItems: __table({
     name: 'my_items',
     indexes: [
@@ -165,10 +174,10 @@ const tablesSchema = __schema({
 const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
-  __reducerSchema("challenge_boss", ChallengeBossReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("equip", EquipReducer),
   __reducerSchema("expand_bag", ExpandBagReducer),
+  __reducerSchema("flee", FleeReducer),
   __reducerSchema("lock_item", LockItemReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
@@ -180,6 +189,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_loot_filter", SetLootFilterReducer),
   __reducerSchema("set_profile", SetProfileReducer),
   __reducerSchema("set_target", SetTargetReducer),
+  __reducerSchema("settle_now", SettleNowReducer),
   __reducerSchema("switch_loadout", SwitchLoadoutReducer),
   __reducerSchema("unequip", UnequipReducer),
   __reducerSchema("upgrade_rarity", UpgradeRarityReducer),
@@ -195,6 +205,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_account": Omit<typeof tablesSchema.schemaType.tables["myAccount"], "accessorName"> & { readonly accessorName: "my_account" };
     /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
     readonly "my_boss_kills": Omit<typeof tablesSchema.schemaType.tables["myBossKills"], "accessorName"> & { readonly accessorName: "my_boss_kills" };
+    /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
+    readonly "my_enemy_kills": Omit<typeof tablesSchema.schemaType.tables["myEnemyKills"], "accessorName"> & { readonly accessorName: "my_enemy_kills" };
     /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
     readonly "my_items": Omit<typeof tablesSchema.schemaType.tables["myItems"], "accessorName"> & { readonly accessorName: "my_items" };
     /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */
@@ -223,6 +235,7 @@ const REMOTE_MODULE = {
 const tableAccessorAliases = {
   "my_account": "myAccount",
   "my_boss_kills": "myBossKills",
+  "my_enemy_kills": "myEnemyKills",
   "my_items": "myItems",
   "my_loadouts": "myLoadouts",
   "my_loot_filter": "myLootFilter",
@@ -251,6 +264,8 @@ export type DbView = __DbViewBase & {
   readonly "my_account": __DbViewBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
   readonly "my_boss_kills": __DbViewBase["myBossKills"];
+  /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
+  readonly "my_enemy_kills": __DbViewBase["myEnemyKills"];
   /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
   readonly "my_items": __DbViewBase["myItems"];
   /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */
@@ -267,6 +282,8 @@ export type Tables = __TablesBase & {
   readonly "my_account": __TablesBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
   readonly "my_boss_kills": __TablesBase["myBossKills"];
+  /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
+  readonly "my_enemy_kills": __TablesBase["myEnemyKills"];
   /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
   readonly "my_items": __TablesBase["myItems"];
   /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */

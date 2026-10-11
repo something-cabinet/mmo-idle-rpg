@@ -28,4 +28,6 @@ export default __t.row({
   keptItemIds: __t.array(__t.u64()).name("kept_item_ids"),
   salvaged: __t.array(__t.u32()),
   overflow: __t.u32(),
+  defeated: __t.bool(),
+  idleMicros: __t.u64().name("idle_micros"),
 });

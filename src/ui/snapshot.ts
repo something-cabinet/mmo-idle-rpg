@@ -28,9 +28,16 @@ export interface Snapshot {
   bag: Item[];
   filter: LootFilter | undefined;
   killedZones: Set<number>;
+  /** Enemy ID → lifetime kills, online and offline, including `pending`. */
+  kills: Map<number, number>;
   /** Newest first. */
   logs: SettleLog[];
+  /** Undefined when idle, including after a defeat the server hasn't recorded yet. */
   target: { zone: ZoneDef; enemy: EnemyDef } | undefined;
+  /** The projection shows the target killed us; the server will clear it on its next settle. */
+  defeated: boolean;
+  /** The projection shows a boss's first kill, which the server grants on its next settle. */
+  firstBossKill: boolean;
   stats: CombatStats;
   /** Against the target; undefined without one. */
   fight: Matchup | undefined;
@@ -43,12 +50,17 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const loadouts = [...conn.db.myLoadouts.iter()].sort((a, b) => a.index - b.index);
   const active = loadouts.find(l => l.index === row.activeLoadout) ?? loadouts[0];
   const gear = gearFor(active?.slots ?? [], items);
-  const target = ENEMIES_BY_ID.get(row.targetEnemyId);
-  const p = project({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy: target?.enemy }, nowMicros);
+  const fighting = ENEMIES_BY_ID.get(row.targetEnemyId);
+  const p = project({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy: fighting?.enemy }, nowMicros);
+  const defeated = p.defeatedAt !== undefined;
+  const target = defeated ? undefined : fighting;
 
   const inLoadouts = new Map<bigint, number[]>();
   for (const lo of loadouts) for (const id of lo.slots) if (id !== 0n) inLoadouts.set(id, [...(inLoadouts.get(id) ?? []), lo.index]);
   const stats = combatStats(p.level, gear);
+  const killedZones = new Set([...conn.db.myBossKills.iter()].map(k => k.zoneId));
+  const kills = new Map([...conn.db.myEnemyKills.iter()].map(k => [k.enemyId, Number(k.kills)]));
+  if (target && p.kills > 0) kills.set(target.enemy.id, (kills.get(target.enemy.id) ?? 0) + p.kills);
 
   return {
     conn,
@@ -64,9 +76,12 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     inLoadouts,
     bag: [...items.values()].filter(i => !inLoadouts.has(i.id)),
     filter: [...conn.db.myLootFilter.iter()][0],
-    killedZones: new Set([...conn.db.myBossKills.iter()].map(k => k.zoneId)),
+    killedZones,
+    kills,
     logs: [...conn.db.mySettleLog.iter()].sort((a, b) => (a.id < b.id ? 1 : -1)),
     target,
+    defeated,
+    firstBossKill: !!target?.enemy.boss && p.kills > 0 && !killedZones.has(target.zone.id),
     stats,
     fight: target && matchup(stats, target.enemy),
   };

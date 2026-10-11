@@ -129,11 +129,11 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     for (const t of ['Physical', 'Magic'] as const) {
       const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
       const base = w.damageType.tag === from ? fromStored(w.hit) : 0;
-      // Flat added damage is defined per hit at 1.0/s, so it is worth the same DPS on any weapon.
-      hit[t] = (base + addedFlat[from] / baseSpeed) * (1 + damagePct[t]) * damageMult;
+      // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
+      hit[t] = (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult;
     }
     const baseHeal = fromStored(w.heal);
-    const heal = baseHeal > 0 ? (baseHeal + flat(Stat.Heal) / baseSpeed) * (1 + healPct) : 0;
+    const heal = baseHeal > 0 ? (baseHeal + flat(Stat.Heal)) * (1 + healPct) : 0;
     const critChance = (w.baseCritBp / 10_000) * (1 + critIncreased);
     // Overcrit: each 1% of crit chance above 100% gives +2% crit damage.
     const critDmg = critDamage + (has(Effect.Overcrit) ? 2 * Math.max(0, critChance - 1) : 0);

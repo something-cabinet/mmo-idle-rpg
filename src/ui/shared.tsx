@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { Item } from '../module_bindings/types';
-import { combatStats, defenseAgainst, matchup, type Matchup } from '../../spacetimedb/src/combat';
+import { combatStats, defenseAgainst, type Matchup } from '../../spacetimedb/src/combat';
 import type { CraftCost } from '../../spacetimedb/src/craft';
 import { Effect, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
-import { placeItem } from '../../spacetimedb/src/equip';
+import { placeItem, scoreGear } from '../../spacetimedb/src/equip';
 import { setSticky } from '../store';
 import { fmt, fmtBig, pct } from './format';
 import { Icon } from './Icon';
@@ -109,32 +109,37 @@ export interface Total {
   lowerBetter?: boolean;
 }
 
-/** Loadout totals compared on swaps and after auto-equip (ui.md: totals, never an item score). */
+/**
+ * Loadout totals compared on swaps and after auto-equip (ui.md: totals, never an item score).
+ * In a vacuum, not against the target: stats that depend on the enemy (evasion, DPS) are
+ * against auto-equip's reference enemy of your level (equip.ts `referenceDummy`).
+ */
 export function totals(s: Snapshot, slots: readonly bigint[]): Total[] {
-  const st = combatStats(s.level, gearFor(slots, s.items));
+  const gear = gearFor(slots, s.items);
+  const st = combatStats(s.level, gear);
   const src = st.sources[0];
-  const m = s.target && matchup(st, s.target.enemy);
-  const level = s.target?.enemy.level ?? s.level;
   const p = (x: number) => pct(x, 1);
   return [
-    { label: 'Hit', value: src ? src.hit.Physical + src.hit.Magic : 0, show: fmt },
+    { label: 'Damage', value: src ? src.hit.Physical + src.hit.Magic : 0, show: fmt },
     { label: 'Max HP', value: st.maxHp, show: fmt },
     { label: 'Armor', value: st.armor, show: fmt },
     { label: 'Resistance', value: st.resistance, show: fmt },
-    { label: 'Evasion', value: defenseAgainst(st, 'Physical', level).evasion, show: p },
+    { label: 'Evasion', value: defenseAgainst(st, 'Physical', s.level).evasion, show: p },
     { label: 'Item find', value: st.itemFind, show: p },
     { label: 'Gold find', value: st.goldFind, show: p },
     { label: 'XP gain', value: st.xpGain, show: p },
-    ...(m ? [{ label: 'DPS', value: m.dps, show: fmt }] : []),
+    { label: 'DPS', value: scoreGear(s.level, gear).dps, show: fmt },
   ];
 }
 
-export function CompareTable({ before, after }: { before: Total[]; after: Total[] }) {
+/** Totals before → after; `changedOnly` leaves out the rows that stay the same. */
+export function CompareTable({ before, after, changedOnly }: { before: Total[]; after: Total[]; changedOnly?: boolean }) {
   return (
     <>
       {before.map((b, i) => {
         const a = after[i];
         const same = a.value === b.value || Math.abs(a.value - b.value) < 1e-9;
+        if (same && changedOnly) return null;
         const better = a.lowerBetter ? a.value < b.value : a.value > b.value;
         return (
           <div className={`stat-row${same ? ' dim' : ''}`} key={b.label}>
@@ -186,7 +191,7 @@ export function SwapPreview({ s, lo, slot, it }: { s: Snapshot; lo: Loadout; slo
         <p className="c-bad">{next}</p>
       ) : (
         <>
-          <CardHead title={`${lo.name} totals`}>{s.target && <span className="muted">vs {s.target.enemy.name}</span>}</CardHead>
+          <CardHead title={`${lo.name} totals`} />
           <CompareTable before={totals(s, lo.slots)} after={totals(s, next)} />
         </>
       )}

@@ -100,7 +100,8 @@ not decisions.
 | 2026-10-10 | Sinks: reroll one affix and upgrade rarity (up to Legendary) for gold + Essence; costs = hours of farming at the item's tier, ×2.9 per tier. |
 | 2026-10-10 | One salvage material, Essence, scaled ×2.9 per tier. |
 | 2026-10-10 | ~~Base stats scale linearly with tier; sword hits for 400 × T.~~ Replaced on 2026-10-11. |
-| 2026-10-10 | Flat added damage/heal is normalized by weapon speed (same DPS on every weapon). |
+| 2026-10-10 | ~~Flat added damage/heal is normalized by weapon speed (same DPS on every weapon).~~ Replaced on 2026-10-11. |
+| 2026-10-11 | Flat added damage and heal are a straight bonus per hit (fast weapons get more from them). |
 | 2026-10-10 | Two ring slots, 4 loadouts (items can be shared between loadouts), bag 200 expandable to 400 with gold. |
 
 ## Open questions

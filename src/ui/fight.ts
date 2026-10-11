@@ -46,6 +46,7 @@ export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
   const foe = { hp: enemy.hp, max: enemy.hp, swing: 0, period: 1 / enemy.speed };
   const enemyHit = (enemy.dps / enemy.speed) * (1 - m.playerMitigation);
   let respawn = 0;
+  let defeated = false;
   let last = performance.now();
 
   const el = (who: string, sel: string) => $(`fighter-${who}`).querySelector<HTMLElement>(sel)!;
@@ -66,7 +67,9 @@ export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
       el(who, '.hp-text').textContent = `${fmt(Math.max(0, f.hp))} / ${fmt(f.max)}`;
       el(who, '.swing-fill').style.width = respawn > 0 || !Number.isFinite(f.period) ? '0%' : `${(f.swing / f.period) * 100}%`;
     }
-    $('scene-status').textContent = !src
+    $('scene-status').textContent = defeated
+      ? 'Defeated'
+      : !src
       ? 'No weapon equipped'
       : respawn > 0
         ? `Next ${enemy.name} in ${respawn.toFixed(1)} s`
@@ -76,6 +79,7 @@ export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
 
   function step() {
     if (!document.getElementById('scene')) return stopFight(); // view was replaced
+    if (defeated) return;
     const now = performance.now();
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
@@ -113,8 +117,10 @@ export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
 
     if (foe.hp <= 0) respawn = respawnTime;
     else if (you.hp <= 0) {
-      respawn = RESPAWN_SECONDS; // a losing build: show the death, then retry
       float('you', 'Defeated', 'taken');
+      // A losing build dies for good (the server then sets us idle); a winning one only had bad luck.
+      if (m.viable) respawn = RESPAWN_SECONDS;
+      else defeated = true;
     }
     draw();
   }

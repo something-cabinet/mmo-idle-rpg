@@ -8,6 +8,7 @@ import { xpToNext } from '../../spacetimedb/src/game';
 import { call, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
 import { nowMicros, syncClock } from './clock';
+import { DefeatReport } from './DefeatReport';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
@@ -47,8 +48,8 @@ function TopStats({ s }: { s: Snapshot }) {
       <span className="chip stat" title="Essence"><Icon name="gem" className="c-essence" /><strong>{fmtBig(s.row.essence)}</strong></span>
       <span className="divider" />
       <button className="chip activity" title="Current activity" onClick={() => (location.hash = '#combat')}>
-        <span className={`dot ${m?.viable ? 'ok' : 'bad'}`} />
-        <span>{s.target ? `${s.target.zone.name} › ${s.target.enemy.name}` : 'No target'}</span>
+        <span className={`dot ${!m ? '' : m.viable ? 'ok' : 'bad'}`} />
+        <span>{s.target ? `${s.target.zone.name} › ${s.target.enemy.name}` : 'Idle'}</span>
         <span className="activity-rate">{m?.viable ? `${fmt(perHour(m))} kills/h` : ''}</span>
       </button>
     </div>
@@ -167,6 +168,11 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
   // Views redraw when the data or the view changes; the top bar on every tick (idle numbers).
   const viewSnap = useMemo(() => row && snapshot(conn, row, nowMicros()), [conn, row, version, view]);
   const live = row && snapshot(conn, row, nowMicros());
+  // Our projection shows a defeat or a boss's first kill: have the server record it now, not on its next timer.
+  const settleKey = live && (live.defeated || live.firstBossKill) ? live.row.lastSettledAt.microsSinceUnixEpoch : undefined;
+  useEffect(() => {
+    if (settleKey !== undefined) call(conn.reducers.settleNow({}));
+  }, [conn, settleKey]);
   useEffect(() => {
     if (content.current) content.current.scrollTop = 0;
   }, [view]);
@@ -196,6 +202,7 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
         <Social conn={conn} pres={pres} open={socialOpen} />
       </div>
       <AwayReport s={viewSnap} pres={pres} />
+      <DefeatReport s={viewSnap} pres={pres} />
     </>
   );
 }

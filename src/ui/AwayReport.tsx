@@ -35,13 +35,16 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
       <CardHead title={`While you were away (${duration(log.elapsedMicros)})`} />
       {log.capped && <p className="muted">Offline progress is capped at {duration(MAX_OFFLINE_MICROS)}.</p>}
       {!enemy ? (
-        <p>No target: pick an enemy on the Zones screen.</p>
+        <p>You were idle: no target. Pick an enemy on the Zones screen.</p>
       ) : log.kills > 0 ? (
         <p><strong>{enemy.name}</strong> × {log.kills.toLocaleString()} kills</p>
-      ) : log.viable ? (
-        <p>0 kills of {enemy.name}.</p>
       ) : (
-        <p className="c-bad">0 kills: your build loses to {enemy.name}.</p>
+        !log.defeated && <p>0 kills of {enemy.name}.</p>
+      )}
+      {enemy && log.defeated && (
+        <p className="c-bad">
+          <strong>{enemy.name}</strong> killed you. You spent the last {duration(log.idleMicros)} idle: plan your fights before you leave.
+        </p>
       )}
       {log.xp > 0n && (
         <p>+{fmtBig(log.xp)} XP{log.levelTo > log.levelFrom ? ` · Level ${log.levelFrom} → ${log.levelTo}` : ''}</p>

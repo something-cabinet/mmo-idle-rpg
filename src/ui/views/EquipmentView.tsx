@@ -93,7 +93,7 @@ function SlotPopup({
         ) : (
           <EmptyCard text="Nothing equipped" />
         )}
-        <div className="popup-actions">
+        <div className="popup-actions vertical">
           <button className="btn primary" onClick={() => setChanging(true)}>
             Change equipment
           </button>
@@ -107,7 +107,7 @@ function SlotPopup({
               </button>
               <button className="btn" onClick={() => openCraft(cur.id)}>
                 <Icon name="hammer" />
-                Craft…
+                Craft
               </button>
             </>
           )}
@@ -172,7 +172,7 @@ function SlotPopup({
     );
   }
   return (
-    <Modal onClose={onClose} className="item-popup">
+    <Modal onClose={onClose} className={`item-popup${changing ? "" : " narrow"}`}>
       <CardHead
         title={`${SLOT_LABEL[slot]}${changing ? " · Change equipment" : ""}`}
       >

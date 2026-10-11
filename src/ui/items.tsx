@@ -37,13 +37,14 @@ export const affixLabel = (stat: number) => {
   return `${d.name}${d.percent ? ' %' : ''}`;
 };
 
+/** A weapon's base lines: what it is first (handedness), then its stats. */
 function weaponLines(w: NonNullable<Item['weapon']>): string[] {
   const speed = w.speedMilli / 1000;
   return [
+    w.twoHanded ? 'Two-handed' : 'One-handed',
     `Damage ${fmt(fromStored(w.hit))} ${w.damageType.tag === 'Physical' ? 'phys' : 'magic'} · ${speed}/s`,
     `Crit ${w.baseCritBp / 100}%`,
     ...(w.heal > 0n ? [`Heal ${fmt(fromStored(w.heal))}${w.healTarget?.tag === 'All' ? ' (all)' : ''}`] : []),
-    w.twoHanded ? 'Two-handed' : 'One-handed',
   ];
 }
 

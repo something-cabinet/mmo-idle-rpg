@@ -58,7 +58,7 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
         <button className="btn" onClick={() => call(r.lockItem({ itemId: it.id, locked: !it.locked }))}>
           <Icon name="lock" />{it.locked ? 'Unlock' : 'Lock'}
         </button>
-        <button className="btn" onClick={() => openCraft(it.id)}><Icon name="hammer" />Craft…</button>
+        <button className="btn" onClick={() => openCraft(it.id)}><Icon name="hammer" />Craft</button>
         <button
           className="btn danger"
           disabled={it.locked}
@@ -179,7 +179,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
           <Icon name="lock" />{selected.length && selected.every(i => i.locked) ? 'Unlock' : 'Lock'}
         </button>
         <button className="btn small" disabled={selected.length !== 1} onClick={() => openCraft(selected[0].id)}>
-          <Icon name="hammer" />Craft…
+          <Icon name="hammer" />Craft
         </button>
         <button
           className="btn small danger"

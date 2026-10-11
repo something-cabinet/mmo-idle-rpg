@@ -5,7 +5,7 @@
 import { BASE_LIST, base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
 import { STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
-import { UNIQUES, UNIQUE_ROLL_MIN, uniqueWeight, type UniqueDef } from './data/uniques';
+import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniqueWeight, type UniqueDef } from './data/uniques';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
 export const RARITIES = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Unique'] as const;
@@ -142,14 +142,14 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
 }
 
 /**
- * Unique `u`: its base at its tier, its stats rolled in [UNIQUE_ROLL_MIN, 1] × value
+ * Unique `u`: its base at its tier, its stats rolled in [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] × value
  * and stored as affixes of tier 0 (not a regular affix tier), its effects.
  */
 export function makeUnique(rng: Rng, u: UniqueDef): NewItem {
   return {
     ...makeItem(rng, u.baseId, u.tier, 'Unique'),
     affixes: u.stats.map(s => {
-      const value = affixRef(s.stat, u.tier) * (s.x ?? 1) * (UNIQUE_ROLL_MIN + (1 - UNIQUE_ROLL_MIN) * rng());
+      const value = affixRef(s.stat, u.tier) * (s.x ?? 1) * (UNIQUE_ROLL_MIN + (UNIQUE_ROLL_MAX - UNIQUE_ROLL_MIN) * rng());
       return { stat: s.stat, tier: 0, value: toStored(roundStat(s.stat, value)) };
     }),
     uniqueId: u.id,

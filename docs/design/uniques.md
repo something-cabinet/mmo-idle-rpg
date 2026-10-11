@@ -9,10 +9,10 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 - **One tier only:** each unique exists at one tier and doesn't scale.
 - **Built on a normal base:** a unique is a base (e.g. a Greatsword) at its tier. Weapon
   values and implicits come from the base, as on any item.
-- **Stats roll in a small range** at drop time: each stat rolls in `[0.9, 1] × value`,
+- **Stats roll in a wide range** at drop time: each stat rolls in `[0.8, 1.4] × value`,
   where `value = x × ref(stat, tier)` (attributes.md; `x` defaults to 1, the best regular
-  affix roll). 3–4 such stats make a unique about as strong as an Epic's best rolls,
-  before its effects.
+  affix roll), so a great roll beats any regular affix. 3–4 such stats make a unique about
+  as strong as an Epic's best rolls on average, before its effects.
 - **Stored like any item:** the rolled stats are saved on the item (in `affixes`, with
   affix tier 0), so rebalancing only changes new drops. `uniqueId` gives the name.
 - **Effects:** stored as a list of effect IDs on the item (`effects`). A unique can carry

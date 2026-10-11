@@ -26,8 +26,9 @@ export interface UniqueDef {
   stats: UniqueStat[];
 }
 
-/** Each stat rolls in [UNIQUE_ROLL_MIN, 1] × its value (equipment.md "small range"). */
-export const UNIQUE_ROLL_MIN = 0.9;
+/** Each stat rolls in [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] × its value (uniques.md). */
+export const UNIQUE_ROLL_MIN = 0.8;
+export const UNIQUE_ROLL_MAX = 1.4;
 
 export const UNIQUES: UniqueDef[] = [
   // T1

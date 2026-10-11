@@ -18,7 +18,7 @@ Desktop first, mostly text and icons, placeholder art. Only the fight view anima
 
 | Common | Magic | Rare | Epic | Legendary | Unique |
 |---|---|---|---|---|---|
-| Grey | Blue | Yellow | Purple | Orange | Gold-brown |
+| Grey | Blue | Yellow | Purple | Orange | Magenta |
 
 Used for item names, icon borders and loot log lines.
 

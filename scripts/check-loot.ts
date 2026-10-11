@@ -2,11 +2,10 @@
 // No server needed:
 //   npm run test:loot
 import { BASE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
-import { LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
+import { LEGENDARIES, LEGENDARIES_BY_ID, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRange, affixRef, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
 import {
-  FORTUNE_CHANCE,
   AFFIX_STAT_IDS,
   FIRST_KILL_GOLD_MULT,
   KEEP_CAP_PER_SETTLE,
@@ -94,7 +93,8 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
   const groupOf = (baseId: number) => {
     const it = makeItem(rng, baseId, 4, 'Legendary');
-    const def = LEGENDARIES_BY_ID.get(it.legendary!.effect)!;
+    const def = LEGENDARIES_BY_ID.get(it.legendary!.effect);
+    if (!def) return { group: undefined, inRange: false }; // a unique effect: must never roll
     const ref = affixRef(def.bonusStat, 4);
     const v = Number(it.legendary!.value) / 100;
     const tol = STATS[def.bonusStat].decimals ? 0.01 : 0.5;
@@ -104,7 +104,10 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   check('weapons and tome roll Offense legendaries', [1, 21].flatMap(sample).every(g => g.group === 'Offense'));
   check('armor and shield roll Defense legendaries', [35, 20].flatMap(sample).every(g => g.group === 'Defense'));
   check('jewelry rolls Utility legendaries', [50, 57].flatMap(sample).every(g => g.group === 'Utility'));
-  check('legendary bonus is 0.25–0.5 × ref', [1, 35, 50].flatMap(sample).every(g => g.inRange));
+  check('legendary bonus is 0.25–0.5 × ref (and no unique effect rolls)', [1, 35, 50].flatMap(sample).every(g => g.inRange));
+  const seen = new Set([1, 21, 35, 20, 50, 57].flatMap(id => Array.from({ length: 200 }, () => makeItem(rng, id, 4, 'Legendary').legendary!.effect)));
+  check('every legendary effect rolls, no unique effect does',
+    LEGENDARIES.every(l => seen.has(l.id)) && UNIQUE_EFFECTS.every(u => !seen.has(u.id)), `${seen.size} effects seen`);
   check('every base can be made', BASE_LIST.every(b => makeItem(rng, b.id, 9, 'Epic').baseId === b.id));
 }
 
@@ -187,10 +190,11 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
 // ---------------------------------------------------------------- Fortune's Favor
 
 {
+  const FORTUNE = 0.15;
   // The upgrade rolls come after every drop roll, so the same seed keeps the same drops.
   const pairs = Array.from({ length: 300 }, (_, i) => [
     rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepBases: [], minAffixTier: 1 }, kills: 600 })),
-    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepBases: [], minAffixTier: 1 }, kills: 600, fortune: true })),
+    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepBases: [], minAffixTier: 1 }, kills: 600, fortune: FORTUNE })),
   ]);
   let eligible = 0;
   let raised = 0;
@@ -206,7 +210,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
     raised += after.reduce((n, r) => n + rarityRank(r), 0) - before.reduce((n, r) => n + rarityRank(r), 0);
   }
   check("Fortune's Favor keeps the same drops and Essence", wellFormed);
-  check(`… and raises ~${FORTUNE_CHANCE * 100}% of kept drops one rarity`, near(raised / eligible, FORTUNE_CHANCE, 0.015),
+  check(`… and raises ~${FORTUNE * 100}% of kept drops one rarity`, near(raised / eligible, FORTUNE, 0.015),
     `${raised} of ${eligible}`);
 }
 

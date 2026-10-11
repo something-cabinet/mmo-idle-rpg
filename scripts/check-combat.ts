@@ -5,9 +5,10 @@ import { SLOTS, STARTER_ARMOR, STARTER_WEAPONS, base, weaponValues, type Slot } 
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, WALK_SECONDS } from '../spacetimedb/src/data/zones';
 import { Effect, LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
+import { simulateFight } from '../spacetimedb/src/sim';
 import { MAX_LEVEL, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { scoreGear } from '../spacetimedb/src/equip';
-import { project, xpToNext, type Progress } from '../spacetimedb/src/game';
+import { MAX_OFFLINE_MICROS, offlineCapMicros, project, xpToNext, type Progress } from '../spacetimedb/src/game';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
 
 let failed = 0;
@@ -106,9 +107,9 @@ const warrior = gear({
 
 // ---------------------------------------------------------------- legendary effects (legendary.md)
 
-/** `it` with legendary effect `effect` and a zero stat bonus, so only the effect counts. */
+/** `it` with legendary or unique effect `effect` and a zero stat bonus, so only the effect counts. */
 function withEffect(it: GearItem, effect: number): GearItem {
-  return { ...it, legendary: { effect, stat: LEGENDARIES_BY_ID.get(effect)!.bonusStat, value: 0n } };
+  return { ...it, legendary: { effect, stat: LEGENDARIES_BY_ID.get(effect)?.bonusStat ?? Stat.MaxHp, value: 0n } };
 }
 {
   const kit = (main: GearItem, extra: Partial<Record<Slot, GearItem>> = {}) =>
@@ -131,6 +132,8 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const oc = combatStats(10, kit(withEffect(crit, Effect.Overcrit))).sources[0];
   check('Overcrit: excess crit chance becomes +2× crit damage', near(oc.critMult, 1.5 + 2 * (oc.critChance - 1), 1e-9) &&
     near(cc.critMult, 1.5, 1e-9), `${f(cc.critMult)} → ${f(oc.critMult)}`);
+  const oc2 = combatStats(10, kit(withEffect(crit, Effect.Overcrit), { OffHand: withEffect(item(21, 1), Effect.Overcrit) })).sources[0];
+  check('Overcrit ×2 (weapon + tome): +4× crit damage', near(oc2.critMult, 1.5 + 4 * (oc2.critChance - 1), 1e-9));
 
   const gc = combatStats(10, kit(withEffect(sword, Effect.GlassCannon)));
   check('Glass Cannon: damage × 2, max HP × 0.5',
@@ -145,11 +148,10 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const staff = item(10, 1);
   const heal = matchup(combatStats(10, kit(staff)), rat);
   const zh = matchup(combatStats(10, kit(withEffect(staff, Effect.ZealotsOath))), rat);
-  const zDps = heal.dps + 0.5 * heal.hps * (1 - heal.enemyMitigation.Magic);
-  check("Zealot's Oath on a healer: heals hit for 50%, damage heals 5%",
-    near(zh.dps, zDps, 1e-9) && near(zh.hps, heal.hps + 0.05 * zDps, 1e-9), `dps ${f(heal.dps)} → ${f(zh.dps)}`);
+  check("Zealot's Oath on a healer: heals hit for 50%, healing unchanged",
+    near(zh.dps, heal.dps + 0.5 * heal.hps * (1 - heal.enemyMitigation.Magic), 1e-9) && near(zh.hps, heal.hps, 1e-12), `dps ${f(heal.dps)} → ${f(zh.dps)}`);
   const zs = matchup(combatStats(10, kit(withEffect(sword, Effect.ZealotsOath))), rat);
-  check("Zealot's Oath on a sword: 5% of damage heals", near(zs.hps, 0.05 * zs.dps, 1e-9) && zs.hps > 0);
+  check("Zealot's Oath on a sword: no heals, no effect", zs.hps === 0 && near(zs.dps, matchup(plain, rat).dps, 1e-12));
 
   const tank = (effect?: number) => {
     const chest = item(39, 1, [[Stat.Armor, 200], [Stat.EvasionRating, 50]]);
@@ -169,7 +171,14 @@ function withEffect(it: GearItem, effect: number): GearItem {
     const chest = item(35, 1, [[Stat.EvasionRating, 1e6]]);
     return matchup(combatStats(10, kit(sword, { Chest: effect ? withEffect(chest, effect) : chest })), rat).evasion;
   };
-  check('Phantom Step: evasion cap 60% → 75%', dodgy() === 0.6 && dodgy(Effect.PhantomStep) === 0.75);
+  check('Phantom Step: evasion cap 60% → 75%', dodgy() === 0.6 && near(dodgy(Effect.PhantomStep), 0.75, 1e-12));
+  const dodgyN = (n: number) => {
+    const ps = (baseId: number) => withEffect(item(baseId, 1), Effect.PhantomStep);
+    const slots: Partial<Record<Slot, GearItem>> = { Chest: item(35, 1, [[Stat.EvasionRating, 1e6]]) };
+    ([['Head', 34], ['Hands', 36], ['Feet', 37]] as const).slice(0, n).forEach(([slot, id]) => (slots[slot] = ps(id)));
+    return matchup(combatStats(10, kit(sword, slots)), rat).evasion;
+  };
+  check('Phantom Step ×2 reaches the 85% cap; ×3 is wasted', near(dodgyN(2), 0.85, 1e-12) && near(dodgyN(3), 0.85, 1e-12));
 
   const ts = matchup(combatStats(10, kit(sword, { Chest: withEffect(item(35, 1), Effect.Thornshell) })), rat);
   const base = matchup(plain, rat);
@@ -187,8 +196,68 @@ function withEffect(it: GearItem, effect: number): GearItem {
   check('Thornshell + Voidtouched: reflected damage ignores armor for 25% less',
     vtR.mit === 0 && near(vtR.reflected, 0.4 * vtR.incoming * 0.75, 1e-9));
 
+  /** Leather chest, head and hands, the first `n` with `effect`. */
+  const armorN = (effect: number, n: number): Partial<Record<Slot, GearItem>> => {
+    const pieces = [['Chest', 35], ['Head', 34], ['Hands', 36]] as const;
+    return Object.fromEntries(pieces.map(([slot, id], i) => [slot, i < n ? withEffect(item(id, 1), effect) : item(id, 1)]));
+  };
+  const ts0 = matchup(combatStats(10, kit(sword, armorN(Effect.Thornshell, 0))), rat);
+  const ts3 = matchup(combatStats(10, kit(sword, armorN(Effect.Thornshell, 3))), rat);
+  check('Thornshell ×3: reflects 100% (capped)', near(ts3.dps, ts0.dps + ts0.incoming * (1 - ts0.enemyMitigation.Physical), 1e-9));
+
   const sh = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.SwiftHunter) })), rat);
-  check('Swift Hunter: walk time halved', near(sh.killRate, 1 / (sh.timeToKill + WALK_SECONDS / 2), 1e-12) && sh.killRate > base.killRate);
+  check('Swift Hunter: walk time −40%', near(sh.killRate, 1 / (sh.timeToKill + WALK_SECONDS * 0.6), 1e-12) && sh.killRate > base.killRate);
+  const walk = (n: number) => combatStats(10, kit(sword, { Ring1: ring(Effect.SwiftHunter), ...(n > 1 && { Ring2: ring(Effect.SwiftHunter) }),
+    ...(n > 2 && { Amulet: withEffect(item(57, 1), Effect.SwiftHunter) }) })).walkTime;
+  check('Swift Hunter ×2: −80% (cap); ×3 is wasted', near(walk(2), WALK_SECONDS * 0.2, 1e-12) && near(walk(3), WALK_SECONDS * 0.2, 1e-12));
+
+  const ex = matchup(combatStats(10, kit(withEffect(sword, Effect.Executioner))), rat);
+  check('Executioner: the last 30% of enemy HP goes twice as fast (TTK × 0.85)', near(ex.timeToKill, base.timeToKill * 0.85, 1e-9) && near(ex.dps, base.dps, 1e-12));
+  const ex2 = matchup(combatStats(10, kit(withEffect(sword, Effect.Executioner), { OffHand: withEffect(item(21, 1), Effect.Executioner) })), rat);
+  check('Executioner ×2: threshold capped at 50% (TTK × 0.75)', near(ex2.timeToKill, base.timeToKill * 0.75, 1e-9));
+
+  const rd = matchup(combatStats(10, kit(withEffect(sword, Effect.Rending))), armored);
+  const rdBase = matchup(plain, armored);
+  check('Rending: ignores 40% of the enemy\'s physical mitigation, not magic',
+    near(rd.enemyMitigation.Physical, rdBase.enemyMitigation.Physical * 0.6, 1e-12) && rd.enemyMitigation.Magic === rdBase.enemyMitigation.Magic);
+  const rd2 = matchup(combatStats(10, kit(withEffect(sword, Effect.Rending), { OffHand: withEffect(item(21, 1), Effect.Rending) })), armored);
+  check('Rending ×2: capped at 70%', near(rd2.enemyMitigation.Physical, rdBase.enemyMitigation.Physical * 0.3, 1e-12));
+  const sbk = matchup(combatStats(10, kit(withEffect(sword, Effect.Spellbreaker))), armored);
+  check('Spellbreaker: ignores 40% of the enemy\'s magic mitigation, not physical',
+    near(sbk.enemyMitigation.Magic, rdBase.enemyMitigation.Magic * 0.6, 1e-12) && sbk.enemyMitigation.Physical === rdBase.enemyMitigation.Physical);
+
+  const weak = combatStats(10, kit(item(1, 1)));
+  const ogre = { ...rat, dps: 1000, hp: 1e9 };
+  const swS = combatStats(10, kit(item(1, 1), { Chest: withEffect(item(35, 1), Effect.SecondWind) }));
+  check('Second Wind: time to die × 1.5', near(matchup(swS, ogre).timeToDie, matchup(weak, ogre).timeToDie * 1.5, 1e-9));
+  const sw0 = combatStats(10, kit(item(1, 1), armorN(Effect.SecondWind, 0)));
+  const sw3 = combatStats(10, kit(item(1, 1), armorN(Effect.SecondWind, 3)));
+  check('Second Wind ×3: capped at 100% (time to die × 2)', near(matchup(sw3, ogre).timeToDie, matchup(sw0, ogre).timeToDie * 2, 1e-9));
+  const swFight = simulateFight(swS, matchup(swS, ogre), ogre, seededRng(1n));
+  const saved = swFight.events.filter(e => e.secondWind);
+  check('Second Wind in a live fight: saved once, at 50% HP', saved.length === 1 && near(saved[0].youHp, swS.maxHp / 2, 1e-9) && swFight.outcome === 'defeat');
+
+  const ac = (effect: number) => combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), effect) }));
+  const acBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]) }));
+  const ic = ac(Effect.Ironclad);
+  check('Ironclad: 30% of armor is added to resistance', near(ic.resistance, acBase.resistance + 0.3 * acBase.armor, 1e-9) && ic.armor === acBase.armor);
+  const rg = ac(Effect.Runeguard);
+  check('Runeguard: 30% of resistance is added to armor', near(rg.armor, acBase.armor + 0.3 * acBase.resistance, 1e-9) && rg.resistance === acBase.resistance);
+  const icRg = combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), Effect.Ironclad),
+    Head: withEffect(item(38, 1), Effect.Runeguard) }));
+  const bothBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), Head: item(38, 1) }));
+  check('Ironclad + Runeguard convert from the unconverted values (no loop)',
+    near(icRg.resistance, bothBase.resistance + 0.3 * bothBase.armor, 1e-9) && near(icRg.armor, bothBase.armor + 0.3 * bothBase.resistance, 1e-9));
+
+  const pr = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.Prosperity) })), rat);
+  const pr3 = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.Prosperity), Ring2: ring(Effect.Prosperity), Amulet: withEffect(item(57, 1), Effect.Prosperity) })), rat);
+  check('Prosperity: gold × 1.4; ×3 capped at × 1.6', near(pr.goldPerKill, base.goldPerKill * 1.4, 1e-9) && near(pr3.goldPerKill, base.goldPerKill * 1.6, 1e-9));
+
+  const sea = (n: number) => offlineCapMicros(combatStats(10, kit(sword, { Ring1: ring(Effect.Seasoned), ...(n > 1 && { Ring2: ring(Effect.Seasoned) }),
+    ...(n > 2 && { Amulet: withEffect(item(57, 1), Effect.Seasoned) }) })));
+  const H = 3600n * 1_000_000n;
+  check('Seasoned: offline cap 8h → 12h; ×2 16h (cap); ×3 wasted',
+    offlineCapMicros(plain) === MAX_OFFLINE_MICROS && sea(1) === 12n * H && sea(2) === 16n * H && sea(3) === 16n * H);
 
   const mid = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.MidasTouch) })), rat);
   const sch = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.ScholarsFocus) })), rat);

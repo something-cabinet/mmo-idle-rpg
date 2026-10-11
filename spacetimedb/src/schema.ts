@@ -201,7 +201,7 @@ export const settleLog = table(
     id: t.u64().primaryKey().autoInc(),
     characterId: t.u64().index('btree'),
     at: t.timestamp(),
-    /** The login settle (time away, capped at MAX_OFFLINE_MICROS). */
+    /** The login settle (time away, capped at the gear's `offlineCapMicros`). */
     offline: t.bool(),
     /** Time since the previous settle, before the offline cap. */
     elapsedMicros: t.u64(),

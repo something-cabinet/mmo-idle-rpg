@@ -6,12 +6,14 @@
 // hundredths, converted with `fromStored`.
 
 import { SLOTS } from './data/bases';
-import { Effect } from './data/legendary';
+import { Effect, effectAmount, type EffectCounts } from './data/legendary';
 import { CAPS, Stat, fromStored } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType } from './data/bases';
 
 export const MAX_LEVEL = 100;
+/** Offline progress cap before Seasoned, hours. */
+export const BASE_OFFLINE_HOURS = 8;
 
 // Item shape the formulas need. Both the server row type and the client bindings fit.
 export interface GearStat {
@@ -69,22 +71,24 @@ export interface CombatStats {
   xpGain: number;
   /** Seconds between fights. */
   walkTime: number;
-  /** Legendary effect IDs worn; each applies once however many items carry it. */
-  effects: ReadonlySet<number>;
+  /** Offline progress cap, hours (Seasoned raises it). */
+  offlineHours: number;
+  /** Effect IDs worn → copies. Legendary effects stack (`effectAmount`); unique effects apply once. */
+  effects: EffectCounts;
 }
 
 /**
  * Multiplier on all your damage from effects: Glass Cannon × 2, Voidtouched × 0.75
  * (it ignores mitigation in `matchup`). Also applies to Thornshell and Zealot's Oath damage.
  */
-export function effectDamageMult(effects: ReadonlySet<number>): number {
+export function effectDamageMult(effects: EffectCounts): number {
   return (effects.has(Effect.GlassCannon) ? 2 : 1) * (effects.has(Effect.Voidtouched) ? 0.75 : 1);
 }
 
 /** Final combat stats of a character at `level` wearing `gear`. */
 export function combatStats(level: number, gear: Gear): CombatStats {
   const sum = new Map<number, number>();
-  const effects = new Set<number>();
+  const effects = new Map<number, number>();
   const add = (s: GearStat) => sum.set(s.stat, (sum.get(s.stat) ?? 0) + fromStored(s.value));
   for (const item of gear) {
     if (!item) continue;
@@ -92,10 +96,11 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     item.affixes.forEach(add);
     if (item.legendary) {
       add(item.legendary);
-      effects.add(item.legendary.effect);
+      effects.set(item.legendary.effect, (effects.get(item.legendary.effect) ?? 0) + 1);
     }
   }
   const has = (e: number) => effects.has(e);
+  const amount = (e: number) => effectAmount(effects, e);
   const flat = (s: number) => sum.get(s) ?? 0;
   /** Percent stat as a fraction. */
   const pct = (s: number) => flat(s) / 100;
@@ -137,8 +142,8 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     const baseHeal = fromStored(w.heal);
     const heal = baseHeal > 0 ? (baseHeal + flat(Stat.Heal)) * (1 + healPct) : 0;
     const critChance = (w.baseCritBp / 10_000) * (1 + critIncreased);
-    // Overcrit: each 1% of crit chance above 100% gives +2% crit damage.
-    const critDmg = critDamage + (has(Effect.Overcrit) ? 2 * Math.max(0, critChance - 1) : 0);
+    // Overcrit: each 1% of crit chance above 100% gives +2% crit damage per copy.
+    const critDmg = critDamage + amount(Effect.Overcrit) * Math.max(0, critChance - 1);
     sources.push({
       hit,
       heal,
@@ -147,6 +152,10 @@ export function combatStats(level: number, gear: Gear): CombatStats {
       critMult: 1 + Math.min(1, critChance) * (critDmg - 1),
     });
   }
+
+  // Ironclad and Runeguard convert from armor and resistance before either is added, so they don't loop.
+  const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct));
+  const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct));
 
   return {
     level,
@@ -159,15 +168,16 @@ export function combatStats(level: number, gear: Gear): CombatStats {
       (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality) *
       (has(Effect.GlassCannon) ? 0.5 : 1),
     regen: flat(Stat.HpRegen) * (1 + 0.01 * vitality),
-    armor: flat(Stat.Armor) * (1 + pct(Stat.ArmorPct)),
-    resistance: flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct)),
+    armor: armor + amount(Effect.Runeguard) * resistance,
+    resistance: resistance + amount(Effect.Ironclad) * armor,
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse),
     lifesteal: Math.min(CAPS.lifesteal / 100, pct(Stat.LifestealPct)),
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
     itemFind: pct(Stat.ItemFindPct),
     goldFind: pct(Stat.GoldFindPct),
     xpGain: pct(Stat.XpGainPct),
-    walkTime: WALK_SECONDS * (has(Effect.SwiftHunter) ? 0.5 : 1),
+    walkTime: WALK_SECONDS * (1 - amount(Effect.SwiftHunter)),
+    offlineHours: BASE_OFFLINE_HOURS + amount(Effect.Seasoned),
     effects,
   };
 }
@@ -183,9 +193,6 @@ export function evasionChance(rating: number, enemyLevel: number, cap = CAPS.eva
   return rating <= 0 ? 0 : Math.min(cap, rating / (rating + 10 * enemyLevel));
 }
 
-/** Phantom Step's evasion cap. */
-const PHANTOM_STEP_CAP = 0.75;
-
 /**
  * Your mitigation and evasion against `type` damage from an enemy of `enemyLevel`.
  * Juggernaut (magic) and Spellward (physical) use the better of armor and resistance
@@ -196,7 +203,7 @@ export function defenseAgainst(s: CombatStats, type: DamageType, enemyLevel: num
   const spellward = s.effects.has(Effect.Spellward);
   const best = Math.max(s.armor, s.resistance);
   const def = type === 'Physical' ? (spellward ? best : s.armor) : juggernaut ? best : s.resistance;
-  const cap = s.effects.has(Effect.PhantomStep) ? PHANTOM_STEP_CAP : undefined;
+  const cap = CAPS.evasion / 100 + effectAmount(s.effects, Effect.PhantomStep);
   return {
     mitigation: mitigation(def, 0, s.level),
     evasion: juggernaut || spellward ? 0 : evasionChance(s.evasionRating, enemyLevel, cap),
@@ -229,11 +236,13 @@ export interface Matchup {
 
 export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   const has = (id: number) => s.effects.has(id);
+  const amount = (id: number) => effectAmount(s.effects, id);
+  // Rending and Spellbreaker ignore a share of what's left after penetration.
   const enemyMitigation = has(Effect.Voidtouched)
     ? { Physical: 0, Magic: 0 }
     : {
-        Physical: mitigation(e.armor, s.armorPen, e.level),
-        Magic: mitigation(e.resistance, s.magicPen, e.level),
+        Physical: mitigation(e.armor, s.armorPen, e.level) * (1 - amount(Effect.Rending)),
+        Magic: mitigation(e.resistance, s.magicPen, e.level) * (1 - amount(Effect.Spellbreaker)),
       };
   let dps = 0;
   let hps = 0;
@@ -247,17 +256,16 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   const incoming = e.dps * (1 - playerMitigation) * (1 - evasion);
   // Effect damage is your damage: Glass Cannon and Voidtouched apply to it too.
   const damageMult = effectDamageMult(s.effects);
-  // Thornshell reflects 40% of the damage taken as physical damage.
-  if (has(Effect.Thornshell)) dps += 0.4 * incoming * damageMult * (1 - enemyMitigation.Physical);
-  // Zealot's Oath: heals also hit for 50% (magic), and damage heals for 5%.
-  if (has(Effect.ZealotsOath)) {
-    dps += 0.5 * hps * damageMult * (1 - enemyMitigation.Magic);
-    hps += 0.05 * dps;
-  }
+  // Thornshell reflects a share of the damage taken as physical damage.
+  dps += amount(Effect.Thornshell) * incoming * damageMult * (1 - enemyMitigation.Physical);
+  // Zealot's Oath: heals also hit for a share of the heal (magic).
+  dps += amount(Effect.ZealotsOath) * hps * damageMult * (1 - enemyMitigation.Magic);
   const netIncoming = incoming - s.regen - s.lifesteal * dps - hps;
 
-  const timeToKill = dps > 0 ? e.hp / dps : Infinity;
-  const timeToDie = netIncoming <= 0 ? Infinity : s.maxHp / netIncoming;
+  // Executioner: the last `t` of the enemy's HP takes double damage, so it goes in half the time.
+  const timeToKill = dps > 0 ? (e.hp / dps) * (1 - amount(Effect.Executioner) / 2) : Infinity;
+  // Second Wind: once per fight, a killing blow leaves you at a share of max HP.
+  const timeToDie = netIncoming <= 0 ? Infinity : (s.maxHp * (1 + amount(Effect.SecondWind))) / netIncoming;
   const viable = timeToKill < timeToDie;
   return {
     enemyMitigation,
@@ -273,6 +281,7 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     killRate: viable ? 1 / (timeToKill + s.walkTime) : 0,
     // Midas Touch: no XP, gold × 2.5. Scholar's Focus: XP × 1.75, gold × 0.5. Both: both apply.
     xpPerKill: e.xp * (1 + s.xpGain) * (has(Effect.MidasTouch) ? 0 : has(Effect.ScholarsFocus) ? 1.75 : 1),
-    goldPerKill: e.gold * (1 + s.goldFind) * (has(Effect.MidasTouch) ? 2.5 : 1) * (has(Effect.ScholarsFocus) ? 0.5 : 1),
+    goldPerKill:
+      e.gold * (1 + s.goldFind) * (1 + amount(Effect.Prosperity)) * (has(Effect.MidasTouch) ? 2.5 : 1) * (has(Effect.ScholarsFocus) ? 0.5 : 1),
   };
 }

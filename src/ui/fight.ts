@@ -72,6 +72,7 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
       for (const e of fight.events.slice(0, i).filter(e => e.t > lastT).slice(-4)) {
         if (e.by === 'you') float('enemy', e.kind === 'crit' ? `${fmt(e.damage)}!` : fmt(e.damage), e.kind);
         else float('you', e.kind === 'dodge' ? 'Dodge' : `-${fmt(e.damage)}`, e.kind === 'dodge' ? 'dodge' : 'taken');
+        if (e.secondWind) float('you', 'Second Wind', 'heal');
         if (e.healed >= 0.5) float('you', `+${fmt(e.healed)}`, 'heal');
       }
       if (over && fight.outcome === 'defeat') float('you', 'Defeated', 'taken');

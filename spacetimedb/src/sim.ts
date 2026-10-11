@@ -4,6 +4,7 @@
 // the fight's start time. Offline time still uses the expected-value `project`.
 
 import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from './combat';
+import { Effect, effectAmount } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { xpToNext, type Activity, type Progress, type Settled } from './game';
 import { seededRng, type Rng } from './loot';
@@ -28,6 +29,8 @@ export interface FightEvent {
   healed: number;
   youHp: number;
   foeHp: number;
+  /** Second Wind saved you from this hit. */
+  secondWind?: boolean;
 }
 
 export interface Fight {
@@ -49,6 +52,8 @@ export interface Fight {
  * mitigation, dodged at your evasion; regen ticks between events. Swing timers start
  * half a period in, so on average a fight lasts what the formulas say. Unlike the
  * formulas, HP can't go above max (overhealing is lost) and damage varies ±10%.
+ * Executioner doubles your hits once the enemy is below its threshold; Second Wind
+ * turns the first killing blow into a drop to its share of max HP.
  */
 export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng): Fight {
   const src = s.sources[0];
@@ -61,6 +66,8 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const critX = crit > 0 && src ? 1 + (src.critMult - 1) / crit : 1;
   const healPerSwing = src && m.hps > 0 ? m.hps / src.attacksPerSec : 0;
   const enemyHit = (enemy.dps / enemy.speed) * (1 - m.playerMitigation);
+  const executeBelow = effectAmount(s.effects, Effect.Executioner) * enemy.hp;
+  let secondWind = effectAmount(s.effects, Effect.SecondWind);
 
   let youHp = s.maxHp;
   let foeHp = enemy.hp;
@@ -79,7 +86,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     if (nextYou <= nextFoe) {
       nextYou += yourPeriod;
       const isCrit = rng() < crit;
-      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng());
+      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * (foeHp < executeBelow ? 2 : 1);
       foeHp = Math.max(0, foeHp - damage);
       youHp = Math.min(s.maxHp, youHp + healPerSwing + s.lifesteal * damage);
       events.push({ t, by: 'you', kind: isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp });
@@ -90,7 +97,12 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const damage = dodged ? 0 : enemyHit * (0.9 + 0.2 * rng());
       const healed = youHp - before;
       youHp = Math.max(0, youHp - damage);
-      events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp });
+      const saved = youHp <= 0 && secondWind > 0;
+      if (saved) {
+        youHp = secondWind * s.maxHp;
+        secondWind = 0;
+      }
+      events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp, ...(saved && { secondWind: true }) });
       if (youHp <= 0) return done(t, 'defeat');
     }
   }

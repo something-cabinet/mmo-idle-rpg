@@ -35,9 +35,10 @@
 
 ### Legendary effects
 
-Legendary affixes (legendary.md) plug into the formulas below by changing one term each
-(damage type, crit damage, evasion cap, extra DPS, walk time, rewards). Each effect
-applies at most once per character.
+Legendary and unique effects (legendary.md) plug into the formulas below by changing one
+term each (crit damage, enemy mitigation, evasion cap, extra DPS, time to kill or die,
+walk time, rewards, offline cap). Legendary effects stack up to a cap
+(`min(cap, perCopy × copies)`); unique effects apply at most once per character.
 
 ### Rule for new mechanics
 
@@ -116,7 +117,7 @@ drops  = per rarity: sample(kills × dropChance[rarity] × (1 + itemFind%))
   and `dropChance` come from that enemy.
 - **Anything that changes stats or the target settles first** at the old values:
   equipping, switching loadouts, changing zone or target enemy, leveling.
-- Offline time is capped (8h today).
+- Offline time is capped: 8h, raised by Seasoned (legendary.md).
 - Drop sampling uses a seed derived from (character, settle time), so the server's
   result is reproducible.
 

@@ -33,7 +33,8 @@ fighting the target enemy with the active loadout.
     in loadouts: never reorder.
   - `zones.ts`: zones 1–2, enemies 101–106 and 201–206 (zoneId × 100 + n), drop lists,
     `DROP_CHANCE`, `WALK_SECONDS`.
-  - `legendary.ts`: effects 1–13, groups, which base kinds roll which group.
+  - `legendary.ts`: legendary effects (rollable, stacking: `perCopy`, `cap`) and unique
+    effects (never roll, no stacking), groups, which base kinds roll which group.
 - **Tables** (`spacetimedb/src/schema.ts`): `item`, `loadout` (4 per character, 9 slots,
   0 = empty), `loot_filter`, `boss_kill`; new `character` columns `essence`, `bagSize`,
   `activeLoadout`, `zoneId`, `targetEnemyId` (with defaults for migration).
@@ -99,9 +100,11 @@ fighting the target enemy with the active loadout.
   boss wins, a successful craft can't be reached in the smoke test (starter gold);
   it checks the refusals, and `test:craft` covers costs and rolls.
   `requireItem` moved to `helpers.ts`.
-- **Legendary effects** (`Effect` IDs in data/legendary.ts): `combatStats` collects
-  worn effect IDs into `CombatStats.effects` (a set: the same effect twice applies
-  once; bonus stats still add up). Damage-side effects are in `combatStats`
+- **Legendary effects** (`Effect` IDs in data/legendary.ts): `combatStats` counts
+  worn copies per effect into `CombatStats.effects`; `effectAmount` gives a legendary
+  effect's stacked amount (`min(cap, perCopy × copies)`), unique effects only check
+  presence. (Redesigned later: positive-only legendaries that stack, trade-offs moved
+  to unique effects; see legendary.md.) Damage-side effects are in `combatStats`
   (Spellblade, Overcrit, Glass Cannon, Voidtouched's ×0.75), enemy-side ones in
   `matchup` (Voidtouched's zero mitigation, Zealot's Oath, Thornshell, Swift Hunter,
   Midas Touch, Scholar's Focus) and `defenseAgainst` (Juggernaut, Spellward, Phantom

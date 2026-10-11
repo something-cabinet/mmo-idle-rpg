@@ -2,7 +2,7 @@
 
 import type { Item } from '../module_bindings/types';
 import { base } from '../../spacetimedb/src/data/bases';
-import { LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
+import { EFFECTS_BY_ID } from '../../spacetimedb/src/data/legendary';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
 import { fmt } from './format';
 import { Icon } from './Icon';
@@ -50,7 +50,7 @@ function weaponLines(w: NonNullable<Item['weapon']>): string[] {
 
 export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /** Extra line under the header, e.g. "In Farm". */ note?: string }) {
   const r = rarityCls(it.rarity.tag);
-  const leg = it.legendary && LEGENDARIES_BY_ID.get(it.legendary.effect);
+  const leg = it.legendary && EFFECTS_BY_ID.get(it.legendary.effect);
   const implicits = [...(it.weapon ? weaponLines(it.weapon) : []), ...it.implicits.map(i => statText(i.stat, i.value))];
   return (
     <div className={`item-card r-${r}${compact ? ' compact' : ''}`}>

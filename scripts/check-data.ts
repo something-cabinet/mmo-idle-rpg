@@ -1,7 +1,7 @@
 // Consistency checks for the static game data (spacetimedb/src/data). No server needed:
 //   npm run test:data
 import { BASE_LIST, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
-import { LEGENDARIES } from '../spacetimedb/src/data/legendary';
+import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, ZONES } from '../spacetimedb/src/data/zones';
 
@@ -16,7 +16,12 @@ const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
 check('base IDs unique', unique(BASE_LIST.map(b => b.id)));
 check('32 bases', BASE_LIST.length === 32, String(BASE_LIST.length));
 check('enemy IDs unique', unique(ZONES.flatMap(z => z.enemies.map(e => e.id))));
-check('legendary IDs unique', unique(LEGENDARIES.map(l => l.id)));
+check('legendary and unique effect IDs unique', unique([...LEGENDARIES, ...UNIQUE_EFFECTS].map(l => l.id)));
+check('legendary effects stack: positive per copy, cap at least one copy', LEGENDARIES.every(l => l.perCopy > 0 && l.cap >= l.perCopy));
+for (const g of ['Offense', 'Defense', 'Utility'] as const) {
+  check(`${g}: at least 4 legendary effects`, LEGENDARIES.filter(l => l.group === g).length >= 4);
+}
+check('legendary bonus stats can roll as affixes', LEGENDARIES.every(l => STATS[l.bonusStat].ref !== undefined));
 check('stat IDs match keys', Object.entries(STATS).every(([k, d]) => Number(k) === d.id));
 
 for (const zone of ZONES) {

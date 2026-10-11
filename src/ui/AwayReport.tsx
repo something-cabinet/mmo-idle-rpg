@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Presence, SettleLog } from '../module_bindings/types';
 import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
-import { MAX_OFFLINE_MICROS } from '../../spacetimedb/src/game';
+import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
 import { itemName, rarityCls } from './items';
@@ -33,7 +33,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
   return (
     <Modal onClose={close}>
       <CardHead title={`While you were away (${duration(log.elapsedMicros)})`} />
-      {log.capped && <p className="muted">Offline progress is capped at {duration(MAX_OFFLINE_MICROS)}.</p>}
+      {log.capped && <p className="muted">Offline progress is capped at {duration(offlineCapMicros(s.stats))}.</p>}
       {!enemy ? (
         <p>You were idle: no target. Pick an enemy on the Zones screen.</p>
       ) : log.kills > 0 ? (

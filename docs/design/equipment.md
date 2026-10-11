@@ -119,14 +119,14 @@ affix rolls tier 1 to N (N = item tier, 1–9).
 - Legendary is not strictly better than Epic: it trades one regular affix for a
   legendary affix. Intended.
 - **Legendary affix:** a small stat bonus that scales with tier, plus a build-changing
-  effect that is the same at every tier. The list, slot pools and formulas are in
-  legendary.md.
+  effect that is the same at every tier. Legendary effects have no downside and stack
+  up to a cap. The list, slot pools and formulas are in legendary.md.
 - **Uniques** can be anything (many stats, several effects); they only have to fit the
   combat formulas.
 - **Effects are stored as an effect ID plus its numbers.** The numbers are literal; the
   behaviour behind an effect ID is code, so effect IDs are permanent and changing an
-  effect's logic deliberately affects items already owned. Uniques reuse the same effect
-  library as legendary affixes.
+  effect's logic deliberately affects items already owned. Uniques use the same effect
+  library, plus unique-only effects that may carry a trade-off and don't stack.
 
 ## Random affixes
 

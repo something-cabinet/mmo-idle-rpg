@@ -191,9 +191,6 @@ export function firstKillReward(rng: Rng, zone: ZoneDef, boss: EnemyDef): { gold
   };
 }
 
-/** Fortune's Favor: chance per kept drop to be raised one rarity (max Legendary). */
-export const FORTUNE_CHANCE = 0.15;
-
 export interface DropResult {
   /** Items to add to the bag, highest rarity first. */
   kept: NewItem[];
@@ -215,8 +212,8 @@ export interface DropInput {
   filter: LootFilter;
   /** Free bag slots. */
   bagFree: number;
-  /** Fortune's Favor is worn. */
-  fortune?: boolean;
+  /** Fortune's Favor: chance per kept drop to be raised one rarity (max Legendary). */
+  fortune?: number;
 }
 
 /**
@@ -253,9 +250,10 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
 
   // Fortune's Favor upgrades kept drops only, before the cap (an upgrade ranks higher).
   if (d.fortune) {
+    const chance = d.fortune;
     for (let i = 0; i < kept.length; i++) {
       const it = kept[i];
-      if (rarityRank(it.rarity.tag) >= rarityRank('Legendary') || rng() >= FORTUNE_CHANCE) continue;
+      if (rarityRank(it.rarity.tag) >= rarityRank('Legendary') || rng() >= chance) continue;
       kept[i] = raiseRarity(rng, it, Math.floor(rng() * it.affixes.length));
     }
   }

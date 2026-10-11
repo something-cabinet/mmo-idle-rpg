@@ -3,10 +3,10 @@
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { account, character, item, presence, settleLog, spacetimedb } from './schema';
-import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, MAX_OFFLINE_MICROS, project } from './game';
+import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, offlineCapMicros, project } from './game';
 import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
-import { Effect } from './data/legendary';
+import { Effect, effectAmount } from './data/legendary';
 import { combatStats, matchup } from './combat';
 import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, seededRng, type DropResult } from './loot';
 import { simulate } from './sim';
@@ -104,7 +104,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
         minAffixTier: filter?.minAffixTier ?? 1,
       },
       bagFree: ch.bagSize - bagCount(ctx, ch.id),
-      fortune: stats.effects.has(Effect.FortunesFavor),
+      fortune: effectAmount(stats.effects, Effect.FortunesFavor),
     });
     for (const it of drops.kept) {
       const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, uniqueId: undefined, locked: false, createdAt: ctx.timestamp });
@@ -281,7 +281,8 @@ export function enterWorld(ctx: Ctx) {
   if (!ch || !ctx.connectionId) return;
   leaveWorld(ctx, ctx.sender);
   ensureCharacterRows(ctx, ch.id);
-  const settled = settle(ctx, ch, MAX_OFFLINE_MICROS);
+  // The cap comes from the gear worn while away (Seasoned).
+  const settled = settle(ctx, ch, offlineCapMicros(combatStats(ch.level, gearOf(ctx, ch))));
   ctx.db.character.id.update(settled);
   ctx.db.presence.insert({
     identity: ctx.sender,

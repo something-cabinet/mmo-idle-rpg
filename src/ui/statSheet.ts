@@ -5,8 +5,8 @@
 
 import type { Item } from '../module_bindings/types';
 import { defenseAgainst, type CombatStats } from '../../spacetimedb/src/combat';
-import { Effect } from '../../spacetimedb/src/data/legendary';
-import { Stat, fromStored } from '../../spacetimedb/src/data/stats';
+import { Effect, LEGENDARIES_BY_ID, effectAmount } from '../../spacetimedb/src/data/legendary';
+import { CAPS, Stat, fromStored } from '../../spacetimedb/src/data/stats';
 import { scoreGear } from '../../spacetimedb/src/equip';
 import { WALK_SECONDS } from '../../spacetimedb/src/data/zones';
 import { fmt, pct } from './format';
@@ -76,6 +76,9 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   const prim = (id: number) => level + (sums.get(id) ?? 0);
   const [might, finesse, mind, vit] = [prim(Stat.Might), prim(Stat.Finesse), prim(Stat.Mind), prim(Stat.Vitality)];
   const has = (e: number) => st.effects.has(e);
+  /** A worn legendary effect as a note: its name and stacked effect. */
+  const leg = (e: number) => has(e) && `${LEGENDARIES_BY_ID.get(e)!.name}: ${LEGENDARIES_BY_ID.get(e)!.describe(effectAmount(st.effects, e))}`;
+  const evasionCap = CAPS.evasion / 100 + effectAmount(st.effects, Effect.PhantomStep);
   const primary = (name: string, id: number) => row(name, fmt(prim(id)), from([id], `${level} from levels`));
 
   const offense: StatRow[] = src
@@ -94,36 +97,37 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
           from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, "Floor: 25% of the weapon's speed")),
         row('Crit chance', pct(src.critChance, 1),
           from([Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
-            has(Effect.Overcrit) && 'Overcrit: each 1% above 100% gives +2% crit damage')),
+            leg(Effect.Overcrit))),
         row('Crit damage', pct(st.critDamage), from([Stat.CritDamage], 'Base 150%')),
-        row('Armor / magic pen', `${pct(st.armorPen)} / ${pct(st.magicPen)}`, from([Stat.ArmorPenPct, Stat.MagicPenPct], 'Cap 75% each')),
+        row('Armor / magic pen', `${pct(st.armorPen)} / ${pct(st.magicPen)}`, from([Stat.ArmorPenPct, Stat.MagicPenPct], 'Cap 75% each',
+          leg(Effect.Rending), leg(Effect.Spellbreaker))),
         row('DPS', fmt(scoreGear(level, gear).dps),
           ["Damage × attack speed × average crit, after a reference enemy's mitigation\n(armor and resistance 2.5 × your level, half its damage physical, half magic)",
-            has(Effect.Thornshell) && 'Thornshell: + 40% of the damage you take',
-            has(Effect.ZealotsOath) && "Zealot's Oath: + 50% of your heals"].filter(Boolean).join('\n')),
+            leg(Effect.Thornshell), leg(Effect.ZealotsOath),
+            has(Effect.Executioner) && `${leg(Effect.Executioner)} Not in DPS: it shortens fights instead.`].filter(Boolean).join('\n')),
       ]
     : [['Weapon', 'None equipped']];
 
   const defense: StatRow[] = [
     row('Max HP', fmt(st.maxHp), from([Stat.MaxHp, Stat.MaxHpPct], `Base ${100 + 10 * (level - 1)} (100 + 10 per level)`,
-      `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5')),
+      `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
     row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(vit)}%`)),
     row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + ${5 * level}), cap 85%`,
-      has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
+      leg(Effect.Runeguard), has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
       `Reduction: resistance / (resistance + ${5 * level}), cap 85%`,
-      has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
+      leg(Effect.Ironclad), has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
     row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${level}: rating / (rating + ${10 * level})`,
-      `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${has(Effect.PhantomStep) ? '75% (Phantom Step)' : '60%'}`,
+      `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade")),
     row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], 'Cap 3%')),
   ];
 
   const utility: StatRow[] = [
-    row('Item find', pct(st.itemFind), from([Stat.ItemFindPct], has(Effect.FortunesFavor) && "Fortune's Favor: kept drops have a 15% chance to be one rarity higher")),
-    row('Gold find', pct(st.goldFind), from([Stat.GoldFindPct], has(Effect.MidasTouch) && 'Midas Touch: gold × 2.5', has(Effect.ScholarsFocus) && "Scholar's Focus: gold × 0.5")),
+    row('Item find', pct(st.itemFind), from([Stat.ItemFindPct], leg(Effect.FortunesFavor))),
+    row('Gold find', pct(st.goldFind), from([Stat.GoldFindPct], leg(Effect.Prosperity), has(Effect.MidasTouch) && 'Midas Touch: gold × 2.5', has(Effect.ScholarsFocus) && "Scholar's Focus: gold × 0.5")),
     row('XP gain', pct(st.xpGain), from([Stat.XpGainPct], has(Effect.MidasTouch) && 'Midas Touch: no XP', has(Effect.ScholarsFocus) && "Scholar's Focus: XP × 1.75")),
-    row('Walk time', `${n1(st.walkTime)} s`, from([], `Base ${WALK_SECONDS} s`, has(Effect.SwiftHunter) && 'Swift Hunter: × 0.5')),
+    row('Walk time', `${n1(st.walkTime)} s`, from([], `Base ${WALK_SECONDS} s`, leg(Effect.SwiftHunter))),
     row('Threat', pct(st.threat), from([Stat.ThreatPct], `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`)),
   ];
 

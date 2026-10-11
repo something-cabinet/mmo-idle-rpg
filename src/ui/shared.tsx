@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import type { Item } from '../module_bindings/types';
 import { combatStats, defenseAgainst, type Matchup } from '../../spacetimedb/src/combat';
 import type { CraftCost } from '../../spacetimedb/src/craft';
-import { Effect, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
+import { EFFECTS_BY_ID, Effect, LEGENDARIES_BY_ID, copiesToCap, effectAmount, type EffectCounts } from '../../spacetimedb/src/data/legendary';
 import { Stat, fromStored } from '../../spacetimedb/src/data/stats';
 import { placeItem, scoreGear } from '../../spacetimedb/src/equip';
 import { setSticky } from '../store';
@@ -93,21 +93,34 @@ export function openCraft(id: bigint) {
   location.hash = '#crafting';
 }
 
-export function EffectsCard({ effects }: { effects: ReadonlySet<number> }) {
+/** What `n` worn copies of effect `id` do, and any copies wasted past the cap (legendary) or by not stacking (unique). */
+function stackedEffect(effects: EffectCounts, id: number, n: number): { text: string; waste?: string } {
+  const l = LEGENDARIES_BY_ID.get(id);
+  if (!l) return { text: EFFECTS_BY_ID.get(id)?.text ?? '', waste: n > 1 ? `Doesn't stack: ${n - 1} wasted` : undefined };
+  const full = copiesToCap(l);
+  const waste = l.perCopy * n > l.cap + 1e-9 ? (n > full ? `Capped: ${n - full} wasted` : 'Capped') : undefined;
+  return { text: l.describe(effectAmount(effects, id)), waste };
+}
+
+export function EffectsCard({ effects }: { effects: EffectCounts }) {
   if (!effects.size) return null;
   const both = effects.has(Effect.MidasTouch) && effects.has(Effect.ScholarsFocus);
   return (
     <div className="card">
       <CardHead title="Legendary effects" />
-      {[...effects].map(id => {
-        const l = LEGENDARIES_BY_ID.get(id)!;
+      {[...effects].map(([id, n]) => {
+        const { text, waste } = stackedEffect(effects, id, n);
         return (
           <div className="stat-row" key={id}>
             <span>
               <Icon name="sparkles" />
-              {l.name}
+              {EFFECTS_BY_ID.get(id)?.name ?? `Effect ${id}`}
+              {n > 1 && ` ×${n}`}
             </span>
-            <span className="muted">{l.text}</span>
+            <span className="muted">
+              {text}
+              {waste && <span className="c-bad"> {waste}.</span>}
+            </span>
           </div>
         );
       })}

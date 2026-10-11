@@ -1,11 +1,13 @@
 // Pure game rules and balance formulas. No SpacetimeDB imports here, so the
 // client can import this file too and show/validate exactly what the server does.
 
-import { MAX_LEVEL, combatStats, matchup, type Gear } from './combat';
+import { BASE_OFFLINE_HOURS, MAX_LEVEL, combatStats, matchup, type CombatStats, type Gear } from './combat';
 import type { EnemyDef } from './data/zones';
 
 /** Offline progress is capped so a player can't come back to infinite loot. */
-export const MAX_OFFLINE_MICROS = 8n * 60n * 60n * 1_000_000n; // 8 hours
+export const MAX_OFFLINE_MICROS = BigInt(BASE_OFFLINE_HOURS) * 60n * 60n * 1_000_000n;
+/** The offline cap with `s`'s gear (Seasoned raises it). */
+export const offlineCapMicros = (s: CombatStats): bigint => BigInt(Math.round(s.offlineHours * 3600)) * 1_000_000n;
 /** Online characters are settled this often, so their drops show up while playing. */
 export const ONLINE_SETTLE_MICROS = 60n * 1_000_000n;
 

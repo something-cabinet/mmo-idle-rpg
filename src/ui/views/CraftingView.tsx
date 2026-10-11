@@ -1,22 +1,31 @@
 import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { rerollCost, upgradeCost } from '../../../spacetimedb/src/craft';
+import { SLOTS, base, type Slot } from '../../../spacetimedb/src/data/bases';
 import { RARITIES, rarityRank, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { ItemCard, itemName, rarityCls, statText } from '../items';
-import { CardHead, ViewHeader, cantAfford, costText, loadoutNote } from '../shared';
+import { ItemCard, itemIconName, itemName, rarityCls, statText } from '../items';
+import { CardHead, SLOT_FILTERS, ViewHeader, cantAfford, costText, loadoutNote, toggle } from '../shared';
 import type { Snapshot } from '../snapshot';
 
-type Tab = 'reroll' | 'upgrade';
+type Where = 'all' | 'equipped' | 'bag';
+type CraftSort = 'rarity' | 'tier' | 'newest' | 'slot';
 
-function AffixPick({ it, value, onChange }: { it: Item; value: number; onChange: (i: number) => void }) {
+/** Rarities that can be crafted: uniques can't. */
+const CRAFT_RARITIES = RARITIES.filter(r => r !== 'Unique');
+
+/** Lowercased text the search matches: name, family, rarity and every stat line. */
+const searchText = (it: Item) =>
+  [itemName(it), base(it.baseId).family, it.rarity.tag, ...[...it.implicits, ...it.affixes].map(a => statText(a.stat, a.value))].join(' ').toLowerCase();
+
+function AffixPick({ it, name, value, onChange }: { it: Item; name: string; value: number; onChange: (i: number) => void }) {
   return (
     <div className="affix-pick">
       {it.affixes.map((a, i) => (
         <label className="radio" key={i}>
-          <input type="radio" name="craft-affix" checked={i === value} onChange={() => onChange(i)} />
+          <input type="radio" name={name} checked={i === value} onChange={() => onChange(i)} />
           <span>{statText(a.stat, a.value)}</span>
           <span className="affix-tier">T{a.tier}</span>
         </label>
@@ -27,12 +36,80 @@ function AffixPick({ it, value, onChange }: { it: Item; value: number; onChange:
 
 export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const [itemId, setItemId] = useSticky<bigint | undefined>('craftItem', undefined);
-  const [tab, setTab] = useSticky<Tab>('craftTab', 'reroll');
-  const [affix, setAffix] = useState(0);
+  const [search, setSearch] = useSticky('craftSearch', '');
+  const [rarities, setRarities] = useSticky<readonly RarityName[]>('craftRarities', []);
+  const [slots, setSlots] = useSticky<readonly Slot[]>('craftSlots', []);
+  const [where, setWhere] = useSticky<Where>('craftWhere', 'all');
+  const [sort, setSort] = useSticky<CraftSort>('craftSort', 'rarity');
+  const [rerollIndex, setRerollIndex] = useState(0);
+  const [removeIndex, setRemoveIndex] = useState(0);
   const r = s.conn.reducers;
 
-  const items = [...s.items.values()].sort((a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag) || b.tier - a.tier || (a.id < b.id ? 1 : -1));
+  const craftable = [...s.items.values()].filter(it => it.rarity.tag !== 'Unique');
+  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
+  const by: Record<CraftSort, (a: Item, b: Item) => number> = {
+    rarity: (a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag) || b.tier - a.tier,
+    tier: (a, b) => b.tier - a.tier || rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag),
+    newest: () => 0,
+    slot: (a, b) => SLOTS.indexOf(base(a.baseId).slots[0]) - SLOTS.indexOf(base(b.baseId).slots[0]) || b.tier - a.tier,
+  };
+  const items = craftable
+    .filter(it =>
+      (!rarities.length || rarities.includes(it.rarity.tag)) &&
+      (!slots.length || slots.includes(base(it.baseId).slots[0])) &&
+      (where === 'all' || (where === 'equipped') === s.inLoadouts.has(it.id)) &&
+      (!words.length || (t => words.every(w => t.includes(w)))(searchText(it))))
+    .sort((a, b) => by[sort](a, b) || (a.id < b.id ? 1 : -1));
+  const filtered = rarities.length > 0 || slots.length > 0 || where !== 'all' || words.length > 0;
+  const clear = () => { setSearch(''); setRarities([]); setSlots([]); setWhere('all'); };
+  // The chosen item stays open even when the filters hide it from the list.
   const item = s.items.get(itemId ?? 0n) ?? items[0];
+  const filters = (
+    <div className="bag-filters card craft-filters">
+      <span className="toolbar-label">Search</span>
+      <input
+        type="search"
+        placeholder="Name, family or affix, e.g. crit, ring, plate…"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      <span className="toolbar-label">Rarity</span>
+      <div className="seg wrap">
+        {CRAFT_RARITIES.map(r => (
+          <button key={r} className={`seg-btn c-${rarityCls(r)}${rarities.includes(r) ? ' active' : ''}`} onClick={() => setRarities(toggle(rarities, r))}>
+            {r}
+          </button>
+        ))}
+      </div>
+      <span className="toolbar-label">Slot</span>
+      <div className="seg wrap">
+        {SLOT_FILTERS.map(([slot, label]) => (
+          <button key={slot} className={`seg-btn${slots.includes(slot) ? ' active' : ''}`} onClick={() => setSlots(toggle(slots, slot))}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <span className="toolbar-label">Where</span>
+      <div className="seg wrap">
+        {(['all', 'equipped', 'bag'] as Where[]).map(w => (
+          <button key={w} className={`seg-btn${w === where ? ' active' : ''}`} onClick={() => setWhere(w)}>
+            {w === 'all' ? 'Anywhere' : w === 'equipped' ? 'Equipped' : 'Bag'}
+          </button>
+        ))}
+      </div>
+      <span className="bag-filters-foot">
+        <span className="muted">{filtered ? `Showing ${items.length} of ${craftable.length}` : `${craftable.length} craftable items`}</span>
+        {filtered && <button className="btn small ghost" onClick={clear}>Clear filters</button>}
+        <span className="spacer" />
+        <select value={sort} onChange={e => setSort(e.target.value as CraftSort)}>
+          <option value="rarity">Sort: Rarity</option>
+          <option value="tier">Sort: Tier</option>
+          <option value="newest">Sort: Newest</option>
+          <option value="slot">Sort: Slot</option>
+        </select>
+      </span>
+    </div>
+  );
   const head = (
     <ViewHeader title="Crafting" icon="hammer">
       <div className="head-tags">
@@ -45,97 +122,92 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
     return (
       <>
         {head}
-        <div className="card"><p className="muted">No items yet.</p></div>
+        {craftable.length > 0 && filters}
+        <div className="card"><p className="muted">{craftable.length ? 'No items match the filters.' : 'No craftable items yet.'}</p></div>
       </>
     );
   }
 
-  const reroll = tab === 'reroll';
   const rarity = item.rarity.tag as RarityName;
-  const cost = reroll ? rerollCost(item) : upgradeCost(item);
+  const unique = rarity === 'Unique';
   const next = RARITIES[rarityRank(rarity) + 1];
-  const toLegendary = !reroll && rarity === 'Epic';
-  const pick = <AffixPick it={item} value={affix} onChange={setAffix} />;
+  const toLegendary = rarity === 'Epic';
 
-  let body: React.ReactNode;
-  if (rarity === 'Unique') body = <p className="muted">Uniques can't be crafted.</p>;
-  else if (reroll) {
-    body = item.affixes.length ? (
-      <>
-        <p className="muted">The chosen affix is replaced by a new random one, rolled like a drop.{item.legendary ? ' The legendary affix stays.' : ''}</p>
-        {pick}
-      </>
-    ) : (
-      <p className="muted">This item has no affixes to reroll. Upgrade its rarity first.</p>
-    );
-  } else {
-    body = cost ? (
-      <>
-        <p>
-          {rarity} → <strong className={`c-${rarityCls(next)}`}>{next}</strong>:{' '}
-          {toLegendary ? 'remove the affix you pick, add a random legendary affix.' : 'adds one random affix.'}
-        </p>
-        {toLegendary && pick}
-      </>
-    ) : (
-      <p className="muted">Legendary is the highest craftable rarity.</p>
-    );
-  }
-  const blocked = !cost || (reroll && !item.affixes.length) ? 'Nothing to craft' : cantAfford(s, cost);
+  // Reroll: replace one regular affix.
+  const rCost = item.affixes.length ? rerollCost(item) : undefined;
+  const rBlocked = rCost ? cantAfford(s, rCost) : 'Nothing to reroll';
+  const rerollBody = unique ? (
+    <p className="muted">Uniques can't be crafted.</p>
+  ) : item.affixes.length ? (
+    <>
+      <p className="muted">The chosen affix is replaced by a new random one, rolled like a drop.{item.legendary ? ' The legendary affix stays.' : ''}</p>
+      <AffixPick it={item} name="craft-reroll" value={rerollIndex} onChange={setRerollIndex} />
+    </>
+  ) : (
+    <p className="muted">This item has no affixes to reroll. Upgrade its rarity first.</p>
+  );
+
+  // Upgrade: one rarity higher.
+  const uCost = upgradeCost(item);
+  const uBlocked = uCost ? cantAfford(s, uCost) : 'Nothing to upgrade';
+  const upgradeBody = unique ? (
+    <p className="muted">Uniques can't be crafted.</p>
+  ) : uCost ? (
+    <>
+      <p>
+        {rarity} → <strong className={`c-${rarityCls(next)}`}>{next}</strong>:{' '}
+        {toLegendary ? 'remove the affix you pick, add a random legendary affix.' : 'adds one random affix.'}
+      </p>
+      {toLegendary && <AffixPick it={item} name="craft-remove" value={removeIndex} onChange={setRemoveIndex} />}
+    </>
+  ) : (
+    <p className="muted">Legendary is the highest craftable rarity.</p>
+  );
+
+  const action = (title: string, body: React.ReactNode, cost: typeof rCost, blocked: string | undefined | false, label: string, run: () => void) => (
+    <div className="card">
+      <CardHead title={title} />
+      {body}
+      {!unique && cost && (
+        <div className="craft-do">
+          <span className="cost">Cost: <strong>{costText(cost)}</strong></span>
+          <button className="btn primary" disabled={Boolean(blocked)} title={blocked || undefined} onClick={run}>{label}</button>
+          {blocked && <span className="muted">{blocked}</span>}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
       {head}
+      {filters}
       <div className="craft">
         <div className="card craft-list">
           <CardHead title="Items"><span className="muted">{items.length}</span></CardHead>
+          {!items.length && <p className="muted">No items match the filters.</p>}
           {items.map(it => (
             <button
               key={String(it.id)}
               className={`list-item r-${rarityCls(it.rarity.tag)}${it.id === item.id ? ' active' : ''}`}
               onClick={() => {
                 setItemId(it.id);
-                setAffix(0);
+                setRerollIndex(0);
+                setRemoveIndex(0);
               }}
             >
-              <span className="item-name">{itemName(it)}</span>
+              <span className="list-item-name"><Icon name={itemIconName(it)} /><span className="item-name">{itemName(it)}</span></span>
               <span className="muted">T{it.tier} {it.rarity.tag}{s.inLoadouts.has(it.id) ? ' · equipped' : ''}</span>
             </button>
           ))}
         </div>
-        <div className="craft-main">
+        <div className="craft-item">
           <ItemCard it={item} note={loadoutNote(s, item)} />
-          <div className="card">
-            <div className="seg">
-              {(['reroll', 'upgrade'] as Tab[]).map(t => (
-                <button
-                  key={t}
-                  className={`seg-btn${t === tab ? ' active' : ''}`}
-                  onClick={() => {
-                    setTab(t);
-                    setAffix(0);
-                  }}
-                >
-                  {t === 'reroll' ? 'Reroll affix' : 'Upgrade rarity'}
-                </button>
-              ))}
-            </div>
-            {body}
-            {cost && <div className="cost">Cost: <strong>{costText(cost)}</strong></div>}
-            <button
-              className="btn primary"
-              disabled={Boolean(blocked)}
-              title={blocked}
-              onClick={() =>
-                reroll
-                  ? call(r.rerollAffix({ itemId: item.id, affixIndex: affix }))
-                  : call(r.upgradeRarity({ itemId: item.id, removeAffix: rarity === 'Epic' ? affix : undefined }))
-              }
-            >
-              {reroll ? 'Reroll' : 'Upgrade'}
-            </button>
-            {blocked && cost && blocked !== 'Nothing to craft' && <span className="muted"> {blocked}</span>}
-          </div>
+        </div>
+        <div className="craft-actions">
+          {action('Reroll affix', rerollBody, rCost, rBlocked, 'Reroll', () => call(r.rerollAffix({ itemId: item.id, affixIndex: rerollIndex })))}
+          {action('Upgrade rarity', upgradeBody, uCost, uBlocked, 'Upgrade', () =>
+            call(r.upgradeRarity({ itemId: item.id, removeAffix: toLegendary ? removeIndex : undefined })))}
         </div>
       </div>
     </>

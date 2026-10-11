@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import type { Item } from '../module_bindings/types';
 import { combatStats, defenseAgainst, type Matchup } from '../../spacetimedb/src/combat';
 import type { CraftCost } from '../../spacetimedb/src/craft';
+import type { Slot } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID, Effect, LEGENDARIES_BY_ID, copiesToCap, effectAmount, type EffectCounts } from '../../spacetimedb/src/data/legendary';
 import { Stat, fromStored } from '../../spacetimedb/src/data/stats';
 import { placeItem, scoreGear } from '../../spacetimedb/src/equip';
@@ -17,6 +18,15 @@ import { STAT_HELP, type Sheet } from './statSheet';
 export type Loadout = Snapshot['active'];
 
 export const SLOT_LABEL = ['Main hand', 'Off-hand', 'Head', 'Chest', 'Hands', 'Feet', 'Ring 1', 'Ring 2', 'Amulet'];
+
+/** Slot filter buttons; rings go in either ring slot, so one button covers both. */
+export const SLOT_FILTERS: [Slot, string][] = [
+  ['MainHand', 'Main hand'], ['OffHand', 'Off-hand'], ['Head', 'Head'], ['Chest', 'Chest'],
+  ['Hands', 'Hands'], ['Feet', 'Feet'], ['Ring1', 'Ring'], ['Amulet', 'Amulet'],
+];
+
+/** `list` with `x` added, or removed if it was there (multi-select filter buttons). */
+export const toggle = <T,>(list: readonly T[], x: T): T[] => (list.includes(x) ? list.filter(y => y !== x) : [...list, x]);
 
 export function ViewHeader({ title, icon, children }: { title: string; icon: string; children?: ReactNode }) {
   return (

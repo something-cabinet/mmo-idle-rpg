@@ -9,18 +9,11 @@ import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { ItemTile, itemName, rarityCls } from '../items';
-import { CardHead, Modal, SLOT_LABEL, SwapPreview, ViewHeader, openCraft } from '../shared';
+import { CardHead, Modal, SLOT_FILTERS, SLOT_LABEL, SwapPreview, ViewHeader, openCraft, toggle } from '../shared';
 import type { Snapshot } from '../snapshot';
 
 type BagSort = 'newest' | 'rarity' | 'tier' | 'slot';
 
-/** Rarities that can drop today (no uniques yet). */
-const BAG_RARITIES = RARITIES;
-/** Slot filter buttons; rings go in either ring slot, so one button covers both. */
-const SLOT_FILTERS: [Slot, string][] = [
-  ['MainHand', 'Main hand'], ['OffHand', 'Off-hand'], ['Head', 'Head'], ['Chest', 'Chest'],
-  ['Hands', 'Hands'], ['Feet', 'Feet'], ['Ring1', 'Ring'], ['Amulet', 'Amulet'],
-];
 
 /** The bag, filtered (an empty selection means any) and sorted. */
 function sortedBag(s: Snapshot, sort: BagSort, rarities: readonly RarityName[], slots: readonly Slot[]): Item[] {
@@ -94,7 +87,6 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const r = s.conn.reducers;
 
   const shown = sortedBag(s, sort, rarities, slotFilter);
-  const toggle = <T,>(list: readonly T[], x: T) => (list.includes(x) ? list.filter(y => y !== x) : [...list, x]);
   // Selections and the popup drop items that left the bag.
   const selected = s.bag.filter(i => sel.has(i.id));
   const open = s.bag.find(i => i.id === openId);
@@ -147,7 +139,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
       <div className="bag-filters card">
         <span className="toolbar-label">Rarity</span>
         <div className="seg wrap">
-          {BAG_RARITIES.map(r => (
+          {RARITIES.map(r => (
             <button key={r} className={`seg-btn c-${rarityCls(r)}${rarities.includes(r) ? ' active' : ''}`} onClick={() => setRarities(toggle(rarities, r))}>
               {r}
             </button>

@@ -1090,6 +1090,9 @@ select:focus,
   margin: 0;
   justify-self: start;
 }
+.craft-filters input[type='search'] {
+  max-width: 420px;
+}
 .bag-filters-foot {
   grid-column: 1 / -1;
   display: flex;
@@ -1376,15 +1379,36 @@ select:focus,
 /* crafting */
 .craft {
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 340px minmax(260px, 340px) minmax(0, 1fr);
   gap: 12px;
   align-items: start;
 }
 .craft-list {
   display: grid;
   gap: 2px;
+  align-content: start;
   max-height: calc(100vh - 170px);
   overflow-y: auto;
+}
+/* Crafting fills the screen: the item list takes the height left under the header
+   and filters and scrolls on its own, so the page itself doesn't scroll. */
+@media (min-width: 901px) {
+  .view:has(> .craft) {
+    height: 100%;
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+  .craft {
+    height: 100%;
+    min-height: 0;
+  }
+  .craft-list {
+    max-height: 100%;
+  }
+  .craft-item,
+  .craft-actions {
+    max-height: 100%;
+    overflow-y: auto;
+  }
 }
 .list-item {
   justify-content: space-between;
@@ -1398,16 +1422,36 @@ select:focus,
   background: var(--surface-3);
   border-color: var(--border-strong);
 }
+.list-item-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.list-item-name .ico {
+  flex: none;
+  color: var(--rc);
+}
 .list-item .item-name {
   color: var(--rc);
   font-weight: 600;
   font-size: 12.5px;
   text-align: left;
 }
-.craft-main {
+.craft-item,
+.craft-actions {
   display: grid;
   gap: 12px;
-  max-width: 560px;
+  min-width: 0;
+}
+.craft-do {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.craft-do .cost {
+  margin: 0;
 }
 fieldset.affix-pick {
   border: 0;
@@ -1515,6 +1559,13 @@ fieldset.affix-pick legend {
   }
   .grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* Actions go under the item card. */
+  .craft {
+    grid-template-columns: 320px minmax(0, 1fr);
+  }
+  .craft-list {
+    grid-row: span 2;
   }
 }
 @media (min-width: 1281px) {

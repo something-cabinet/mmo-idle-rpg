@@ -1,10 +1,10 @@
 import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { bagExpansionCost } from '../../../spacetimedb/src/craft';
-import { SLOTS, base, type BaseKind } from '../../../spacetimedb/src/data/bases';
+import { SLOTS, base, type Slot } from '../../../spacetimedb/src/data/bases';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
-import { rarityRank, salvageValue } from '../../../spacetimedb/src/loot';
+import { RARITIES, rarityRank, salvageValue, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
@@ -14,8 +14,18 @@ import type { Snapshot } from '../snapshot';
 
 type BagSort = 'newest' | 'rarity' | 'tier' | 'slot';
 
-function sortedBag(s: Snapshot, sort: BagSort, kind: BaseKind | 'all'): Item[] {
-  const items = s.bag.filter(it => kind === 'all' || base(it.baseId).kind === kind);
+/** Rarities that can drop today (no uniques yet). */
+const BAG_RARITIES = RARITIES.filter(r => r !== 'Unique');
+/** Slot filter buttons; rings go in either ring slot, so one button covers both. */
+const SLOT_FILTERS: [Slot, string][] = [
+  ['MainHand', 'Main hand'], ['OffHand', 'Off-hand'], ['Head', 'Head'], ['Chest', 'Chest'],
+  ['Hands', 'Hands'], ['Feet', 'Feet'], ['Ring1', 'Ring'], ['Amulet', 'Amulet'],
+];
+
+/** The bag, filtered (an empty selection means any) and sorted. */
+function sortedBag(s: Snapshot, sort: BagSort, rarities: readonly RarityName[], slots: readonly Slot[]): Item[] {
+  const items = s.bag.filter(it =>
+    (!rarities.length || rarities.includes(it.rarity.tag)) && (!slots.length || slots.includes(base(it.baseId).slots[0])));
   const by: Record<BagSort, (a: Item, b: Item) => number> = {
     newest: (a, b) => (a.id < b.id ? 1 : -1),
     rarity: (a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag) || b.tier - a.tier,
@@ -74,7 +84,8 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
 
 export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const [sort, setSort] = useSticky<BagSort>('bagSort', 'newest');
-  const [kind, setKind] = useSticky<BaseKind | 'all'>('bagKind', 'all');
+  const [rarities, setRarities] = useSticky<readonly RarityName[]>('bagRarities', []);
+  const [slotFilter, setSlotFilter] = useSticky<readonly Slot[]>('bagSlots', []);
   const [selectMode, setSelectMode] = useSticky('bagSelectMode', false);
   const [sel, setSel] = useState<ReadonlySet<bigint>>(new Set());
   /** Last clicked item: the start of a shift-click range. */
@@ -82,7 +93,8 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const [openId, setOpenId] = useState<bigint>();
   const r = s.conn.reducers;
 
-  const shown = sortedBag(s, sort, kind);
+  const shown = sortedBag(s, sort, rarities, slotFilter);
+  const toggle = <T,>(list: readonly T[], x: T) => (list.includes(x) ? list.filter(y => y !== x) : [...list, x]);
   // Selections and the popup drop items that left the bag.
   const selected = s.bag.filter(i => sel.has(i.id));
   const open = s.bag.find(i => i.id === openId);
@@ -131,19 +143,36 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
           <option value="tier">Sort: Tier</option>
           <option value="slot">Sort: Slot</option>
         </select>
-        <select value={kind} onChange={e => setKind(e.target.value as BaseKind | 'all')}>
-          <option value="all">All slots</option>
-          <option value="weapon">Weapons</option>
-          <option value="offhand">Off-hands</option>
-          <option value="armor">Armor</option>
-          <option value="jewelry">Jewelry</option>
-        </select>
+      </div>
+      <div className="bag-filters card">
+        <span className="toolbar-label">Rarity</span>
+        <div className="seg wrap">
+          {BAG_RARITIES.map(r => (
+            <button key={r} className={`seg-btn c-${rarityCls(r)}${rarities.includes(r) ? ' active' : ''}`} onClick={() => setRarities(toggle(rarities, r))}>
+              {r}
+            </button>
+          ))}
+        </div>
+        <span className="toolbar-label">Slot</span>
+        <div className="seg wrap">
+          {SLOT_FILTERS.map(([slot, label]) => (
+            <button key={slot} className={`seg-btn${slotFilter.includes(slot) ? ' active' : ''}`} onClick={() => setSlotFilter(toggle(slotFilter, slot))}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <span className="bag-filters-foot">
+          <span className="muted">{shown.length === s.bag.length ? 'Showing all' : `Showing ${shown.length} of ${s.bag.length}`}</span>
+          {(rarities.length > 0 || slotFilter.length > 0) && (
+            <button className="btn small ghost" onClick={() => { setRarities([]); setSlotFilter([]); }}>Clear filters</button>
+          )}
+        </span>
       </div>
       <div className="bag-grid">
         {shown.length ? (
           shown.map(it => <ItemTile key={String(it.id)} it={it} selected={sel.has(it.id)} onClick={ev => clickTile(ev, it.id)} />)
         ) : (
-          <p className="muted">The bag is empty. Equipped items are on the Equipment screen.</p>
+          <p className="muted">{s.bag.length ? 'No items match the filters.' : 'The bag is empty. Equipped items are on the Equipment screen.'}</p>
         )}
       </div>
       <div className={`action-bar card${selected.length ? '' : ' empty'}`}>

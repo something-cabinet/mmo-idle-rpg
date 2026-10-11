@@ -1049,6 +1049,25 @@ select:focus,
 .toolbar-label strong {
   color: var(--text);
 }
+/* Bag filters: a label column and a column of toggle buttons (several can be on). */
+.bag-filters {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+}
+.bag-filters .seg {
+  margin: 0;
+  justify-self: start;
+}
+.bag-filters-foot {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
 .spacer {
   flex: 1;
 }

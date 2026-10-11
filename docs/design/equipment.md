@@ -136,23 +136,29 @@ affix rolls tier 1 to N (N = item tier, 1–9).
   makes an affix rare without removing it from any pool (lifesteal: 10).
 - **Affix tiers match item tiers:** 1–9. A tier-N item rolls affix tiers 1..N.
 - **Tier pick:** uniform over 1 to N.
-- **Value:** on a tier-N item, affix tier k rolls uniformly in
-  `[ref(N) × (k−1)/N, ref(N) × k/N]` and the exact value is saved. The tiers split the
-  item's range `[0, ref(N)]` into N equal slices: T1 is the bottom slice, TN the top.
+- **Value:** affix tier k has the **same range on every item tier**, and rolls uniformly
+  in it (the exact value is saved). How the range is set depends on the stat's curve:
+  - Evenly growing stats (`linear`, `percent`: primaries, %-stats, armor, resistance,
+    evasion rating) split the T9 range `[0, ref(9)]` into 9 equal slices:
+    tier k rolls in `[ref(9) × (k−1)/9, ref(9) × k/9]`. Finesse T1 is +1–4 on any item.
+  - Fast-growing stats (`offense`, `life`, `heal`: flat damage, max HP, regen, heal)
+    follow their curve: tier k rolls in `[ref(k−1), ref(k)]`, with `ref(0) = 0`.
+    Flat physical damage T1 is +1–2, T3 is +4–9.
 - **Reference table:** every stat has a reference value `ref(stat, N)`, the best possible
   roll on a tier-N item, following that stat's curve (attributes.md). Affixes scale from
   this table, not from the item, so stats a base doesn't have still get a sensible
   value. Bases with an extreme trait (a katana's crit) deliberately exceed the reference.
-- **Power budget:** best roll `ref(N)`, average exactly `ref(N) / 2`, for every stat and
-  curve. Kept low because an item can carry 3 affixes and duplicates are allowed.
-- Affix tier is relative to the item: "T3" is the 3rd slice of that item's range. With
-  damage growing ×2.1 per tier, fixed global ranges would make most affixes on
-  high-tier items worthless.
+- **Power budget:** best roll `ref(N)` for fast-growing stats, `ref(9) × N/9` for evenly
+  growing ones; the average is the mean of tiers 1..N's midpoints, so low-tier items
+  carry weak affixes and higher item tiers raise the ceiling. Kept low because an item
+  can carry 3 affixes and duplicates are allowed.
+- Affix tier is global: "T3 Finesse" is the same range on a T3 and a T9 item. Fast-growing
+  stats follow their curve so their low tiers stay sensible next to low-tier bases.
 
-  Example, max HP on a T5 item (`ref = 20 × 1.6^4 ≈ 131`): T1 rolls 0–26, …, T5 rolls
-  105–131. Average 66.
-  Example, physical damage % on a T9 item (`ref = 30%`): T1 rolls 0–3.3%, …, T9 rolls
-  26.7–30%. Average 15%.
+  Example, max HP (life curve, `ref(k) = 20 × 1.6^(k−1)`): T1 rolls 0–20, T2 20–32,
+  T3 32–51, T4 51–82, T5 82–131. On a T5 item the average is ≈ 50.
+  Example, physical damage % (`ref(9) = 30%`): every tier is a 3.3% slice, T1 0–3.3%,
+  …, T9 26.7–30%. A T3 item rolls 0–10% (average 5%), a T9 item 0–30% (average 15%).
 - Every affix needs a **stable ID**, under the same permanence rules as stat IDs, so
   saved loot-filter rules keep working.
 

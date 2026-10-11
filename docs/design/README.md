@@ -54,7 +54,8 @@ not decisions.
 | 2026-10-11 | Small starting numbers (D2/PoE2 feel): level 1 = 100 HP and 1 of each primary; +10 HP and +1 primaries per level. |
 | 2026-10-11 | Separate growth curves: damage ×2.1/tier, gear HP ×1.6, heal ×1.33, armor/resist/evasion linear, percent (N+3)/12. T1 sword hits 10, T9 3,782 base (~8.5k average build hit). |
 | 2026-10-11 | Armor and evasion constants rescaled: mitigation d/(d + 5·level), evasion r/(r + 10·level). |
-| 2026-10-11 | Affix tiers are relative slices of the item's range: tier k on a tier-N item rolls in [ref(N)·(k−1)/N, ref(N)·k/N]; average ref(N)/2 for every stat. |
+| 2026-10-11 | ~~Affix tiers are relative slices of the item's range: tier k on a tier-N item rolls in [ref(N)·(k−1)/N, ref(N)·k/N]; average ref(N)/2 for every stat.~~ Replaced later on 2026-10-11. |
+| 2026-10-11 | Affix tiers are global (same range on every item tier). Linear and percent stats: 9 equal slices of the T9 range. Offense, life and heal stats: tier k rolls in [ref(k−1), ref(k)]. A tier-N item still rolls affix tiers 1..N uniformly. |
 | 2026-10-11 | Flat values stored in fixed point (hundredths); UI rounds. |
 | 2026-10-11 | Each zone has a boss; first kill (online challenge, deterministic) unlocks the next zone. Boss is farmable afterwards. |
 | 2026-10-11 | New characters pick a Common starter weapon (sword, bow, wand or healing staff) and get a Rawhide Vest and Boots. |

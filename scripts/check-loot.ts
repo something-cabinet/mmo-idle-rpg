@@ -3,7 +3,7 @@
 //   npm run test:loot
 import { BASE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
-import { STATS, Stat, affixRef, toStored } from '../spacetimedb/src/data/stats';
+import { STATS, Stat, affixRange, affixRef, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
 import {
   FORTUNE_CHANCE,
@@ -55,16 +55,26 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const rng = seededRng(2n);
   const rolls = Array.from({ length: 20_000 }, () => rollAffix(rng, 5));
   check('affix tiers are 1..N', rolls.every(r => r.tier >= 1 && r.tier <= 5));
-  check('affix values fall in their tier slice (± rounding)', rolls.every(r => {
-    const ref = affixRef(r.stat as keyof typeof STATS, 5);
+  check('affix values fall in their tier range (± rounding)', rolls.every(r => {
+    const [lo, hi] = affixRange(r.stat as keyof typeof STATS, r.tier);
     const v = Number(r.value) / 100;
-    return (v >= (ref * (r.tier - 1)) / 5 - 0.5 || v === 1) && v <= Math.max(1, (ref * r.tier) / 5 + 0.5);
+    return (v >= lo - 0.5 || v === 1) && v <= Math.max(1, hi + 0.5);
   }));
+  check('Finesse T1 is 0–4.44 on any item (even slices of the T9 range)',
+    affixRange(Stat.Finesse, 1).every((x, i) => near(x, [0, 40 / 9][i], 1e-9)));
+  check('Finesse T9 is 35.6–40', near(affixRange(Stat.Finesse, 9)[0], 320 / 9, 1e-9) && near(affixRange(Stat.Finesse, 9)[1], 40, 1e-9));
+  check('phys damage T3 follows the curve: ref(T2)–ref(T3)',
+    near(affixRange(Stat.PhysDamage, 3)[0], affixRef(Stat.PhysDamage, 2), 1e-9) && near(affixRange(Stat.PhysDamage, 3)[1], affixRef(Stat.PhysDamage, 3), 1e-9));
+  check('phys damage T1 is 0–2', near(affixRange(Stat.PhysDamage, 1)[0], 0, 1e-9) && near(affixRange(Stat.PhysDamage, 1)[1], 2, 1e-9));
+  const t1 = Array.from({ length: 2000 }, () => rollAffix(rng, 1));
+  check('a T1 item only rolls T1 affixes', t1.every(r => r.tier === 1));
   check('affix values are whole except lifesteal and HP regen', rolls.every(r =>
     STATS[r.stat as keyof typeof STATS].decimals || (r.value % 100n === 0n && r.value >= 100n)));
   check('lifesteal keeps decimals', rolls.some(r => r.stat === Stat.LifestealPct && r.value % 100n !== 0n));
   const hp = rolls.filter(r => r.stat === Stat.MaxHp).map(r => Number(r.value) / 100);
-  check('max HP on T5 averages ref/2 ≈ 66', near(mean(hp), affixRef(Stat.MaxHp, 5) / 2, 4), mean(hp).toFixed(1));
+  // Uniform over tiers 1..5: the mean of each tier's midpoint.
+  const hpMean = [1, 2, 3, 4, 5].reduce((sum, k) => sum + (affixRange(Stat.MaxHp, k)[0] + affixRange(Stat.MaxHp, k)[1]) / 2, 0) / 5;
+  check(`max HP on T5 averages ≈ ${hpMean.toFixed(0)}`, near(mean(hp), hpMean, 4), mean(hp).toFixed(1));
   const lifesteal = rolls.filter(r => r.stat === Stat.LifestealPct).length;
   check('lifesteal is rare (weight 10)', lifesteal > 0 && lifesteal < hp.length / 4, `${lifesteal} vs ${hp.length} max HP`);
   check('same affix can roll on every stat', new Set(rolls.map(r => r.stat)).size === Object.keys(STATS).length);

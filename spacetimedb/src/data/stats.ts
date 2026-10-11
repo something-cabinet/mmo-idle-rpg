@@ -152,3 +152,18 @@ export function affixRef(stat: StatId, tier: number): number {
   if (d.ref === undefined) throw new Error(`Stat ${stat} can't roll as an affix`);
   return d.ref * curve(d.curve, tier);
 }
+
+/**
+ * Value range of affix tier `k` (1..MAX_TIER), the same on every item tier (equipment.md).
+ * Evenly growing stats ('linear', 'percent') split the T9 range into MAX_TIER equal
+ * slices; fast-growing ones ('offense', 'life', 'heal') follow their curve: tier k rolls
+ * from the best roll at tier k−1 (0 for k = 1) to the best roll at tier k.
+ */
+export function affixRange(stat: StatId, k: number): [number, number] {
+  const d = STATS[stat];
+  if (d.curve === 'linear' || d.curve === 'percent') {
+    const top = affixRef(stat, MAX_TIER);
+    return [(top * (k - 1)) / MAX_TIER, (top * k) / MAX_TIER];
+  }
+  return [k === 1 ? 0 : affixRef(stat, k - 1), affixRef(stat, k)];
+}

@@ -32,7 +32,7 @@ fighting the target enemy with the active loadout.
     50–57 jewelry), names per tier, implicits, weapon templates. `SLOTS` order is stored
     in loadouts: never reorder.
   - `zones.ts`: zones 1–2, enemies 101–106 and 201–206 (zoneId × 100 + n), drop lists,
-    `DROP_CHANCE`, `RESPAWN_SECONDS`.
+    `DROP_CHANCE`, `WALK_SECONDS`.
   - `legendary.ts`: effects 1–13, groups, which base kinds roll which group.
 - **Tables** (`spacetimedb/src/schema.ts`): `item`, `loadout` (4 per character, 9 slots,
   0 = empty), `loot_filter`, `boss_kill`; new `character` columns `essence`, `bagSize`,

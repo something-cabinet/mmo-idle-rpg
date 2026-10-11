@@ -11,7 +11,7 @@ import { fmt, fmtBig, pct } from './format';
 import { Icon } from './Icon';
 import { EmptyCard, ItemCard, itemName, rarityCls } from './items';
 import { gearFor, type Snapshot } from './snapshot';
-import { STAT_HELP } from './statSheet';
+import { STAT_HELP, type Sheet } from './statSheet';
 
 export type Loadout = Snapshot['active'];
 
@@ -47,6 +47,21 @@ export function StatRows({ rows }: { rows: [string, ReactNode, string?, string?]
         </div>
       ))}
     </>
+  );
+}
+
+/** The stat sheet as four cards: primaries, offense, defense, utility. */
+export function StatBoard({ sheet, className = 'grid-4' }: { sheet: Sheet; className?: string }) {
+  const sections = [['Primaries', sheet.primaries], ['Offense', sheet.offense], ['Defense', sheet.defense], ['Utility', sheet.utility]] as const;
+  return (
+    <div className={className}>
+      {sections.map(([title, rows]) => (
+        <div className="card" key={title}>
+          <CardHead title={title} />
+          <StatRows rows={rows} />
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -121,14 +136,20 @@ export function totals(s: Snapshot, slots: readonly bigint[]): Total[] {
   const p = (x: number) => pct(x, 1);
   return [
     { label: 'Damage', value: src ? src.hit.Physical + src.hit.Magic : 0, show: fmt },
+    { label: 'Attack speed', value: src?.attacksPerSec ?? 0, show: n => `${n.toFixed(2)} /s` },
+    { label: 'Crit chance', value: src?.critChance ?? 0, show: p },
+    { label: 'DPS', value: scoreGear(s.level, gear).dps, show: n => (Math.abs(n) < 1000 ? n.toFixed(1) : fmt(n)) },
+    { label: 'Heal', value: src?.heal ?? 0, show: fmt },
     { label: 'Max HP', value: st.maxHp, show: fmt },
+    { label: 'HP regen', value: st.regen, show: n => `${fmt(n)} /s` },
     { label: 'Armor', value: st.armor, show: fmt },
     { label: 'Resistance', value: st.resistance, show: fmt },
     { label: 'Evasion', value: defenseAgainst(st, 'Physical', s.level).evasion, show: p },
+    { label: 'Lifesteal', value: st.lifesteal, show: p },
     { label: 'Item find', value: st.itemFind, show: p },
     { label: 'Gold find', value: st.goldFind, show: p },
     { label: 'XP gain', value: st.xpGain, show: p },
-    { label: 'DPS', value: scoreGear(s.level, gear).dps, show: n => (Math.abs(n) < 1000 ? n.toFixed(1) : fmt(n)) },
+    { label: 'Walk time', value: st.walkTime, show: n => `${Number(n.toFixed(2))} s`, lowerBetter: true },
   ];
 }
 

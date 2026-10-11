@@ -1,9 +1,13 @@
 // Presentation-only fight animation (combat.md: the client animates, the server's
-// expected-value formulas decide rewards). Random rolls here never affect progress;
-// the averages match `matchup`.
+// expected-value formulas decide rewards). The scene is a pure function of the clock,
+// in step with `project`: each cycle is the walk, then a fight that ends exactly when
+// the kill is granted, so leaving and reopening the view resumes where it was. HP drops
+// in equal steps on each hit, spaced so the last hit lands on the kill (or the defeat).
+// Only the floating numbers are random.
 
 import type { CombatStats, Matchup } from '../../spacetimedb/src/combat';
-import { RESPAWN_SECONDS, type EnemyDef } from '../../spacetimedb/src/data/zones';
+import type { EnemyDef } from '../../spacetimedb/src/data/zones';
+import { nowMicros } from './clock';
 import { fmt } from './format';
 
 let timer = 0;
@@ -31,7 +35,12 @@ export function stopFight() {
   timer = 0;
 }
 
-export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
+/**
+ * Animates fighting `enemy` since `sinceMicros` (server clock): the last granted kill,
+ * or when the fight started (snapshot `fightSince`). A winning fight repeats every
+ * walk + timeToKill; a losing one ends in defeat at timeToDie.
+ */
+export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef, sinceMicros: bigint) {
   stopFight();
   const src = s.sources[0];
   const crit = Math.min(1, src?.critChance ?? 0);
@@ -39,15 +48,20 @@ export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
   // hits × speed × critMult = dps (effect damage included).
   const hit = src ? m.dps / src.attacksPerSec / src.critMult : 0;
   const critX = crit > 0 && src ? 1 + (src.critMult - 1) / crit : 1;
-  const sustain = m.hps + s.regen + s.lifesteal * m.dps; // HP per second
-  const respawnTime = m.viable ? 1 / m.killRate - m.timeToKill : RESPAWN_SECONDS;
-
-  const you = { hp: s.maxHp, max: s.maxHp, swing: 0, period: src ? 1 / src.attacksPerSec : Infinity };
-  const foe = { hp: enemy.hp, max: enemy.hp, swing: 0, period: 1 / enemy.speed };
   const enemyHit = (enemy.dps / enemy.speed) * (1 - m.playerMitigation);
-  let respawn = 0;
-  let defeated = false;
-  let last = performance.now();
+  /** HP per second you get back: heals, regen and lifesteal (matchup: incoming − netIncoming). */
+  const sustain = m.incoming - m.netIncoming;
+  /** The swing time stretched a little so a whole number of hits ends at `end`. */
+  const evenSteps = (period: number, end: number) =>
+    Number.isFinite(period) && Number.isFinite(end) ? end / Math.max(1, Math.round(end / period)) : period;
+  const yourPeriod = evenSteps(src ? 1 / src.attacksPerSec : Infinity, m.timeToKill);
+  const foePeriod = evenSteps(1 / enemy.speed, m.timeToDie);
+  /** Hits landed by `fight` seconds in, × the swing time: when the last one landed. */
+  const lastHit = (period: number, fight: number) => (Number.isFinite(period) ? Math.floor(fight / period + 1e-9) * period : 0);
+  const walk = m.viable ? s.walkTime : 0;
+  const cycle = m.viable ? walk + m.timeToKill : Infinity;
+  /** Fight time and swing counts at the previous frame, to spot new swings. */
+  let lastFight = -1;
 
   const el = (who: string, sel: string) => $(`fighter-${who}`).querySelector<HTMLElement>(sel)!;
 
@@ -61,70 +75,58 @@ export function startFight(s: CombatStats, m: Matchup, enemy: EnemyDef) {
     window.setTimeout(() => span.remove(), 900);
   }
 
-  function draw() {
-    for (const [who, f] of [['you', you], ['enemy', foe]] as const) {
-      el(who, '.hp-fill').style.width = `${(Math.max(0, f.hp) / f.max) * 100}%`;
-      el(who, '.hp-text').textContent = `${fmt(Math.max(0, f.hp))} / ${fmt(f.max)}`;
-      el(who, '.swing-fill').style.width = respawn > 0 || !Number.isFinite(f.period) ? '0%' : `${(f.swing / f.period) * 100}%`;
+  /** Swings that land in (from, to] of fight time, at most 2 (after a pause, skip the backlog). */
+  const swings = (period: number, from: number, to: number) =>
+    !Number.isFinite(period) || from < 0 ? 0 : Math.min(2, Math.floor(to / period) - Math.floor(from / period));
+
+  function step() {
+    if (!document.getElementById('scene')) return stopFight(); // view was replaced
+    const elapsed = Math.max(0, Number(nowMicros() - sinceMicros) / 1e6);
+    const t = Number.isFinite(cycle) ? elapsed % cycle : elapsed;
+    const walking = t < walk;
+    const defeated = !m.viable && t >= m.timeToDie;
+    // Time into the current fight; frozen at the moment of defeat.
+    const fight = walking ? 0 : Math.min(t - walk, defeated ? m.timeToDie : Infinity);
+
+    // Expected HP after the last hit: the enemy reaches 0 exactly at timeToKill, you at timeToDie.
+    const foeHp = Number.isFinite(m.timeToKill) ? enemy.hp * Math.max(0, 1 - lastHit(yourPeriod, fight) / m.timeToKill) : enemy.hp;
+    // Enemy hits take their full damage and your swings heal (with regen and lifesteal), so the
+    // sum is `netIncoming` over time, like the server; overhealing above max HP isn't shown.
+    const youHp = defeated ? 0 : Math.min(s.maxHp, Math.max(0, s.maxHp - m.incoming * lastHit(foePeriod, fight) + sustain * lastHit(yourPeriod, fight)));
+    const healPerSwing = sustain * yourPeriod;
+
+    if (!walking && !defeated && fight > lastFight) {
+      for (let i = swings(yourPeriod, lastFight, fight); i > 0; i--) {
+        const isCrit = Math.random() < crit;
+        const dmg = hit * (isCrit ? critX : 1) * (0.9 + Math.random() * 0.2);
+        float('enemy', isCrit ? `${fmt(dmg)}!` : fmt(dmg), isCrit ? 'crit' : 'hit');
+        if (healPerSwing >= 0.5) float('you', `+${fmt(healPerSwing)}`, 'heal');
+      }
+      for (let i = swings(foePeriod, lastFight, fight); i > 0; i--) {
+        if (Math.random() < m.evasion) float('you', 'Dodge', 'dodge');
+        else float('you', `-${fmt(enemyHit * (0.9 + Math.random() * 0.2))}`, 'taken');
+      }
+    }
+    // The killing blow lands as the cycle wraps into the walk.
+    if (walking && lastFight >= 0) float('enemy', fmt(hit * (0.9 + Math.random() * 0.2)), 'hit');
+    if (defeated && lastFight < m.timeToDie && lastFight >= 0) float('you', 'Defeated', 'taken');
+    lastFight = walking ? -1 : fight;
+
+    for (const [who, hp, max, period] of [['you', youHp, s.maxHp, yourPeriod], ['enemy', foeHp, enemy.hp, foePeriod]] as const) {
+      el(who, '.hp-fill').style.width = `${(hp / max) * 100}%`;
+      el(who, '.hp-text').textContent = `${fmt(hp)} / ${fmt(max)}`;
+      el(who, '.swing-fill').style.width = walking || defeated || !Number.isFinite(period) ? '0%' : `${((fight % period) / period) * 100}%`;
     }
     $('scene-status').textContent = defeated
       ? 'Defeated'
       : !src
-      ? 'No weapon equipped'
-      : respawn > 0
-        ? `Next ${enemy.name} in ${respawn.toFixed(1)} s`
-        : '';
-    $('fighter-enemy').classList.toggle('dead', respawn > 0);
+        ? 'No weapon equipped'
+        : walking
+          ? `Next ${enemy.name} in ${(walk - t).toFixed(1)} s`
+          : '';
+    $('fighter-enemy').classList.toggle('dead', walking);
   }
 
-  function step() {
-    if (!document.getElementById('scene')) return stopFight(); // view was replaced
-    if (defeated) return;
-    const now = performance.now();
-    const dt = Math.min(0.25, (now - last) / 1000);
-    last = now;
-
-    if (respawn > 0) {
-      respawn -= dt;
-      if (respawn <= 0) {
-        foe.hp = foe.max;
-        you.hp = you.max; // each fight starts at full HP (combat.md)
-        foe.swing = you.swing = 0;
-      }
-      return draw();
-    }
-
-    you.hp = Math.min(you.max, you.hp + sustain * dt);
-    you.swing += dt;
-    if (you.swing >= you.period) {
-      you.swing -= you.period;
-      const isCrit = Math.random() < crit;
-      const dmg = hit * (isCrit ? critX : 1) * (0.9 + Math.random() * 0.2);
-      foe.hp -= dmg;
-      float('enemy', isCrit ? `${fmt(dmg)}!` : fmt(dmg), isCrit ? 'crit' : 'hit');
-    }
-
-    foe.swing += dt;
-    if (foe.swing >= foe.period) {
-      foe.swing -= foe.period;
-      if (Math.random() < m.evasion) float('you', 'Dodge', 'dodge');
-      else {
-        const dmg = enemyHit * (0.9 + Math.random() * 0.2);
-        you.hp -= dmg;
-        float('you', `-${fmt(dmg)}`, 'taken');
-      }
-    }
-
-    if (foe.hp <= 0) respawn = respawnTime;
-    else if (you.hp <= 0) {
-      float('you', 'Defeated', 'taken');
-      // A losing build dies for good (the server then sets us idle); a winning one only had bad luck.
-      if (m.viable) respawn = RESPAWN_SECONDS;
-      else defeated = true;
-    }
-    draw();
-  }
-
-  draw();
+  step();
   timer = window.setInterval(step, 50);
 }

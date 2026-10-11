@@ -41,6 +41,11 @@ export interface Snapshot {
   stats: CombatStats;
   /** Against the target; undefined without one. */
   fight: Matchup | undefined;
+  /**
+   * Server time the current fight cycle started: the last granted kill (projected), or
+   * when a fight that grants none began. The fight animation runs from it.
+   */
+  fightSince: bigint;
 }
 
 export const gearFor = (slots: readonly bigint[], items: Map<bigint, Item>): (Item | undefined)[] => slots.map(id => items.get(id));
@@ -84,5 +89,7 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     firstBossKill: !!target?.enemy.boss && p.kills > 0 && !killedZones.has(target.zone.id),
     stats,
     fight: target && matchup(stats, target.enemy),
+    // A lost or endless fight settles nothing: it runs from the last settle.
+    fightSince: p.kills > 0 ? p.settledMicros : row.lastSettledAt.microsSinceUnixEpoch,
   };
 }

@@ -84,13 +84,13 @@ Thornshell:   DPS_you += 0.4 × DPS_enemy_after_mitigation   (physical, uses ene
 
 | ID | Name | Stat bonus | Effect |
 |---|---|---|---|
-| 7 | **Swift Hunter** | Attack speed % | Respawn time is halved (5 s → 2.5 s). |
+| 7 | **Swift Hunter** | Attack speed % | Walk time is halved (5 s → 2.5 s). |
 | 8 | **Midas Touch** | Gold find % | Kills give **no XP**, but gold × 2.5. |
 | 13 | **Scholar's Focus** | XP gain % | XP × 1.75, gold × 0.5. |
 | 9 | **Fortune's Favor** | Item find % | Each **kept** drop has a 15% chance to be upgraded one rarity (max Legendary). |
 
 ```
-Swift Hunter:    killRate = 1 / (timeToKill + respawnTime × 0.5)
+Swift Hunter:    killRate = 1 / (timeToKill + walkTime × 0.5)
 Midas Touch:     xp = 0;  gold × 2.5
 Scholar's Focus: xp × 1.75;  gold × 0.5
 Fortune's Favor: after the loot filter, each kept item rolls 15%: rarity + 1

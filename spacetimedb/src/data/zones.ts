@@ -33,8 +33,8 @@ export interface ZoneDef {
   enemies: EnemyDef[];
 }
 
-/** Respawn time between fights, seconds. */
-export const RESPAWN_SECONDS = 5;
+/** Base walk time between fights, seconds (combat.ts `walkTime`). */
+export const WALK_SECONDS = 5;
 
 /** Per-kill drop chance by rarity (zones.md). */
 export const DROP_CHANCE = {

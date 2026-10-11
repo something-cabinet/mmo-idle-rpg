@@ -8,7 +8,7 @@
 import { SLOTS } from './data/bases';
 import { Effect } from './data/legendary';
 import { CAPS, Stat, fromStored } from './data/stats';
-import { RESPAWN_SECONDS, type EnemyDef } from './data/zones';
+import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType } from './data/bases';
 
 export const MAX_LEVEL = 100;
@@ -67,6 +67,8 @@ export interface CombatStats {
   itemFind: number;
   goldFind: number;
   xpGain: number;
+  /** Seconds between fights. */
+  walkTime: number;
   /** Legendary effect IDs worn; each applies once however many items carry it. */
   effects: ReadonlySet<number>;
 }
@@ -165,6 +167,7 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     itemFind: pct(Stat.ItemFindPct),
     goldFind: pct(Stat.GoldFindPct),
     xpGain: pct(Stat.XpGainPct),
+    walkTime: WALK_SECONDS * (has(Effect.SwiftHunter) ? 0.5 : 1),
     effects,
   };
 }
@@ -218,7 +221,7 @@ export interface Matchup {
   /** Seconds; Infinity if you out-sustain the enemy. */
   timeToDie: number;
   viable: boolean;
-  /** Kills per second including respawn; 0 if not viable. */
+  /** Kills per second including the walk time; 0 if not viable. */
   killRate: number;
   xpPerKill: number;
   goldPerKill: number;
@@ -267,7 +270,7 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     timeToKill,
     timeToDie,
     viable,
-    killRate: viable ? 1 / (timeToKill + RESPAWN_SECONDS * (has(Effect.SwiftHunter) ? 0.5 : 1)) : 0,
+    killRate: viable ? 1 / (timeToKill + s.walkTime) : 0,
     // Midas Touch: no XP, gold × 2.5. Scholar's Focus: XP × 1.75, gold × 0.5. Both: both apply.
     xpPerKill: e.xp * (1 + s.xpGain) * (has(Effect.MidasTouch) ? 0 : has(Effect.ScholarsFocus) ? 1.75 : 1),
     goldPerKill: e.gold * (1 + s.goldFind) * (has(Effect.MidasTouch) ? 2.5 : 1) * (has(Effect.ScholarsFocus) ? 0.5 : 1),

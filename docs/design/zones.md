@@ -33,7 +33,7 @@ tier-T gear, fighting the zone's average enemy (o = 0).
 |---|---|
 | Time to kill | ~10 s |
 | Time to die | ~25 s (2.5× time to kill) |
-| Respawn time | 5 s, so ~15 s per kill and ~1,900 kills per 8 h offline |
+| Walk time | 5 s, so ~15 s per kill and ~1,900 kills per 8 h offline |
 
 **Reference player** (*illustrative*; checked with a simulated warrior and healer in
 average Magic gear, see bases.md):
@@ -88,7 +88,7 @@ rewards(o) = average-enemy rewards × 1.12^o      // XP, gold, drop chance
 | +2 | 1.17× | 1.25× | 1.08× |
 | +4 | 1.36× | 1.57× | 1.16× |
 
-\* Ignoring respawn. The fixed respawn time widens the gap further, since it is a larger
+\* Ignoring walk time. The fixed walk time widens the gap further, since it is a larger
 share of the cycle against weak enemies.
 
 - Because both HP and damage scale, a stronger enemy is harder by about `1.08^(2o)`:

@@ -1,10 +1,14 @@
 // The character stat sheet: each stat's value, where it comes from (gear, primaries, effects)
 // and what it does. Used by Character (active loadout) and Equipment (any loadout).
+// Never against the target: stats that depend on the enemy (evasion, DPS) are against
+// auto-equip's reference enemy of the character's level (equip.ts `referenceDummy`).
 
 import type { Item } from '../module_bindings/types';
 import { defenseAgainst, type CombatStats } from '../../spacetimedb/src/combat';
 import { Effect } from '../../spacetimedb/src/data/legendary';
 import { Stat, fromStored } from '../../spacetimedb/src/data/stats';
+import { scoreGear } from '../../spacetimedb/src/equip';
+import { WALK_SECONDS } from '../../spacetimedb/src/data/zones';
 import { fmt, pct } from './format';
 import { itemName, statText } from './items';
 
@@ -23,7 +27,6 @@ export const STAT_HELP: Record<string, string> = {
   'Crit chance': 'Chance for an attack to be a critical hit, which deals crit damage instead of normal damage.',
   'Crit damage': 'Damage of a critical hit, as a share of a normal hit.',
   'Armor / magic pen': "Ignores this share of the enemy's armor (physical) and resistance (magic).",
-  'DPS vs target': 'Average damage per second against your target, after its mitigation and with crits.',
   DPS: 'Average damage per second against a reference enemy of your level (average armor and resistance), with crits.',
   'Max HP': 'Damage you can take before dying.',
   'HP regen': 'HP restored per second.',
@@ -34,6 +37,7 @@ export const STAT_HELP: Record<string, string> = {
   'Item find': 'Raises the chance for enemies to drop items.',
   'Gold find': 'More gold per kill.',
   'XP gain': 'More XP per kill.',
+  'Walk time': 'Time between fights, walking to the next enemy. Recovering to full HP is part of it.',
   Threat: 'Draws enemy attacks to you in raids. Does nothing solo.',
 };
 
@@ -50,11 +54,8 @@ export interface Sheet {
   utility: StatRow[];
 }
 
-/**
- * The stat sheet of a character at `level` wearing `gear` (with `st = combatStats(level, gear)`).
- * Mitigation and evasion are shown against `enemyLevel`; `dps` is against the target, if any.
- */
-export function statSheet(level: number, gear: readonly (Item | undefined)[], st: CombatStats, enemyLevel: number, dps: number | undefined): Sheet {
+/** The stat sheet of a character at `level` wearing `gear` (with `st = combatStats(level, gear)`). */
+export function statSheet(level: number, gear: readonly (Item | undefined)[], st: CombatStats): Sheet {
   const worn = gearStats(gear);
   const sums = new Map<number, number>();
   for (const { st: g } of worn) sums.set(g.stat, (sums.get(g.stat) ?? 0) + fromStored(g.value));
@@ -66,8 +67,8 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   };
   const row = (label: string, value: string, source?: string): StatRow => [label, value, source, STAT_HELP[label]];
 
-  const phys = defenseAgainst(st, 'Physical', enemyLevel);
-  const magic = defenseAgainst(st, 'Magic', enemyLevel);
+  const phys = defenseAgainst(st, 'Physical', level);
+  const magic = defenseAgainst(st, 'Magic', level);
   const src = st.sources[0];
   const w = gear[0]?.weapon;
   const prim = (id: number) => level + (sums.get(id) ?? 0);
@@ -94,8 +95,8 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
             has(Effect.Overcrit) && 'Overcrit: each 1% above 100% gives +2% crit damage')),
         row('Crit damage', pct(st.critDamage), from([Stat.CritDamage], 'Base 150%')),
         row('Armor / magic pen', `${pct(st.armorPen)} / ${pct(st.magicPen)}`, from([Stat.ArmorPenPct, Stat.MagicPenPct], 'Cap 75% each')),
-        row('DPS vs target', dps !== undefined ? fmt(dps) : '—',
-          ["Damage × attack speed × average crit, after the target's mitigation",
+        row('DPS', fmt(scoreGear(level, gear).dps),
+          ["Damage × attack speed × average crit, after a reference enemy's mitigation\n(armor and resistance 2.5 × your level, half its damage physical, half magic)",
             has(Effect.Thornshell) && 'Thornshell: + 40% of the damage you take',
             has(Effect.ZealotsOath) && "Zealot's Oath: + 50% of your heals"].filter(Boolean).join('\n')),
       ]
@@ -110,7 +111,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
       `Reduction: resistance / (resistance + ${5 * level}), cap 85%`,
       has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
-    row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${enemyLevel}: rating / (rating + ${10 * enemyLevel})`,
+    row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${level}: rating / (rating + ${10 * level})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${has(Effect.PhantomStep) ? '75% (Phantom Step)' : '60%'}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade")),
     row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], 'Cap 3%')),
@@ -120,6 +121,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     row('Item find', pct(st.itemFind), from([Stat.ItemFindPct], has(Effect.FortunesFavor) && "Fortune's Favor: kept drops have a 15% chance to be one rarity higher")),
     row('Gold find', pct(st.goldFind), from([Stat.GoldFindPct], has(Effect.MidasTouch) && 'Midas Touch: gold × 2.5', has(Effect.ScholarsFocus) && "Scholar's Focus: gold × 0.5")),
     row('XP gain', pct(st.xpGain), from([Stat.XpGainPct], has(Effect.MidasTouch) && 'Midas Touch: no XP', has(Effect.ScholarsFocus) && "Scholar's Focus: XP × 1.75")),
+    row('Walk time', `${n1(st.walkTime)} s`, from([], `Base ${WALK_SECONDS} s`, has(Effect.SwiftHunter) && 'Swift Hunter: × 0.5')),
     row('Threat', pct(st.threat), from([Stat.ThreatPct], `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`)),
   ];
 
@@ -129,15 +131,4 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     defense,
     utility,
   };
-}
-
-/** Where each stat comes from, by row label (for tables that show a subset of the sheet). */
-export function sourcesByLabel(sheet: Sheet): Map<string, string> {
-  const m = new Map<string, string>();
-  for (const [label, , source] of [...sheet.primaries, ...sheet.offense, ...sheet.defense, ...sheet.utility]) if (source) m.set(label, source);
-  m.set('DPS', [
-    "Damage × attack speed × average crit, after a reference enemy's mitigation",
-    '(armor and resistance 2.5 × your level, half its damage physical, half magic)',
-  ].join('\n'));
-  return m;
 }

@@ -3,7 +3,7 @@
 //   npm run test:combat
 import { SLOTS, STARTER_ARMOR, STARTER_WEAPONS, base, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
-import { ENEMIES_BY_ID, RESPAWN_SECONDS } from '../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, WALK_SECONDS } from '../spacetimedb/src/data/zones';
 import { Effect, LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
 import { MAX_LEVEL, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { scoreGear } from '../spacetimedb/src/equip';
@@ -188,7 +188,7 @@ function withEffect(it: GearItem, effect: number): GearItem {
     vtR.mit === 0 && near(vtR.reflected, 0.4 * vtR.incoming * 0.75, 1e-9));
 
   const sh = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.SwiftHunter) })), rat);
-  check('Swift Hunter: respawn halved', near(sh.killRate, 1 / (sh.timeToKill + RESPAWN_SECONDS / 2), 1e-12) && sh.killRate > base.killRate);
+  check('Swift Hunter: walk time halved', near(sh.killRate, 1 / (sh.timeToKill + WALK_SECONDS / 2), 1e-12) && sh.killRate > base.killRate);
 
   const mid = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.MidasTouch) })), rat);
   const sch = matchup(combatStats(10, kit(sword, { Ring1: ring(Effect.ScholarsFocus) })), rat);

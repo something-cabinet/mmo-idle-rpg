@@ -5,7 +5,7 @@
 - **Auto-combat, pure stat check.** The character fights automatically; there are no
   active abilities. The player's decisions are gear, loadout and zone.
 - **One enemy at a time.** Each fight starts at full HP; recovering between fights is
-  part of the respawn time.
+  part of the walk time.
 - **One model, two evaluations:**
   - The **server** settles rewards with the expected-value formulas below, both online
     and offline. It never simulates individual fights.
@@ -23,7 +23,7 @@
 ### Legendary effects
 
 Legendary affixes (legendary.md) plug into the formulas below by changing one term each
-(damage type, crit damage, evasion cap, extra DPS, respawn time, rewards). Each effect
+(damage type, crit damage, evasion cap, extra DPS, walk time, rewards). Each effect
 applies at most once per character.
 
 ### Rule for new mechanics
@@ -71,7 +71,7 @@ timeToKill = enemyHP / DPS_you
 timeToDie  = netIncoming ≤ 0 ? ∞ : maxHP / netIncoming
 
 viable   = timeToKill < timeToDie          // otherwise: defeat at timeToDie, then idle
-killRate = 1 / (timeToKill + respawnTime)
+killRate = 1 / (timeToKill + walkTime)
 ```
 
 - `s.weapon.damage_t` = the weapon's base hit + `addedFlat_t`. Flat added damage is a

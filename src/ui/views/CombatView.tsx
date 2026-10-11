@@ -96,7 +96,7 @@ const FightScene = memo(
   function FightScene({ s }: { s: Snapshot }) {
     const { enemy: e } = s.target!;
     useEffect(() => {
-      startFight(s.stats, s.fight!, e);
+      startFight(s.stats, s.fight!, e, s.fightSince);
       return stopFight;
     }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once per fight (keyed by the parent)
     const fighter = (who: 'you' | 'enemy', portrait: React.ReactNode, name: React.ReactNode) => (
@@ -140,7 +140,7 @@ export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
   }
   const { zone, enemy: e } = s.target;
   const m = s.fight;
-  const sceneKey = `${e.id}|${s.level}|${m.dps}|${m.timeToDie}|${s.stats.maxHp}`;
+  const sceneKey = `${e.id}|${s.level}|${m.dps}|${m.timeToDie}|${s.stats.maxHp}|${s.stats.walkTime}`;
   return (
     <>
       <ViewHeader title="Combat" icon="swords" />

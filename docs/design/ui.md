@@ -60,7 +60,7 @@ Used for item names, icon borders and loot log lines.
 │              14     27!     Dodge                   │
 │                    -9                               │
 ├─────────────────────────────────────────────────────┤
-│ Kill 9.1 s · Die 29 s · Respawn 5 s · Win 3.2×      │
+│ Kill 9.1 s · Die 29 s · Walk 5 s · Win 3.2×      │
 │ Per hour: 254 kills · 7.1k XP · 1.8k gold · 12 drops│
 ├─────────────────────────────────────────────────────┤
 │ Loot log                                            │

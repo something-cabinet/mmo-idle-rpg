@@ -41,7 +41,7 @@ export const LEGENDARIES: LegendaryDef[] = [
   { id: 4, name: 'Juggernaut', group: 'Defense', bonusStat: Stat.ArmorPct, text: "You can't evade, but armor also reduces magic damage." },
   { id: 5, name: 'Phantom Step', group: 'Defense', bonusStat: Stat.EvasionRatingPct, text: 'Evasion cap rises from 60% to 75%.' },
   { id: 6, name: 'Thornshell', group: 'Defense', bonusStat: Stat.MaxHpPct, text: 'Reflects 40% of the damage you take back at the enemy.' },
-  { id: 7, name: 'Swift Hunter', group: 'Utility', bonusStat: Stat.AttackSpeedPct, text: 'Respawn time is halved.' },
+  { id: 7, name: 'Swift Hunter', group: 'Utility', bonusStat: Stat.AttackSpeedPct, text: 'Walk time between fights is halved.' },
   { id: 8, name: 'Midas Touch', group: 'Utility', bonusStat: Stat.GoldFindPct, text: 'Kills give no XP, but gold × 2.5.' },
   { id: 9, name: "Fortune's Favor", group: 'Utility', bonusStat: Stat.ItemFindPct, text: 'Each kept drop has a 15% chance to be upgraded one rarity.' },
   { id: 10, name: 'Voidtouched', group: 'Offense', bonusStat: Stat.PhysDamagePct, text: "Your damage ignores the enemy's armor and resistance, but deals 25% less." },

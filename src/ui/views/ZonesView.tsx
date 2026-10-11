@@ -58,7 +58,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
             <thead>
               <tr>
                 <th>Enemy</th><th>Lv</th><th>Dmg</th><th>Defense</th><th className="num">HP</th>
-                <th className="num" title="Enemy damage per second after your mitigation and evasion">DPS taken</th><th className="num" title="Lifetime kills, online and offline">Kills</th><th />
+                <th className="num" title="Enemy damage per second, before your armor, resistance and evasion">DPS</th><th className="num" title="Lifetime kills, online and offline">Kills</th><th />
               </tr>
             </thead>
             <tbody>
@@ -91,9 +91,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
                       <td><DmgTag magic={e.damageType === 'Magic'} /></td>
                       <td>{e.defense}</td>
                       <td className="num">{fmt(e.hp)}</td>
-                      <td className="num" title={`${fmt(e.dps)} before your defenses`}>
-                        <span className={`result ${m.viable ? 'ok' : 'bad'}`}>{fmt(m.incoming)}</span>
-                      </td>
+                      <td className="num">{fmt(e.dps)}</td>
                       <td className="num">{fmt(s.kills.get(e.id) ?? 0)}</td>
                       <td className="actions">{action}</td>
                     </tr>

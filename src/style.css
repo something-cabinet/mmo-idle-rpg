@@ -729,6 +729,7 @@ select:focus,
 .float.crit { color: var(--gold); font-size: 20px; }
 .float.taken { color: var(--bad); }
 .float.dodge { color: var(--muted); font-style: italic; }
+.float.heal { color: var(--ok); }
 @keyframes float-up {
   from { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
   to { opacity: 0; transform: translate(-50%, -36px) scale(1); }
@@ -911,11 +912,6 @@ select:focus,
 .table.locked tbody {
   opacity: 0.55;
 }
-.result {
-  font-weight: 650;
-}
-.result.ok { color: var(--ok); }
-.result.bad { color: var(--bad); }
 .chips {
   display: flex;
   flex-wrap: wrap;
@@ -1266,6 +1262,11 @@ select:focus,
 .equip-layout > .card {
   margin: 0;
 }
+.stat-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
 .equip-slots {
   display: grid;
   grid-template-columns: repeat(3, 96px);
@@ -1472,7 +1473,8 @@ fieldset.affix-pick legend {
     grid-template-columns: 1fr;
   }
   .item-popup .compare-items,
-  .equip-layout {
+  .equip-layout,
+  .stat-board {
     grid-template-columns: 1fr;
   }
 }

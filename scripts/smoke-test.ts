@@ -100,7 +100,7 @@ await expectError('chat rate limit', a.conn.reducers.sendChat({ text: 'spam' }),
 await expectError('unknown enemy rejected', a.conn.reducers.setTarget({ enemyId: 999 }), 'No such enemy');
 await expectError('locked zone rejected', a.conn.reducers.setTarget({ enemyId: 201 }), 'Zone is locked');
 {
-  // A starter sword kills a Field Rat every ~8.3 s (3.3 s fight + 5 s respawn).
+  // A starter sword kills a Field Rat every ~8.3 s (3.3 s fight + 5 s walk).
   const wait = createdAt + 9_500 - Date.now();
   console.log(`… waiting ${(wait / 1000).toFixed(1)} s for a rat kill`);
   await sleep(wait);

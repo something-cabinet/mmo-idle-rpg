@@ -1,36 +1,24 @@
-import { memo } from 'react';
-import { CardHead, EffectsCard, StatRows, ViewHeader } from '../shared';
-import type { Snapshot } from '../snapshot';
-import { statSheet } from '../statSheet';
+import { memo } from "react";
+import { EffectsCard, StatBoard, ViewHeader } from "../shared";
+import type { Snapshot } from "../snapshot";
+import { statSheet } from "../statSheet";
 
-export const CharacterView = memo(function CharacterView({ s }: { s: Snapshot }) {
-  const enemyLevel = s.target?.enemy.level ?? s.level;
-  const sheet = statSheet(s.level, s.gear, s.stats, enemyLevel, s.fight?.dps);
+export const CharacterView = memo(function CharacterView({
+  s,
+}: {
+  s: Snapshot;
+}) {
+  const sheet = statSheet(s.level, s.gear, s.stats);
 
   return (
     <>
       <ViewHeader title="Character" icon="user" />
-      <div className="grid-4">
-        <div className="card">
-          <CardHead title="Primaries" />
-          <StatRows rows={sheet.primaries} />
-        </div>
-        <div className="card">
-          <CardHead title="Offense" />
-          <StatRows rows={sheet.offense} />
-        </div>
-        <div className="card">
-          <CardHead title="Defense" />
-          <StatRows rows={sheet.defense} />
-        </div>
-        <div className="card">
-          <CardHead title="Utility" />
-          <StatRows rows={sheet.utility} />
-        </div>
-      </div>
+      <StatBoard sheet={sheet} />
       <EffectsCard effects={s.stats.effects} />
       <p className="muted hint">
-        Hover a stat name to see what it does, or the rest of its row to see where it comes from. Evasion is against an average Lv {enemyLevel} enemy.
+        Hover a stat name to see what it does, or the rest of its row to see
+        where it comes from. Evasion and DPS are against an average Lv {s.level}{" "}
+        enemy (your level).
       </p>
     </>
   );

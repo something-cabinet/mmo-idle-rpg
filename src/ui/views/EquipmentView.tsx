@@ -24,6 +24,7 @@ import {
 } from "../shared";
 import { gearFor, type Snapshot } from "../snapshot";
 import { statSheet } from "../statSheet";
+import { touchFirst } from "../TapTip";
 
 interface Candidate {
   it: Item;
@@ -414,7 +415,7 @@ export const EquipmentView = memo(function EquipmentView({
       )}
       <EffectsCard effects={stats.effects} />
       <p className="muted hint">
-        Click a slot to see its item or change it. Hover a stat name to see what
+        {touchFirst ? "Tap" : "Click"} a slot to see its item or change it. {touchFirst ? "Tap" : "Hover"} a stat name to see what
         it does, or the rest of its row to see where it comes from. Evasion and
         DPS are against an average enemy of your level (Lv {s.level}), the same
         one auto-equip scores against.

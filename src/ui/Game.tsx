@@ -1,9 +1,8 @@
 // The game screen: top-bar stats, sidebar navigation, the current view, chat and online list.
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { DbConnection } from '../module_bindings';
 import type { Presence } from '../module_bindings/types';
-import * as auth from '../auth';
 import { xpToNext } from '../../spacetimedb/src/game';
 import { call, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
@@ -13,7 +12,7 @@ import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
 import { InspectPopup } from './Inspect';
-import { perHour } from './shared';
+import { AccountControls, Modal, perHour } from './shared';
 import { snapshot, type Snapshot } from './snapshot';
 import { BagView } from './views/BagView';
 import { CharacterView } from './views/CharacterView';
@@ -59,36 +58,90 @@ function TopStats({ s }: { s: Snapshot }) {
   );
 }
 
+/** Views that get their own tab on the mobile bottom bar; the rest go under "More". */
+const TAB_BAR: View[] = ['combat', 'zones', 'equipment', 'bag'];
+const NAV_LINKS = NAV.flatMap(([, links]) => links);
+
+/** The sidebar's footer, and the bottom of the phone "More" sheet. */
+function AccountFoot({ conn }: { conn: DbConnection }) {
+  return (
+    <div className="sidebar-foot">
+      <AccountControls conn={conn} />
+      <span className="muted version">v0.0.1 · prototype</span>
+    </div>
+  );
+}
+
+function NavLinks({ view, exclude = [] }: { view: View; exclude?: View[] }) {
+  return NAV.map(([group, links]) => {
+    const shown = links.filter(([v]) => !exclude.includes(v));
+    if (!shown.length) return null;
+    return (
+      <div key={group} style={{ display: 'contents' }}>
+        <div className="nav-group">{group}</div>
+        {shown.map(([v, icon, label]) => (
+          <a key={v} href={`#${v}`} className={v === view ? 'active' : ''} title={label}>
+            <Icon name={icon} />
+            <span className="nav-label">{label}</span>
+          </a>
+        ))}
+      </div>
+    );
+  });
+}
+
 function Sidebar({ conn, view }: { conn: DbConnection; view: View }) {
-  const account = [...conn.db.myAccount.iter()][0];
-  const registered = account?.kind.tag === 'Registered';
-  const admin = account?.role.tag === 'Admin';
   return (
     <nav className="sidebar">
-      {NAV.map(([group, links]) => (
-        <div key={group} style={{ display: 'contents' }}>
-          <div className="nav-group">{group}</div>
-          {links.map(([v, icon, label]) => (
+      <NavLinks view={view} />
+      <AccountFoot conn={conn} />
+    </nav>
+  );
+}
+
+/** Mobile navigation (the sidebar is hidden on narrow screens): main views as tabs, the rest in a sheet. */
+function BottomNav({ conn, view, onNavigate }: { conn: DbConnection; view: View; onNavigate: () => void }) {
+  const [more, setMore] = useState(false);
+  return (
+    <>
+      <nav className="bottom-nav" onClick={onNavigate}>
+        {TAB_BAR.map(v => {
+          const [, icon, label] = NAV_LINKS.find(([x]) => x === v)!;
+          return (
             <a key={v} href={`#${v}`} className={v === view ? 'active' : ''}>
               <Icon name={icon} />
-              {label}
+              <span>{label}</span>
             </a>
-          ))}
-        </div>
-      ))}
-      <div className="sidebar-foot">
-        <span className="muted">{registered ? `${account?.email ?? 'Logged in'}${admin ? ' (admin)' : ''}` : 'Guest: progress is saved in this browser only'}</span>
-        {!registered && auth.loginEnabled && <button className="btn small primary" onClick={() => void auth.login()}>Log in to save progress</button>}
-        {registered && <button className="btn small ghost" onClick={() => void auth.logout()}>Log out</button>}
-        <span className="muted version">v0.0.1 · prototype</span>
-      </div>
-    </nav>
+          );
+        })}
+        <button className={!TAB_BAR.includes(view) ? 'active' : ''} onClick={() => setMore(true)}>
+          <Icon name="menu" />
+          <span>More</span>
+        </button>
+      </nav>
+      {more && (
+        <Modal className="nav-sheet" onClose={() => setMore(false)}>
+          <nav className="sidebar" onClick={e => (e.target as HTMLElement).closest('a') && setMore(false)}>
+            <NavLinks view={view} exclude={TAB_BAR} />
+            <AccountFoot conn={conn} />
+          </nav>
+        </Modal>
+      )}
+    </>
   );
 }
 
 const SOCIAL_COLLAPSED_KEY = 'social_collapsed';
 
-function Social({ conn, pres, onCollapse, onInspect }: { conn: DbConnection; pres: Presence; onCollapse: (collapsed: boolean) => void; onInspect: (characterId: bigint) => void }) {
+/** Phone layout (matches the 700px breakpoint in style.css): chat is an overlay instead of a column. */
+const narrow = window.matchMedia('(max-width: 700px)');
+const useNarrow = () =>
+  useSyncExternalStore(l => {
+    narrow.addEventListener('change', l);
+    return () => narrow.removeEventListener('change', l);
+  }, () => narrow.matches);
+
+function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnection; pres: Presence; mobile: boolean; onCollapse: (collapsed: boolean) => void; onInspect: (characterId: bigint) => void }) {
   const [tab, setTab] = useState<'chat' | 'online'>('chat');
   const [text, setText] = useState('');
   const log = useRef<HTMLUListElement>(null);
@@ -113,7 +166,9 @@ function Social({ conn, pres, onCollapse, onInspect }: { conn: DbConnection; pre
         <button className={`tab${tab === 'online' ? ' active' : ''}`} onClick={() => setTab('online')}>
           <Icon name="users" />Online <span className="count">{online.length}</span>
         </button>
-        <button className="btn icon ghost social-collapse" title="Collapse" onClick={() => onCollapse(true)}>»</button>
+        <button className="btn icon ghost social-collapse" title={mobile ? 'Close' : 'Collapse'} onClick={() => onCollapse(true)}>
+          {mobile ? <Icon name="x" /> : '»'}
+        </button>
       </div>
       {tab === 'chat' ? (
         <div className="tab-body">
@@ -173,7 +228,7 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
     case 'crafting': return <CraftingView s={s} />;
     case 'filter': return <FilterView s={s} />;
     case 'index': return <ItemIndexView s={s} />;
-    case 'settings': return <SettingsView />;
+    case 'settings': return <SettingsView s={s} />;
   }
 }
 
@@ -197,6 +252,19 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
       // Not persisted; fine.
     }
   };
+  const mobile = useNarrow();
+  // Phone layout only: the chat overlay is open. Not persisted, so a reload doesn't cover the game with chat.
+  const [chatOpen, setChatOpen] = useState(false);
+  const chatVisible = mobile ? chatOpen : !socialCollapsed;
+  // Unread = messages newer than the last one shown; history from before this session counts as read.
+  let latestChat = 0n;
+  for (const m of conn.db.chatMessage.iter()) if (m.id > latestChat) latestChat = m.id;
+  const [seenChat, setSeenChat] = useState(latestChat);
+  useEffect(() => {
+    if (chatVisible) setSeenChat(latestChat);
+  }, [chatVisible, latestChat]);
+  let unread = 0;
+  if (!chatVisible) for (const m of conn.db.chatMessage.iter()) if (m.id > seenChat) unread++;
   const [inspecting, setInspecting] = useState<bigint>();
   const content = useRef<HTMLElement>(null);
   syncClock(pres);
@@ -221,19 +289,30 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
         stats={<TopStats s={live} />}
         right={
           <>
-            <span className="chip" title="Players online"><Icon name="users" /><strong>{String(online)}</strong></span>
+            <span className="chip online-chip" title="Players online"><Icon name="users" /><strong>{String(online)}</strong></span>
+            <button className={`btn icon ghost chat-toggle${chatOpen ? ' active' : ''}`} title="Chat and online list" onClick={() => setChatOpen(o => !o)}>
+              <Icon name="message" />
+              {unread > 0 && <span className="unread">{unread > 9 ? '9+' : unread}</span>}
+            </button>
           </>
         }
       />
-      <div className={`screen shell${socialCollapsed ? ' social-collapsed' : ''}`}>
+      <div className={`screen shell${socialCollapsed ? ' social-collapsed' : ''}${chatOpen ? ' chat-open' : ''}`}>
         <Sidebar conn={conn} view={view} />
         <main className="content" ref={content}>
           <section className="view" key={view}>
             <CurrentView view={view} s={viewSnap} />
           </section>
         </main>
-        <Social conn={conn} pres={pres} onCollapse={collapseSocial} onInspect={setInspecting} />
+        <Social
+          conn={conn}
+          pres={pres}
+          mobile={mobile}
+          onCollapse={collapsed => (mobile ? setChatOpen(!collapsed) : collapseSocial(collapsed))}
+          onInspect={setInspecting}
+        />
       </div>
+      <BottomNav conn={conn} view={view} onNavigate={() => setChatOpen(false)} />
       <AwayReport s={viewSnap} pres={pres} />
       <DefeatReport s={viewSnap} pres={pres} />
       {inspecting !== undefined && (

@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { bumpVersion } from '../../store';
 import { getNumberFormat, setNumberFormat, type NumberFormat } from '../format';
 import { setTheme, useTheme, type ThemePref } from '../theme';
-import { CardHead, ViewHeader } from '../shared';
+import { AccountControls, CardHead, ViewHeader } from '../shared';
+import type { Snapshot } from '../snapshot';
 import { floatsOn, setFloats } from '../fight';
 
-export function SettingsView() {
+export function SettingsView({ s }: { s: Snapshot }) {
   const { pref } = useTheme();
   const [floats, setFloatsState] = useState(floatsOn);
   const [numbers, setNumbers] = useState(getNumberFormat);
@@ -52,7 +53,9 @@ export function SettingsView() {
         </div>
         <div className="card">
           <CardHead title="Account" />
-          <p className="muted">Use the buttons at the bottom of the sidebar to log in or out. Guest progress is saved in this browser only.</p>
+          <div className="account-controls">
+            <AccountControls conn={s.conn} />
+          </div>
         </div>
       </div>
     </>

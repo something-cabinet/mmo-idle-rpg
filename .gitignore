@@ -5,3 +5,5 @@ dist
 .env.local
 spacetime.local.json
 .env
+.env.development
+.env.production

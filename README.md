@@ -79,11 +79,14 @@ Requirements: **Node.js 22+** (includes npm) and **Git**.
    npm install
    npm run server:install
    ```
-3. **Optional: environment file.** Defaults point at the local server, so this is only
-   needed for Maincloud or login:
+3. **Optional: environment files.** Defaults point at the local server, so this is only
+   needed for Maincloud or login. Vite picks the file by mode, so you never swap values:
    ```sh
-   cp .env.example .env.local
+   cp .env.example .env                       # shared values (login client ID)
+   # .env.development: `npm run dev`   -> local server
+   # .env.production:  `npm run build` -> Maincloud
    ```
+   See [Environment files](#environment-files) for the contents.
 4. **Check everything compiles:**
    ```sh
    npm run typecheck
@@ -130,7 +133,7 @@ Without this the game is guest-only, which is fine for development.
 2. Add redirect URIs **and** post-logout redirect URIs: `http://localhost:5173/` plus your
    production URL (with the trailing `/`).
 3. Put the client ID in `OIDC_CLIENT_IDS` in `spacetimedb/src/config.ts` and republish.
-4. Put the same ID in `.env.local` as `VITE_SPACETIMEAUTH_CLIENT_ID` and restart `npm run dev`.
+4. Put the same ID in `.env` as `VITE_SPACETIMEAUTH_CLIENT_ID` and restart `npm run dev`.
 5. Optional: enable Google/Discord/GitHub under Identity Providers (magic-link email works
    out of the box).
 6. To make yourself admin, add your token's `sub` claim to `ADMIN_SUBJECTS` and republish.
@@ -145,7 +148,8 @@ spacetime login
 npm run spacetime:publish -- <your-unique-db-name>
 ```
 
-Then create `.env.local` (see `.env.example`):
+Then point the production build at it in `.env.production` (see
+[Environment files](#environment-files)):
 
 ```
 VITE_SPACETIMEDB_HOST=wss://maincloud.spacetimedb.com
@@ -154,11 +158,23 @@ VITE_SPACETIMEDB_DB_NAME=<your-unique-db-name>
 
 `npm run build` outputs a static site in `dist/` that can be hosted anywhere.
 
+### Environment files
+
+Vite loads `.env`, then the file for the current mode on top of it. All are gitignored
+(only `.env.example` is committed). Later wins; `.env.local` overrides everything.
+
+| File | Used by | Contents |
+|-|-|-|
+| `.env` | every mode | `VITE_SPACETIMEAUTH_CLIENT_ID` (omit for guest-only) |
+| `.env.development` | `npm run dev` | `VITE_SPACETIMEDB_HOST=ws://localhost:3000`, `VITE_SPACETIMEDB_DB_NAME=mmo-idle-rpg` |
+| `.env.production` | `npm run build` | `VITE_SPACETIMEDB_HOST=wss://maincloud.spacetimedb.com`, `VITE_SPACETIMEDB_DB_NAME=<your-unique-db-name>` |
+| `.env.local` | every mode | Optional personal override, e.g. run `npm run dev` against Maincloud |
+
 ### Hosting the client (Cloudflare Pages)
 
 The live client is a Cloudflare Pages project, `mmo-idle-rpg-test`
-(https://mmo-idle-rpg-test.pages.dev). Vite inlines the `VITE_*` values from `.env` /
-`.env.local` at build time, so build on a machine that has them set.
+(https://mmo-idle-rpg-test.pages.dev). Vite inlines the `VITE_*` values from `.env` and
+`.env.production` at build time, so build on a machine that has them set.
 
 ```sh
 npx wrangler login        # first time only
@@ -180,7 +196,7 @@ Publish the server first, then the client, so a new client never talks to an old
 | Server logic only (reducers, data, balance in `spacetimedb/src/`; no table/column changes) | `npm run spacetime:publish -- <db-name>`, then rebuild and deploy the client if it imports shared files from `spacetimedb/src/` (it does for game data) |
 | Tables, columns, or reducer signatures | `npm run spacetime:publish -- <db-name>`, `npm run spacetime:generate`, `npm run typecheck`, `npm run build`, `wrangler pages deploy` |
 | Breaking schema change (removing or changing columns) | Same as above, but publish with `--delete-data`. This **wipes all players**, so warn testers first |
-| `.env` values (`VITE_*`) | Rebuild and redeploy the client; the module is unaffected |
+| `.env*` values (`VITE_*`) | Rebuild and redeploy the client; the module is unaffected |
 | `OIDC_CLIENT_IDS` or `ADMIN_SUBJECTS` in `config.ts` | Publish the module (add `--delete-data` only if the schema also broke) |
 | New site URL or project name | Add it to the SpacetimeAuth redirect and post-logout redirect URIs (with trailing `/`) |
 

@@ -187,7 +187,7 @@ function SlotPopup({
 }
 
 /** Slot indexes in grid order, three per row: Hands left of Chest, which sits in the middle. */
-const SLOT_GRID = [0, 1, 2, 4, 3, 5, 6, 7, 8];
+export const SLOT_GRID = [0, 1, 2, 4, 3, 5, 6, 7, 8];
 
 /** Faded glyph shown in an empty slot. */
 const SLOT_ICON = [
@@ -202,7 +202,7 @@ const SLOT_ICON = [
   "i-amulet",
 ];
 
-function SlotCell({
+export function SlotCell({
   gear,
   i,
   selected,

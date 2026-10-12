@@ -256,6 +256,15 @@ export const presence = table(
   }
 );
 
+/** The character a player is inspecting (online list); read through the `inspected_*` views. */
+export const inspect = table(
+  { name: 'inspect' },
+  {
+    viewer: t.identity().primaryKey(),
+    characterId: t.u64(),
+  }
+);
+
 /** A guest consenting to have its character moved into a registered account. */
 export const linkOffer = table(
   { name: 'link_offer' },
@@ -282,6 +291,7 @@ export const spacetimedb = schema({
   account,
   character,
   presence,
+  inspect,
   linkOffer,
   chatMessage,
   item,

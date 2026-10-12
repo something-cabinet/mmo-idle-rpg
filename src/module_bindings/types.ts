@@ -104,6 +104,21 @@ export const HealTarget = __t.enum("HealTarget", {
 });
 export type HealTarget = __Infer<typeof HealTarget>;
 
+export const Inspect = __t.object("Inspect", {
+  viewer: __t.identity(),
+  characterId: __t.u64(),
+});
+export type Inspect = __Infer<typeof Inspect>;
+
+export const InspectedCharacter = __t.object("InspectedCharacter", {});
+export type InspectedCharacter = __Infer<typeof InspectedCharacter>;
+
+export const InspectedItems = __t.object("InspectedItems", {});
+export type InspectedItems = __Infer<typeof InspectedItems>;
+
+export const InspectedLoadout = __t.object("InspectedLoadout", {});
+export type InspectedLoadout = __Infer<typeof InspectedLoadout>;
+
 export const Item = __t.object("Item", {
   id: __t.u64(),
   characterId: __t.u64(),

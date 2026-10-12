@@ -10,4 +10,5 @@ export * from './reducers/chat';
 export * from './reducers/loot';
 export * from './reducers/equipment';
 export * from './reducers/crafting';
+export * from './reducers/inspect';
 export * from './reducers/views';

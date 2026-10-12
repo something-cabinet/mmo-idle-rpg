@@ -218,6 +218,24 @@ await a.conn.reducers.playHere({});
 await sleep(200);
 check('play here re-enters', presOf(a)?.connectionId.isEqual(a.conn.connectionId) ?? false);
 
+// Inspecting another online player: their character, active loadout and worn items.
+await expectError('inspect without character rejected', b.conn.reducers.inspectCharacter({ characterId: charOf(a)!.id }), 'Not in the world');
+await b.conn.reducers.createCharacter({ name: `Bob_${suffix}`, starterWeapon: 1 });
+await sleep(200);
+await expectError('inspect offline character rejected', b.conn.reducers.inspectCharacter({ characterId: 999_999n }), 'not online');
+await b.conn.reducers.inspectCharacter({ characterId: charOf(a)!.id });
+await sleep(200);
+{
+  const worn = starterGear(a).filter(Boolean).map(i => String(i!.id)).sort().join();
+  const seen = [...b.conn.db.inspectedItems.iter()].map(i => String(i.id)).sort().join();
+  check('inspect shows the character', [...b.conn.db.inspectedCharacter.iter()][0]?.id === charOf(a)!.id);
+  check('inspect shows the active loadout', [...b.conn.db.inspectedLoadout.iter()][0]?.index === charOf(a)!.activeLoadout);
+  check('inspect shows only worn items', worn !== '' && seen === worn, `${seen} vs ${worn}`);
+}
+await b.conn.reducers.inspectCharacter({ characterId: 0n });
+await sleep(200);
+check('stop inspecting clears the views', b.conn.db.inspectedCharacter.count() === 0n && b.conn.db.inspectedItems.count() === 0n);
+
 await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.me, banned: true }), 'Admins only');
 await b.conn.reducers.offerLink({ target: a.me });
 await expectError('guest cannot accept a link', a.conn.reducers.acceptLink({ guest: b.me, discardGuestCharacter: false }), 'Log in first');

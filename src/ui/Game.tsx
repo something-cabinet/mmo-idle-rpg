@@ -12,6 +12,7 @@ import { DefeatReport } from './DefeatReport';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
+import { InspectPopup } from './Inspect';
 import { perHour } from './shared';
 import { snapshot, type Snapshot } from './snapshot';
 import { BagView } from './views/BagView';
@@ -87,7 +88,7 @@ function Sidebar({ conn, view }: { conn: DbConnection; view: View }) {
 
 const SOCIAL_COLLAPSED_KEY = 'social_collapsed';
 
-function Social({ conn, pres, onCollapse }: { conn: DbConnection; pres: Presence; onCollapse: (collapsed: boolean) => void }) {
+function Social({ conn, pres, onCollapse, onInspect }: { conn: DbConnection; pres: Presence; onCollapse: (collapsed: boolean) => void; onInspect: (characterId: bigint) => void }) {
   const [tab, setTab] = useState<'chat' | 'online'>('chat');
   const [text, setText] = useState('');
   const log = useRef<HTMLUListElement>(null);
@@ -146,7 +147,13 @@ function Social({ conn, pres, onCollapse }: { conn: DbConnection; pres: Presence
           <ul id="online-list">
             {online.map(p => (
               <li key={String(p.characterId)} className={p.characterId === pres.characterId ? 'me' : ''}>
-                {p.characterName}
+                {p.characterId === pres.characterId ? (
+                  p.characterName
+                ) : (
+                  <button className="online-name" title="Inspect gear and stats" onClick={() => onInspect(p.characterId)}>
+                    {p.characterName}
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -190,6 +197,7 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
       // Not persisted; fine.
     }
   };
+  const [inspecting, setInspecting] = useState<bigint>();
   const content = useRef<HTMLElement>(null);
   syncClock(pres);
   const row = conn.db.character.id.find(pres.characterId);
@@ -224,10 +232,13 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
             <CurrentView view={view} s={viewSnap} />
           </section>
         </main>
-        <Social conn={conn} pres={pres} onCollapse={collapseSocial} />
+        <Social conn={conn} pres={pres} onCollapse={collapseSocial} onInspect={setInspecting} />
       </div>
       <AwayReport s={viewSnap} pres={pres} />
       <DefeatReport s={viewSnap} pres={pres} />
+      {inspecting !== undefined && (
+        <InspectPopup key={String(inspecting)} conn={conn} characterId={inspecting} version={version} onClose={() => setInspecting(undefined)} />
+      )}
     </>
   );
 }

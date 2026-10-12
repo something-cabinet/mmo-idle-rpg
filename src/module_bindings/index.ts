@@ -40,6 +40,7 @@ import CreateCharacterReducer from "./create_character_reducer";
 import EquipReducer from "./equip_reducer";
 import ExpandBagReducer from "./expand_bag_reducer";
 import FleeReducer from "./flee_reducer";
+import InspectCharacterReducer from "./inspect_character_reducer";
 import LockItemReducer from "./lock_item_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
@@ -61,6 +62,9 @@ import UpgradeRarityReducer from "./upgrade_rarity_reducer";
 // Import all table schema definitions
 import CharacterRow from "./character_table";
 import ChatMessageRow from "./chat_message_table";
+import InspectedCharacterRow from "./inspected_character_table";
+import InspectedItemsRow from "./inspected_items_table";
+import InspectedLoadoutRow from "./inspected_loadout_table";
 import MyAccountRow from "./my_account_table";
 import MyBossKillsRow from "./my_boss_kills_table";
 import MyEnemyKillsRow from "./my_enemy_kills_table";
@@ -119,6 +123,27 @@ const tablesSchema = __schema({
       { name: 'presence_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, PresenceRow),
+  inspectedCharacter: __table({
+    name: 'inspected_character',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, InspectedCharacterRow),
+  inspectedItems: __table({
+    name: 'inspected_items',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, InspectedItemsRow),
+  inspectedLoadout: __table({
+    name: 'inspected_loadout',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, InspectedLoadoutRow),
   myAccount: __table({
     name: 'my_account',
     indexes: [
@@ -178,6 +203,7 @@ const reducersSchema = __reducers(
   __reducerSchema("equip", EquipReducer),
   __reducerSchema("expand_bag", ExpandBagReducer),
   __reducerSchema("flee", FleeReducer),
+  __reducerSchema("inspect_character", InspectCharacterReducer),
   __reducerSchema("lock_item", LockItemReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
@@ -201,6 +227,12 @@ const proceduresSchema = __procedures(
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {
   tables: typeof tablesSchema.schemaType.tables & {
+    /** @deprecated Use `inspectedCharacter` instead. This alias will be removed in the next major version. */
+    readonly "inspected_character": Omit<typeof tablesSchema.schemaType.tables["inspectedCharacter"], "accessorName"> & { readonly accessorName: "inspected_character" };
+    /** @deprecated Use `inspectedItems` instead. This alias will be removed in the next major version. */
+    readonly "inspected_items": Omit<typeof tablesSchema.schemaType.tables["inspectedItems"], "accessorName"> & { readonly accessorName: "inspected_items" };
+    /** @deprecated Use `inspectedLoadout` instead. This alias will be removed in the next major version. */
+    readonly "inspected_loadout": Omit<typeof tablesSchema.schemaType.tables["inspectedLoadout"], "accessorName"> & { readonly accessorName: "inspected_loadout" };
     /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
     readonly "my_account": Omit<typeof tablesSchema.schemaType.tables["myAccount"], "accessorName"> & { readonly accessorName: "my_account" };
     /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
@@ -233,6 +265,9 @@ const REMOTE_MODULE = {
 >;
 
 const tableAccessorAliases = {
+  "inspected_character": "inspectedCharacter",
+  "inspected_items": "inspectedItems",
+  "inspected_loadout": "inspectedLoadout",
   "my_account": "myAccount",
   "my_boss_kills": "myBossKills",
   "my_enemy_kills": "myEnemyKills",
@@ -260,6 +295,12 @@ function __withTableAccessorAliases<T extends object>(target: T, freeze = false)
 
 type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
+  /** @deprecated Use `inspectedCharacter` instead. This alias will be removed in the next major version. */
+  readonly "inspected_character": __DbViewBase["inspectedCharacter"];
+  /** @deprecated Use `inspectedItems` instead. This alias will be removed in the next major version. */
+  readonly "inspected_items": __DbViewBase["inspectedItems"];
+  /** @deprecated Use `inspectedLoadout` instead. This alias will be removed in the next major version. */
+  readonly "inspected_loadout": __DbViewBase["inspectedLoadout"];
   /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
   readonly "my_account": __DbViewBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
@@ -278,6 +319,12 @@ export type DbView = __DbViewBase & {
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
 export type Tables = __TablesBase & {
+  /** @deprecated Use `inspectedCharacter` instead. This alias will be removed in the next major version. */
+  readonly "inspected_character": __TablesBase["inspectedCharacter"];
+  /** @deprecated Use `inspectedItems` instead. This alias will be removed in the next major version. */
+  readonly "inspected_items": __TablesBase["inspectedItems"];
+  /** @deprecated Use `inspectedLoadout` instead. This alias will be removed in the next major version. */
+  readonly "inspected_loadout": __TablesBase["inspectedLoadout"];
   /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
   readonly "my_account": __TablesBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */

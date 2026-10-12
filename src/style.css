@@ -616,6 +616,19 @@ select:focus,
   color: var(--accent);
   font-weight: 600;
 }
+.online-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.online-name:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
 
 /* ------------------------------------------------------------------ fight */
 .head-tags {
@@ -1372,6 +1385,9 @@ select:focus,
   gap: 10px;
 }
 /* Just the equipped item and its actions (not the slot picker). */
+.modal-card.item-popup.inspect-popup {
+  width: min(960px, 100%);
+}
 .modal-card.item-popup.narrow {
   width: min(400px, 100%);
 }

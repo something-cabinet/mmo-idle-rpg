@@ -300,4 +300,5 @@ export function leaveWorld(ctx: Ctx, who: Identity) {
   const ch = ctx.db.character.id.find(pres.characterId);
   if (ch) ctx.db.character.id.update(settle(ctx, ch));
   ctx.db.presence.identity.delete(who);
+  ctx.db.inspect.viewer.delete(who);
 }

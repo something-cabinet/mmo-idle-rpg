@@ -19,7 +19,7 @@ export function TopBar({ stats, right }: { stats?: ReactNode; right?: ReactNode 
         <span id="status" data-ok={String(status.ok)}>{status.text}</span>
         {offline && <button className="btn small ghost" onClick={() => window.location.reload()}>Reconnect</button>}
         <button
-          className="btn icon ghost"
+          className="btn icon ghost theme-toggle"
           title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
           onClick={() => setTheme(effectiveTheme() === 'dark' ? 'light' : 'dark')}
         >

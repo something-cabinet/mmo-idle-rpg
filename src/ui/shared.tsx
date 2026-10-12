@@ -1,6 +1,8 @@
 // Pieces shared by the views: headers, stat rows, loadout totals and comparisons, popups.
 
 import { useEffect, useRef, type ReactNode } from 'react';
+import type { DbConnection } from '../module_bindings';
+import * as auth from '../auth';
 import type { Item } from '../module_bindings/types';
 import { combatStats, defenseAgainst, type Matchup } from '../../spacetimedb/src/combat';
 import type { CraftCost } from '../../spacetimedb/src/craft';
@@ -262,6 +264,22 @@ export function SwapPreview({ s, lo, slot, it, changedOnly }: { s: Snapshot; lo:
           )}
         </>
       )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- account
+
+/** Who is logged in, with the login or logout button. In the sidebar footer and on the Settings screen. */
+export function AccountControls({ conn }: { conn: DbConnection }) {
+  const account = [...conn.db.myAccount.iter()][0];
+  const registered = account?.kind.tag === 'Registered';
+  const admin = account?.role.tag === 'Admin';
+  return (
+    <>
+      <span className="muted">{registered ? `${account?.email ?? 'Logged in'}${admin ? ' (admin)' : ''}` : 'Guest: progress is saved in this browser only'}</span>
+      {!registered && auth.loginEnabled && <button className="btn small primary" onClick={() => void auth.login()}>Log in to save progress</button>}
+      {registered && <button className="btn small ghost" onClick={() => void auth.logout()}>Log out</button>}
     </>
   );
 }

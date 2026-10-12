@@ -183,7 +183,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
           ) : selectMode ? (
             'Click items to select them'
           ) : (
-            'Click to inspect · Ctrl-click to select · Shift-click for a range'
+            <span className="action-hint">Click to inspect · Ctrl-click to select · Shift-click for a range</span>
           )}
         </span>
         {selected.length > 0 && <button className="btn small ghost" onClick={() => setSel(new Set())}>Clear</button>}

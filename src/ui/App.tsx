@@ -7,6 +7,7 @@ import { STARTER_WEAPONS, base, weaponValues } from '../../spacetimedb/src/data/
 import { validateCharacterName } from '../../spacetimedb/src/game';
 import { call, landingChoice, toast, useApp, useToast } from '../store';
 import { Game } from './Game';
+import { TapTip } from './TapTip';
 import { TopBar } from './TopBar';
 
 function Toast() {
@@ -123,6 +124,7 @@ export function App() {
     <>
       {screen}
       <Toast />
+      <TapTip />
     </>
   );
 }

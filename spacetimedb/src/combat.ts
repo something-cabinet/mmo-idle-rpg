@@ -75,6 +75,8 @@ export interface CombatStats {
   walkTime: number;
   /** Offline progress cap, hours (Seasoned raises it). */
   offlineHours: number;
+  /** Share of the enemy's damage removed (Frostbite). */
+  chill: number;
   /** Effect IDs worn → copies. Legendary effects stack (`effectAmount`); unique effects apply once. */
   effects: EffectCounts;
 }
@@ -151,15 +153,24 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     sources.push({
       hit,
       heal,
-      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor,
+      // Ambush: × 0.7 after the floor, so it always costs speed.
+      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1),
       critChance,
-      critMult: 1 + Math.min(1, critChance) * (critDmg - 1),
+      // Frostbite: crits deal no extra damage (they chill instead, see `chill`).
+      critMult: has(Effect.Frostbite) ? 1 : 1 + Math.min(1, critChance) * (critDmg - 1),
     });
   }
 
-  // Ironclad and Runeguard convert from armor and resistance before either is added, so they don't loop.
-  const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct));
-  const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct));
+  const maxHp =
+    (100 + 10 * (level - 1) + flat(Stat.MaxHp)) *
+    (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality) *
+    (has(Effect.GlassCannon) ? 0.5 : 1);
+  const frozenBlood = has(Effect.FrozenBlood);
+  // Frozen Blood adds max HP / 10 to both. Ironclad and Runeguard convert from armor and
+  // resistance before either is added, so they don't loop (max HP never depends on them).
+  const fromHp = frozenBlood ? maxHp / 10 : 0;
+  const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct)) + fromHp;
+  const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct)) + fromHp;
 
   return {
     level,
@@ -167,21 +178,19 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     critDamage,
     armorPen: Math.min(CAPS.penetration / 100, pct(Stat.ArmorPenPct)),
     magicPen: Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct)),
-    maxHp:
-      (100 + 10 * (level - 1) + flat(Stat.MaxHp)) *
-      (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality) *
-      (has(Effect.GlassCannon) ? 0.5 : 1),
-    regen: flat(Stat.HpRegen) * (1 + 0.01 * vitality),
+    maxHp,
+    regen: frozenBlood ? 0 : flat(Stat.HpRegen) * (1 + 0.01 * vitality),
     armor: armor + amount(Effect.Runeguard) * resistance,
     resistance: resistance + amount(Effect.Ironclad) * armor,
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse),
-    lifesteal: Math.min(CAPS.lifesteal / 100, pct(Stat.LifestealPct)),
+    lifesteal: frozenBlood ? 0 : Math.min(CAPS.lifesteal / 100, pct(Stat.LifestealPct)),
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
     itemFind: pct(Stat.ItemFindPct),
     goldFind: pct(Stat.GoldFindPct),
     xpGain: pct(Stat.XpGainPct),
     walkTime: WALK_SECONDS * (1 - amount(Effect.SwiftHunter)),
     offlineHours: BASE_OFFLINE_HOURS + amount(Effect.Seasoned),
+    chill: has(Effect.Frostbite) ? 0.5 * Math.min(1, sources[0]?.critChance ?? 0) : 0,
     effects,
   };
 }
@@ -257,7 +266,7 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   }
 
   const { mitigation: playerMitigation, evasion } = defenseAgainst(s, e.damageType, e.level);
-  const incoming = e.dps * (1 - playerMitigation) * (1 - evasion);
+  const incoming = e.dps * (1 - s.chill) * (1 - playerMitigation) * (1 - evasion);
   // Effect damage is your damage: Glass Cannon and Voidtouched apply to it too.
   const damageMult = effectDamageMult(s.effects);
   // Thornshell reflects a share of the damage taken as physical damage.
@@ -267,7 +276,11 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   const netIncoming = incoming - s.regen - s.lifesteal * dps - hps;
 
   // Executioner: the last `t` of the enemy's HP takes double damage, so it goes in half the time.
-  const timeToKill = dps > 0 ? (e.hp / dps) * (1 - amount(Effect.Executioner) / 2) : Infinity;
+  let timeToKill = dps > 0 ? (e.hp / dps) * (1 - amount(Effect.Executioner) / 2) : Infinity;
+  // Ambush: the first swing (half a period in) deals 8 average hits, saving 7 periods;
+  // a fight never ends before that first swing.
+  const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
+  if (has(Effect.Ambush) && dps > 0 && period > 0) timeToKill = Math.max(timeToKill - 7 * period, period / 2);
   // Second Wind: once per fight, a killing blow leaves you at a share of max HP.
   const timeToDie = netIncoming <= 0 ? Infinity : (s.maxHp * (1 + amount(Effect.SecondWind))) / netIncoming;
   const viable = timeToKill < timeToDie;

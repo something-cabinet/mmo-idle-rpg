@@ -116,6 +116,9 @@ this split keep working.
 | 11 | **Glass Cannon** | **All damage ×2, max HP halved.** |
 | 12 | **Spellward** | You can't evade, but **resistance also reduces physical damage**. |
 | 13 | **Scholar's Focus** | XP × 1.75, gold × 0.5. |
+| 22 | **Frostbite** | Your crits deal **no extra damage**. Instead the enemy deals 0.5% less damage per 1% crit chance: `enemyDPS × (1 − 0.5 × min(1, critChance))`. |
+| 23 | **Frozen Blood** | **+1 armor and resistance per 10 max HP**, but HP regen and lifesteal do nothing. Added before Ironclad / Runeguard convert. |
+| 24 | **Ambush** | Your **first attack each fight deals 8×** damage, but attack speed × 0.7. `timeToKill = max(TTK − 7 / attacksPerSec, 0.5 / attacksPerSec)` (the first swing lands half a period in). |
 
 ```
 Spellblade:   each damage term moves to the other type; damage multiplier =

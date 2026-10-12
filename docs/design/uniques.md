@@ -47,10 +47,13 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 5 | T2 | **Bulwark of the Hollow** | Plate chest | Juggernaut, Thornshell | Armor %, max HP, HP regen |
 | 6 | T2 | **Veil of Whispers** | Cloth chest | Spellward, Second Wind | Resistance %, Mind, max HP % |
 | 7 | T2 | **Voidfang** | Dagger | Voidtouched, Executioner | Increased crit chance %, crit damage, attack speed % |
+| 8 | T3 | **Rimewind Longbow** | Bow | Frostbite | Increased crit chance %, evasion rating %, attack speed % |
+| 9 | T3 | **Glacier Heart** | Amber amulet | Frozen Blood | Max HP %, Vitality, resistance % |
+| 10 | T3 | **Avalanche Staff** | Fire Staff | Ambush | Magic damage %, crit damage, max HP |
 
 Unique IDs are permanent, like effect IDs.
 
 ## Open
 
 - Tune stat multipliers (`x`) with simulation once players use them.
-- Uniques for T3+ as zones are added.
+- Uniques for T4+ as zones are added.

@@ -53,7 +53,8 @@ export interface Fight {
  * half a period in, so on average a fight lasts what the formulas say. Unlike the
  * formulas, HP can't go above max (overhealing is lost) and damage varies ±10%.
  * Executioner doubles your hits once the enemy is below its threshold; Second Wind
- * turns the first killing blow into a drop to its share of max HP.
+ * turns the first killing blow into a drop to its share of max HP; Ambush makes your
+ * first swing 8×; Frostbite's chill shrinks the enemy's hits.
  */
 export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng): Fight {
   const src = s.sources[0];
@@ -65,7 +66,8 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const hit = src && m.dps > 0 ? m.dps / src.attacksPerSec / src.critMult : 0;
   const critX = crit > 0 && src ? 1 + (src.critMult - 1) / crit : 1;
   const healPerSwing = src && m.hps > 0 ? m.hps / src.attacksPerSec : 0;
-  const enemyHit = (enemy.dps / enemy.speed) * (1 - m.playerMitigation);
+  const enemyHit = (enemy.dps / enemy.speed) * (1 - s.chill) * (1 - m.playerMitigation);
+  let ambush = s.effects.has(Effect.Ambush) ? 8 : 1;
   const executeBelow = effectAmount(s.effects, Effect.Executioner) * enemy.hp;
   let secondWind = effectAmount(s.effects, Effect.SecondWind);
 
@@ -86,7 +88,8 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     if (nextYou <= nextFoe) {
       nextYou += yourPeriod;
       const isCrit = rng() < crit;
-      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * (foeHp < executeBelow ? 2 : 1);
+      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * (foeHp < executeBelow ? 2 : 1) * ambush;
+      ambush = 1;
       foeHp = Math.max(0, foeHp - damage);
       youHp = Math.min(s.maxHp, youHp + healPerSwing + s.lifesteal * damage);
       events.push({ t, by: 'you', kind: isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp });

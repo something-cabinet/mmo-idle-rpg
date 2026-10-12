@@ -237,6 +237,43 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const saved = swFight.events.filter(e => e.secondWind);
   check('Second Wind in a live fight: saved once, at 50% HP', saved.length === 1 && near(saved[0].youHp, swS.maxHp / 2, 1e-9) && swFight.outcome === 'defeat');
 
+  const bow = item(8, 1, [[Stat.CritChancePct, 200]]);
+  const frost = combatStats(10, kit(withEffect(bow, Effect.Frostbite)));
+  const bowS = combatStats(10, kit(bow));
+  const frostCrit = Math.min(1, frost.sources[0].critChance);
+  check('Frostbite: crits deal no extra damage', frost.sources[0].critMult === 1 && bowS.sources[0].critMult > 1);
+  check('Frostbite: enemy damage × (1 − 0.5 × crit chance)', near(frost.chill, 0.5 * frostCrit, 1e-12) && frost.chill > 0 &&
+    near(matchup(frost, rat).incoming, matchup(bowS, rat).incoming * (1 - 0.5 * frostCrit), 1e-9), `chill ${f(frost.chill)}`);
+  const frostFight = simulateFight(frost, matchup(frost, ogre), ogre, seededRng(2n));
+  const foeHits = frostFight.events.filter(e => e.by === 'enemy' && e.kind === 'hit');
+  const plainHit = (ogre.dps / ogre.speed) * (1 - matchup(frost, ogre).playerMitigation);
+  check('Frostbite in a live fight: enemy hits are chilled', foeHits.every(e => e.damage <= plainHit * (1 - frost.chill) * 1.1 + 1e-9));
+
+  const fbChest = (fx?: number) => {
+    const chest = item(39, 1, [[Stat.Armor, 50], [Stat.HpRegen, 5], [Stat.LifestealPct, 2]]);
+    return combatStats(10, kit(sword, { Chest: fx ? withEffect(chest, fx) : chest }));
+  };
+  const fb = fbChest(Effect.FrozenBlood);
+  const noFb = fbChest();
+  check('Frozen Blood: +max HP / 10 armor and resistance', near(fb.armor, noFb.armor + fb.maxHp / 10, 1e-9) &&
+    near(fb.resistance, noFb.resistance + fb.maxHp / 10, 1e-9), `+${f(fb.maxHp / 10)}`);
+  check('Frozen Blood: no regen, no lifesteal', fb.regen === 0 && fb.lifesteal === 0 && noFb.regen > 0 && noFb.lifesteal > 0);
+
+  const amb = combatStats(10, kit(withEffect(item(9, 1), Effect.Ambush)));
+  const noAmb = combatStats(10, kit(item(9, 1)));
+  check('Ambush: attack speed × 0.7', near(amb.sources[0].attacksPerSec, noAmb.sources[0].attacksPerSec * 0.7, 1e-12));
+  const sponge = { ...rat, hp: 2000, dps: 0.01 };
+  const ambM = matchup(amb, sponge);
+  const period = 1 / amb.sources[0].attacksPerSec;
+  check('Ambush: time to kill − 7 swings', near(ambM.timeToKill, sponge.hp / ambM.dps - 7 * period, 1e-9), f(ambM.timeToKill));
+  check('Ambush: a one-shot ends at the first swing', near(matchup(amb, { ...rat, dps: 0.01 }).timeToKill, period / 2, 1e-9));
+  const ambFights = Array.from({ length: 400 }, (_, i) => simulateFight(amb, ambM, sponge, seededRng(BigInt(i))));
+  const avgLen = ambFights.reduce((a, x) => a + x.end - x.walk, 0) / ambFights.length;
+  check('Ambush in live fights: average length matches the formula', near(avgLen, ambM.timeToKill, ambM.timeToKill * 0.05),
+    `${f(avgLen)} s vs ${f(ambM.timeToKill)} s`);
+  const first = ambFights[0].events.find(e => e.by === 'you')!;
+  check('Ambush in a live fight: the first swing is 8×', first.damage > 8 * 0.9 * ambM.dps * period / amb.sources[0].critMult - 1e-9);
+
   const ac = (effect: number) => combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), effect) }));
   const acBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]) }));
   const ic = ac(Effect.Ironclad);

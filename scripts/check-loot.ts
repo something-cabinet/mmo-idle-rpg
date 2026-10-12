@@ -255,7 +255,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   const uniq = runs.flatMap(r => r.kept.filter(it => it.rarity.tag === 'Unique'));
   const expected = 40 * 200_000 * DROP_CHANCE.Unique;
   check('uniques drop at the Unique chance and are always kept', near(uniq.length, expected, 4 * Math.sqrt(expected)), `${uniq.length} vs ~${expected.toFixed(0)}`);
-  check('… from the T1 and T2 pool', uniq.every(it => UNIQUES_BY_ID.get(it.uniqueId!)!.tier <= 2) && new Set(uniq.map(it => it.uniqueId)).size === UNIQUES.length);
+  check('… from the T1 and T2 pool', uniq.every(it => UNIQUES_BY_ID.get(it.uniqueId!)!.tier <= 2) && new Set(uniq.map(it => it.uniqueId)).size === UNIQUES.filter(u => u.tier <= 2).length);
 }
 
 // ---------------------------------------------------------------- boss first kill

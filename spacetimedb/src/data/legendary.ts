@@ -33,6 +33,9 @@ export const Effect = {
   Seasoned: 19,
   Prosperity: 20,
   Spellbreaker: 21,
+  Frostbite: 22,
+  FrozenBlood: 23,
+  Ambush: 24,
 } as const;
 
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
@@ -106,6 +109,9 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 11, name: 'Glass Cannon', text: 'All damage × 2, max HP halved.' },
   { id: 12, name: 'Spellward', text: "You can't evade, but resistance also reduces physical damage." },
   { id: 13, name: "Scholar's Focus", text: 'XP × 1.75, gold × 0.5.' },
+  { id: 22, name: 'Frostbite', text: 'Your crits deal no extra damage. Instead the enemy deals 0.5% less damage per 1% crit chance (up to 50%).' },
+  { id: 23, name: 'Frozen Blood', text: '+1 armor and resistance per 10 max HP, but HP regen and lifesteal do nothing.' },
+  { id: 24, name: 'Ambush', text: 'Your first attack each fight deals 8× damage, but attack speed × 0.7.' },
 ];
 
 export const LEGENDARIES_BY_ID: ReadonlyMap<number, LegendaryDef> = new Map(LEGENDARIES.map(l => [l.id, l]));

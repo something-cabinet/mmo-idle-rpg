@@ -47,6 +47,13 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.ResistancePct }, { stat: Stat.Mind }, { stat: Stat.MaxHpPct }] },
   { id: 7, name: 'Voidfang', tier: 2, baseId: 2, effects: [Effect.Voidtouched, Effect.Executioner],
     stats: [{ stat: Stat.CritChancePct }, { stat: Stat.CritDamage }, { stat: Stat.AttackSpeedPct }] },
+  // T3
+  { id: 8, name: 'Rimewind Longbow', tier: 3, baseId: 8, effects: [Effect.Frostbite],
+    stats: [{ stat: Stat.CritChancePct }, { stat: Stat.EvasionRatingPct }, { stat: Stat.AttackSpeedPct }] },
+  { id: 9, name: 'Glacier Heart', tier: 3, baseId: 57, effects: [Effect.FrozenBlood],
+    stats: [{ stat: Stat.MaxHpPct }, { stat: Stat.Vitality }, { stat: Stat.ResistancePct }] },
+  { id: 10, name: 'Avalanche Staff', tier: 3, baseId: 9, effects: [Effect.Ambush],
+    stats: [{ stat: Stat.MagicDamagePct }, { stat: Stat.CritDamage }, { stat: Stat.MaxHp }] },
 ];
 
 export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map(u => [u.id, u]));

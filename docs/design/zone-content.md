@@ -127,4 +127,4 @@ HP and DPS × 1.1 over the zones.md curve (zones.md, "Difficulty rhythm").
 ## Open
 
 - Enemy and boss art (placeholders for now).
-- T3 uniques (none yet; T3 drops T1–T2 uniques) and the T3 boss's simulated check.
+- The T3 boss's simulated check.

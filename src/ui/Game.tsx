@@ -160,7 +160,6 @@ function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnect
         <button className="btn icon ghost" title="Show chat and online list" onClick={() => onCollapse(false)}>
           <Icon name="message" />
         </button>
-        <span className="chip" title="Players online"><Icon name="users" /><strong>{String(online.length)}</strong></span>
       </div>
       <div className="tabs">
         <button className={`tab${tab === 'chat' ? ' active' : ''}`} onClick={() => setTab('chat')}><Icon name="message" />Chat</button>

@@ -586,15 +586,6 @@ select:focus,
 .social-collapsed .social-rail {
   display: flex;
 }
-/* The 44px rail can't fit the chip's row layout: stack icon over count. */
-.social-rail .chip {
-  flex-direction: column;
-  gap: 2px;
-  width: 32px;
-  padding: 5px 0;
-  border-radius: 8px;
-  font-size: 11px;
-}
 .tabs .social-collapse {
   flex: 0 0 auto;
 }

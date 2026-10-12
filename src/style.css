@@ -1194,12 +1194,45 @@ select:focus,
   gap: 12px;
   align-items: start;
 }
+/* A card whose header button shows or hides its body. */
+.collapse-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.collapse-head .muted {
+  font-size: 12px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.collapse-chevron {
+  flex: none;
+  color: var(--muted);
+  transition: transform 0.15s;
+}
+.collapsible.collapsed .collapse-chevron {
+  transform: rotate(-90deg);
+}
+.collapse-body {
+  margin-top: 8px;
+}
 /* Bag filters: a label column and a column of toggle buttons (several can be on). */
 .bag-filters {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 8px 12px;
+}
+.bag-filters-card {
   padding: 8px 12px;
 }
 .bag-filters .seg {

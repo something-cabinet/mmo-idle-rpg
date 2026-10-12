@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, type ReactNode } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { bagExpansionCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base, type Slot } from '../../../spacetimedb/src/data/bases';
@@ -47,12 +47,54 @@ function sortedBag(s: Snapshot, sort: BagSort, f: BagFilter): Item[] {
   return items.sort(by[sort]);
 }
 
+/** Open/closed state of a collapsible card, remembered on this device. */
+function useCollapsed(key: string): [boolean, (v: boolean) => void] {
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem(key) === '1';
+    } catch {
+      return false;
+    }
+  });
+  return [
+    collapsed,
+    v => {
+      setCollapsed(v);
+      try {
+        localStorage.setItem(key, v ? '1' : '0');
+      } catch {
+        // Not remembered; fine.
+      }
+    },
+  ];
+}
+
+/** A card whose header toggles its body; `summary` stays visible beside the title when collapsed. */
+function CollapsibleCard({ storageKey, title, summary, className = '', children }: {
+  storageKey: string;
+  title: string;
+  summary?: ReactNode;
+  className?: string;
+  children: ReactNode;
+}) {
+  const [collapsed, setCollapsed] = useCollapsed(storageKey);
+  return (
+    <div className={`card collapsible${collapsed ? ' collapsed' : ''} ${className}`}>
+      <button className="collapse-head" aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>
+        <Icon name="chevron" className="collapse-chevron" />
+        <h2>{title}</h2>
+        {summary && <span className="muted">{summary}</span>}
+      </button>
+      {!collapsed && <div className="collapse-body">{children}</div>}
+    </div>
+  );
+}
+
 /** Materials held, highest tier first. */
 function MaterialsCard({ s }: { s: Snapshot }) {
   const held = MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => b.tier - a.tier);
   return (
-    <div className="card">
-      <CardHead title="Materials" />
+    <CollapsibleCard storageKey="bag_materials_collapsed" title="Materials" summary={held.length ? `${held.length} kinds` : undefined}>
       {held.length ? (
         <div className="chips">
           {held.map(m => (
@@ -64,7 +106,7 @@ function MaterialsCard({ s }: { s: Snapshot }) {
       ) : (
         <p className="muted">None yet. Enemies drop materials of their zone's tier: metal, hides, cloth, wood, reagents, gems and (magical ones) cores.</p>
       )}
-    </div>
+    </CollapsibleCard>
   );
 }
 
@@ -129,7 +171,13 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const r = s.conn.reducers;
 
   const shown = sortedBag(s, sort, { rarities, slots: slotFilter, affixes: affixFilter, minAffixTier });
-  const filtered = rarities.length > 0 || slotFilter.length > 0 || affixFilter.length > 0 || minAffixTier > 1;
+  const activeFilters = rarities.length + slotFilter.length + affixFilter.length + (minAffixTier > 1 ? 1 : 0);
+  const clearFilters = () => {
+    setRarities([]);
+    setSlotFilter([]);
+    setAffixFilter([]);
+    setMinAffixTier(1);
+  };
   // Selections and the popup drop items that left the bag.
   const selected = s.bag.filter(i => sel.has(i.id));
   const open = s.bag.find(i => i.id === openId);
@@ -180,58 +228,61 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
         </select>
       </div>
       <MaterialsCard s={s} />
-      <div className="bag-filters card">
-        <span className="toolbar-label">Rarity</span>
-        <div className="seg wrap">
-          {RARITIES.map(r => (
-            <button key={r} className={`seg-btn c-${rarityCls(r)}${rarities.includes(r) ? ' active' : ''}`} onClick={() => setRarities(toggle(rarities, r))}>
-              {r}
-            </button>
-          ))}
-        </div>
-        <span className="toolbar-label">Slot</span>
-        <div className="seg wrap">
-          {SLOT_FILTERS.map(([slot, label]) => (
-            <button key={slot} className={`seg-btn${slotFilter.includes(slot) ? ' active' : ''}`} onClick={() => setSlotFilter(toggle(slotFilter, slot))}>
-              {label}
-            </button>
-          ))}
-        </div>
-        <span className="toolbar-label">Affix</span>
-        <div className="bag-affixes">
-          {affixFilter.length > 0 && (
-            <div className="seg wrap">
-              {affixFilter.map(id => (
-                <button key={id} className="seg-btn active" title="Remove" onClick={() => setAffixFilter(toggle(affixFilter, id))}>
-                  {affixLabel(id)} <Icon name="x" />
-                </button>
-              ))}
-            </div>
-          )}
-          <select value="" onChange={e => setAffixFilter([...affixFilter, Number(e.target.value)])}>
-            <option value="">{affixFilter.length ? 'And affix…' : 'Any affix…'}</option>
-            {AFFIX_OPTIONS.filter(o => !affixFilter.includes(o.id)).map(o => (
-              <option key={o.id} value={o.id}>{o.label}</option>
+      <CollapsibleCard
+        storageKey="bag_filters_collapsed"
+        title="Filters"
+        className="bag-filters-card"
+        summary={activeFilters ? `${activeFilters} active · showing ${shown.length} of ${s.bag.length}` : undefined}
+      >
+        <div className="bag-filters">
+          <span className="toolbar-label">Rarity</span>
+          <div className="seg wrap">
+            {RARITIES.map(r => (
+              <button key={r} className={`seg-btn c-${rarityCls(r)}${rarities.includes(r) ? ' active' : ''}`} onClick={() => setRarities(toggle(rarities, r))}>
+                {r}
+              </button>
             ))}
-          </select>
+          </div>
+          <span className="toolbar-label">Slot</span>
+          <div className="seg wrap">
+            {SLOT_FILTERS.map(([slot, label]) => (
+              <button key={slot} className={`seg-btn${slotFilter.includes(slot) ? ' active' : ''}`} onClick={() => setSlotFilter(toggle(slotFilter, slot))}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="toolbar-label">Affix</span>
+          <div className="bag-affixes">
+            {affixFilter.length > 0 && (
+              <div className="seg wrap">
+                {affixFilter.map(id => (
+                  <button key={id} className="seg-btn active" title="Remove" onClick={() => setAffixFilter(toggle(affixFilter, id))}>
+                    {affixLabel(id)} <Icon name="x" />
+                  </button>
+                ))}
+              </div>
+            )}
+            <select value="" onChange={e => setAffixFilter([...affixFilter, Number(e.target.value)])}>
+              <option value="">{affixFilter.length ? 'And affix…' : 'Any affix…'}</option>
+              {AFFIX_OPTIONS.filter(o => !affixFilter.includes(o.id)).map(o => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <span className="toolbar-label">Affix tier</span>
+          <div className="seg wrap">
+            {Array.from({ length: MAX_TIER }, (_, i) => i + 1).map(t => (
+              <button key={t} className={`seg-btn${t === minAffixTier ? ' active' : ''}`} onClick={() => setMinAffixTier(t)}>
+                {t === 1 ? 'Any' : `T${t}+`}
+              </button>
+            ))}
+          </div>
+          <span className="bag-filters-foot">
+            <span className="muted">{shown.length === s.bag.length ? 'Showing all' : `Showing ${shown.length} of ${s.bag.length}`}</span>
+            {activeFilters > 0 && <button className="btn small ghost" onClick={clearFilters}>Clear filters</button>}
+          </span>
         </div>
-        <span className="toolbar-label">Affix tier</span>
-        <div className="seg wrap">
-          {Array.from({ length: MAX_TIER }, (_, i) => i + 1).map(t => (
-            <button key={t} className={`seg-btn${t === minAffixTier ? ' active' : ''}`} onClick={() => setMinAffixTier(t)}>
-              {t === 1 ? 'Any' : `T${t}+`}
-            </button>
-          ))}
-        </div>
-        <span className="bag-filters-foot">
-          <span className="muted">{shown.length === s.bag.length ? 'Showing all' : `Showing ${shown.length} of ${s.bag.length}`}</span>
-          {filtered && (
-            <button className="btn small ghost" onClick={() => { setRarities([]); setSlotFilter([]); setAffixFilter([]); setMinAffixTier(1); }}>
-              Clear filters
-            </button>
-          )}
-        </span>
-      </div>
+      </CollapsibleCard>
       <div className="bag-grid">
         {shown.length ? (
           shown.map(it => <ItemTile key={String(it.id)} it={it} selected={sel.has(it.id)} onClick={ev => clickTile(ev, it.id)} />)

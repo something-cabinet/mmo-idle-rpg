@@ -154,6 +154,39 @@ VITE_SPACETIMEDB_DB_NAME=<your-unique-db-name>
 
 `npm run build` outputs a static site in `dist/` that can be hosted anywhere.
 
+### Hosting the client (Cloudflare Pages)
+
+The live client is a Cloudflare Pages project, `mmo-idle-rpg-test`
+(https://mmo-idle-rpg-test.pages.dev). Vite inlines the `VITE_*` values from `.env` /
+`.env.local` at build time, so build on a machine that has them set.
+
+```sh
+npx wrangler login        # first time only
+npm run build
+npx wrangler pages deploy dist --project-name mmo-idle-rpg-test
+```
+
+Always use the same `--project-name`; a different name creates a separate site with a
+different URL. The hashed URL printed after each deploy is a snapshot of that deploy, share
+the stable `*.pages.dev` URL instead.
+
+### What to run after a change
+
+Publish the server first, then the client, so a new client never talks to an old module.
+
+| Changed|Do|
+|-|-|
+| Client only (`src/`, CSS, `index.html`) | `npm run build`, then `wrangler pages deploy` |
+| Server logic only (reducers, data, balance in `spacetimedb/src/`; no table/column changes) | `npm run spacetime:publish -- <db-name>`, then rebuild and deploy the client if it imports shared files from `spacetimedb/src/` (it does for game data) |
+| Tables, columns, or reducer signatures | `npm run spacetime:publish -- <db-name>`, `npm run spacetime:generate`, `npm run typecheck`, `npm run build`, `wrangler pages deploy` |
+| Breaking schema change (removing or changing columns) | Same as above, but publish with `--delete-data`. This **wipes all players**, so warn testers first |
+| `.env` values (`VITE_*`) | Rebuild and redeploy the client; the module is unaffected |
+| `OIDC_CLIENT_IDS` or `ADMIN_SUBJECTS` in `config.ts` | Publish the module (add `--delete-data` only if the schema also broke) |
+| New site URL or project name | Add it to the SpacetimeAuth redirect and post-logout redirect URIs (with trailing `/`) |
+
+Checklist before deploying: `npm run typecheck`, then the relevant `npm run test:*` scripts
+against a local server, and make sure `dist/` was built after the last change.
+
 Free-tier notes: reducer calls, bandwidth, and storage use energy. With no server tick, cost
 scales with player actions only. Chat keeps the newest 200 messages. Guest accounts that
 never return are never deleted yet.

@@ -5,13 +5,29 @@ import * as auth from '../auth';
 import { characterOf } from '../net';
 import { STARTER_WEAPONS, base, weaponValues } from '../../spacetimedb/src/data/bases';
 import { validateCharacterName } from '../../spacetimedb/src/game';
-import { call, toast, useApp, useToast } from '../store';
+import { call, landingChoice, toast, useApp, useToast } from '../store';
 import { Game } from './Game';
 import { TopBar } from './TopBar';
 
 function Toast() {
   const t = useToast();
   return t ? <div id="toast" data-kind={t.kind}>{t.message}</div> : null;
+}
+
+function Landing() {
+  return (
+    <section className="screen center">
+      <div className="card narrow">
+        <h2>Welcome</h2>
+        <p className="muted">Log in to keep your character on any device, or play as a guest in this browser only.</p>
+        <div className="stack">
+          <button className="btn primary" onClick={() => void auth.login()}>Log in</button>
+          <button className="btn ghost" onClick={() => landingChoice.guest()}>Play as guest</button>
+        </div>
+        <p className="muted">A guest character lives in this browser's storage. Clearing it loses the character.</p>
+      </div>
+    </section>
+  );
 }
 
 function Loading() {
@@ -93,9 +109,10 @@ function Elsewhere() {
 }
 
 export function App() {
-  const { conn, me, ready, version } = useApp();
+  const { conn, me, ready, version, landing } = useApp();
   let screen: ReactNode;
-  if (!conn || !me || !ready) screen = <Loading />;
+  if (landing) screen = <Landing />;
+  else if (!conn || !me || !ready) screen = <Loading />;
   else if (!characterOf(conn, me)) screen = <CreateCharacter />;
   else {
     const pres = conn.db.presence.identity.find(me);

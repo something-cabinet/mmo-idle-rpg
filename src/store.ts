@@ -34,6 +34,8 @@ export interface AppState {
   offline: boolean;
   /** The server rejected a login: offer a logout from the loading screen. */
   loginRejected: boolean;
+  /** Not logged in and no guest in this browser yet: show the login / guest choice. */
+  landing: boolean;
 }
 
 export const app = createStore<AppState>({
@@ -42,7 +44,11 @@ export const app = createStore<AppState>({
   status: { text: 'Starting…', ok: false },
   offline: false,
   loginRejected: false,
+  landing: false,
 });
+
+/** Set by the startup code while the landing screen is up; called by its "Play as guest" button. */
+export const landingChoice = { guest: () => {} };
 
 export const useApp = () => useSyncExternalStore(app.subscribe, app.get);
 

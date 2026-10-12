@@ -6,7 +6,7 @@ import type { DbConnection } from './module_bindings';
 import * as auth from './auth';
 import { guestToken, linkStoredGuest, openConnection, serverLabel, subscribeAll, watchAll } from './net';
 import { trackSettles } from './session';
-import { app, toast } from './store';
+import { app, landingChoice, toast } from './store';
 import { App } from './ui/App';
 import { initTheme } from './ui/theme';
 
@@ -51,6 +51,14 @@ async function start() {
 
   await auth.handleRedirect().catch(e => toast(`Login failed: ${e.message ?? e}`));
   const user = await auth.currentUser();
+  if (!user && auth.loginEnabled && !guestToken.load()) {
+    // First visit in this browser: let the player pick login or guest.
+    app.set({ landing: true });
+    await new Promise<void>(resolve => {
+      landingChoice.guest = resolve;
+    });
+    app.set({ landing: false });
+  }
   app.set({ status: { text: `Connecting to ${serverLabel}…`, ok: false } });
 
   openConnection(user?.id_token ?? guestToken.load(), {

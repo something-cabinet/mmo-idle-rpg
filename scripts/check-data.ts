@@ -4,7 +4,7 @@ import { BASE_LIST, TRACKS, base, implicitValue, weaponValues } from '../spaceti
 import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
-import { ENEMIES_BY_ID, ZONES } from '../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, WALL_FACTOR, ZONES, isWallTier } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
 
 let failed = 0;
@@ -38,6 +38,16 @@ for (const zone of ZONES) {
     `${drops.length} drops`);
   check(`${zone.name}: one boss`, zone.enemies.filter(e => e.boss).length === 1);
   check(`${zone.name}: drop IDs exist`, drops.every(id => BASE_LIST.some(b => b.id === id)));
+}
+for (const zone of ZONES) {
+  // Average enemy (o = 0) matches the reference curve, × WALL_FACTOR on wall tiers (zones.md).
+  const avg = zone.enemies.find(e => e.level === 10 * zone.tier);
+  if (!avg || zone.tier === 1) continue;
+  const wall = isWallTier(zone.tier) ? WALL_FACTOR : 1;
+  const hp = 70 * 2.1 ** (zone.tier - 1) * (1 + 0.15 * zone.tier) * wall;
+  const dps = 16 * 1.42 ** (zone.tier - 1) * wall;
+  check(`${zone.name}: average enemy on curve`, Math.abs(avg.hp / hp - 1) < 0.01 && Math.abs(avg.dps / dps - 1) < 0.01,
+    `hp ${avg.hp} vs ${hp.toFixed(0)}, dps ${avg.dps} vs ${dps.toFixed(1)}`);
 }
 check('enemy lookup', ENEMIES_BY_ID.get(101)?.enemy.name === 'Field Rat');
 

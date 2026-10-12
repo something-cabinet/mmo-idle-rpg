@@ -63,6 +63,13 @@ const T2_DROPS = {
   treant: [7, 10, 39, 41, 20, 53],
   wolf: [3, 4, 36, 40, 54, 57],
 };
+const T3_DROPS = {
+  harpy: [8, 2, 36, 33, 38, 51, 54],
+  kobold: [3, 7, 39, 37, 32, 20, 53],
+  wraith: [5, 10, 21, 30, 56, 50],
+  cultist: [9, 4, 31, 34, 52, 57],
+  golem: [1, 6, 35, 40, 41, 55],
+};
 const all = (d: Record<string, number[]>) => Object.values(d).flat();
 
 export const ZONES: ZoneDef[] = [
@@ -94,12 +101,35 @@ export const ZONES: ZoneDef[] = [
       { id: 206, name: 'Morgra, the Thorn Witch', level: 25, damageType: 'Magic', defense: 'Warded', speed: 0.8, hp: 328, dps: 38.9, armor: 25, resistance: 150, xp: 128, gold: 32, drops: all(T2_DROPS), boss: true },
     ],
   },
+  {
+    // Wall tier: HP and DPS × WALL_FACTOR (zones.md, "Difficulty rhythm").
+    id: 3,
+    tier: 3,
+    name: 'Frostmaw Pass',
+    blurb: 'A snowbound mountain pass below an abandoned dwarven hold.',
+    enemies: [
+      { id: 301, name: 'Ice Harpy', level: 26, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 362, dps: 26.1, armor: 65, resistance: 65, xp: 107, gold: 27, drops: T3_DROPS.harpy },
+      { id: 302, name: 'Kobold Tunneler', level: 28, damageType: 'Physical', defense: 'Armored', speed: 1.1, hp: 422, dps: 30.4, armor: 168, resistance: 28, xp: 134, gold: 34, drops: T3_DROPS.kobold },
+      { id: 303, name: 'Frost Wraith', level: 30, damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 492, dps: 35.5, armor: 30, resistance: 180, xp: 168, gold: 42, drops: T3_DROPS.wraith },
+      { id: 304, name: 'Rimebound Cultist', level: 32, damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 574, dps: 41.4, armor: 80, resistance: 80, xp: 211, gold: 53, drops: T3_DROPS.cultist },
+      { id: 305, name: 'Stone Golem', level: 34, damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 670, dps: 48.3, armor: 204, resistance: 34, xp: 265, gold: 66, drops: T3_DROPS.golem },
+      { id: 306, name: 'Hrimvald, Frost Giant Jarl', level: 35, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 844, dps: 60.8, armor: 210, resistance: 35, xp: 372, gold: 93, drops: all(T3_DROPS), boss: true },
+    ],
+  },
 ];
 
 export const ZONES_BY_ID: ReadonlyMap<number, ZoneDef> = new Map(ZONES.map(z => [z.id, z]));
 export const ENEMIES_BY_ID: ReadonlyMap<number, { zone: ZoneDef; enemy: EnemyDef }> = new Map(
   ZONES.flatMap(zone => zone.enemies.map(enemy => [enemy.id, { zone, enemy }] as const))
 );
+
+/**
+ * Enemy HP and DPS multiplier on wall tiers: odd tiers from 3 (zones.md, "Difficulty
+ * rhythm"). Steps into a wall tier (2→3, 4→5, …) are harder than the steps out of one.
+ * Content numbers are precomputed; this documents the factor used.
+ */
+export const WALL_FACTOR = 1.1;
+export const isWallTier = (tier: number) => tier >= 3 && tier % 2 === 1;
 
 export const STARTING_ZONE = 1;
 export const STARTING_TARGET = 101;

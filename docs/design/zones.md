@@ -102,13 +102,43 @@ share of the cycle against weak enemies.
 |---|---|---|---|---|---|---|---|
 | 1 | 10 | 12 | 250 | 80 | 16 | 20 | 5 |
 | 2 | 20 | 27 | 355 | 191 | 23 | 58 | 14 |
-| 3 | 30 | 64 | 504 | 448 | 32 | 168 | 42 |
+| 3 | 30 | 64 | 504 | 492 † | 35 † | 168 | 42 |
 | 4 | 40 | 148 | 716 | 1,037 | 46 | 488 | 122 |
-| 5 | 50 | 340 | 1,016 | 2,382 | 65 | 1,415 | 354 |
+| 5 | 50 | 340 | 1,016 | 2,620 † | 72 † | 1,415 | 354 |
 | 6 | 60 | 776 | 1,443 | 5,432 | 92 | 4,102 | 1,026 |
-| 7 | 70 | 1,758 | 2,050 | 12,307 | 131 | 11,896 | 2,974 |
+| 7 | 70 | 1,758 | 2,050 | 13,538 † | 144 † | 11,896 | 2,974 |
 | 8 | 80 | 3,962 | 2,910 | 27,737 | 186 | 34,500 | 8,625 |
-| 9 | 90 | 8,888 | 4,133 | 62,219 | 265 | 100,000 | 25,000 |
+| 9 | 90 | 8,888 | 4,133 | 68,441 † | 292 † | 100,000 | 25,000 |
+
+† Wall tier: × 1.1 (see below).
+
+### Difficulty rhythm
+
+Difficulty doesn't rise evenly. **Wall tiers** (odd tiers from 3: T3, T5, T7, T9) get
+enemy HP and DPS **× 1.1** on top of the curve above (`WALL_FACTOR` in zones.ts); other
+tiers sit on the curve. T1 is the tutorial and is never a wall.
+
+```
+wall(T) = 1.1 if T ≥ 3 and T is odd, else 1
+enemyHP(T)  = 70 × 2.1^(T−1) × m(T) × wall(T)
+enemyDPS(T) = 16 × 1.42^(T−1)       × wall(T)
+```
+
+| Step | Extra HP and DPS vs the curve | Felt difficulty* |
+|---|---|---|
+| T1 → T2 | × 1 | normal |
+| T2 → T3, T4 → T5, T6 → T7, T8 → T9 | × 1.1 | ~1.21× harder than a normal step |
+| T3 → T4, T5 → T6, T7 → T8 | × 1/1.1 | ~0.83×, a breather |
+
+\* HP and DPS both scale, so difficulty moves with `wall²`.
+
+- It's a sawtooth, not a compounding curve: walls don't stack, so T9 is only 1.1×
+  above the reference player, not 1.1⁴×.
+- On a wall tier the reference player kills in ~11 s and dies in ~22.7 s (vs 10 s / 25 s),
+  so the average enemy is closer to an o = +1 target. The boss (× 1.08^7 on top) needs
+  clearly better than average gear or extra levels.
+- Rewards stay on the reward curve; a wall pays the same per kill but kills are slower,
+  so pushing gear before moving on pays off.
 
 ## Enemy rewards
 

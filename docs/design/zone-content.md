@@ -1,4 +1,4 @@
-# Zone content: tiers 1–2
+# Zone content: tiers 1–3
 
 Concrete zones built on the rules in zones.md. All numbers *illustrative*.
 
@@ -93,6 +93,38 @@ A dark, overgrown forest where bandits and beasts hide. Levels 16–25.
 | Dire Wolf (6) | Bogiron Mace, Bogiron Scepter, Boarhide Bracers, Bogiron Gauntlets, Cut Ruby Amulet, Cut Amber Amulet |
 | Morgra (boss) | Any T2 base |
 
+## T3: Frostmaw Pass
+
+A snowbound mountain pass below an abandoned dwarven hold. Levels 26–35. **Wall tier**:
+HP and DPS × 1.1 over the zones.md curve (zones.md, "Difficulty rhythm").
+
+| Enemy | Level | Damage | Defense | Speed | HP | DPS | Armor / Res | XP | Gold |
+|---|---|---|---|---|---|---|---|---|---|
+| Ice Harpy | 26 | Phys | Balanced | 1.5/s | 362 | 26.1 | 65 / 65 | 107 | 27 |
+| Kobold Tunneler | 28 | Phys | Armored | 1.1/s | 422 | 30.4 | 168 / 28 | 134 | 34 |
+| Frost Wraith | 30 | **Magic** | Warded | 1.0/s | 492 | 35.5 | 30 / 180 | 168 | 42 |
+| Rimebound Cultist | 32 | **Magic** | Balanced | 1.0/s | 574 | 41.4 | 80 / 80 | 211 | 53 |
+| Stone Golem | 34 | Phys | Armored | 0.5/s | 670 | 48.3 | 204 / 34 | 265 | 66 |
+| **Boss: Hrimvald, Frost Giant Jarl** | 35 | Phys | **Armored** | 0.6/s | 844 | 60.8 | 210 / 35 | 372 | 93 |
+
+- Two magic enemies in a row (wraith, cultist), so the resistance picked up for Morgra
+  keeps paying off.
+- The boss is physical and armored, the opposite of Morgra again: plate soaks its hits,
+  but physical builds need armor penetration (mace, greatsword) or a switch to magic.
+- Not simulated yet (no boss check like T1 has).
+
+**Drops:**
+
+| Enemy | Bases |
+|---|---|
+| Ice Harpy (7) | Heartoak Bow, Dwarven Dagger, Wolfhide Bracers, Spidersilk Shoes, Dwarven Helm, Flawless Emerald Ring, Flawless Ruby Amulet |
+| Kobold Tunneler (7) | Dwarven Mace, Dwarven Greatsword, Dwarven Breastplate, Wolfhide Boots, Spidersilk Gloves, Dwarven Shield, Flawless Amber Ring |
+| Frost Wraith (6) | Heartoak Wand, Heartoak Healing Staff, Scholar's Tome, Spidersilk Hood, Flawless Sapphire Amulet, Flawless Ruby Ring |
+| Rimebound Cultist (6) | Heartoak Fire Staff, Dwarven Scepter, Spidersilk Robe, Wolfhide Cap, Flawless Sapphire Ring, Flawless Amber Amulet |
+| Stone Golem (6) | Dwarven Sword, Dwarven Katana, Wolfhide Vest, Dwarven Gauntlets, Dwarven Greaves, Flawless Emerald Amulet |
+| Hrimvald (boss) | Any T3 base |
+
 ## Open
 
 - Enemy and boss art (placeholders for now).
+- T3 uniques (none yet; T3 drops T1–T2 uniques) and the T3 boss's simulated check.

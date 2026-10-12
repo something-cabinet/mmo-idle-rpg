@@ -11,7 +11,7 @@ not decisions.
 | [bases.md](bases.md) | Base templates and names per tier |
 | [crafting.md](crafting.md) | Essence, salvage, affix reroll, rarity upgrade, bag expansion |
 | [zones.md](zones.md) | Zones, enemy levels, enemy stats, rewards, loot tables |
-| [zone-content.md](zone-content.md) | T1 Greenhollow and T2 Thornwood: enemies, bosses, drops, starter kit |
+| [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass: enemies, bosses, drops, starter kit |
 | [legendary.md](legendary.md) | Legendary affixes: effects, slot pools, formulas |
 | [uniques.md](uniques.md) | Uniques: rules, global drops, the list |
 | [ui.md](ui.md) | Desktop layout and screens (wireframes) |
@@ -30,6 +30,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-12 | Difficulty rhythm: odd tiers from 3 are wall tiers with enemy HP and DPS × 1.1 (not compounding), so T2→T3, T4→T5… are harder steps than T1→T2, T3→T4…. Rewards unchanged. |
 | 2026-10-09 | One character per account (alts would just be extra idle farms). |
 | 2026-10-09 | No player trading for now. |
 | 2026-10-09 | Items are stored literally (final values saved on the item). |

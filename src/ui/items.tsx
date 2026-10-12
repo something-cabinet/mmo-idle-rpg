@@ -46,11 +46,11 @@ export const affixLabel = (stat: number) => {
   return `${d.name}${d.percent ? ' %' : ''}`;
 };
 
-/** A weapon's base lines: what it is first (handedness), then its stats. */
-function weaponLines(w: NonNullable<Item['weapon']>): string[] {
+/** A weapon's base lines: what it is first (handedness, range), then its stats. */
+function weaponLines(it: Item, w: NonNullable<Item['weapon']>): string[] {
   const speed = w.speedMilli / 1000;
   return [
-    w.twoHanded ? 'Two-handed' : 'One-handed',
+    `${w.twoHanded ? 'Two-handed' : 'One-handed'}${base(it.baseId).weapon?.ranged ? ', ranged' : ''}`,
     `Damage ${fmt(fromStored(w.hit))} ${w.damageType.tag === 'Physical' ? 'phys' : 'magic'} · ${speed}/s`,
     `Crit ${w.baseCritBp / 100}%`,
     ...(w.heal > 0n ? [`Heal ${fmt(fromStored(w.heal))}${w.healTarget?.tag === 'All' ? ' (all)' : ''}`] : []),
@@ -60,7 +60,7 @@ function weaponLines(w: NonNullable<Item['weapon']>): string[] {
 export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /** Extra line under the header, e.g. "In Farm". */ note?: string }) {
   const r = rarityCls(it.rarity.tag);
   const leg = it.legendary && EFFECTS_BY_ID.get(it.legendary.effect);
-  const implicits = [...(it.weapon ? weaponLines(it.weapon) : []), ...it.implicits.map(i => statText(i.stat, i.value))];
+  const implicits = [...(it.weapon ? weaponLines(it, it.weapon) : []), ...it.implicits.map(i => statText(i.stat, i.value))];
   return (
     <div className={`item-card r-${r}${compact ? ' compact' : ''}`}>
       <div className="item-head">

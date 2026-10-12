@@ -39,7 +39,7 @@ function WeaponTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
             return (
               <tr key={b.id}>
                 <td className="name"><Icon name={itemIconName({ baseId: b.id })} />{b.name(tier)}</td>
-                <td>{w.twoHanded ? '2H' : '1H'}</td>
+                <td>{w.twoHanded ? '2H' : '1H'}{w.ranged ? ' ranged' : ''}</td>
                 <td className="num">{damageText(w)}</td>
                 <td className="num">{w.speed}/s</td>
                 <td className="num">{fmt(w.hit * w.speed)}</td>
@@ -153,7 +153,7 @@ function UniqueCard({ u }: { u: UniqueDef }) {
   const b = BASE_LIST.find(x => x.id === u.baseId)!;
   const w = b.weapon && weaponValues(b.weapon, u.tier);
   const baseLines = [
-    ...(w ? [w.twoHanded ? 'Two-handed' : 'One-handed', `Damage ${damageText(w)} · ${w.speed}/s`, `Crit ${w.baseCrit}%`, ...(w.heal > 0 ? [`Heal ${healText(w)}`] : [])] : []),
+    ...(w ? [`${w.twoHanded ? 'Two-handed' : 'One-handed'}${w.ranged ? ', ranged' : ''}`, `Damage ${damageText(w)} · ${w.speed}/s`, `Crit ${w.baseCrit}%`, ...(w.heal > 0 ? [`Heal ${healText(w)}`] : [])] : []),
     ...implicitLines(b, u.tier),
   ];
   return (

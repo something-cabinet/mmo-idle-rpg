@@ -81,6 +81,8 @@ T1 values; damage ×2.1 per tier, heal ×1.33 per tier. 1H weapons deal ~10 DPS 
 | Fire staff | 2H | Magic | 18.75 | 0.8 | 15 | 7,092 | 5% | — (pure damage) |
 | Healing staff | 2H | Magic | 5 | 1.0 | 5 | 1,891 | 5% | Heal 7.5 per hit (T9: 73), all allies |
 
+- **Ranged** weapons (Bow, Wand, Fire staff, Healing staff) attack from a distance; the
+  rest are melee. No mechanics hang off the tag yet.
 - Weapons with a trait give up a little DPS for it; trait percents scale like percent
   stats (the table shows T9 values).
 - Heal weapons trade most of their damage for healing. Solo, a healer should heal

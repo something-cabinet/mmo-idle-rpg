@@ -34,6 +34,8 @@ export interface WeaponTemplate {
   heal?: number;
   healTarget?: HealTarget;
   twoHanded: boolean;
+  /** Attacks from a distance (bows, wands, staves); melee otherwise. */
+  ranged: boolean;
 }
 
 export interface BaseDef {
@@ -148,16 +150,16 @@ function jewelryBases(): BaseDef[] {
 }
 
 export const BASE_LIST: BaseDef[] = [
-  weapon(1, 'Sword', 'metal', { damageType: 'Physical', hit: 10, speed: 1.0, baseCrit: 5, twoHanded: false }, [pct(Stat.Might, 60)]),
-  weapon(2, 'Dagger', 'metal', { damageType: 'Physical', hit: 4.75, speed: 2.0, baseCrit: 8, twoHanded: false }, [pct(Stat.CritChancePct, 30)]),
-  weapon(3, 'Mace', 'metal', { damageType: 'Physical', hit: 11.75, speed: 0.8, baseCrit: 5, twoHanded: false }, [pct(Stat.ArmorPenPct, 15)]),
-  weapon(4, 'Scepter', 'metal', { damageType: 'Physical', hit: 7.5, speed: 0.8, baseCrit: 5, heal: 10, healTarget: 'Single', twoHanded: false }),
-  weapon(5, 'Wand', 'wood', { damageType: 'Magic', hit: 6.25, speed: 1.5, baseCrit: 6, twoHanded: false }, [pct(Stat.MagicPenPct, 15)]),
-  weapon(6, 'Katana', 'metal', { damageType: 'Physical', hit: 9.5, speed: 1.4, baseCrit: 10, twoHanded: true }, [pct(Stat.CritDamage, 40)]),
-  weapon(7, 'Greatsword', 'metal', { damageType: 'Physical', hit: 23.75, speed: 0.55, baseCrit: 5, twoHanded: true }, [pct(Stat.ArmorPenPct, 25)]),
-  weapon(8, 'Bow', 'wood', { damageType: 'Physical', hit: 13.25, speed: 1.0, baseCrit: 6, twoHanded: true }, [lin(Stat.EvasionRating, 1.5)]),
-  weapon(9, 'Fire Staff', 'wood', { damageType: 'Magic', hit: 18.75, speed: 0.8, baseCrit: 5, twoHanded: true }),
-  weapon(10, 'Healing Staff', 'wood', { damageType: 'Magic', hit: 5, speed: 1.0, baseCrit: 5, heal: 7.5, healTarget: 'All', twoHanded: true }),
+  weapon(1, 'Sword', 'metal', { damageType: 'Physical', hit: 10, speed: 1.0, baseCrit: 5, twoHanded: false, ranged: false }, [pct(Stat.Might, 60)]),
+  weapon(2, 'Dagger', 'metal', { damageType: 'Physical', hit: 4.75, speed: 2.0, baseCrit: 8, twoHanded: false, ranged: false }, [pct(Stat.CritChancePct, 30)]),
+  weapon(3, 'Mace', 'metal', { damageType: 'Physical', hit: 11.75, speed: 0.8, baseCrit: 5, twoHanded: false, ranged: false }, [pct(Stat.ArmorPenPct, 15)]),
+  weapon(4, 'Scepter', 'metal', { damageType: 'Physical', hit: 7.5, speed: 0.8, baseCrit: 5, heal: 10, healTarget: 'Single', twoHanded: false, ranged: false }),
+  weapon(5, 'Wand', 'wood', { damageType: 'Magic', hit: 6.25, speed: 1.5, baseCrit: 6, twoHanded: false, ranged: true }, [pct(Stat.MagicPenPct, 15)]),
+  weapon(6, 'Katana', 'metal', { damageType: 'Physical', hit: 9.5, speed: 1.4, baseCrit: 10, twoHanded: true, ranged: false }, [pct(Stat.CritDamage, 40)]),
+  weapon(7, 'Greatsword', 'metal', { damageType: 'Physical', hit: 23.75, speed: 0.55, baseCrit: 5, twoHanded: true, ranged: false }, [pct(Stat.ArmorPenPct, 25)]),
+  weapon(8, 'Bow', 'wood', { damageType: 'Physical', hit: 13.25, speed: 1.0, baseCrit: 6, twoHanded: true, ranged: true }, [lin(Stat.EvasionRating, 1.5)]),
+  weapon(9, 'Fire Staff', 'wood', { damageType: 'Magic', hit: 18.75, speed: 0.8, baseCrit: 5, twoHanded: true, ranged: true }),
+  weapon(10, 'Healing Staff', 'wood', { damageType: 'Magic', hit: 5, speed: 1.0, baseCrit: 5, heal: 7.5, healTarget: 'All', twoHanded: true, ranged: true }),
   {
     id: 20,
     kind: 'offhand',
@@ -206,6 +208,7 @@ export interface WeaponValues {
   heal: number;
   healTarget?: HealTarget;
   twoHanded: boolean;
+  ranged: boolean;
 }
 
 export function weaponValues(w: WeaponTemplate, t: number): WeaponValues {
@@ -217,6 +220,7 @@ export function weaponValues(w: WeaponTemplate, t: number): WeaponValues {
     heal: wholeValue((w.heal ?? 0) * curve('heal', t)),
     healTarget: w.healTarget,
     twoHanded: w.twoHanded,
+    ranged: w.ranged,
   };
 }
 

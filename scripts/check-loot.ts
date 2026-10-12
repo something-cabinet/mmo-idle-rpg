@@ -66,6 +66,8 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   }));
   check('Finesse T1 is 0–4.44 on any item (even slices of the T9 range)',
     affixRange(Stat.Finesse, 1).every((x, i) => near(x, [0, 40 / 9][i], 1e-9)));
+  check('base crit T1 is 0.5–1, T9 is 4.5–5', near(affixRange(Stat.BaseCritChance, 1)[0], 0.5, 1e-9) && near(affixRange(Stat.BaseCritChance, 1)[1], 1, 1e-9) &&
+    near(affixRange(Stat.BaseCritChance, 9)[0], 4.5, 1e-9) && near(affixRange(Stat.BaseCritChance, 9)[1], 5, 1e-9));
   check('Finesse T9 is 35.6–40', near(affixRange(Stat.Finesse, 9)[0], 320 / 9, 1e-9) && near(affixRange(Stat.Finesse, 9)[1], 40, 1e-9));
   check('phys damage T3 follows the curve: ref(T2)–ref(T3)',
     near(affixRange(Stat.PhysDamage, 3)[0], affixRef(Stat.PhysDamage, 2), 1e-9) && near(affixRange(Stat.PhysDamage, 3)[1], affixRef(Stat.PhysDamage, 3), 1e-9));
@@ -80,7 +82,7 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   const hpMean = [1, 2, 3, 4, 5].reduce((sum, k) => sum + (affixRange(Stat.MaxHp, k)[0] + affixRange(Stat.MaxHp, k)[1]) / 2, 0) / 5;
   check(`max HP on T5 averages ≈ ${hpMean.toFixed(0)}`, near(mean(hp), hpMean, 4), mean(hp).toFixed(1));
   const lifesteal = rolls.filter(r => r.stat === Stat.LifestealPct).length;
-  check('lifesteal is rare (weight 10)', lifesteal > 0 && lifesteal < hp.length / 4, `${lifesteal} vs ${hp.length} max HP`);
+  check('lifesteal is rare (weight 25)', lifesteal > hp.length / 8 && lifesteal < hp.length / 2, `${lifesteal} vs ${hp.length} max HP`);
   check('same affix can roll on every stat', new Set(rolls.map(r => r.stat)).size === Object.keys(STATS).length);
 
   for (const rarity of RARITIES.filter(r => r !== 'Unique')) {
@@ -99,16 +101,16 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     const it = makeItem(rng, baseId, 4, 'Legendary');
     const def = LEGENDARIES_BY_ID.get(it.legendary!.effect);
     if (!def) return { group: undefined, inRange: false }; // a unique effect: must never roll
-    const ref = affixRef(def.bonusStat, 4);
+    const [lo, hi] = affixRange(def.bonusStat, 4);
     const v = Number(it.legendary!.value) / 100;
     const tol = STATS[def.bonusStat].decimals ? 0.01 : 0.5;
-    return { group: def.group, inRange: it.legendary!.stat === def.bonusStat && (v >= ref * 0.25 - tol || v === 1) && v <= Math.max(1, ref * 0.5 + tol) };
+    return { group: def.group, inRange: it.legendary!.stat === def.bonusStat && (v >= lo / 2 - tol || v === 1) && v <= Math.max(1, hi / 2 + tol) };
   };
   const sample = (id: number) => Array.from({ length: 30 }, () => groupOf(id));
   check('weapons and tome roll Offense legendaries', [1, 21].flatMap(sample).every(g => g.group === 'Offense'));
   check('armor and shield roll Defense legendaries', [35, 20].flatMap(sample).every(g => g.group === 'Defense'));
   check('jewelry rolls Utility legendaries', [50, 57].flatMap(sample).every(g => g.group === 'Utility'));
-  check('legendary bonus is 0.25–0.5 × ref (and no unique effect rolls)', [1, 35, 50].flatMap(sample).every(g => g.inRange));
+  check('legendary bonus is half a top-affix-tier roll (and no unique effect rolls)', [1, 35, 50].flatMap(sample).every(g => g.inRange));
   const seen = new Set([1, 21, 35, 20, 50, 57].flatMap(id => Array.from({ length: 200 }, () => makeItem(rng, id, 4, 'Legendary').legendary!.effect)));
   check('every legendary effect rolls, no unique effect does',
     LEGENDARIES.every(l => seen.has(l.id)) && UNIQUE_EFFECTS.every(u => !seen.has(u.id)), `${seen.size} effects seen`);

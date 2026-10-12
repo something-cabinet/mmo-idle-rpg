@@ -108,11 +108,12 @@ export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
   return { stat: def.id, tier: k, value: toStored(roundStat(def.id, value)) };
 }
 
-/** A legendary affix from the base's group: equal weights, bonus in [0.25, 0.5] × ref. */
+/** A legendary affix from the base's group: equal weights, bonus is half a regular affix roll of the item's top affix tier. */
 export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullable<NewItem['legendary']> {
   const group = legendaryGroup(baseId, base(baseId).kind);
   const def = pick(rng, LEGENDARIES.filter(l => l.group === group));
-  const value = affixRef(def.bonusStat, tier) * (0.25 + 0.25 * rng());
+  const [lo, hi] = affixRange(def.bonusStat, tier);
+  const value = (lo + (hi - lo) * rng()) / 2;
   return { effect: def.id, stat: def.bonusStat, value: toStored(roundStat(def.bonusStat, value)) };
 }
 

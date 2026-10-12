@@ -214,7 +214,7 @@ export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot })
           <div className="card">
             <CardHead title="Legendary affixes" />
             <p className="muted">
-              A Legendary item has 2 affixes plus one legendary affix from its slot's group: a small stat bonus and an
+              A Legendary item has 2 affixes plus one legendary affix from its slot's group: a stat bonus (half a roll of the item's top affix tier) and an
               effect. Wearing more copies adds the effect again, up to its cap.
             </p>
             <LegendaryTable />

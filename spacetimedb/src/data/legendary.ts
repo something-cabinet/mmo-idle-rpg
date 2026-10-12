@@ -65,7 +65,7 @@ function legendary(def: Omit<LegendaryDef, 'text'>): LegendaryDef {
 /** The effects a Legendary item rolls. */
 export const LEGENDARIES: LegendaryDef[] = [
   // Offense
-  legendary({ id: 1, name: 'Overcrit', group: 'Offense', bonusStat: Stat.CritChancePct, perCopy: 2, cap: Infinity,
+  legendary({ id: 1, name: 'Overcrit', group: 'Offense', bonusStat: Stat.BaseCritChance, perCopy: 2, cap: Infinity,
     describe: a => `Crit chance above 100% gives +${Number(a.toFixed(2))}% crit damage per 1% of excess.` }),
   legendary({ id: 3, name: "Zealot's Oath", group: 'Offense', bonusStat: Stat.HealPct, perCopy: 0.5, cap: Infinity,
     describe: a => `Your heals also damage the enemy for ${pc(a)} of the heal (magic).` }),

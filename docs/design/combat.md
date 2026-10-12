@@ -63,7 +63,7 @@ mitigation(def, pen, level) = min(0.85, d / (d + 5 × level))   where d = def ×
 evasion  = min(0.60, r / (r + 10 × enemyLevel))                  // r = evasion rating
 
 // Crit is per source: base crit comes from the weapon (attributes.md).
-critChance(s) = s.weapon.baseCrit × (1 + Σ increasedCrit%)        // uncapped
+critChance(s) = (s.weapon.baseCrit + Σ baseCrit) × (1 + Σ increasedCrit%)        // uncapped
 critMult(s)   = 1 + min(1, critChance(s)) × (critDamage − 1)      // excess over 100% unused              // damage and heals
 
 // Attack sources: each equipped weapon that attacks, with a speed factor.

@@ -34,8 +34,8 @@ Effects come in two kinds:
   says so). `amount = min(cap, perCopy × copies)`.
 - **Effect IDs are permanent**, like stat IDs: the effect's behaviour is code, so
   changing it deliberately changes every item that has it.
-- **Small stat bonus:** rolls uniformly in `[0.25, 0.5] × ref(stat, N)` (attributes.md),
-  i.e. up to half a regular affix's best roll. Bonuses always add up.
+- **Stat bonus:** half a regular affix roll of the item's top affix tier (affix tier N on
+  a tier-N item, attributes.md), halved before rounding. Bonuses always add up.
 - **Closed form:** every effect changes a term in the combat formulas (combat.md), so
   settlement stays exact online and offline.
 - **Epic → Legendary crafting** (crafting.md) rolls from the same group.
@@ -44,7 +44,7 @@ Effects come in two kinds:
 
 | ID | Name | Stat bonus | Per copy | Cap |
 |---|---|---|---|---|
-| 1 | **Overcrit** | Increased crit chance % | Each 1% of crit chance above 100% gives **+2% crit damage** | none |
+| 1 | **Overcrit** | Base crit chance | Each 1% of crit chance above 100% gives **+2% crit damage** | none |
 | 3 | **Zealot's Oath** | Heal % | Your heals also damage the enemy for **50%** of the heal (magic) | none |
 | 14 | **Executioner** | Physical damage % | Enemies below **30%** HP take double damage | 50% |
 | 15 | **Rending** | Armor penetration % | Your physical damage ignores **40%** of the enemy's armor mitigation left after penetration | 70% |

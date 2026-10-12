@@ -96,7 +96,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
         row('Attack speed', `${src.attacksPerSec.toFixed(2)} /s`,
           from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, "Floor: 25% of the weapon's speed")),
         row('Crit chance', pct(src.critChance, 1),
-          from([Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
+          from([Stat.BaseCritChance, Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
             leg(Effect.Overcrit))),
         row('Crit damage', pct(st.critDamage), from([Stat.CritDamage], 'Base 150%')),
         row('Armor / magic pen', `${pct(st.armorPen)} / ${pct(st.magicPen)}`, from([Stat.ArmorPenPct, Stat.MagicPenPct], 'Cap 75% each',

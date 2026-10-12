@@ -145,7 +145,7 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     }
     const baseHeal = fromStored(w.heal);
     const heal = baseHeal > 0 ? (baseHeal + flat(Stat.Heal)) * (1 + healPct) : 0;
-    const critChance = (w.baseCritBp / 10_000) * (1 + critIncreased);
+    const critChance = (w.baseCritBp / 10_000 + pct(Stat.BaseCritChance)) * (1 + critIncreased);
     // Overcrit: each 1% of crit chance above 100% gives +2% crit damage per copy.
     const critDmg = critDamage + amount(Effect.Overcrit) * Math.max(0, critChance - 1);
     sources.push({

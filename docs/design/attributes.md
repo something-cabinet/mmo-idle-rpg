@@ -70,7 +70,7 @@ PoE2-style: crit chance starts from the **weapon's base crit chance** and is sca
 "increased crit chance" modifiers.
 
 ```
-critChance(source) = source.weapon.baseCrit × (1 + Σ increased crit chance%)     // uncapped
+critChance(source) = (source.weapon.baseCrit + Σ base crit chance) × (1 + Σ increased crit chance%)     // uncapped
 critDamage         = 150% + Σ crit damage
 ```
 
@@ -112,6 +112,7 @@ and existing IDs are never reused, renumbered or redefined.
 | 5 | Attack speed | % | floor 25% of weapon | Kill speed |
 | 6 | Crit chance | % increased | base from weapon, no cap (excess over 100% unused) | Kill speed, heals |
 | 7 | Crit damage | % points | base 150% | Kill speed, heals |
+| 30 | Base crit chance | % points | added to weapon base crit, before increased | Kill speed, heals |
 | 8 | Armor penetration | % | cap 75% | Kill speed vs Armor |
 | 9 | Magic penetration | % | cap 75% | Kill speed vs Resistance |
 | 10 | Max HP | flat | | Survival |
@@ -183,8 +184,8 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 **Item values are whole numbers.** Every rolled or computed value on an item (affixes,
 implicits, legendary bonuses, weapon hit and heal) is rounded to the nearest whole
 number, and never below 1 (a T1 flat damage roll is 1 or 2). Only the very small stats
-keep two decimals: **lifesteal** (best T1 roll ≈ 0.17%) and **HP regen** (best T1 roll
-0.5/s). Values are still stored in hundredths, so those two fit the same column.
+keep two decimals: **lifesteal** (best T1 roll ≈ 0.17%), **base crit chance** (affix tier 1 rolls 0.5–1%) and **HP regen** (best T1 roll
+0.5/s). Values are still stored in hundredths, so those fit the same column.
 
 ### Percent stats (*illustrative*)
 
@@ -197,12 +198,13 @@ output, after the bonus from level primaries.
 | Attack speed % | 10% | Scales damage and heals, so lower |
 | Increased crit chance % | 40% | 5% base → 7% |
 | Crit damage | +30 points | 150% → 180% |
+| Base crit chance | +5 points | Weight 25 (rare); affix tiers span 0.5% (worst T1) to 5% (best T9) instead of starting at 0; 5% base → 10%, then scaled by increased |
 | Armor / magic penetration % | 15% | Cap 75% |
 | Max HP % | 15% | |
 | Armor / resistance / evasion % | 25% | |
 | Heal % | 30% | |
 | Threat % | 30% | |
-| Lifesteal % | 0.5% | Weight 10 (rare), cap 3% |
+| Lifesteal % | 0.5% | Weight 25 (rare), cap 3% |
 | Item find % | 15% | |
 | Gold find % | 20% | |
 | XP gain % | 10% | |

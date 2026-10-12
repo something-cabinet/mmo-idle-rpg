@@ -104,13 +104,24 @@ const FightScene = memo(
   function FightScene({ s }: { s: Snapshot }) {
     const { enemy: e } = s.target!;
     useEffect(() => {
-      if (!s.current) return;
-      // Each next fight comes from a fresh projection, so it uses the latest row and gear.
-      startFight(s.current, now => {
+      // Each fight comes from a fresh projection, so it uses the latest row and gear.
+      const fresh = (now: bigint) => {
         const row = s.conn.db.character.id.find(s.row.id);
         return row ? snapshot(s.conn, row, now).current : undefined;
-      });
-      return stopFight;
+      };
+      // Right after a defeat or a target change the projection can have no fight yet
+      // (the settle time is ahead of our clock): keep trying instead of never starting.
+      let retry = 0;
+      const begin = () => {
+        const first = s.current ?? fresh(nowMicros());
+        if (first) startFight(first, fresh);
+        else retry = window.setTimeout(begin, 100);
+      };
+      begin();
+      return () => {
+        window.clearTimeout(retry);
+        stopFight();
+      };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once per fight (keyed by the parent)
     const fighter = (who: 'you' | 'enemy', portrait: React.ReactNode, name: React.ReactNode) => (
       <div className="fighter" id={`fighter-${who}`}>

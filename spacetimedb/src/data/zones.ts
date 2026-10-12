@@ -49,13 +49,13 @@ export const DROP_CHANCE = {
   Unique: 0.00003,
 } as const;
 
-// Base IDs (bases.ts): weapons 1-10, shield 20, tome 21, cloth 30-33, leather 34-37,
+// Base IDs (bases.ts): weapons 1-11, shield 20, tome 21, cloth 30-33, leather 34-37,
 // plate 38-41 (head, chest, hands, feet), rings 50-53 and amulets 54-57
 // (Might/Ruby, Finesse/Emerald, Mind/Sapphire, Vitality/Amber).
 const T1_DROPS = {
   rat: [2, 5, 34, 33, 40, 51, 57],
   boar: [3, 8, 38, 37, 31, 20, 50],
-  scout: [1, 6, 36, 30, 56, 55],
+  scout: [1, 6, 11, 36, 30, 56, 55],
   wisp: [9, 10, 21, 32, 52, 54],
   brute: [7, 4, 39, 41, 35, 53],
 };
@@ -63,7 +63,7 @@ const T2_DROPS = {
   spider: [2, 8, 32, 37, 38, 51, 56],
   cutthroat: [1, 6, 34, 35, 33, 50, 55],
   shaman: [5, 9, 21, 30, 31, 52],
-  treant: [7, 10, 39, 41, 20, 53],
+  treant: [7, 10, 11, 39, 41, 20, 53],
   wolf: [3, 4, 36, 40, 54, 57],
 };
 const T3_DROPS = {
@@ -71,7 +71,7 @@ const T3_DROPS = {
   kobold: [3, 7, 39, 37, 32, 20, 53],
   wraith: [5, 10, 21, 30, 56, 50],
   cultist: [9, 4, 31, 34, 52, 57],
-  golem: [1, 6, 35, 40, 41, 55],
+  golem: [1, 6, 11, 35, 40, 41, 55],
 };
 const all = (d: Record<string, number[]>) => Object.values(d).flat();
 

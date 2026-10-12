@@ -52,6 +52,7 @@ heal with a target, threat multiplier), plus attack speed and a trait.
 | Katana | 2H | Phys | Mid | Fast | 10% | +Crit damage |
 | Greatsword | 2H | Phys | Very high | Very slow | 5% | +Armor penetration |
 | Bow | 2H | Phys | High | Mid | 6% | +Evasion rating |
+| Crossbow | 2H | Phys | Very high | Slow | 12% | +Crit damage |
 | Wand | 1H | Magic | Low | Fast | 6% | +Magic penetration |
 | Fire staff | 2H | Magic | Very high | Slow | 5% | Pure damage |
 | Healing staff | 2H | Magic | Low | Mid | 5% | Heal, all allies |

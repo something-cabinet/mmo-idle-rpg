@@ -38,6 +38,7 @@ const PATHS: Record<string, string> = {
   'i-katana': 'M21 3C16 9 10 13 6 15M5 14l5 5M3 21l3.5-3.5',
   'i-greatsword': 'M12 2l2 3v10h-4V5l2-3zM7 15h10M12 15v7',
   'i-bow': 'M6 3a15 15 0 0 1 15 15M6 3l15 15M3 21l9-9M3 21h3M3 21v-3',
+  'i-crossbow': 'M10 3a9 9 0 0 1 11 11M10 3l11 11M4 20 17 7M7 14l3 3',
   'i-fire-staff': 'M12 22V10M12 10c-2.5-2-2.5-5 0-8 2.5 3 2.5 6 0 8z',
   'i-healing-staff': 'M12 22V11M12 2v7M8.5 5.5h7',
   'i-shield': 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 2v20M4 10h16',

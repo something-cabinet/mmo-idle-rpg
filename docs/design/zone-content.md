@@ -60,7 +60,7 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 |---|---|
 | Field Rat (7) | Rusted Dagger, Driftwood Wand, Ratskin Cap, Sackcloth Shoes, Rusted Gauntlets, Rough Emerald Ring, Rough Amber Amulet |
 | Wild Boar (7) | Rusted Mace, Driftwood Bow, Rusted Helm, Ratskin Boots, Sackcloth Robe, Rusted Shield, Rough Ruby Ring |
-| Goblin Scout (6) | Rusted Sword, Rusted Katana, Ratskin Bracers, Sackcloth Hood, Rough Sapphire Amulet, Rough Emerald Amulet |
+| Goblin Scout (7) | Rusted Sword, Rusted Katana, Driftwood Crossbow, Ratskin Bracers, Sackcloth Hood, Rough Sapphire Amulet, Rough Emerald Amulet |
 | Bog Wisp (6) | Driftwood Fire Staff, Driftwood Healing Staff, Tattered Tome, Sackcloth Gloves, Rough Sapphire Ring, Rough Ruby Amulet |
 | Goblin Brute (6) | Rusted Greatsword, Rusted Scepter, Rusted Breastplate, Rusted Greaves, Ratskin Vest, Rough Amber Ring |
 | Grubnak (boss) | Any T1 base |
@@ -100,7 +100,7 @@ A dark, overgrown forest where bandits and beasts hide. Levels 16–25.
 | Thornback Spider (7) | Bogiron Dagger, Gnarled Bow, Homespun Gloves, Boarhide Boots, Bogiron Helm, Cut Emerald Ring, Cut Sapphire Amulet |
 | Bandit Cutthroat (7) | Bogiron Sword, Bogiron Katana, Boarhide Cap, Boarhide Vest, Homespun Shoes, Cut Ruby Ring, Cut Emerald Amulet |
 | Briar Shaman (6) | Gnarled Wand, Gnarled Fire Staff, Dog-eared Tome, Homespun Hood, Homespun Robe, Cut Sapphire Ring |
-| Ironbark Treant (6) | Bogiron Greatsword, Gnarled Healing Staff, Bogiron Breastplate, Bogiron Greaves, Bogiron Shield, Cut Amber Ring |
+| Ironbark Treant (7) | Bogiron Greatsword, Gnarled Healing Staff, Gnarled Crossbow, Bogiron Breastplate, Bogiron Greaves, Bogiron Shield, Cut Amber Ring |
 | Dire Wolf (6) | Bogiron Mace, Bogiron Scepter, Boarhide Bracers, Bogiron Gauntlets, Cut Ruby Amulet, Cut Amber Amulet |
 | Morgra (boss) | Any T2 base |
 
@@ -143,7 +143,7 @@ HP and DPS × 1.1 over the zones.md curve (zones.md, "Difficulty rhythm").
 | Kobold Tunneler (7) | Dwarven Mace, Dwarven Greatsword, Dwarven Breastplate, Wolfhide Boots, Spidersilk Gloves, Dwarven Shield, Flawless Amber Ring |
 | Frost Wraith (6) | Heartoak Wand, Heartoak Healing Staff, Scholar's Tome, Spidersilk Hood, Flawless Sapphire Amulet, Flawless Ruby Ring |
 | Rimebound Cultist (6) | Heartoak Fire Staff, Dwarven Scepter, Spidersilk Robe, Wolfhide Cap, Flawless Sapphire Ring, Flawless Amber Amulet |
-| Stone Golem (6) | Dwarven Sword, Dwarven Katana, Wolfhide Vest, Dwarven Gauntlets, Dwarven Greaves, Flawless Emerald Amulet |
+| Stone Golem (7) | Dwarven Sword, Dwarven Katana, Heartoak Crossbow, Wolfhide Vest, Dwarven Gauntlets, Dwarven Greaves, Flawless Emerald Amulet |
 | Hrimvald (boss) | Any T3 base |
 
 **Materials:** Dwarven Steel Ingot (Metal), Frostfur Hide (Hide), Rime Core (Core), Spidersilk Thread (Cloth), Heartoak Timber (Wood), Frostbloom (Reagent), Flawless Gem (Gem).

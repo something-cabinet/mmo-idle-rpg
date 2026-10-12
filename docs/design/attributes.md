@@ -75,7 +75,7 @@ critDamage         = 150% + Σ crit damage
 ```
 
 - Base crit is part of the weapon family (equipment.md), e.g. sword 5%, dagger 8%,
-  katana 10%.
+  katana 10%, crossbow 12%.
 - Increased crit chance from all sources (affixes, Finesse, bases) stacks
   **additively**: +20% and +30% give +50%, so a 10% base becomes 15%.
 - **No cap.** Crit chance is shown and stored above 100%, but the hit roll uses at most

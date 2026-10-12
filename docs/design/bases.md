@@ -34,7 +34,7 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
 | 9 | Celestial | Worldroot | Starweave | Starhide | Celestial |
 
 - **Metal:** sword, dagger, mace, scepter (holy mace), katana, greatsword, shield, plate.
-- **Wood:** bow, wand, fire staff, healing staff.
+- **Wood:** bow, crossbow, wand, fire staff, healing staff.
 - Item name = `<track> <piece>`, e.g. Dwarven Greatsword, Heartoak Bow, Spidersilk Robe,
   Wolfhide Vest, Gilded Tome.
 - **Tone by tier:** T1–T2 sound cheap or crude, T3 solid and ordinary, T4 a little fancy,
@@ -78,10 +78,11 @@ T1 values; damage ×2.1 per tier, heal ×1.33 per tier. 1H weapons deal ~10 DPS 
 | Katana | 2H | Phys | 9.5 | 1.4 | 13.3 | 3,593 | 10% | +40 crit damage |
 | Greatsword | 2H | Phys | 23.75 | 0.55 | 13.1 | 8,983 | 5% | +25% armor penetration |
 | Bow | 2H | Phys | 13.25 | 1.0 | 13.25 | 5,012 | 6% | +1.5T evasion rating |
+| Crossbow | 2H | Phys | 18 | 0.7 | 12.6 | 6,808 | 12% | +40 crit damage |
 | Fire staff | 2H | Magic | 18.75 | 0.8 | 15 | 7,092 | 5% | — (pure damage) |
 | Healing staff | 2H | Magic | 5 | 1.0 | 5 | 1,891 | 5% | Heal 7.5 per hit (T9: 73), all allies |
 
-- **Ranged** weapons (Bow, Wand, Fire staff, Healing staff) attack from a distance; the
+- **Ranged** weapons (Bow, Crossbow, Wand, Fire staff, Healing staff) attack from a distance; the
   rest are melee. No mechanics hang off the tag yet.
 - Weapons with a trait give up a little DPS for it; trait percents scale like percent
   stats (the table shows T9 values).

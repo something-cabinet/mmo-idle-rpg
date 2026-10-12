@@ -1239,7 +1239,7 @@ select:focus,
   margin: 0;
   justify-self: start;
 }
-.craft-filters input[type='search'] {
+.bag-filters input[type='search'] {
   max-width: 420px;
 }
 .bag-affixes {

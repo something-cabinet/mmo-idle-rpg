@@ -1,13 +1,14 @@
 import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { rerollCost, upgradeCost } from '../../../spacetimedb/src/craft';
-import { SLOTS, base, type Slot } from '../../../spacetimedb/src/data/bases';
+import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
 import { RARITIES, rarityRank, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { ItemCard, itemIconName, itemName, rarityCls, statText } from '../items';
-import { CardHead, SLOT_FILTERS, ViewHeader, cantAfford, costText, loadoutNote, toggle } from '../shared';
+import { ItemFilterCard, useItemFilter } from '../itemFilter';
+import { CardHead, ViewHeader, cantAfford, costText, loadoutNote } from '../shared';
 import type { Snapshot } from '../snapshot';
 
 type Where = 'all' | 'equipped' | 'bag';
@@ -15,10 +16,6 @@ type CraftSort = 'rarity' | 'tier' | 'newest' | 'slot';
 
 /** Rarities that can be crafted: uniques can't. */
 const CRAFT_RARITIES = RARITIES.filter(r => r !== 'Unique');
-
-/** Lowercased text the search matches: name, family, rarity and every stat line. */
-const searchText = (it: Item) =>
-  [itemName(it), base(it.baseId).family, it.rarity.tag, ...[...it.implicits, ...it.affixes].map(a => statText(a.stat, a.value))].join(' ').toLowerCase();
 
 function AffixPick({ it, name, value, onChange }: { it: Item; name: string; value: number; onChange: (i: number) => void }) {
   return (
@@ -36,9 +33,7 @@ function AffixPick({ it, name, value, onChange }: { it: Item; name: string; valu
 
 export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const [itemId, setItemId] = useSticky<bigint | undefined>('craftItem', undefined);
-  const [search, setSearch] = useSticky('craftSearch', '');
-  const [rarities, setRarities] = useSticky<readonly RarityName[]>('craftRarities', []);
-  const [slots, setSlots] = useSticky<readonly Slot[]>('craftSlots', []);
+  const filter = useItemFilter('craft');
   const [where, setWhere] = useSticky<Where>('craftWhere', 'all');
   const [sort, setSort] = useSticky<CraftSort>('craftSort', 'rarity');
   const [rerollIndex, setRerollIndex] = useState(0);
@@ -46,7 +41,6 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const r = s.conn.reducers;
 
   const craftable = [...s.items.values()].filter(it => it.rarity.tag !== 'Unique');
-  const words = search.toLowerCase().split(/\s+/).filter(Boolean);
   const by: Record<CraftSort, (a: Item, b: Item) => number> = {
     rarity: (a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag) || b.tier - a.tier,
     tier: (a, b) => b.tier - a.tier || rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag),
@@ -54,61 +48,40 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
     slot: (a, b) => SLOTS.indexOf(base(a.baseId).slots[0]) - SLOTS.indexOf(base(b.baseId).slots[0]) || b.tier - a.tier,
   };
   const items = craftable
-    .filter(it =>
-      (!rarities.length || rarities.includes(it.rarity.tag)) &&
-      (!slots.length || slots.includes(base(it.baseId).slots[0])) &&
-      (where === 'all' || (where === 'equipped') === s.inLoadouts.has(it.id)) &&
-      (!words.length || (t => words.every(w => t.includes(w)))(searchText(it))))
+    .filter(it => filter.matches(it) && (where === 'all' || (where === 'equipped') === s.inLoadouts.has(it.id)))
     .sort((a, b) => by[sort](a, b) || (a.id < b.id ? 1 : -1));
-  const filtered = rarities.length > 0 || slots.length > 0 || where !== 'all' || words.length > 0;
-  const clear = () => { setSearch(''); setRarities([]); setSlots([]); setWhere('all'); };
   // The chosen item stays open even when the filters hide it from the list.
   const item = s.items.get(itemId ?? 0n) ?? items[0];
   const filters = (
-    <div className="bag-filters card craft-filters">
-      <span className="toolbar-label">Search</span>
-      <input
-        type="search"
-        placeholder="Name, family or affix, e.g. crit, ring, plate…"
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-      />
-      <span className="toolbar-label">Rarity</span>
-      <div className="seg wrap">
-        {CRAFT_RARITIES.map(r => (
-          <button key={r} className={`seg-btn c-${rarityCls(r)}${rarities.includes(r) ? ' active' : ''}`} onClick={() => setRarities(toggle(rarities, r))}>
-            {r}
-          </button>
-        ))}
-      </div>
-      <span className="toolbar-label">Slot</span>
-      <div className="seg wrap">
-        {SLOT_FILTERS.map(([slot, label]) => (
-          <button key={slot} className={`seg-btn${slots.includes(slot) ? ' active' : ''}`} onClick={() => setSlots(toggle(slots, slot))}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <span className="toolbar-label">Where</span>
-      <div className="seg wrap">
-        {(['all', 'equipped', 'bag'] as Where[]).map(w => (
-          <button key={w} className={`seg-btn${w === where ? ' active' : ''}`} onClick={() => setWhere(w)}>
-            {w === 'all' ? 'Anywhere' : w === 'equipped' ? 'Equipped' : 'Bag'}
-          </button>
-        ))}
-      </div>
-      <span className="bag-filters-foot">
-        <span className="muted">{filtered ? `Showing ${items.length} of ${craftable.length}` : `${craftable.length} craftable items`}</span>
-        {filtered && <button className="btn small ghost" onClick={clear}>Clear filters</button>}
-        <span className="spacer" />
+    <ItemFilterCard
+      f={filter}
+      storageKey="craft_filters_collapsed"
+      rarities={CRAFT_RARITIES}
+      shown={items.length}
+      total={craftable.length}
+      extraActive={where === 'all' ? 0 : 1}
+      onClear={() => setWhere('all')}
+      extra={
+        <>
+          <span className="toolbar-label">Where</span>
+          <div className="seg wrap">
+            {(['all', 'equipped', 'bag'] as Where[]).map(w => (
+              <button key={w} className={`seg-btn${w === where ? ' active' : ''}`} onClick={() => setWhere(w)}>
+                {w === 'all' ? 'Anywhere' : w === 'equipped' ? 'Equipped' : 'Bag'}
+              </button>
+            ))}
+          </div>
+        </>
+      }
+      foot={
         <select value={sort} onChange={e => setSort(e.target.value as CraftSort)}>
           <option value="rarity">Sort: Rarity</option>
           <option value="tier">Sort: Tier</option>
           <option value="newest">Sort: Newest</option>
           <option value="slot">Sort: Slot</option>
         </select>
-      </span>
-    </div>
+      }
+    />
   );
   const head = (
     <ViewHeader title="Crafting" icon="hammer">

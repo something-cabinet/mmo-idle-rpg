@@ -1209,6 +1209,12 @@ select:focus,
 .craft-filters input[type='search'] {
   max-width: 420px;
 }
+.bag-affixes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
 .bag-filters-foot {
   grid-column: 1 / -1;
   display: flex;

@@ -3,23 +3,41 @@ import type { Item } from '../../module_bindings/types';
 import { bagExpansionCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base, type Slot } from '../../../spacetimedb/src/data/bases';
 import { MATERIALS } from '../../../spacetimedb/src/data/materials';
+import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
-import { RARITIES, rarityRank, salvageValue, type RarityName } from '../../../spacetimedb/src/loot';
+import { AFFIX_STAT_IDS, RARITIES, rarityRank, salvageValue, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { ItemTile, itemName, materialIconName, rarityCls } from '../items';
+import { ItemTile, affixLabel, itemName, materialIconName, rarityCls } from '../items';
 import { CardHead, Modal, SLOT_FILTERS, SLOT_LABEL, SwapPreview, ViewHeader, openCraft, toggle } from '../shared';
 import type { Snapshot } from '../snapshot';
 
 type BagSort = 'newest' | 'rarity' | 'tier' | 'slot';
 
+interface BagFilter {
+  rarities: readonly RarityName[];
+  slots: readonly Slot[];
+  affixes: readonly number[];
+  /** Minimum affix tier: applies to every chosen affix, or to any affix when none is chosen. 1 means any. */
+  minAffixTier: number;
+}
+
+const AFFIX_OPTIONS = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) })).sort((a, b) => a.label.localeCompare(b.label));
+
+/** The item has every chosen affix at the minimum tier, or (none chosen) any affix at it. */
+function matchesAffixes(it: Item, affixes: readonly number[], minTier: number): boolean {
+  if (!affixes.length) return minTier <= 1 || it.affixes.some(a => a.tier >= minTier);
+  return affixes.every(stat => it.affixes.some(a => a.stat === stat && a.tier >= minTier));
+}
 
 /** The bag, filtered (an empty selection means any) and sorted. */
-function sortedBag(s: Snapshot, sort: BagSort, rarities: readonly RarityName[], slots: readonly Slot[]): Item[] {
+function sortedBag(s: Snapshot, sort: BagSort, f: BagFilter): Item[] {
   const items = s.bag.filter(it =>
-    (!rarities.length || rarities.includes(it.rarity.tag)) && (!slots.length || slots.includes(base(it.baseId).slots[0])));
+    (!f.rarities.length || f.rarities.includes(it.rarity.tag)) &&
+    (!f.slots.length || f.slots.includes(base(it.baseId).slots[0])) &&
+    matchesAffixes(it, f.affixes, f.minAffixTier));
   const by: Record<BagSort, (a: Item, b: Item) => number> = {
     newest: (a, b) => (a.id < b.id ? 1 : -1),
     rarity: (a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag) || b.tier - a.tier,
@@ -101,6 +119,8 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const [sort, setSort] = useSticky<BagSort>('bagSort', 'newest');
   const [rarities, setRarities] = useSticky<readonly RarityName[]>('bagRarities', []);
   const [slotFilter, setSlotFilter] = useSticky<readonly Slot[]>('bagSlots', []);
+  const [affixFilter, setAffixFilter] = useSticky<readonly number[]>('bagAffixes', []);
+  const [minAffixTier, setMinAffixTier] = useSticky('bagMinAffixTier', 1);
   const [selectMode, setSelectMode] = useSticky('bagSelectMode', false);
   const [sel, setSel] = useState<ReadonlySet<bigint>>(new Set());
   /** Last clicked item: the start of a shift-click range. */
@@ -108,7 +128,8 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const [openId, setOpenId] = useState<bigint>();
   const r = s.conn.reducers;
 
-  const shown = sortedBag(s, sort, rarities, slotFilter);
+  const shown = sortedBag(s, sort, { rarities, slots: slotFilter, affixes: affixFilter, minAffixTier });
+  const filtered = rarities.length > 0 || slotFilter.length > 0 || affixFilter.length > 0 || minAffixTier > 1;
   // Selections and the popup drop items that left the bag.
   const selected = s.bag.filter(i => sel.has(i.id));
   const open = s.bag.find(i => i.id === openId);
@@ -176,10 +197,38 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
             </button>
           ))}
         </div>
+        <span className="toolbar-label">Affix</span>
+        <div className="bag-affixes">
+          {affixFilter.length > 0 && (
+            <div className="seg wrap">
+              {affixFilter.map(id => (
+                <button key={id} className="seg-btn active" title="Remove" onClick={() => setAffixFilter(toggle(affixFilter, id))}>
+                  {affixLabel(id)} <Icon name="x" />
+                </button>
+              ))}
+            </div>
+          )}
+          <select value="" onChange={e => setAffixFilter([...affixFilter, Number(e.target.value)])}>
+            <option value="">{affixFilter.length ? 'And affix…' : 'Any affix…'}</option>
+            {AFFIX_OPTIONS.filter(o => !affixFilter.includes(o.id)).map(o => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+        <span className="toolbar-label">Affix tier</span>
+        <div className="seg wrap">
+          {Array.from({ length: MAX_TIER }, (_, i) => i + 1).map(t => (
+            <button key={t} className={`seg-btn${t === minAffixTier ? ' active' : ''}`} onClick={() => setMinAffixTier(t)}>
+              {t === 1 ? 'Any' : `T${t}+`}
+            </button>
+          ))}
+        </div>
         <span className="bag-filters-foot">
           <span className="muted">{shown.length === s.bag.length ? 'Showing all' : `Showing ${shown.length} of ${s.bag.length}`}</span>
-          {(rarities.length > 0 || slotFilter.length > 0) && (
-            <button className="btn small ghost" onClick={() => { setRarities([]); setSlotFilter([]); }}>Clear filters</button>
+          {filtered && (
+            <button className="btn small ghost" onClick={() => { setRarities([]); setSlotFilter([]); setAffixFilter([]); setMinAffixTier(1); }}>
+              Clear filters
+            </button>
           )}
         </span>
       </div>

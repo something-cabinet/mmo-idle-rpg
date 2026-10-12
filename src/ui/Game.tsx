@@ -11,6 +11,7 @@ import { DefeatReport } from './DefeatReport';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
+import { FriendsTab } from './Friends';
 import { InspectPopup } from './Inspect';
 import { AccountControls, Modal, perHour } from './shared';
 import { snapshot, type Snapshot } from './snapshot';
@@ -142,7 +143,7 @@ const useNarrow = () =>
   }, () => narrow.matches);
 
 function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnection; pres: Presence; mobile: boolean; onCollapse: (collapsed: boolean) => void; onInspect: (characterId: bigint) => void }) {
-  const [tab, setTab] = useState<'chat' | 'online'>('chat');
+  const [tab, setTab] = useState<'chat' | 'online' | 'friends'>('chat');
   const [text, setText] = useState('');
   const log = useRef<HTMLUListElement>(null);
   const atBottom = useRef(true);
@@ -166,6 +167,7 @@ function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnect
         <button className={`tab${tab === 'online' ? ' active' : ''}`} onClick={() => setTab('online')}>
           <Icon name="users" />Online <span className="count">{online.length}</span>
         </button>
+        <button className={`tab${tab === 'friends' ? ' active' : ''}`} onClick={() => setTab('friends')}><Icon name="heart" />Friends</button>
         <button className="btn icon ghost social-collapse" title={mobile ? 'Close' : 'Collapse'} onClick={() => onCollapse(true)}>
           {mobile ? <Icon name="x" /> : '»'}
         </button>
@@ -197,6 +199,8 @@ function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnect
             <input placeholder="Say something…" maxLength={200} autoComplete="off" value={text} onChange={e => setText(e.target.value)} />
           </form>
         </div>
+      ) : tab === 'friends' ? (
+        <FriendsTab conn={conn} onInspect={onInspect} />
       ) : (
         <div className="tab-body">
           <ul id="online-list">

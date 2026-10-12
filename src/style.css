@@ -660,6 +660,51 @@ select:focus,
   color: var(--accent);
   text-decoration: underline;
 }
+#friend-form {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+#friend-form input {
+  flex: 1;
+  min-width: 0;
+}
+.friend-empty {
+  padding: 8px 12px;
+}
+#friend-list {
+  padding: 8px 12px;
+  overflow-y: auto;
+}
+#friend-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+/* Online dot, grey while offline. */
+#friend-list li::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--surface-3);
+}
+#friend-list li.online::before {
+  background: var(--ok);
+}
+#friend-list .online-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.friend-remove {
+  flex: 0 0 auto;
+}
 
 /* ------------------------------------------------------------------ fight */
 .head-tags {
@@ -1854,7 +1899,8 @@ fieldset.affix-pick legend {
     display: none;
   }
   /* 16px stops iOS zooming in when the input gets focus. */
-  #chat-form input {
+  #chat-form input,
+  #friend-form input {
     font-size: 16px;
   }
   .chat-toggle {

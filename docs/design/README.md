@@ -30,6 +30,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-12 | Friends, kept simple: add a character by name to a one-way friend list (no request or acceptance), see who is online, and inspect a friend's worn gear even while they're offline (as of their last settle). Max 100. |
 | 2026-10-12 | Difficulty rhythm: odd tiers from 3 are wall tiers with enemy HP and DPS × 1.1 (not compounding), so T2→T3, T4→T5… are harder steps than T1→T2, T3→T4…. Rewards unchanged. |
 | 2026-10-09 | One character per account (alts would just be extra idle farms). |
 | 2026-10-09 | No player trading for now. |

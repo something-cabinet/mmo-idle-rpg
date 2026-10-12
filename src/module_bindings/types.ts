@@ -97,6 +97,14 @@ export const EquipProfile = __t.enum("EquipProfile", {
 });
 export type EquipProfile = __Infer<typeof EquipProfile>;
 
+export const Friend = __t.object("Friend", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  friendId: __t.u64(),
+  addedAt: __t.timestamp(),
+});
+export type Friend = __Infer<typeof Friend>;
+
 // The tagged union or sum type for the algebraic type `HealTarget`.
 export const HealTarget = __t.enum("HealTarget", {
   Single: __t.unit(),
@@ -191,6 +199,12 @@ export type MyBossKills = __Infer<typeof MyBossKills>;
 
 export const MyEnemyKills = __t.object("MyEnemyKills", {});
 export type MyEnemyKills = __Infer<typeof MyEnemyKills>;
+
+export const MyFriendCharacters = __t.object("MyFriendCharacters", {});
+export type MyFriendCharacters = __Infer<typeof MyFriendCharacters>;
+
+export const MyFriends = __t.object("MyFriends", {});
+export type MyFriends = __Infer<typeof MyFriends>;
 
 export const MyItems = __t.object("MyItems", {});
 export type MyItems = __Infer<typeof MyItems>;

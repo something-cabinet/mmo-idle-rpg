@@ -260,6 +260,15 @@ export function addKills(ctx: Ctx, characterId: bigint, enemyId: number, kills: 
 }
 
 /** Deletes a character and everything it owns. */
+/** Most characters one friend list can hold. */
+export const MAX_FRIENDS = 100;
+
+/** `friendId` is on `characterId`'s friend list. */
+export function isFriend(ctx: Ctx, characterId: bigint, friendId: bigint): boolean {
+  for (const f of ctx.db.friend.characterId.filter(characterId)) if (f.friendId === friendId) return true;
+  return false;
+}
+
 export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.item.characterId.delete(characterId);
   ctx.db.loadout.characterId.delete(characterId);
@@ -267,6 +276,8 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.enemyKill.characterId.delete(characterId);
   ctx.db.settleLog.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);
+  ctx.db.friend.characterId.delete(characterId);
+  ctx.db.friend.friendId.delete(characterId);
   ctx.db.character.id.delete(characterId);
 }
 

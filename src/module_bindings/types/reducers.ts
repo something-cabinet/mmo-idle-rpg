@@ -7,6 +7,7 @@ import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
 import AcceptLinkReducer from "../accept_link_reducer";
+import AddFriendReducer from "../add_friend_reducer";
 import AutoEquipReducer from "../auto_equip_reducer";
 import CreateCharacterReducer from "../create_character_reducer";
 import EquipReducer from "../equip_reducer";
@@ -16,6 +17,7 @@ import InspectCharacterReducer from "../inspect_character_reducer";
 import LockItemReducer from "../lock_item_reducer";
 import OfferLinkReducer from "../offer_link_reducer";
 import PlayHereReducer from "../play_here_reducer";
+import RemoveFriendReducer from "../remove_friend_reducer";
 import RenameLoadoutReducer from "../rename_loadout_reducer";
 import RerollAffixReducer from "../reroll_affix_reducer";
 import SalvageReducer from "../salvage_reducer";
@@ -30,6 +32,7 @@ import UnequipReducer from "../unequip_reducer";
 import UpgradeRarityReducer from "../upgrade_rarity_reducer";
 
 export type AcceptLinkParams = __Infer<typeof AcceptLinkReducer>;
+export type AddFriendParams = __Infer<typeof AddFriendReducer>;
 export type AutoEquipParams = __Infer<typeof AutoEquipReducer>;
 export type CreateCharacterParams = __Infer<typeof CreateCharacterReducer>;
 export type EquipParams = __Infer<typeof EquipReducer>;
@@ -39,6 +42,7 @@ export type InspectCharacterParams = __Infer<typeof InspectCharacterReducer>;
 export type LockItemParams = __Infer<typeof LockItemReducer>;
 export type OfferLinkParams = __Infer<typeof OfferLinkReducer>;
 export type PlayHereParams = __Infer<typeof PlayHereReducer>;
+export type RemoveFriendParams = __Infer<typeof RemoveFriendReducer>;
 export type RenameLoadoutParams = __Infer<typeof RenameLoadoutReducer>;
 export type RerollAffixParams = __Infer<typeof RerollAffixReducer>;
 export type SalvageParams = __Infer<typeof SalvageReducer>;

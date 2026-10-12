@@ -35,6 +35,7 @@ import {
 
 // Import all reducer arg schemas
 import AcceptLinkReducer from "./accept_link_reducer";
+import AddFriendReducer from "./add_friend_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import EquipReducer from "./equip_reducer";
@@ -44,6 +45,7 @@ import InspectCharacterReducer from "./inspect_character_reducer";
 import LockItemReducer from "./lock_item_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
+import RemoveFriendReducer from "./remove_friend_reducer";
 import RenameLoadoutReducer from "./rename_loadout_reducer";
 import RerollAffixReducer from "./reroll_affix_reducer";
 import SalvageReducer from "./salvage_reducer";
@@ -68,6 +70,8 @@ import InspectedLoadoutRow from "./inspected_loadout_table";
 import MyAccountRow from "./my_account_table";
 import MyBossKillsRow from "./my_boss_kills_table";
 import MyEnemyKillsRow from "./my_enemy_kills_table";
+import MyFriendCharactersRow from "./my_friend_characters_table";
+import MyFriendsRow from "./my_friends_table";
 import MyItemsRow from "./my_items_table";
 import MyLoadoutsRow from "./my_loadouts_table";
 import MyLootFilterRow from "./my_loot_filter_table";
@@ -165,6 +169,20 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyEnemyKillsRow),
+  myFriendCharacters: __table({
+    name: 'my_friend_characters',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyFriendCharactersRow),
+  myFriends: __table({
+    name: 'my_friends',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyFriendsRow),
   myItems: __table({
     name: 'my_items',
     indexes: [
@@ -198,6 +216,7 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
+  __reducerSchema("add_friend", AddFriendReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("equip", EquipReducer),
@@ -207,6 +226,7 @@ const reducersSchema = __reducers(
   __reducerSchema("lock_item", LockItemReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
+  __reducerSchema("remove_friend", RemoveFriendReducer),
   __reducerSchema("rename_loadout", RenameLoadoutReducer),
   __reducerSchema("reroll_affix", RerollAffixReducer),
   __reducerSchema("salvage", SalvageReducer),
@@ -239,6 +259,10 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_boss_kills": Omit<typeof tablesSchema.schemaType.tables["myBossKills"], "accessorName"> & { readonly accessorName: "my_boss_kills" };
     /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
     readonly "my_enemy_kills": Omit<typeof tablesSchema.schemaType.tables["myEnemyKills"], "accessorName"> & { readonly accessorName: "my_enemy_kills" };
+    /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
+    readonly "my_friend_characters": Omit<typeof tablesSchema.schemaType.tables["myFriendCharacters"], "accessorName"> & { readonly accessorName: "my_friend_characters" };
+    /** @deprecated Use `myFriends` instead. This alias will be removed in the next major version. */
+    readonly "my_friends": Omit<typeof tablesSchema.schemaType.tables["myFriends"], "accessorName"> & { readonly accessorName: "my_friends" };
     /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
     readonly "my_items": Omit<typeof tablesSchema.schemaType.tables["myItems"], "accessorName"> & { readonly accessorName: "my_items" };
     /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */
@@ -271,6 +295,8 @@ const tableAccessorAliases = {
   "my_account": "myAccount",
   "my_boss_kills": "myBossKills",
   "my_enemy_kills": "myEnemyKills",
+  "my_friend_characters": "myFriendCharacters",
+  "my_friends": "myFriends",
   "my_items": "myItems",
   "my_loadouts": "myLoadouts",
   "my_loot_filter": "myLootFilter",
@@ -307,6 +333,10 @@ export type DbView = __DbViewBase & {
   readonly "my_boss_kills": __DbViewBase["myBossKills"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
   readonly "my_enemy_kills": __DbViewBase["myEnemyKills"];
+  /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
+  readonly "my_friend_characters": __DbViewBase["myFriendCharacters"];
+  /** @deprecated Use `myFriends` instead. This alias will be removed in the next major version. */
+  readonly "my_friends": __DbViewBase["myFriends"];
   /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
   readonly "my_items": __DbViewBase["myItems"];
   /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */
@@ -331,6 +361,10 @@ export type Tables = __TablesBase & {
   readonly "my_boss_kills": __TablesBase["myBossKills"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
   readonly "my_enemy_kills": __TablesBase["myEnemyKills"];
+  /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
+  readonly "my_friend_characters": __TablesBase["myFriendCharacters"];
+  /** @deprecated Use `myFriends` instead. This alias will be removed in the next major version. */
+  readonly "my_friends": __TablesBase["myFriends"];
   /** @deprecated Use `myItems` instead. This alias will be removed in the next major version. */
   readonly "my_items": __TablesBase["myItems"];
   /** @deprecated Use `myLoadouts` instead. This alias will be removed in the next major version. */

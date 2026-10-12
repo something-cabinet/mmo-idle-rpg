@@ -240,7 +240,27 @@ await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.
 await b.conn.reducers.offerLink({ target: a.me });
 await expectError('guest cannot accept a link', a.conn.reducers.acceptLink({ guest: b.me, discardGuestCharacter: false }), 'Log in first');
 
+// Friends: add by name (any case), then inspect them while they're offline.
+const aId = charOf(a)!.id;
+await expectError('add unknown name rejected', b.conn.reducers.addFriend({ name: `nobody_${suffix}` }), 'No character named');
+await expectError('add yourself rejected', b.conn.reducers.addFriend({ name: `bob_${suffix}` }), "can't add yourself");
+await b.conn.reducers.addFriend({ name: `ALICE_${suffix}` });
+await sleep(200);
+check('friend added by name, any case', [...b.conn.db.myFriends.iter()].some(f => f.friendId === aId) &&
+  [...b.conn.db.myFriendCharacters.iter()].some(c => c.id === aId));
+await expectError('duplicate friend rejected', b.conn.reducers.addFriend({ name: `Alice_${suffix}` }), 'already on your friend list');
 a.conn.disconnect();
+await sleep(300);
+check('friend is offline', ![...b.conn.db.presence.iter()].some(p => p.characterId === aId));
+await b.conn.reducers.inspectCharacter({ characterId: aId });
+await sleep(200);
+check('inspect an offline friend', [...b.conn.db.inspectedCharacter.iter()][0]?.id === aId && b.conn.db.inspectedItems.count() > 0n);
+await b.conn.reducers.inspectCharacter({ characterId: 0n });
+await b.conn.reducers.removeFriend({ friendId: aId });
+await sleep(200);
+check('friend removed', b.conn.db.myFriends.count() === 0n && b.conn.db.myFriendCharacters.count() === 0n);
+await expectError('inspect an offline non-friend rejected', b.conn.reducers.inspectCharacter({ characterId: aId }), 'not online');
+
 b.conn.disconnect();
 console.log(failed ? `\n${failed} FAILED` : '\nAll passed');
 process.exit(failed ? 1 : 0);

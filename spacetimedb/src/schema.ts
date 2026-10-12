@@ -265,6 +265,20 @@ export const inspect = table(
   }
 );
 
+/**
+ * Friend list, one-way: `characterId` added `friendId` (no request or acceptance yet).
+ * Friends can be inspected while offline. Private; owners read theirs via `my_friends`.
+ */
+export const friend = table(
+  { name: 'friend' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    friendId: t.u64().index('btree'),
+    addedAt: t.timestamp(),
+  }
+);
+
 /** A guest consenting to have its character moved into a registered account. */
 export const linkOffer = table(
   { name: 'link_offer' },
@@ -292,6 +306,7 @@ export const spacetimedb = schema({
   character,
   presence,
   inspect,
+  friend,
   linkOffer,
   chatMessage,
   item,

@@ -37,6 +37,7 @@ export const Stat = {
   Mind: 27,
   Vitality: 28,
   EvasionRatingPct: 29,
+  BaseCritChance: 30, // percentage points added to the weapon's base crit, before increased
 } as const;
 export type StatId = (typeof Stat)[keyof typeof Stat];
 
@@ -76,9 +77,11 @@ export interface StatDef {
   weight?: number;
   /** Item values keep two decimals; every other stat is a whole number on items. */
   decimals?: boolean;
+  /** 'linear'/'percent' only: lowest roll of affix tier 1 (default 0), so even the worst roll counts. */
+  floor?: number;
 }
 
-const s = (id: StatId, name: string, percent: boolean, c: Curve, ref?: number, weight?: number, decimals?: boolean): StatDef => ({
+const s = (id: StatId, name: string, percent: boolean, c: Curve, ref?: number, weight?: number, decimals?: boolean, floor?: number): StatDef => ({
   id,
   name,
   percent,
@@ -86,6 +89,7 @@ const s = (id: StatId, name: string, percent: boolean, c: Curve, ref?: number, w
   ref,
   weight,
   decimals,
+  floor,
 });
 
 export const STATS: Record<StatId, StatDef> = {
@@ -106,7 +110,7 @@ export const STATS: Record<StatId, StatDef> = {
   15: s(15, 'Resistance', true, 'percent', 25),
   16: s(16, 'Evasion rating', false, 'linear', 5),
   17: s(17, 'HP regen', false, 'life', 0.5, undefined, true),
-  18: s(18, 'Lifesteal', true, 'percent', 0.5, 10, true),
+  18: s(18, 'Lifesteal', true, 'percent', 0.5, 25, true),
   19: s(19, 'Heal', false, 'heal', 2),
   20: s(20, 'Heal', true, 'percent', 30),
   21: s(21, 'Threat', true, 'percent', 30),
@@ -118,6 +122,7 @@ export const STATS: Record<StatId, StatDef> = {
   27: s(27, 'Mind', false, 'percent', 40),
   28: s(28, 'Vitality', false, 'percent', 40),
   29: s(29, 'Evasion rating', true, 'percent', 25),
+  30: s(30, 'Base crit chance', true, 'percent', 5, 25, true, 0.5),
 };
 
 /** Caps (display units). */
@@ -129,7 +134,7 @@ export const CAPS = {
 
 /**
  * Rounds a value for an item: whole numbers, at least 1 away from zero, except for
- * the very small stats marked `decimals` (lifesteal, HP regen), which keep hundredths.
+ * the very small stats marked `decimals` (lifesteal, HP regen, base crit chance), which keep hundredths.
  */
 export function roundStat(stat: StatId, v: number): number {
   if (STATS[stat].decimals) return Math.round(v * 100) / 100;
@@ -155,15 +160,16 @@ export function affixRef(stat: StatId, tier: number): number {
 
 /**
  * Value range of affix tier `k` (1..MAX_TIER), the same on every item tier (equipment.md).
- * Evenly growing stats ('linear', 'percent') split the T9 range into MAX_TIER equal
- * slices; fast-growing ones ('offense', 'life', 'heal') follow their curve: tier k rolls
+ * Evenly growing stats ('linear', 'percent') split the T9 range (from `floor`, default 0)
+ * into MAX_TIER equal slices; fast-growing ones ('offense', 'life', 'heal') follow their curve: tier k rolls
  * from the best roll at tier k−1 (0 for k = 1) to the best roll at tier k.
  */
 export function affixRange(stat: StatId, k: number): [number, number] {
   const d = STATS[stat];
   if (d.curve === 'linear' || d.curve === 'percent') {
     const top = affixRef(stat, MAX_TIER);
-    return [(top * (k - 1)) / MAX_TIER, (top * k) / MAX_TIER];
+    const lo = d.floor ?? 0;
+    return [lo + ((top - lo) * (k - 1)) / MAX_TIER, lo + ((top - lo) * k) / MAX_TIER];
   }
   return [k === 1 ? 0 : affixRef(stat, k - 1), affixRef(stat, k)];
 }

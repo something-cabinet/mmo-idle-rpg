@@ -65,6 +65,17 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 | Goblin Brute (6) | Rusted Greatsword, Rusted Scepter, Rusted Breastplate, Rusted Greaves, Ratskin Vest, Rough Amber Ring |
 | Grubnak (boss) | Any T1 base |
 
+**Materials:** Copper Ingot (Metal), Rough Hide (Hide), Faint Core (Core).
+
+| Enemy | Materials |
+|---|---|
+| Field Rat | Rough Hide |
+| Wild Boar | Rough Hide |
+| Goblin Scout | Copper Ingot |
+| Bog Wisp | Faint Core |
+| Goblin Brute | Copper Ingot |
+| Grubnak (boss) | Copper Ingot, Rough Hide |
+
 ## T2: Thornwood
 
 A dark, overgrown forest where bandits and beasts hide. Levels 16–25.
@@ -92,6 +103,17 @@ A dark, overgrown forest where bandits and beasts hide. Levels 16–25.
 | Ironbark Treant (6) | Bogiron Greatsword, Gnarled Healing Staff, Bogiron Breastplate, Bogiron Greaves, Bogiron Shield, Cut Amber Ring |
 | Dire Wolf (6) | Bogiron Mace, Bogiron Scepter, Boarhide Bracers, Bogiron Gauntlets, Cut Ruby Amulet, Cut Amber Amulet |
 | Morgra (boss) | Any T2 base |
+
+**Materials:** Bog Iron Bar (Metal), Thick Hide (Hide), Thorn Heart (Core).
+
+| Enemy | Materials |
+|---|---|
+| Thornback Spider | Thick Hide |
+| Bandit Cutthroat | Bog Iron Bar |
+| Briar Shaman | Thorn Heart |
+| Ironbark Treant | Thorn Heart |
+| Dire Wolf | Thick Hide |
+| Morgra (boss) | Thorn Heart |
 
 ## T3: Frostmaw Pass
 
@@ -123,6 +145,17 @@ HP and DPS × 1.1 over the zones.md curve (zones.md, "Difficulty rhythm").
 | Rimebound Cultist (6) | Heartoak Fire Staff, Dwarven Scepter, Spidersilk Robe, Wolfhide Cap, Flawless Sapphire Ring, Flawless Amber Amulet |
 | Stone Golem (6) | Dwarven Sword, Dwarven Katana, Wolfhide Vest, Dwarven Gauntlets, Dwarven Greaves, Flawless Emerald Amulet |
 | Hrimvald (boss) | Any T3 base |
+
+**Materials:** Dwarven Steel Ingot (Metal), Frostfur Hide (Hide), Rime Core (Core).
+
+| Enemy | Materials |
+|---|---|
+| Ice Harpy | Frostfur Hide |
+| Kobold Tunneler | Dwarven Steel Ingot |
+| Frost Wraith | Rime Core |
+| Rimebound Cultist | Rime Core |
+| Stone Golem | Dwarven Steel Ingot, Rime Core |
+| Hrimvald (boss) | Dwarven Steel Ingot, Frostfur Hide |
 
 ## Open
 

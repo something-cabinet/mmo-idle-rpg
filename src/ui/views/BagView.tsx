@@ -2,13 +2,14 @@ import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { bagExpansionCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base, type Slot } from '../../../spacetimedb/src/data/bases';
+import { MATERIALS } from '../../../spacetimedb/src/data/materials';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
 import { RARITIES, rarityRank, salvageValue, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { ItemTile, itemName, rarityCls } from '../items';
+import { ItemTile, itemName, materialIconName, rarityCls } from '../items';
 import { CardHead, Modal, SLOT_FILTERS, SLOT_LABEL, SwapPreview, ViewHeader, openCraft, toggle } from '../shared';
 import type { Snapshot } from '../snapshot';
 
@@ -26,6 +27,27 @@ function sortedBag(s: Snapshot, sort: BagSort, rarities: readonly RarityName[], 
     slot: (a, b) => SLOTS.indexOf(base(a.baseId).slots[0]) - SLOTS.indexOf(base(b.baseId).slots[0]) || b.tier - a.tier,
   };
   return items.sort(by[sort]);
+}
+
+/** Materials held, highest tier first. */
+function MaterialsCard({ s }: { s: Snapshot }) {
+  const held = MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => b.tier - a.tier);
+  return (
+    <div className="card">
+      <CardHead title="Materials" />
+      {held.length ? (
+        <div className="chips">
+          {held.map(m => (
+            <span key={m.id} className="chip" title={`T${m.tier} ${m.kind}`}>
+              <Icon name={materialIconName(m.id)} className="c-material" />{m.name}<strong>{fmtBig(s.materials.get(m.id)!)}</strong>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="muted">None yet. Enemies drop metal, hides and (magical ones) cores of their zone's tier.</p>
+      )}
+    </div>
+  );
 }
 
 /** Slots of the active loadout the item can go in. */
@@ -136,6 +158,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
           <option value="slot">Sort: Slot</option>
         </select>
       </div>
+      <MaterialsCard s={s} />
       <div className="bag-filters card">
         <span className="toolbar-label">Rarity</span>
         <div className="seg wrap">

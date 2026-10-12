@@ -10,7 +10,7 @@ import { DmgTag, EnemyDetail } from '../enemy';
 import { startFight, stopFight } from '../fight';
 import { duration, fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { itemName, rarityCls } from '../items';
+import { itemName, materialsText, rarityCls } from '../items';
 import { CardHead, openCraft, perHour, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
 
@@ -33,6 +33,14 @@ function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?
             {it.rarity.tag} {itemName(it)}
           </a>
           <span className="muted">kept</span>
+        </li>
+      );
+    }
+    if (log.materials.length) {
+      lines.push(
+        <li key={`m${log.id}`}>
+          <span className="c-material">{materialsText(log.materials)}</span>
+          <span className="muted">materials</span>
         </li>
       );
     }

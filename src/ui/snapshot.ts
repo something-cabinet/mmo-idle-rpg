@@ -17,6 +17,8 @@ export interface Snapshot {
   /** Gains since the last settle (not yet in `row` or a settle log). */
   pending: { kills: number; xp: bigint; gold: bigint };
   items: Map<bigint, Item>;
+  /** Material ID → count held. */
+  materials: Map<number, bigint>;
   /** By index. */
   loadouts: Loadout[];
   active: Loadout;
@@ -73,6 +75,7 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     gold: p.gold,
     pending: { kills: p.kills, xp: p.xpGained, gold: p.gold - row.gold },
     items,
+    materials: new Map([...conn.db.myMaterials.iter()].map(m => [m.materialId, m.count])),
     loadouts,
     active,
     gear,

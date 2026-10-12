@@ -9,6 +9,10 @@ import {
   type AlgebraicTypeType as __AlgebraicTypeType,
   type Infer as __Infer,
 } from "spacetimedb";
+import {
+  MaterialCount,
+} from "./types";
+
 
 export default __t.row({
   id: __t.u64().primaryKey(),
@@ -30,4 +34,7 @@ export default __t.row({
   overflow: __t.u32(),
   defeated: __t.bool(),
   idleMicros: __t.u64().name("idle_micros"),
+  get materials() {
+    return __t.array(MaterialCount);
+  },
 });

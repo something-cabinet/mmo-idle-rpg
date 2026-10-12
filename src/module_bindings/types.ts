@@ -191,6 +191,20 @@ export const LootFilter = __t.object("LootFilter", {
 });
 export type LootFilter = __Infer<typeof LootFilter>;
 
+export const Material = __t.object("Material", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  materialId: __t.u16(),
+  count: __t.u64(),
+});
+export type Material = __Infer<typeof Material>;
+
+export const MaterialCount = __t.object("MaterialCount", {
+  materialId: __t.u16(),
+  count: __t.u32(),
+});
+export type MaterialCount = __Infer<typeof MaterialCount>;
+
 export const MyAccount = __t.object("MyAccount", {});
 export type MyAccount = __Infer<typeof MyAccount>;
 
@@ -214,6 +228,9 @@ export type MyLoadouts = __Infer<typeof MyLoadouts>;
 
 export const MyLootFilter = __t.object("MyLootFilter", {});
 export type MyLootFilter = __Infer<typeof MyLootFilter>;
+
+export const MyMaterials = __t.object("MyMaterials", {});
+export type MyMaterials = __Infer<typeof MyMaterials>;
 
 export const MySettleLog = __t.object("MySettleLog", {});
 export type MySettleLog = __Infer<typeof MySettleLog>;
@@ -266,6 +283,9 @@ export const SettleLog = __t.object("SettleLog", {
   overflow: __t.u32(),
   defeated: __t.bool(),
   idleMicros: __t.u64(),
+  get materials() {
+    return __t.array(MaterialCount);
+  },
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

@@ -194,7 +194,27 @@ Every base drops from **exactly one enemy per zone**, and bases are dealt out
 - Within an enemy, its bases drop with equal weight.
 - Adding bases later: deal them to the enemies with the fewest bases.
 
+### Materials
+
+Enemies also drop crafting **materials**, stacked as counts (not bag items). There are
+three kinds, one of each per tier, and an enemy drops only its zone's tier:
+
+| Kind | What it is | Dropped by | Mean per kill | Per 8 h session |
+|---|---|---|---|---|
+| Metal | Ingots, bars | Armed or armored enemies (goblins, bandits, kobolds, golems) | 0.3 | ~570 |
+| Hide | Skins, hides, scales | Beasts (rats, boars, spiders, wolves, harpies) | 0.3 | ~570 |
+| Core | Hearts, cores | **Magical creatures only** (wisps, shamans, treants, wraiths) | 0.1 | ~190 |
+
+- An enemy lists one or two kinds (bosses usually two); each is rolled separately. Means
+  are scaled by `1.12^o` like XP and gold, but **not** by item find.
+- Deliberately generic: no enemy has its own unique material. Special materials are
+  added by hand where wanted.
+- Names per tier and the per-enemy lists are in zone-content.md
+  (data/materials.ts, data/zones.ts).
+- No use yet: they are for future crafting recipes.
+
 ## Open
 
+- Material sinks (crafting recipes) and whether item find should raise material drops.
 - Check the reference player's curves against the gear curves in detail (base
   templates per family, affix averages, level primaries).

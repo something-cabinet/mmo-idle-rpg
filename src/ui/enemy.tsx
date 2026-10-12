@@ -5,10 +5,10 @@ import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
 import { DROP_CHANCE, rewardScale, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { UNIQUES, uniqueWeight } from '../../spacetimedb/src/data/uniques';
-import { RARITIES, hasUniques } from '../../spacetimedb/src/loot';
+import { RARITIES, hasUniques, materialMeans } from '../../spacetimedb/src/loot';
 import { fmt, pct } from './format';
 import { Icon } from './Icon';
-import { itemIconName, rarityCls } from './items';
+import { itemIconName, materialIconName, materialName, rarityCls } from './items';
 import { StatRows } from './shared';
 import type { Snapshot } from './snapshot';
 
@@ -97,7 +97,15 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
       </div>
       <div className="drop-group">
         <h4>Materials</h4>
-        <p className="muted">Coming soon.</p>
+        <ul className="drop-list">
+          {materialMeans(e, z.tier, rewardScale(z, e)).map(({ materialId, mean }) => (
+            <li key={materialId}>
+              <Icon name={materialIconName(materialId)} className="c-material" />
+              <span>{materialName(materialId)}</span>
+              <span className="num muted">{chanceText(atLeastOne(mean))}</span>
+            </li>
+          ))}
+        </ul>
       </div>
       <div className="drop-group">
         <h4>Items</h4>

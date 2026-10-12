@@ -8,7 +8,7 @@ import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases'
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
 import { Effect, effectAmount } from './data/legendary';
 import { combatStats, matchup } from './combat';
-import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, seededRng, type DropResult } from './loot';
+import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, seededRng, type DropResult, type MaterialDrop } from './loot';
 import { simulate } from './sim';
 
 /** Settle log rows kept per character. */
@@ -87,6 +87,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   let essence = ch.essence;
   let drops: DropResult | undefined;
   const keptItemIds: bigint[] = [];
+  let materials: MaterialDrop[] = [];
   if (target && p.kills > 0) {
     const filter = ctx.db.lootFilter.characterId.find(ch.id);
     const stats = combatStats(ch.level, gear);
@@ -111,6 +112,10 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       keptItemIds.push(row.id);
     }
     essence += drops.essence;
+    // Own seed, so adding materials didn't change the item rolls above.
+    materials = rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, p.kills,
+      rewardScale(target.zone, target.enemy));
+    addMaterials(ctx, ch.id, materials);
   }
 
   let gold = p.gold;
@@ -141,6 +146,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       keptItemIds,
       salvaged: RARITIES.map(r => drops?.salvaged[r] ?? 0),
       overflow: drops?.overflow ?? 0,
+      materials,
       defeated: p.defeatedAt !== undefined,
       idleMicros: idle > 0n ? idle : 0n,
     });
@@ -179,6 +185,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     overflow: 0,
     defeated: false,
     idleMicros: 0n,
+    materials: [],
     ...row,
   });
   pruneSettleLog(ctx, ch.id);
@@ -263,6 +270,20 @@ export function addKills(ctx: Ctx, characterId: bigint, enemyId: number, kills: 
 /** Most characters one friend list can hold. */
 export const MAX_FRIENDS = 100;
 
+/** Mixed into material roll seeds, so they never reuse an item roll's seed. */
+const MATERIAL_SALT = 0x6d6174n; // "mat"
+
+/** Adds dropped materials to `characterId`'s stock. */
+export function addMaterials(ctx: Ctx, characterId: bigint, drops: readonly MaterialDrop[]) {
+  if (!drops.length) return;
+  const rows = [...ctx.db.material.characterId.filter(characterId)];
+  for (const d of drops) {
+    const row = rows.find(r => r.materialId === d.materialId);
+    if (row) ctx.db.material.id.update({ ...row, count: row.count + BigInt(d.count) });
+    else ctx.db.material.insert({ id: 0n, characterId, materialId: d.materialId, count: BigInt(d.count) });
+  }
+}
+
 /** `friendId` is on `characterId`'s friend list. */
 export function isFriend(ctx: Ctx, characterId: bigint, friendId: bigint): boolean {
   for (const f of ctx.db.friend.characterId.filter(characterId)) if (f.friendId === friendId) return true;
@@ -274,6 +295,7 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.loadout.characterId.delete(characterId);
   ctx.db.bossKill.characterId.delete(characterId);
   ctx.db.enemyKill.characterId.delete(characterId);
+  ctx.db.material.characterId.delete(characterId);
   ctx.db.settleLog.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);
   ctx.db.friend.characterId.delete(characterId);

@@ -6,6 +6,7 @@ import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats'
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { ENEMIES_BY_ID, WALL_FACTOR, ZONES, isWallTier } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
+import { MATERIALS, MATERIAL_KINDS, materialOf } from '../spacetimedb/src/data/materials';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -29,6 +30,15 @@ check('uniques: base exists, tier 1–9, effects exist and are distinct, stats c
   BASE_LIST.some(b => b.id === u.baseId) && u.tier >= 1 && u.tier <= 9 && u.effects.length > 0 && unique(u.effects) &&
   u.effects.every(e => EFFECTS_BY_ID.has(e)) && u.stats.length > 0 && u.stats.every(s => STATS[s.stat].ref !== undefined)));
 check('every unique-only effect is on some unique', UNIQUE_EFFECTS.every(e => UNIQUES.some(u => u.effects.includes(e.id))));
+check('material IDs unique and tier × 10 + kind', unique(MATERIALS.map(m => m.id)) &&
+  MATERIALS.every(m => m.id === m.tier * 10 + MATERIAL_KINDS.indexOf(m.kind) + 1));
+for (const zone of ZONES) {
+  check(`${zone.name}: one material of each kind at tier ${zone.tier}`, MATERIAL_KINDS.every(k => materialOf(zone.tier, k)?.tier === zone.tier));
+  check(`${zone.name}: every enemy drops 1–2 distinct material kinds`, zone.enemies.every(e =>
+    e.materials.length >= 1 && e.materials.length <= 2 && new Set(e.materials).size === e.materials.length));
+  check(`${zone.name}: every kind drops from some regular enemy`,
+    MATERIAL_KINDS.every(k => zone.enemies.some(e => !e.boss && e.materials.includes(k))));
+}
 check('stat IDs match keys', Object.entries(STATS).every(([k, d]) => Number(k) === d.id));
 
 for (const zone of ZONES) {

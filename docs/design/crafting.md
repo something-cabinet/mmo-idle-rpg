@@ -5,7 +5,9 @@ main one. All costs scale steeply with item tier and rarity.
 
 ## Materials
 
-- **One material: Essence**, stored as a counter on the character (never as rows).
+- **Essence** is the salvage material, stored as a counter on the character (never as rows).
+- Enemies also drop tiered **Metal, Hide and Core** materials (zones.md, "Materials").
+  Nothing uses them yet; they are for future recipes.
 - Salvaging an item gives `essence(rarity) × 2.9^(T−1)`, the same ×2.9-per-tier growth
   as XP and gold, so old low-tier Essence barely helps with high-tier crafting.
 

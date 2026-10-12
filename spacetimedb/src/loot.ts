@@ -6,6 +6,7 @@ import { BASE_LIST, base, implicitValue, weaponValues, type DamageType, type Hea
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
 import { STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
 import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniqueWeight, type UniqueDef } from './data/uniques';
+import { MATERIAL_CHANCE, materialOf } from './data/materials';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
 export const RARITIES = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Unique'] as const;
@@ -305,4 +306,26 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const over = kept.splice(room);
   over.forEach(item => salvage(item.rarity.tag, item.tier));
   return { kept, salvaged, essence, overflow: over.length };
+}
+
+// ---------------------------------------------------------------- materials
+
+export interface MaterialDrop {
+  materialId: number;
+  count: number;
+}
+
+/** Mean material drops per kill of `enemy`, per material it drops (as `rollMaterials` samples). */
+export function materialMeans(enemy: EnemyDef, tier: number, rewardScale: number): { materialId: number; mean: number }[] {
+  return enemy.materials.map(kind => ({ materialId: materialOf(tier, kind).id, mean: rewardScale * MATERIAL_CHANCE[kind] }));
+}
+
+/**
+ * Materials from `kills` of `enemy` (zones.md, "Materials"): one Poisson draw per
+ * kind it drops, of the zone's tier. Item find doesn't apply. Only nonzero counts.
+ */
+export function rollMaterials(rng: Rng, enemy: EnemyDef, tier: number, kills: number, rewardScale: number): MaterialDrop[] {
+  return materialMeans(enemy, tier, rewardScale)
+    .map(({ materialId, mean }) => ({ materialId, count: samplePoisson(rng, kills * mean) }))
+    .filter(d => d.count > 0);
 }

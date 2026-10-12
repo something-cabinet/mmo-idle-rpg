@@ -20,6 +20,7 @@
   --magicdmg: #8f7dff;
   --gold: #f5c542;
   --essence: #5fd4e8;
+  --material: #d9a273;
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 8px 24px rgba(0, 0, 0, 0.25);
 
   --r-common: #a3a9b8;
@@ -51,6 +52,7 @@
   --magicdmg: #6a55e6;
   --gold: #b88a00;
   --essence: #0e93ab;
+  --material: #9a5a26;
   --shadow: 0 1px 2px rgba(20, 24, 40, 0.06), 0 6px 18px rgba(20, 24, 40, 0.05);
 
   --r-common: #6f7685;
@@ -132,6 +134,7 @@ ul {
 .c-gold { color: var(--gold); }
 .c-xp { color: var(--info); }
 .c-essence { color: var(--essence); }
+.c-material { color: var(--material); }
 .c-ok { color: var(--ok); }
 .c-bad { color: var(--bad); }
 .c-common { color: var(--r-common); }
@@ -582,6 +585,15 @@ select:focus,
 }
 .social-collapsed .social-rail {
   display: flex;
+}
+/* The 44px rail can't fit the chip's row layout: stack icon over count. */
+.social-rail .chip {
+  flex-direction: column;
+  gap: 2px;
+  width: 32px;
+  padding: 5px 0;
+  border-radius: 8px;
+  font-size: 11px;
 }
 .tabs .social-collapse {
   flex: 0 0 auto;

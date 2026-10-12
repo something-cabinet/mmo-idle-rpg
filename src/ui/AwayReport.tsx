@@ -6,7 +6,7 @@ import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
 import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
-import { itemName, rarityCls } from './items';
+import { itemName, materialsText, rarityCls } from './items';
 import { CardHead, Modal } from './shared';
 import type { Snapshot } from './snapshot';
 
@@ -56,6 +56,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
           {log.essence > 0n && <span className="c-essence">+{fmtBig(log.essence)} Essence</span>}
         </p>
       )}
+      {log.materials.length > 0 && <p>Materials: <span className="c-material">{materialsText(log.materials)}</span></p>}
       {kept.length > 0 && (
         <p>
           Items kept ({kept.length}):{' '}

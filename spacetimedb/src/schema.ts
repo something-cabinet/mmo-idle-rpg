@@ -134,6 +134,27 @@ export const item = table(
   }
 );
 
+/** A count of one material (data/materials.ts). */
+export const MaterialCount = t.object('MaterialCount', {
+  materialId: t.u16(),
+  count: t.u32(),
+});
+
+/**
+ * Materials a character holds: one row per material it has ever had. Private;
+ * owners read theirs via `my_materials`.
+ */
+export const material = table(
+  { name: 'material' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    /** Material ID from data/materials.ts. */
+    materialId: t.u16(),
+    count: t.u64(),
+  }
+);
+
 export const EquipProfile = t.enum('EquipProfile', {
   Damage: t.unit(),
   Survival: t.unit(),
@@ -227,6 +248,8 @@ export const settleLog = table(
     defeated: t.bool().default(false),
     /** Time spent idle after the defeat, up to this settle. */
     idleMicros: t.u64().default(0n),
+    /** Materials dropped. */
+    materials: t.array(MaterialCount).default([]),
   }
 );
 
@@ -310,6 +333,7 @@ export const spacetimedb = schema({
   linkOffer,
   chatMessage,
   item,
+  material,
   loadout,
   lootFilter,
   bossKill,

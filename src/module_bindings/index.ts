@@ -75,6 +75,7 @@ import MyFriendsRow from "./my_friends_table";
 import MyItemsRow from "./my_items_table";
 import MyLoadoutsRow from "./my_loadouts_table";
 import MyLootFilterRow from "./my_loot_filter_table";
+import MyMaterialsRow from "./my_materials_table";
 import MySettleLogRow from "./my_settle_log_table";
 import PresenceRow from "./presence_table";
 
@@ -204,6 +205,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyLootFilterRow),
+  myMaterials: __table({
+    name: 'my_materials',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyMaterialsRow),
   mySettleLog: __table({
     name: 'my_settle_log',
     indexes: [
@@ -269,6 +277,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_loadouts": Omit<typeof tablesSchema.schemaType.tables["myLoadouts"], "accessorName"> & { readonly accessorName: "my_loadouts" };
     /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
     readonly "my_loot_filter": Omit<typeof tablesSchema.schemaType.tables["myLootFilter"], "accessorName"> & { readonly accessorName: "my_loot_filter" };
+    /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
+    readonly "my_materials": Omit<typeof tablesSchema.schemaType.tables["myMaterials"], "accessorName"> & { readonly accessorName: "my_materials" };
     /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
     readonly "my_settle_log": Omit<typeof tablesSchema.schemaType.tables["mySettleLog"], "accessorName"> & { readonly accessorName: "my_settle_log" };
   };
@@ -300,6 +310,7 @@ const tableAccessorAliases = {
   "my_items": "myItems",
   "my_loadouts": "myLoadouts",
   "my_loot_filter": "myLootFilter",
+  "my_materials": "myMaterials",
   "my_settle_log": "mySettleLog",
 } as const;
 
@@ -343,6 +354,8 @@ export type DbView = __DbViewBase & {
   readonly "my_loadouts": __DbViewBase["myLoadouts"];
   /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
   readonly "my_loot_filter": __DbViewBase["myLootFilter"];
+  /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
+  readonly "my_materials": __DbViewBase["myMaterials"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __DbViewBase["mySettleLog"];
 };
@@ -371,6 +384,8 @@ export type Tables = __TablesBase & {
   readonly "my_loadouts": __TablesBase["myLoadouts"];
   /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
   readonly "my_loot_filter": __TablesBase["myLootFilter"];
+  /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
+  readonly "my_materials": __TablesBase["myMaterials"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __TablesBase["mySettleLog"];
 };

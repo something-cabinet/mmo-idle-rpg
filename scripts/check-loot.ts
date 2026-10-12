@@ -5,6 +5,7 @@ import { BASE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, LEGENDARIES_BY_ID, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRange, affixRef, toStored } from '../spacetimedb/src/data/stats';
 import { UNIQUES, UNIQUES_BY_ID, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniqueWeight } from '../spacetimedb/src/data/uniques';
+import { MATERIAL_CHANCE, MATERIALS_BY_ID } from '../spacetimedb/src/data/materials';
 import { DROP_CHANCE, ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
 import {
   AFFIX_STAT_IDS,
@@ -20,6 +21,7 @@ import {
   rarityRank,
   rollAffix,
   rollDrops,
+  rollMaterials,
   salvageValue,
   samplePoisson,
   seededRng,
@@ -256,6 +258,23 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   const expected = 40 * 200_000 * DROP_CHANCE.Unique;
   check('uniques drop at the Unique chance and are always kept', near(uniq.length, expected, 4 * Math.sqrt(expected)), `${uniq.length} vs ~${expected.toFixed(0)}`);
   check('… from the T1 and T2 pool', uniq.every(it => UNIQUES_BY_ID.get(it.uniqueId!)!.tier <= 2) && new Set(uniq.map(it => it.uniqueId)).size === UNIQUES.filter(u => u.tier <= 2).length);
+}
+
+// ---------------------------------------------------------------- materials
+
+{
+  const golem = ENEMIES_BY_ID.get(305)!; // Metal and Core
+  const kills = 100_000;
+  const drops = rollMaterials(seededRng(7n), golem.enemy, 3, kills, 1.5);
+  const count = (kind: string) => drops.find(d => MATERIALS_BY_ID.get(d.materialId)!.kind === kind)?.count ?? 0;
+  check("materials: only the enemy's kinds, of the zone tier", drops.length === 2 &&
+    drops.every(d => MATERIALS_BY_ID.get(d.materialId)!.tier === 3 && golem.enemy.materials.includes(MATERIALS_BY_ID.get(d.materialId)!.kind)));
+  for (const kind of ['Metal', 'Core'] as const) {
+    const expected = kills * 1.5 * MATERIAL_CHANCE[kind];
+    check(`materials: ${kind} at its chance × reward scale`, near(count(kind), expected, 4 * Math.sqrt(expected)), `${count(kind)} vs ~${expected}`);
+  }
+  check('materials: same seed, same drops', JSON.stringify(rollMaterials(seededRng(7n), golem.enemy, 3, kills, 1.5)) === JSON.stringify(drops));
+  check('materials: no kills, none', rollMaterials(seededRng(7n), golem.enemy, 3, 0, 1.5).length === 0);
 }
 
 // ---------------------------------------------------------------- boss first kill

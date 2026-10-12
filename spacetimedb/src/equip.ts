@@ -60,6 +60,7 @@ export function referenceDummy(level: number): EnemyDef {
     xp: 0,
     gold: 0,
     drops: [],
+    materials: [],
   };
 }
 

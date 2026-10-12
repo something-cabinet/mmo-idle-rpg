@@ -34,8 +34,8 @@ check('material IDs unique and tier × 10 + kind', unique(MATERIALS.map(m => m.i
   MATERIALS.every(m => m.id === m.tier * 10 + MATERIAL_KINDS.indexOf(m.kind) + 1));
 for (const zone of ZONES) {
   check(`${zone.name}: one material of each kind at tier ${zone.tier}`, MATERIAL_KINDS.every(k => materialOf(zone.tier, k)?.tier === zone.tier));
-  check(`${zone.name}: every enemy drops 1–2 distinct material kinds`, zone.enemies.every(e =>
-    e.materials.length >= 1 && e.materials.length <= 2 && new Set(e.materials).size === e.materials.length));
+  check(`${zone.name}: every enemy drops 1–3 distinct material kinds`, zone.enemies.every(e =>
+    e.materials.length >= 1 && e.materials.length <= 3 && new Set(e.materials).size === e.materials.length));
   check(`${zone.name}: every kind drops from some regular enemy`,
     MATERIAL_KINDS.every(k => zone.enemies.some(e => !e.boss && e.materials.includes(k))));
 }

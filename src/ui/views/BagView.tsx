@@ -44,7 +44,7 @@ function MaterialsCard({ s }: { s: Snapshot }) {
           ))}
         </div>
       ) : (
-        <p className="muted">None yet. Enemies drop metal, hides and (magical ones) cores of their zone's tier.</p>
+        <p className="muted">None yet. Enemies drop materials of their zone's tier: metal, hides, cloth, wood, reagents, gems and (magical ones) cores.</p>
       )}
     </div>
   );

@@ -196,16 +196,21 @@ Every base drops from **exactly one enemy per zone**, and bases are dealt out
 
 ### Materials
 
-Enemies also drop crafting **materials**, stacked as counts (not bag items). There are
-three kinds, one of each per tier, and an enemy drops only its zone's tier:
+Enemies also drop crafting **materials**, stacked as counts (not bag items), for
+future crafting, potions and hideout upgrades. There are seven generic kinds, one of
+each per tier, and an enemy drops only its zone's tier:
 
-| Kind | What it is | Dropped by | Mean per kill | Per 8 h session |
-|---|---|---|---|---|
-| Metal | Ingots, bars | Armed or armored enemies (goblins, bandits, kobolds, golems) | 0.3 | ~570 |
-| Hide | Skins, hides, scales | Beasts (rats, boars, spiders, wolves, harpies) | 0.3 | ~570 |
-| Core | Hearts, cores | **Magical creatures only** (wisps, shamans, treants, wraiths) | 0.1 | ~190 |
+| Kind | What it is | Future use | Dropped by | Mean per kill | Per 8 h session |
+|---|---|---|---|---|---|
+| Metal | Ingots, bars | Plate, metal weapons | Armed or armored enemies | 0.3 | ~570 |
+| Hide | Skins, hides, scales | Leather | Beasts | 0.3 | ~570 |
+| Cloth | Thread, linen, silk | Cloth armor, bandages | Robed humanoids, spiders | 0.3 | ~570 |
+| Wood | Logs, planks, timber | Bows, staves, wands; hideout building | Treants, beasts of the woods, miners | 0.3 | ~570 |
+| Reagent | Herbs, venom, fangs, feathers | Potions | Beasts, wisps, shamans | 0.3 | ~570 |
+| Core | Hearts, cores | Magic gear | **Magical creatures only** | 0.1 | ~190 |
+| Gem | Rough, cut, flawless stones | Jewelry, top hideout levels | Goblins, bandits, kobolds, golems, bosses | 0.05 | ~95 |
 
-- An enemy lists one or two kinds (bosses usually two); each is rolled separately. Means
+- An enemy lists one to three kinds (bosses three); each is rolled separately. Means
   are scaled by `1.12^o` like XP and gold, but **not** by item find.
 - Deliberately generic: no enemy has its own unique material. Special materials are
   added by hand where wanted.

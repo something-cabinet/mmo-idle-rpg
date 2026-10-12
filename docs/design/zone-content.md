@@ -65,16 +65,16 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 | Goblin Brute (6) | Rusted Greatsword, Rusted Scepter, Rusted Breastplate, Rusted Greaves, Ratskin Vest, Rough Amber Ring |
 | Grubnak (boss) | Any T1 base |
 
-**Materials:** Copper Ingot (Metal), Rough Hide (Hide), Faint Core (Core).
+**Materials:** Copper Ingot (Metal), Rough Hide (Hide), Faint Core (Core), Linen Scrap (Cloth), Driftwood Log (Wood), Bitterleaf (Reagent), Rough Gem (Gem).
 
 | Enemy | Materials |
 |---|---|
-| Field Rat | Rough Hide |
-| Wild Boar | Rough Hide |
-| Goblin Scout | Copper Ingot |
-| Bog Wisp | Faint Core |
-| Goblin Brute | Copper Ingot |
-| Grubnak (boss) | Copper Ingot, Rough Hide |
+| Field Rat | Rough Hide, Bitterleaf |
+| Wild Boar | Rough Hide, Driftwood Log |
+| Goblin Scout | Copper Ingot, Linen Scrap |
+| Bog Wisp | Faint Core, Bitterleaf |
+| Goblin Brute | Copper Ingot, Rough Gem |
+| Grubnak (boss) | Copper Ingot, Rough Hide, Rough Gem |
 
 ## T2: Thornwood
 
@@ -104,16 +104,16 @@ A dark, overgrown forest where bandits and beasts hide. Levels 16–25.
 | Dire Wolf (6) | Bogiron Mace, Bogiron Scepter, Boarhide Bracers, Bogiron Gauntlets, Cut Ruby Amulet, Cut Amber Amulet |
 | Morgra (boss) | Any T2 base |
 
-**Materials:** Bog Iron Bar (Metal), Thick Hide (Hide), Thorn Heart (Core).
+**Materials:** Bog Iron Bar (Metal), Thick Hide (Hide), Thorn Heart (Core), Homespun Bolt (Cloth), Ironbark Plank (Wood), Nightshade (Reagent), Cut Gem (Gem).
 
 | Enemy | Materials |
 |---|---|
-| Thornback Spider | Thick Hide |
-| Bandit Cutthroat | Bog Iron Bar |
-| Briar Shaman | Thorn Heart |
-| Ironbark Treant | Thorn Heart |
-| Dire Wolf | Thick Hide |
-| Morgra (boss) | Thorn Heart |
+| Thornback Spider | Thick Hide, Homespun Bolt, Nightshade |
+| Bandit Cutthroat | Bog Iron Bar, Homespun Bolt, Cut Gem |
+| Briar Shaman | Thorn Heart, Nightshade |
+| Ironbark Treant | Thorn Heart, Ironbark Plank |
+| Dire Wolf | Thick Hide, Nightshade |
+| Morgra (boss) | Thorn Heart, Nightshade, Cut Gem |
 
 ## T3: Frostmaw Pass
 
@@ -146,16 +146,16 @@ HP and DPS × 1.1 over the zones.md curve (zones.md, "Difficulty rhythm").
 | Stone Golem (6) | Dwarven Sword, Dwarven Katana, Wolfhide Vest, Dwarven Gauntlets, Dwarven Greaves, Flawless Emerald Amulet |
 | Hrimvald (boss) | Any T3 base |
 
-**Materials:** Dwarven Steel Ingot (Metal), Frostfur Hide (Hide), Rime Core (Core).
+**Materials:** Dwarven Steel Ingot (Metal), Frostfur Hide (Hide), Rime Core (Core), Spidersilk Thread (Cloth), Heartoak Timber (Wood), Frostbloom (Reagent), Flawless Gem (Gem).
 
 | Enemy | Materials |
 |---|---|
-| Ice Harpy | Frostfur Hide |
-| Kobold Tunneler | Dwarven Steel Ingot |
+| Ice Harpy | Frostfur Hide, Frostbloom |
+| Kobold Tunneler | Dwarven Steel Ingot, Heartoak Timber, Flawless Gem |
 | Frost Wraith | Rime Core |
-| Rimebound Cultist | Rime Core |
-| Stone Golem | Dwarven Steel Ingot, Rime Core |
-| Hrimvald (boss) | Dwarven Steel Ingot, Frostfur Hide |
+| Rimebound Cultist | Rime Core, Spidersilk Thread |
+| Stone Golem | Dwarven Steel Ingot, Rime Core, Flawless Gem |
+| Hrimvald (boss) | Dwarven Steel Ingot, Frostfur Hide, Flawless Gem |
 
 ## Open
 

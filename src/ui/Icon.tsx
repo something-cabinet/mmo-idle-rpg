@@ -47,6 +47,15 @@ const PATHS: Record<string, string> = {
   'i-feet': 'M7 3h6v10l6 3v5H5v-5l2-2V3zM5 18h14',
   'i-ring': 'M12 21a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM9 6l3-3 3 3-3 3-3-3z',
   'i-amulet': 'M5 3c0 6 3 9 7 11 4-2 7-5 7-11M12 14l-3 4 3 4 3-4-3-4z',
+
+  // Material glyphs (placeholders).
+  'm-metal': 'M2 18h20l-3-6H5l-3 6zM5 12l2-4h10l2 4',
+  'm-hide': 'M6 3c2 1 4 1 6 0 2 1 4 1 6 0l-1 5 3 3-3 3 1 7c-2-1-4-1-6 0-2-1-4-1-6 0l1-7-3-3 3-3-1-5z',
+  'm-core': 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',
+  'm-cloth': 'M6 3h12M6 21h12M8 3v18M16 3v18M8 8l8 3M8 13l8 3',
+  'm-wood': 'M5 8h12a3 4 0 0 1 0 8H5M5 8a3 4 0 0 0 0 8 3 4 0 0 0 0-8zM11 12h4',
+  'm-reagent': 'M5 19C5 10 10 5 20 4c-1 10-6 15-15 15zM5 19l8-8',
+  'm-gem': 'M12 3l7 9-7 9-7-9 7-9zM5 12h14',
 };
 
 export function Icon({ name, className = '' }: { name: string; className?: string }) {

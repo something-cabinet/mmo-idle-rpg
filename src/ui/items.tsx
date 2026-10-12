@@ -3,7 +3,7 @@
 import type { Item } from '../module_bindings/types';
 import { base } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID } from '../../spacetimedb/src/data/legendary';
-import { MATERIALS_BY_ID, type MaterialKind } from '../../spacetimedb/src/data/materials';
+import { MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
 import { fmt } from './format';
@@ -14,9 +14,8 @@ export const itemName = (it: { baseId: number; tier: number; uniqueId?: number }
   (it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier);
 
 /** Bag glyph for an item: weapon/off-hand family, armor slot, or ring/amulet. */
-const MATERIAL_ICON: Record<MaterialKind, string> = { Metal: 'hammer', Hide: 'shield', Core: 'zap' };
 export const materialName = (id: number) => MATERIALS_BY_ID.get(id)?.name ?? `Material ${id}`;
-export const materialIconName = (id: number) => MATERIAL_ICON[MATERIALS_BY_ID.get(id)?.kind ?? 'Metal'];
+export const materialIconName = (id: number) => `m-${(MATERIALS_BY_ID.get(id)?.kind ?? 'Metal').toLowerCase()}`;
 /** "3 Rough Hide, 1 Faint Core". */
 export const materialsText = (ms: readonly { materialId: number; count: number }[]) =>
   ms.map(m => `${m.count.toLocaleString()} ${materialName(m.materialId)}`).join(', ');

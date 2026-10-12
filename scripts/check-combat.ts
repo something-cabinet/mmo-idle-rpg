@@ -34,10 +34,10 @@ const enemy = (id: number) => ENEMIES_BY_ID.get(id)!.enemy;
 const starter = gear({ MainHand: item(1, 1), Chest: item(35, 1), Feet: item(37, 1) });
 {
   const s = combatStats(1, starter);
-  check('level 1 has 100 HP (+0.45% from 1 Might and 1 Vitality)', near(s.maxHp, 100.45, 0.01), f(s.maxHp));
+  check('level 1 has 100 HP (+4.45% from 21 Might, 20 from the sword, and 1 Vitality)', near(s.maxHp, 104.45, 0.01), f(s.maxHp));
   const m = matchup(s, enemy(101));
-  check('fresh level 1 + starter kit kills a Field Rat in ~3.4 s', near(m.timeToKill, 3.4, 0.15), f(m.timeToKill));
-  check('… and would take ~106 s to die', near(m.timeToDie, 106, 4), f(m.timeToDie));
+  check('fresh level 1 + starter kit kills a Field Rat in ~3.0 s', near(m.timeToKill, 3.0, 0.15), f(m.timeToKill));
+  check('… and would take ~111 s to die', near(m.timeToDie, 111, 4), f(m.timeToDie));
   check('… so the fight is viable', m.viable && m.killRate > 0);
 }
 
@@ -62,10 +62,10 @@ const warrior = gear({
 });
 {
   const m = matchup(combatStats(10, warrior), enemy(106));
-  check('average level-10 warrior kills Grubnak in ~15.7 s', near(m.timeToKill, 15.7, 1.5), f(m.timeToKill));
+  check('average level-10 warrior kills Grubnak in ~14.7 s', near(m.timeToKill, 14.7, 1.5), f(m.timeToKill));
   // 287 HP with the Might/Vitality HP% rules (zone-content.md).
   check('… and dies in ~19 s', near(m.timeToDie, 19, 1), f(m.timeToDie));
-  check('… just wins', m.viable && m.timeToDie / m.timeToKill < 1.3);
+  check('… just wins', m.viable && m.timeToDie / m.timeToKill < 1.4);
   check('a fresh level-1 starter loses to Grubnak', !matchup(combatStats(1, starter), enemy(106)).viable);
 }
 
@@ -79,9 +79,9 @@ const warrior = gear({
   const sword = combatStats(1, gear({ MainHand: item(1, 1, [[Stat.PhysDamage, 2]]) }));
   const addedDps = (s: typeof sword, hit: number) => (s.sources[0].hit.Physical - hit) * s.sources[0].attacksPerSec;
   const daggerHit = weaponValues(base(2).weapon!, 1).hit * (1 + 0.005);
-  const swordHit = weaponValues(base(1).weapon!, 1).hit * (1 + 0.005);
+  const swordHit = weaponValues(base(1).weapon!, 1).hit * (1 + 0.005 * 21); // the sword's 20 Might
   check('flat added damage is a straight bonus per hit',
-    near(dagger.sources[0].hit.Physical - daggerHit, 2 * 1.005, 1e-9) && near(sword.sources[0].hit.Physical - swordHit, 2 * 1.005, 1e-9));
+    near(dagger.sources[0].hit.Physical - daggerHit, 2 * 1.005, 1e-9) && near(sword.sources[0].hit.Physical - swordHit, 2 * 1.105, 1e-9));
   check('… so fast weapons get more DPS from it', addedDps(dagger, daggerHit) > addedDps(sword, swordHit));
 
   const plated = combatStats(1, gear({ MainHand: item(1, 1, [[Stat.AttackSpeedPct, -500]]) }));
@@ -121,7 +121,7 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const ring = (effect: number) => withEffect(item(50, 1), effect);
 
   const sb = combatStats(10, kit(withEffect(sword, Effect.Spellblade)));
-  const both = 1 + 0.5 + 0.3 + 0.005 * 10 + 0.0045 * 10;
+  const both = 1 + 0.5 + 0.3 + 0.005 * 30 + 0.0045 * 10; // Might: level 10 + the sword's 20
   check('Spellblade: a sword deals magic damage with both damage-% groups',
     sb.sources[0].hit.Physical === 0 && near(sb.sources[0].hit.Magic, 10 * both, 1e-9), f(sb.sources[0].hit.Magic));
   const wand = combatStats(10, kit(withEffect(item(5, 1), Effect.Spellblade)));

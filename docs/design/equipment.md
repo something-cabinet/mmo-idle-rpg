@@ -47,7 +47,7 @@ heal with a target, threat multiplier), plus attack speed and a trait.
 | Family | Hands | Type | Damage | Speed | Base crit | Trait |
 |---|---|---|---|---|---|---|
 | Dagger | 1H | Phys | Low | Very fast | 8% | +Increased crit chance |
-| Sword | 1H | Phys | Mid | Mid | 5% | Balanced |
+| Sword | 1H | Phys | Mid | Mid | 5% | Balanced: +Might (phys damage and HP) |
 | Mace | 1H | Phys | Mid | Slow | 5% | +Armor penetration |
 | Katana | 2H | Phys | Mid | Fast | 10% | +Crit damage |
 | Greatsword | 2H | Phys | Very high | Very slow | 5% | +Armor penetration |

@@ -70,7 +70,7 @@ T1 values; damage ×2.1 per tier, heal ×1.33 per tier. 1H weapons deal ~10 DPS 
 
 | Family | Hands | Type | Hit (T1) | Speed | DPS (T1) | Hit (T9) | Base crit | Trait (implicit) |
 |---|---|---|---|---|---|---|---|---|
-| Sword | 1H | Phys | 10 | 1.0 | 10 | 3,782 | 5% | — |
+| Sword | 1H | Phys | 10 | 1.0 | 10 | 3,782 | 5% | +60 Might (T1: 20) |
 | Dagger | 1H | Phys | 4.75 | 2.0 | 9.5 | 1,797 | 8% | +30% increased crit chance |
 | Mace | 1H | Phys | 11.75 | 0.8 | 9.4 | 4,444 | 5% | +15% armor penetration |
 | Scepter (holy mace) | 1H | Phys | 7.5 | 0.8 | 6 | 2,837 | 5% | Heal 10 per hit (T9: 98), single target |

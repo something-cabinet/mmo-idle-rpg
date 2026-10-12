@@ -48,9 +48,9 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 
 **Checks** (simulated):
 
-- Fresh level 1 with Rusted Sword + starter kit vs Field Rat: kills in ~3.4 s, would
-  take ~106 s to die. About 28 rats (~4 min) to reach level 2.
-- Average level-10 warrior (287 HP) vs Grubnak: kills in 15.7 s, dies in ~19 s. Just wins.
+- Fresh level 1 with Rusted Sword + starter kit vs Field Rat: kills in ~3.0 s, would
+  take ~111 s to die. About 28 rats (~4 min) to reach level 2.
+- Average level-10 warrior (sword) vs Grubnak: kills in ~14.7 s, dies in ~19.7 s. Just wins.
 - The Wild Boar is armored and the Bog Wisp is warded, so players meet both damage
   types and both defense profiles in the first zone.
 

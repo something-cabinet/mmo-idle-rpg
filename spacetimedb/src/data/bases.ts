@@ -148,7 +148,7 @@ function jewelryBases(): BaseDef[] {
 }
 
 export const BASE_LIST: BaseDef[] = [
-  weapon(1, 'Sword', 'metal', { damageType: 'Physical', hit: 10, speed: 1.0, baseCrit: 5, twoHanded: false }),
+  weapon(1, 'Sword', 'metal', { damageType: 'Physical', hit: 10, speed: 1.0, baseCrit: 5, twoHanded: false }, [pct(Stat.Might, 60)]),
   weapon(2, 'Dagger', 'metal', { damageType: 'Physical', hit: 4.75, speed: 2.0, baseCrit: 8, twoHanded: false }, [pct(Stat.CritChancePct, 30)]),
   weapon(3, 'Mace', 'metal', { damageType: 'Physical', hit: 11.75, speed: 0.8, baseCrit: 5, twoHanded: false }, [pct(Stat.ArmorPenPct, 15)]),
   weapon(4, 'Scepter', 'metal', { damageType: 'Physical', hit: 7.5, speed: 0.8, baseCrit: 5, heal: 10, healTarget: 'Single', twoHanded: false }),

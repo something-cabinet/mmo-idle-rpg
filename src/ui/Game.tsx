@@ -85,7 +85,9 @@ function Sidebar({ conn, view }: { conn: DbConnection; view: View }) {
   );
 }
 
-function Social({ conn, pres, open }: { conn: DbConnection; pres: Presence; open: boolean }) {
+const SOCIAL_COLLAPSED_KEY = 'social_collapsed';
+
+function Social({ conn, pres, onCollapse }: { conn: DbConnection; pres: Presence; onCollapse: (collapsed: boolean) => void }) {
   const [tab, setTab] = useState<'chat' | 'online'>('chat');
   const [text, setText] = useState('');
   const log = useRef<HTMLUListElement>(null);
@@ -98,12 +100,19 @@ function Social({ conn, pres, open }: { conn: DbConnection; pres: Presence; open
   }, [lastId, tab]);
 
   return (
-    <aside className={`social${open ? ' open' : ''}`}>
+    <aside className="social">
+      <div className="social-rail">
+        <button className="btn icon ghost" title="Show chat and online list" onClick={() => onCollapse(false)}>
+          <Icon name="message" />
+        </button>
+        <span className="chip" title="Players online"><Icon name="users" /><strong>{String(online.length)}</strong></span>
+      </div>
       <div className="tabs">
         <button className={`tab${tab === 'chat' ? ' active' : ''}`} onClick={() => setTab('chat')}><Icon name="message" />Chat</button>
         <button className={`tab${tab === 'online' ? ' active' : ''}`} onClick={() => setTab('online')}>
           <Icon name="users" />Online <span className="count">{online.length}</span>
         </button>
+        <button className="btn icon ghost social-collapse" title="Collapse" onClick={() => onCollapse(true)}>»</button>
       </div>
       {tab === 'chat' ? (
         <div className="tab-body">
@@ -164,7 +173,23 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
 export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presence; version: number }) {
   useTick(250);
   const view = useView();
-  const [socialOpen, setSocialOpen] = useState(false);
+  const [socialCollapsed, setSocialCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SOCIAL_COLLAPSED_KEY);
+      if (saved !== null) return saved === '1';
+    } catch {
+      // Storage blocked: fall back to the default.
+    }
+    return window.innerWidth < 900;
+  });
+  const collapseSocial = (collapsed: boolean) => {
+    setSocialCollapsed(collapsed);
+    try {
+      localStorage.setItem(SOCIAL_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {
+      // Not persisted; fine.
+    }
+  };
   const content = useRef<HTMLElement>(null);
   syncClock(pres);
   const row = conn.db.character.id.find(pres.characterId);
@@ -189,20 +214,17 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
         right={
           <>
             <span className="chip" title="Players online"><Icon name="users" /><strong>{String(online)}</strong></span>
-            <button id="chat-toggle" className="btn icon ghost" title="Chat" onClick={() => setSocialOpen(!socialOpen)}>
-              <Icon name="message" />
-            </button>
           </>
         }
       />
-      <div className="screen shell">
+      <div className={`screen shell${socialCollapsed ? ' social-collapsed' : ''}`}>
         <Sidebar conn={conn} view={view} />
         <main className="content" ref={content}>
           <section className="view" key={view}>
             <CurrentView view={view} s={viewSnap} />
           </section>
         </main>
-        <Social conn={conn} pres={pres} open={socialOpen} />
+        <Social conn={conn} pres={pres} onCollapse={collapseSocial} />
       </div>
       <AwayReport s={viewSnap} pres={pres} />
       <DefeatReport s={viewSnap} pres={pres} />

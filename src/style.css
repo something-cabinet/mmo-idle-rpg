@@ -421,7 +421,11 @@ select:focus,
 }
 .shell {
   display: grid;
-  grid-template-columns: 210px minmax(0, 1fr) 300px;
+  --social-w: 300px;
+  grid-template-columns: 210px minmax(0, 1fr) var(--social-w);
+}
+.shell.social-collapsed {
+  --social-w: 44px;
 }
 
 .sidebar {
@@ -554,6 +558,24 @@ select:focus,
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+/* Collapsed: a thin rail with just the expand button. */
+.social-collapsed .social .tabs,
+.social-collapsed .social .tab-body {
+  display: none;
+}
+.social-rail {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.social-collapsed .social-rail {
+  display: flex;
+}
+.tabs .social-collapse {
+  flex: 0 0 auto;
 }
 #chat-log {
   flex: 1;
@@ -1540,22 +1562,8 @@ fieldset.affix-pick legend {
 /* ------------------------------------------------------------------ responsive */
 @media (max-width: 1280px) {
   .shell {
-    grid-template-columns: 200px minmax(0, 1fr);
-  }
-  .social {
-    position: fixed;
-    top: var(--topbar-h);
-    right: 0;
-    bottom: 0;
-    width: 320px;
-    background: var(--surface);
-    box-shadow: -10px 0 30px rgba(0, 0, 0, 0.25);
-    transform: translateX(100%);
-    transition: transform 0.2s;
-    z-index: 20;
-  }
-  .social.open {
-    transform: none;
+    --social-w: 240px;
+    grid-template-columns: 200px minmax(0, 1fr) var(--social-w);
   }
   .grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1568,14 +1576,10 @@ fieldset.affix-pick legend {
     grid-row: span 2;
   }
 }
-@media (min-width: 1281px) {
-  #chat-toggle {
-    display: none !important;
-  }
-}
 @media (max-width: 900px) {
   .shell {
-    grid-template-columns: 1fr;
+    --social-w: 200px;
+    grid-template-columns: minmax(0, 1fr) var(--social-w);
   }
   .sidebar {
     display: none;

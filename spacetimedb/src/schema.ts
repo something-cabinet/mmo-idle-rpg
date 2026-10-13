@@ -185,10 +185,18 @@ export const material = table(
   }
 );
 
+/**
+ * Auto-equip profiles (equip.ts PROFILES). Damage and Survival are the physical ones (named
+ * before the magic ones existed); Loot is retired and auto-equips as Damage. Rename and drop
+ * Loot at the M9 save reset: a variant can only be added in place.
+ */
 export const EquipProfile = t.enum('EquipProfile', {
   Damage: t.unit(),
   Survival: t.unit(),
   Loot: t.unit(),
+  DamageMagic: t.unit(),
+  Healing: t.unit(),
+  SurvivalMagic: t.unit(),
 });
 
 /** A saved gear set. Each character has exactly LOADOUT_COUNT of them. */
@@ -203,6 +211,8 @@ export const loadout = table(
     profile: EquipProfile,
     /** Item ID per slot in data/bases.ts SLOTS order; 0 = empty. */
     slots: t.array(t.u64()),
+    /** Bit i set: auto-equip leaves slot i as it is (equip.ts `slotLocked`). */
+    lockedSlots: t.u16().default(0),
   }
 );
 

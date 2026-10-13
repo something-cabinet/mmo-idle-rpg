@@ -1939,8 +1939,41 @@ select:focus,
   white-space: nowrap;
   letter-spacing: 0.04em;
 }
-.slot-cell .item-tile {
+.slot-tile {
+  position: relative;
   width: min(64px, 100%);
+}
+.slot-cell .item-tile {
+  width: 100%;
+}
+/* Auto-equip lock: a round button on the tile's top-right corner, clear of its badges. */
+.slot-lock {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.slot-lock .ico {
+  width: 14px;
+  height: 14px;
+}
+.slot-lock:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+.slot-lock.on {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
 }
 .slot-name {
   max-width: 100%;

@@ -120,7 +120,24 @@ the tables on this page, which drops in every zone.
 
 A **variant** is another base of a type, with its own name and stats (e.g. a raid sword).
 It never drops in zones: each variant has a source, for now a raid (`raidId`), and drops
-from it at the raid's tier. None yet.
+from it at the raid's tier. Variant base IDs start at 1000.
+
+| Variant | Type | Source | Damage | Hit (T1 / T3) | Speed | DPS (T3) | Base crit | Trait (implicit) |
+|---|---|---|---|---|---|---|---|---|
+| Rime Dagger | Dagger | Wyrm Hollow (T3) | Magic | 4.75 / 21 | 2.2 | 46 | 5% | +4T resistance (T3: 12) |
+| Rime Greatsword | Greatsword | Wyrm Hollow (T3) | Physical | 20 / 88 | 0.6 | 53 | 5% | +40 Vitality (P), +4T resistance |
+| Rime Healing Staff | Healing Staff | Wyrm Hollow (T3) | Magic | 5 / 22 | 1.1 | 24 | 5% | Heal 11.25 per hit (T3: 20), single target; +4T resistance |
+| Rime Bow | Bow | Wyrm Hollow (T3) | Magic | 12.5 / 55 | 1.0 | 55 | 6% | +4T resistance |
+
+| Variant | Type | Source | Implicits (T1 template; T3) |
+|---|---|---|---|
+| Rime Shield | Shield | Wyrm Hollow (T3) | 4T armor, 8T resistance, 5 max HP (life), +15% threat (P); T3: 12, 24, 13, 8% |
+| Rime Ring | Ring · Amber | Wyrm Hollow (T3) | +20% resistance (P); T3: 10% |
+| Rime Amulet | Amulet · Sapphire | Wyrm Hollow (T3) | +20% magic damage (P), +20% resistance (P); T3: 10%, 10% |
+
+Each Rime variant trades something its type has for resistance against Frost Breath, so
+none is a straight upgrade. Named "Rime", apart from the Wyrmscale leather track and the
+Wyrmscale Aegis.
 
 ## Off-hands (*illustrative*)
 

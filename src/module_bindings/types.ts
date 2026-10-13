@@ -123,6 +123,9 @@ export const EquipProfile = __t.enum("EquipProfile", {
   Damage: __t.unit(),
   Survival: __t.unit(),
   Loot: __t.unit(),
+  DamageMagic: __t.unit(),
+  Healing: __t.unit(),
+  SurvivalMagic: __t.unit(),
 });
 export type EquipProfile = __Infer<typeof EquipProfile>;
 
@@ -213,6 +216,7 @@ export const Loadout = __t.object("Loadout", {
     return EquipProfile;
   },
   slots: __t.array(__t.u64()),
+  lockedSlots: __t.u16(),
 });
 export type Loadout = __Infer<typeof Loadout>;
 

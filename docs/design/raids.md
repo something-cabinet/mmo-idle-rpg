@@ -19,8 +19,8 @@ Opens for a character once it has killed **Hrimvald, Frost Giant Jarl** (T3 boss
 | Enrage | at 4:00 the party wipes |
 
 Tuned in `npm run test:raid` against random T3 characters at level 38 (60-item bags of
-Rare 60% / Epic 30% / Legendary 10%, auto-equipped per role: a Survival tank, a Healing
-Staff healer, two Damage builds). A fight lasts about 1:25. Win odds:
+Rare 60% / Epic 30% / Legendary 10%, auto-equipped per role: a Survival (phys) tank, a Healing Staff healer on the Healing
+profile, Damage (phys) and Damage (magic) builds). A fight lasts about 1:25. Win odds:
 
 | Party | Odds |
 |---|---|
@@ -93,7 +93,7 @@ live fights (combat.md). The server's outcome is final.
 On a win, each player gets, for up to **3 clears per raid per day** (`clearsPerDay`; a clear is a rewarded win, losses don't count; resets 00:00 UTC):
 
 - **Three T3 items, each Epic or better** (`itemsPerClear`), each rolled on its own: Epic 75%, Legendary 22%, Unique 3%. Epic and Legendary
-  are any zone base or one of the raid's **own bases** (variants, bases.md; Wyrm Hollow has none yet); a Unique comes from the raid's **own pool**, which drops nowhere else
+  are any zone base or one of the raid's **own bases** (variants, bases.md; Wyrm Hollow: the Rime dagger, greatsword, healing staff, bow, shield, ring and amulet), one of the raid's own **1 time in 3** (`ownBaseShare`); a Unique comes from the raid's **own pool**, which drops nowhere else
   (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). The items
   ignore the bag limit, like a first-kill reward.
 - **10 raid tokens** (`character.raidTokens`), 3,000 gold, 4,000 XP.

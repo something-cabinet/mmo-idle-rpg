@@ -236,12 +236,66 @@ export const TYPE_LIST: TypeDef[] = CORE.map(c => ({
 }));
 export const TYPES: ReadonlyMap<number, TypeDef> = new Map(TYPE_LIST.map(t => [t.id, t]));
 
+/** A variant of type `typeId`: kind, family and slots copy the type's. */
+function variant(id: number, typeId: number, v: Pick<BaseDef, 'name' | 'implicits' | 'weapon' | 'raidId'>): BaseDef {
+  const t = TYPES.get(typeId)!;
+  return { id, typeId, kind: t.kind, family: t.name, slots: t.slots, ...v };
+}
+
 /**
  * Variants: bases of an existing type with their own name and stats, never dropped in
- * zones, so each needs a source (`raidId`). Kind, family and slots copy the type's.
- * None yet.
+ * zones, so each needs a source (`raidId`). IDs from 1000.
  */
-const VARIANTS: BaseDef[] = [];
+const VARIANTS: BaseDef[] = [
+  // Wyrm Hollow (raid 1, T3): a dagger from one of the Rime Wyrm's teeth. Its frost cuts as magic: quick, frost-hardened.
+  // Raid variants are named Rime <type>, apart from the Wyrmscale leather track and the Wyrmscale Aegis.
+  variant(1000, 2, {
+    name: () => 'Rime Dagger',
+    weapon: { damageType: 'Magic', hit: 4.75, speed: 2.2, baseCrit: 5, twoHanded: false, ranged: false },
+    implicits: [lin(Stat.Resistance, 4)],
+    raidId: 1,
+  }),
+  // Wyrm Hollow's other variants: each trades something of its type for resistance against the Frost Breath.
+  // Less damage and no armor pen, for Vitality.
+  variant(1001, 7, {
+    name: () => 'Rime Greatsword',
+    weapon: { damageType: 'Physical', hit: 20, speed: 0.6, baseCrit: 5, twoHanded: true, ranged: false },
+    implicits: [pct(Stat.Vitality, 40), lin(Stat.Resistance, 4)],
+    raidId: 1,
+  }),
+  // Heals one ally, harder and a little faster, instead of all.
+  variant(1002, 10, {
+    name: () => 'Rime Healing Staff',
+    weapon: { damageType: 'Magic', hit: 5, speed: 1.1, baseCrit: 5, heal: 11.25, healTarget: 'Single', twoHanded: true, ranged: true },
+    implicits: [lin(Stat.Resistance, 4)],
+    raidId: 1,
+  }),
+  // Magic arrows: good against armor, poor against wards; no evasion.
+  variant(1003, 8, {
+    name: () => 'Rime Bow',
+    weapon: { damageType: 'Magic', hit: 12.5, speed: 1.0, baseCrit: 6, twoHanded: true, ranged: true },
+    implicits: [lin(Stat.Resistance, 4)],
+    raidId: 1,
+  }),
+  // Half the armor, moved to resistance; same HP and threat.
+  variant(1004, 20, {
+    name: () => 'Rime Shield',
+    implicits: [lin(Stat.Armor, 4), lin(Stat.Resistance, 8), { stat: Stat.MaxHp, value: 5, curve: 'life' }, pct(Stat.ThreatPct, 15)],
+    raidId: 1,
+  }),
+  // An Amber ring with resistance instead of Vitality.
+  variant(1005, 53, {
+    name: () => 'Rime Ring',
+    implicits: [pct(Stat.ResistancePct, 20)],
+    raidId: 1,
+  }),
+  // A Sapphire amulet with magic damage and resistance instead of Mind.
+  variant(1006, 56, {
+    name: () => 'Rime Amulet',
+    implicits: [pct(Stat.MagicDamagePct, 20), pct(Stat.ResistancePct, 20)],
+    raidId: 1,
+  }),
+];
 
 export const BASE_LIST: BaseDef[] = [...CORE.map(({ icon: _icon, group: _group, ...c }) => ({ ...c, typeId: c.id })), ...VARIANTS];
 

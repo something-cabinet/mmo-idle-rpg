@@ -56,7 +56,7 @@ export function DevPanel({ s }: { s: Snapshot }) {
           <select value={baseId} onChange={e => setBaseId(Number(e.target.value))}>
             {KINDS.map(([kind, label]) => (
               <optgroup key={kind} label={label}>
-                {BASE_LIST.filter(b => b.kind === kind).map(b => <option key={b.id} value={b.id}>{b.family}</option>)}
+                {BASE_LIST.filter(b => b.kind === kind).map(b => <option key={b.id} value={b.id}>{b.id === b.typeId ? b.family : `${b.family} · ${b.name(1)}`}</option>)}
               </optgroup>
             ))}
           </select>

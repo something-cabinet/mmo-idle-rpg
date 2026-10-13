@@ -23,4 +23,5 @@ export default __t.row({
     return EquipProfile;
   },
   slots: __t.array(__t.u64()),
+  lockedSlots: __t.u16().name("locked_slots"),
 });

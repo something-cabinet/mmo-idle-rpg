@@ -3,7 +3,7 @@
 import { SLOTS } from '../spacetimedb/src/data/bases';
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
 import { mitigation } from '../spacetimedb/src/combat';
-import { autoEquip, fitsSlot, placeItem, referenceDummy, scoreGear, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
+import { PROFILES, autoEquip, fitsSlot, placeItem, ranking, referenceDummy, scoreGear, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
 
 let failed = 0;
@@ -69,8 +69,7 @@ function bruteForce(level: number, pool: OwnedItem[], profile: Profile) {
   const fitting = (slot: number) => [undefined, ...pool.filter(i => fitsSlot(i.baseId, slot))];
   let best = -Infinity;
   const rankOf = (ids: bigint[]) => {
-    const s = scoreGear(level, ids.map(id => pool.find(i => i.id === id)));
-    return profile === 'Damage' ? s.dps : profile === 'Survival' ? s.timeToDie : s.dps * (1 + s.itemFind);
+    return ranking(profile, scoreGear(level, ids.map(id => pool.find(i => i.id === id))))[0];
   };
   const walk = (slot: number, ids: bigint[]) => {
     if (slot === SLOTS.length) return void (best = Math.max(best, rankOf(ids)));
@@ -85,18 +84,18 @@ function bruteForce(level: number, pool: OwnedItem[], profile: Profile) {
 }
 
 const pool = [
-  own(1, 2), own(2, 2), own(7, 2), own(5, 2), // sword, dagger, greatsword, wand
+  own(1, 2), own(2, 2), own(7, 2), own(5, 2), own(10, 2), // sword, dagger, greatsword, wand, healing staff
   own(20, 2), own(21, 2), // shield, tome
   own(30, 2), own(38, 2), // cloth hood, plate helm
   own(35, 2), own(39, 2), // leather vest, breastplate
   own(50, 2), own(51, 2), own(53, 2, 'Rare', [[Stat.ItemFindPct, 10]]), // rings
   own(57, 2), // amulet
 ];
-for (const profile of ['Damage', 'Survival', 'Loot'] as Profile[]) {
+for (const profile of PROFILES) {
   const slots = autoEquip(20, pool, empty(), profile);
   const gear = slots.map(id => pool.find(i => i.id === id));
   const s = scoreGear(20, gear);
-  const got = profile === 'Damage' ? s.dps : profile === 'Survival' ? s.timeToDie : s.dps * (1 + s.itemFind);
+  const got = ranking(profile, s)[0];
   const best = bruteForce(20, pool, profile);
   // Auto-equip may give up to 1% of the goal for the tie-breakers (near ties).
   check(`${profile}: within 1% of the exhaustive best`, got >= best * 0.99 * 0.999, `${got.toFixed(2)} vs ${best.toFixed(2)}`);
@@ -111,8 +110,28 @@ for (const profile of ['Damage', 'Survival', 'Loot'] as Profile[]) {
   const surv = scoreGear(20, autoEquip(20, pool, empty(), 'Survival').map(id => pool.find(i => i.id === id)));
   check('Damage out-damages Survival; Survival outlasts Damage', dmg.dps >= surv.dps && surv.timeToDie >= dmg.timeToDie,
     `dps ${dmg.dps.toFixed(1)}/${surv.dps.toFixed(1)}, ttd ${dmg.timeToDie.toFixed(1)}/${surv.timeToDie.toFixed(1)}`);
-  const loot = autoEquip(20, pool, empty(), 'Loot');
-  check('Loot keeps the item-find ring', loot.includes(pool[12].id));
+  const main = (profile: Profile) => pool.find(i => i.id === autoEquip(20, pool, empty(), profile)[S('MainHand')])?.baseId;
+  check('Damage (magic) wields a magic weapon, Healing the healing staff', [5, 10].includes(main('DamageMagic')!) && main('Healing') === 10,
+    `${main('DamageMagic')} / ${main('Healing')}`);
+  const sp = scoreGear(20, autoEquip(20, pool, empty(), 'Survival').map(id => pool.find(i => i.id === id)));
+  const sm = scoreGear(20, autoEquip(20, pool, empty(), 'SurvivalMagic').map(id => pool.find(i => i.id === id)));
+  check('Survival (phys) and (magic) each outlast the other against their damage',
+    sp.timeToDiePhysical >= sm.timeToDiePhysical && sm.timeToDieMagic >= sp.timeToDieMagic);
+
+  // Locks: a locked slot keeps its item (or stays empty), and its item isn't used elsewhere.
+  const dagger = pool[1].id;
+  const bit = (...slots: number[]) => slots.reduce((m, s) => m | (1 << s), 0);
+  const withDagger = empty().map((id, slot) => (slot === S('MainHand') ? dagger : id));
+  const lockedMain = autoEquip(20, pool, withDagger, 'Survival', bit(S('MainHand')));
+  check('a locked main hand keeps its weapon', lockedMain[S('MainHand')] === dagger);
+  const lockedEmpty = autoEquip(20, pool, empty(), 'Survival', bit(S('Chest'), S('Ring1')));
+  check('locked empty slots stay empty', lockedEmpty[S('Chest')] === 0n && lockedEmpty[S('Ring1')] === 0n && lockedEmpty[S('Ring2')] !== 0n);
+  const ring = pool.find(i => i.baseId === 50)!.id;
+  const ringLocked = autoEquip(20, pool, empty().map((id, slot) => (slot === S('Ring2') ? ring : id)), 'Damage', bit(S('Ring2')));
+  check("a locked slot's item isn't moved", ringLocked[S('Ring2')] === ring && ringLocked.filter(id => id === ring).length === 1);
+  const offLocked = autoEquip(20, pool, empty().map((id, slot) => (slot === S('OffHand') ? pool[5].id : id)), 'Damage', bit(S('OffHand')));
+  check('a locked off-hand rules out two-handers', offLocked[S('OffHand')] === pool[5].id &&
+    !pool.find(i => i.id === offLocked[S('MainHand')])?.weapon?.twoHanded);
   check('nothing to equip leaves the loadout empty', autoEquip(1, [], empty(), 'Damage').every(id => id === 0n));
   check('unknown item IDs are dropped', autoEquip(1, [], [999n, ...empty().slice(1)], 'Damage').every(id => id === 0n));
 }

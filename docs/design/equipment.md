@@ -217,10 +217,15 @@ The button equips the best items from the bag for the loadout's **profile**. It 
 looks at the current zone or target enemy, so its result only depends on the items.
 
 - **Profiles** (picked next to the button, saved per loadout):
-  - **Damage:** maximize DPS, with time to die as the tie-breaker.
-  - **Survival:** maximize time to die, with DPS as the tie-breaker.
-  - **Loot:** maximize DPS × (1 + item find%), with gold find, XP gain and time to die
-    as tie-breakers.
+  - **Damage (phys) / Damage (magic):** maximize the DPS from that damage type only, with
+    time to die as the tie-breaker.
+  - **Healing:** maximize heals per second, then time to die, then DPS.
+  - **Survival (phys) / Survival (magic):** maximize time to die against a dummy dealing
+    only that damage type, with DPS as the tie-breaker.
+  - (The Loot profile is retired; a loadout still set to it auto-equips as Damage (phys).)
+- **Slot locks.** Each slot of a loadout has a lock (next to its label). Auto-equip leaves
+  a locked slot as it is, full or empty, and never moves its item to another slot; a
+  locked off-hand rules out two-handers. Manual equipping ignores locks.
 - **Near ties.** Values within 1% of each other count as tied, so the next value
   decides: a sliver of DPS from a few Finesse doesn't beat a big survival gain. A strict
   search first finds the best goal value, and the result never ends more than 1% below
@@ -230,7 +235,8 @@ looks at the current zone or target enemy, so its result only depends on the ite
   - level = the character's level;
   - Balanced defenses (`2.5 × level` armor and resistance, so 33% mitigation);
   - the average enemy's DPS for that level, `16 × 1.42^(level/10 − 1)` (zones.md);
-  - deals 50% physical and 50% magic damage, so armor and resistance count equally.
+  - deals 50% physical and 50% magic damage, so armor and resistance count equally
+    (except for the Survival profiles, which take one type only).
 - **Search:** go slot by slot and try every bag item that fits; keep the best; repeat
   until nothing improves (2–3 passes). Hands are tried as whole options: one two-hander,
   or a one-hander plus an off-hand. With 200 items this is a few thousand formula

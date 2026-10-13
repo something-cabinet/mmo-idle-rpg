@@ -1,7 +1,8 @@
 // Equipping rules and auto-equip (equipment.md). Pure: shared by server and client.
 
 import { SLOTS, base } from './data/bases';
-import { combatStats, matchup, type GearItem, type GearWeapon } from './combat';
+import { combatStats, matchup, type CombatStats, type GearItem, type GearWeapon } from './combat';
+import type { DamageType } from './data/bases';
 import type { EnemyDef } from './data/zones';
 
 /** An owned item: what equipping and scoring need from an `item` row. */
@@ -11,7 +12,21 @@ export interface OwnedItem extends GearItem {
   weapon?: GearWeapon & { twoHanded: boolean };
 }
 
-export type Profile = 'Damage' | 'Survival' | 'Loot';
+/**
+ * Auto-equip profiles, in menu order (equipment.md), by their stored name in
+ * `loadout.profile`: Damage and Survival are the physical ones.
+ */
+export const PROFILES = ['Damage', 'DamageMagic', 'Healing', 'Survival', 'SurvivalMagic'] as const;
+export type Profile = (typeof PROFILES)[number];
+export const PROFILE_LABEL: Record<Profile, string> = {
+  Damage: 'Damage (phys)',
+  DamageMagic: 'Damage (magic)',
+  Healing: 'Healing',
+  Survival: 'Survival (phys)',
+  SurvivalMagic: 'Survival (magic)',
+};
+/** A stored profile tag as a profile: the retired Loot profile auto-equips as Damage. */
+export const asProfile = (tag: Profile | 'Loot'): Profile => (tag === 'Loot' ? 'Damage' : tag);
 
 const MAIN = SLOTS.indexOf('MainHand');
 const OFF = SLOTS.indexOf('OffHand');
@@ -65,41 +80,65 @@ export function referenceDummy(level: number): EnemyDef {
 }
 
 export interface LoadoutScore {
-  /** DPS against the dummy. */
+  /** DPS against the dummy (its two halves averaged). */
   dps: number;
+  /** DPS from physical / magic damage only. */
+  physicalDps: number;
+  magicDps: number;
+  /** Your heals per second (solo, they land on yourself). */
+  hps: number;
   /** Seconds the dummy needs to kill you; Infinity if you out-sustain it. */
   timeToDie: number;
-  itemFind: number;
-  goldFind: number;
-  xpGain: number;
+  /** … if all its damage were physical / magic. */
+  timeToDiePhysical: number;
+  timeToDieMagic: number;
+}
+
+/** `s` with its attacks dealing only `type` damage (a magic-only build keeps its heals, for Zealot's Oath). */
+function onlyDamage(s: CombatStats, type: DamageType): CombatStats {
+  const sources = s.sources.map(src => ({
+    ...src,
+    hit: { Physical: type === 'Physical' ? src.hit.Physical : 0, Magic: type === 'Magic' ? src.hit.Magic : 0 },
+    heal: type === 'Magic' ? src.heal : 0,
+  }));
+  return { ...s, sources };
 }
 
 export function scoreGear(level: number, gear: readonly (GearItem | undefined)[]): LoadoutScore {
   const s = combatStats(level, gear);
   const dummy = referenceDummy(level);
+  const magicDummy = { ...dummy, damageType: 'Magic' as const };
   // Half the dummy's damage is physical, half magic: the average of the two fights
   // (everything in a matchup is linear in the incoming damage).
   const phys = matchup(s, dummy);
-  const magic = matchup(s, { ...dummy, damageType: 'Magic' });
+  const magic = matchup(s, magicDummy);
   const net = (phys.netIncoming + magic.netIncoming) / 2;
+  const ttd = (n: number) => (n <= 0 ? Infinity : s.maxHp / n);
+  const dpsOf = (only: CombatStats) => (matchup(only, dummy).dps + matchup(only, magicDummy).dps) / 2;
   return {
     dps: (phys.dps + magic.dps) / 2,
-    timeToDie: net <= 0 ? Infinity : s.maxHp / net,
-    itemFind: s.itemFind,
-    goldFind: s.goldFind,
-    xpGain: s.xpGain,
+    physicalDps: dpsOf(onlyDamage(s, 'Physical')),
+    magicDps: dpsOf(onlyDamage(s, 'Magic')),
+    hps: phys.hps,
+    timeToDie: ttd(net),
+    timeToDiePhysical: phys.timeToDie,
+    timeToDieMagic: magic.timeToDie,
   };
 }
 
 /** Values compared in order: the profile's goal, then tie-breakers. */
-function ranking(p: Profile, s: LoadoutScore): number[] {
+export function ranking(p: Profile, s: LoadoutScore): number[] {
   switch (p) {
     case 'Damage':
-      return [s.dps, s.timeToDie];
+      return [s.physicalDps, s.timeToDie];
+    case 'DamageMagic':
+      return [s.magicDps, s.timeToDie];
+    case 'Healing':
+      return [s.hps, s.timeToDie, s.dps];
     case 'Survival':
-      return [s.timeToDie, s.dps];
-    case 'Loot':
-      return [s.dps * (1 + s.itemFind), s.goldFind, s.xpGain, s.timeToDie];
+      return [s.timeToDiePhysical, s.dps];
+    case 'SurvivalMagic':
+      return [s.timeToDieMagic, s.dps];
   }
 }
 
@@ -123,22 +162,36 @@ function better(a: number[], b: number[], nearTie: boolean): boolean {
 
 // ---------------------------------------------------------------- auto-equip
 
+/** Whether slot `slot` is locked in a loadout's `lockedSlots` bitmask. */
+export const slotLocked = (lockedSlots: number, slot: number) => ((lockedSlots >> slot) & 1) === 1;
+
 /**
  * Best slots for `profile` from `items`, starting from `slots` (equipment.md): slot by
  * slot, try every item that fits (or empty) and keep the best, until a pass changes
  * nothing. Hands are tried as whole options: a two-hander alone, or a one-hander
- * with each off-hand. Never looks at the target enemy.
+ * with each off-hand. Never looks at the target enemy. Slots locked in `lockedSlots`
+ * (bit i = slot i) keep what they hold, and their items aren't used elsewhere.
  *
  * Two searches: a strict one finds the best goal value, then a near-tie one trades
  * slivers of the goal for the tie-breakers, never ending more than 1% below that best
  * (so small trades can't add up).
  */
-export function autoEquip(level: number, items: readonly OwnedItem[], slots: readonly bigint[], profile: Profile): bigint[] {
+export function autoEquip(
+  level: number,
+  items: readonly OwnedItem[],
+  slots: readonly bigint[],
+  profile: Profile,
+  lockedSlots = 0
+): bigint[] {
   const byId = new Map(items.map(i => [i.id, i]));
   const gearOf = (ids: readonly bigint[]) => ids.map(id => byId.get(id));
   const rank = (ids: readonly bigint[]) => ranking(profile, scoreGear(level, gearOf(ids)));
-  const fitting = (slot: number) => items.filter(i => fitsSlot(i.baseId, slot));
-  const offHands = [undefined, ...fitting(OFF)];
+  const locked = (slot: number) => slotLocked(lockedSlots, slot);
+  const start = slots.map(id => (byId.has(id) ? id : 0n));
+  const held = new Set(start.filter((id, slot) => id !== 0n && locked(slot)));
+  const fitting = (slot: number) => items.filter(i => !held.has(i.id) && fitsSlot(i.baseId, slot));
+  const mains = locked(MAIN) ? [byId.get(start[MAIN])] : [undefined, ...fitting(MAIN)];
+  const offHands = locked(OFF) ? [byId.get(start[OFF])] : [undefined, ...fitting(OFF)];
 
   const search = (start: bigint[], nearTie: boolean, floor: number): bigint[] => {
     let best = start;
@@ -153,8 +206,9 @@ export function autoEquip(level: number, items: readonly OwnedItem[], slots: rea
     for (let pass = 0; pass < 4; pass++) {
       const before = best.join();
       // Hands as whole options.
-      for (const main of [undefined, ...fitting(MAIN)]) {
-        for (const off of twoHanded(main) ? [undefined] : offHands) {
+      for (const main of mains) {
+        for (const off of offHands) {
+          if (off && twoHanded(main)) continue;
           const ids = best.map(id => (id === main?.id || id === off?.id ? 0n : id));
           ids[MAIN] = main?.id ?? 0n;
           ids[OFF] = off?.id ?? 0n;
@@ -163,7 +217,7 @@ export function autoEquip(level: number, items: readonly OwnedItem[], slots: rea
       }
       // Every other slot on its own.
       for (let slot = 0; slot < SLOTS.length; slot++) {
-        if (slot === MAIN || slot === OFF) continue;
+        if (slot === MAIN || slot === OFF || locked(slot)) continue;
         for (const it of [undefined, ...fitting(slot)]) {
           const ids = best.map(id => (id === it?.id ? 0n : id));
           ids[slot] = it?.id ?? 0n;
@@ -175,7 +229,7 @@ export function autoEquip(level: number, items: readonly OwnedItem[], slots: rea
     return best;
   };
 
-  const strict = search(slots.map(id => (byId.has(id) ? id : 0n)), false, -Infinity);
+  const strict = search(start, false, -Infinity);
   const goal = rank(strict)[0];
   return search(strict, true, Number.isFinite(goal) ? goal * (1 - NEAR_TIE) : goal);
 }

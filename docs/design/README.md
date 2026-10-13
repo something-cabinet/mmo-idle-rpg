@@ -132,6 +132,7 @@ not decisions.
 | 2026-10-11 | Flat added damage and heal are a straight bonus per hit (fast weapons get more from them). |
 | 2026-10-11 | Online time is settled as live fights (seeded per character and fight start, replayed identically by the client); offline time keeps the expected-value formulas. |
 | 2026-10-10 | Two ring slots, 4 loadouts (items can be shared between loadouts), bag 200 expandable to 400 with gold. |
+| 2026-10-13 | Auto-equip profiles are Damage (phys), Damage (magic), Healing, Survival (phys) and Survival (magic); Loot is removed. Slots can be locked against auto-equip. |
 
 ## Open questions
 

@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import type { Item } from "../../module_bindings/types";
 import { combatStats } from "../../../spacetimedb/src/combat";
-import { fitsSlot, placeItem, scoreGear } from "../../../spacetimedb/src/equip";
+import { PROFILES, PROFILE_LABEL, asProfile, fitsSlot, placeItem, scoreGear, slotLocked } from "../../../spacetimedb/src/equip";
 import { rarityRank } from "../../../spacetimedb/src/loot";
 import { call, useSticky } from "../../store";
 import { fmt } from "../format";
@@ -208,28 +208,44 @@ export function SlotCell({
   i,
   selected,
   onOpen,
+  lock,
 }: {
   gear: (Item | undefined)[];
   i: number;
   selected: boolean;
   onOpen: () => void;
+  /** The slot's auto-equip lock, for your own loadouts. */
+  lock?: { locked: boolean; onToggle: () => void };
 }) {
   const it = gear[i];
   const blocked = !it && i === 1 && gear[0]?.weapon?.twoHanded;
   return (
     <div className="slot-cell">
       <div className="slot-label">{SLOT_LABEL[i]}</div>
-      {it ? (
-        <ItemTile it={it} selected={selected} onClick={onOpen} />
-      ) : (
-        <button
-          className={`item-tile empty${selected ? " selected" : ""}`}
-          title={`${SLOT_LABEL[i]}: empty`}
-          onClick={onOpen}
-        >
-          <Icon name={SLOT_ICON[i]} className="tile-ico" />
-        </button>
-      )}
+      <div className="slot-tile">
+        {it ? (
+          <ItemTile it={it} selected={selected} onClick={onOpen} />
+        ) : (
+          <button
+            className={`item-tile empty${selected ? " selected" : ""}`}
+            title={`${SLOT_LABEL[i]}: empty`}
+            onClick={onOpen}
+          >
+            <Icon name={SLOT_ICON[i]} className="tile-ico" />
+          </button>
+        )}
+        {lock && (
+          <button
+            className={`slot-lock${lock.locked ? " on" : ""}`}
+            title={lock.locked ? "Locked: auto-equip leaves this slot as it is. Click to unlock." : "Lock this slot so auto-equip leaves it as it is"}
+            aria-label={lock.locked ? "Unlock slot for auto-equip" : "Lock slot for auto-equip"}
+            aria-pressed={lock.locked}
+            onClick={lock.onToggle}
+          >
+            <Icon name={lock.locked ? "lock" : "unlock"} />
+          </button>
+        )}
+      </div>
       <div className="slot-name">
         {it ? (
           <span className={`c-${rarityCls(it.rarity.tag)}`}>
@@ -359,20 +375,20 @@ export const EquipmentView = memo(function EquipmentView({
         <span className="spacer" />
         <span className="toolbar-label">Profile</span>
         <select
-          value={lo.profile.tag}
+          value={asProfile(lo.profile.tag)}
           onChange={(e) =>
             call(
               r.setProfile({
                 loadout: lo.index,
-                profile: {
-                  tag: e.target.value as "Damage" | "Survival" | "Loot",
-                },
+                profile: { tag: e.target.value as (typeof PROFILES)[number] },
               }),
             )
           }
         >
-          {["Damage", "Survival", "Loot"].map((p) => (
-            <option key={p}>{p}</option>
+          {PROFILES.map((p) => (
+            <option key={p} value={p}>
+              {PROFILE_LABEL[p]}
+            </option>
           ))}
         </select>
         <button
@@ -400,6 +416,10 @@ export const EquipmentView = memo(function EquipmentView({
               i={i}
               selected={openSlot === i}
               onOpen={() => setOpenSlot(i)}
+              lock={{
+                locked: slotLocked(lo.lockedSlots, i),
+                onToggle: () => call(r.lockSlot({ loadout: lo.index, slot: i, locked: !slotLocked(lo.lockedSlots, i) })),
+              }}
             />
           ))}
         </div>

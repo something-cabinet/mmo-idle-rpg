@@ -44,6 +44,8 @@ export interface RaidDef {
   enrageSeconds: number;
   /** Rewarded kills (clears) per character per day (raid.ts `lockoutStart`); losses don't count. */
   clearsPerDay: number;
+  /** Chance an Epic or Legendary item is one of the raid's own bases (variants) instead of a zone base. */
+  ownBaseShare: number;
   /** Items per rewarded kill, each rolled on its own (`RAID_RARITY_ODDS`). */
   itemsPerClear: number;
   /** Raid tokens per rewarded kill. */
@@ -84,6 +86,7 @@ export const RAIDS: RaidDef[] = [
     enrageSeconds: 240,
     clearsPerDay: 3,
     itemsPerClear: 3,
+    ownBaseShare: 1 / 3,
     tokens: 10,
     hireCost: 2000,
     // The average of level-38 characters with random T3 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).

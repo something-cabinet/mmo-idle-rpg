@@ -1,6 +1,6 @@
 // Checks for raid fights (spacetimedb/src/raid.ts) and the raid boss's balance. No server needed:
 //   npm run test:raid
-import { SLOTS, ZONE_BASES } from '../spacetimedb/src/data/bases';
+import { SLOTS, ZONE_BASES, base } from '../spacetimedb/src/data/bases';
 import { combatStats, matchup, mitigation, type CombatStats } from '../spacetimedb/src/combat';
 import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
 import { NPC_POWER, RAIDS_BY_ID, RAID_RARITY_ODDS, THREAT_FOCUS } from '../spacetimedb/src/data/raids';
@@ -32,7 +32,8 @@ function character(seed: number, role: 'tank' | 'healer' | 'dps'): CombatStats {
     const baseId = role === 'healer' && b.weapon ? 10 : b.id;
     return { ...makeItem(rng, baseId, 3, rarity), id: BigInt(i + 1) };
   });
-  const profile: Profile = role === 'tank' ? 'Survival' : 'Damage';
+  // Damage dealers split between physical and magic builds.
+  const profile: Profile = role === 'tank' ? 'Survival' : role === 'healer' ? 'Healing' : seed % 2 ? 'DamageMagic' : 'Damage';
   const slots = autoEquip(LEVEL, items, SLOTS.map(() => 0n), profile);
   const gear = slots.map(id => items.find(i => i.id === id));
   if (role === 'healer' && gear[MAIN]?.baseId !== 10) throw new Error('healer without a staff');
@@ -109,6 +110,9 @@ const share = (r: string) => loot.filter(it => it.rarity.tag === r).length / loo
 check('raid items are Epic or better, at the raid tier', loot.every(it => ['Epic', 'Legendary', 'Unique'].includes(it.rarity.tag) && it.tier === raid.tier));
 check('rarity odds as configured', Math.abs(share('Epic') - RAID_RARITY_ODDS.Epic) < 0.03 && Math.abs(share('Legendary') - RAID_RARITY_ODDS.Legendary) < 0.03 &&
   Math.abs(share('Unique') - RAID_RARITY_ODDS.Unique) < 0.01, `${share('Epic').toFixed(3)} / ${share('Legendary').toFixed(3)} / ${share('Unique').toFixed(3)}`);
+const nonUnique = loot.filter(it => it.rarity.tag !== 'Unique');
+const ownShare = nonUnique.filter(it => base(it.baseId).raidId === raid.id).length / nonUnique.length;
+check("the raid's own bases drop at ownBaseShare", Math.abs(ownShare - raid.ownBaseShare) < 0.03, ownShare.toFixed(3));
 const own = new Set(raidUniques(raid.id).map(u => u.id));
 check('uniques come from the raid\'s own pool, all of it', loot.filter(it => it.uniqueId).every(it => own.has(it.uniqueId!)) &&
   [...own].every(id => loot.some(it => it.uniqueId === id)));

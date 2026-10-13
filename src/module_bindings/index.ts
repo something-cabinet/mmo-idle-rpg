@@ -52,6 +52,7 @@ import JoinRaidPartyReducer from "./join_raid_party_reducer";
 import KickFromRaidReducer from "./kick_from_raid_reducer";
 import LeaveRaidReducer from "./leave_raid_reducer";
 import LockItemReducer from "./lock_item_reducer";
+import LockSlotReducer from "./lock_slot_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
 import RemoveFriendReducer from "./remove_friend_reducer";
@@ -319,6 +320,7 @@ const reducersSchema = __reducers(
   __reducerSchema("kick_from_raid", KickFromRaidReducer),
   __reducerSchema("leave_raid", LeaveRaidReducer),
   __reducerSchema("lock_item", LockItemReducer),
+  __reducerSchema("lock_slot", LockSlotReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
   __reducerSchema("remove_friend", RemoveFriendReducer),

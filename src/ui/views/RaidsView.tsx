@@ -6,11 +6,12 @@ import type { Item, RaidLog, RaidMember, RaidParty } from '../../module_bindings
 import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src/combat';
 import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
+import { BASE_LIST } from '../../../spacetimedb/src/data/bases';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
 import { aggroShares, clearsToday, decodeSetup, lockoutEnd, npcStats, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
 import { call } from '../../store';
 import { nowMicros } from '../clock';
-import { UNKNOWN, uniqueFound } from '../discovery';
+import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
 import { DefTag, DmgTag } from '../enemy';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
@@ -45,6 +46,7 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
   const zone = ZONES_BY_ID.get(raid.unlockZoneId)!;
   const unlocked = s.killedZones.has(zone.id);
   const boss = raid.boss;
+  const ownBases = BASE_LIST.filter(b => b.raidId === raid.id);
   const parties = [...conn.db.raidParty.iter()].filter(p => p.raidId === raid.id);
   const members = [...conn.db.raidMember.iter()].sort(byJoin);
   const mine = members.find(m => m.characterId === s.row.id);
@@ -96,6 +98,17 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
                 <span key={u.id}>{i > 0 && ', '}<span className={uniqueFound(s, u) ? 'c-unique' : 'muted'}>{uniqueFound(s, u) ? u.name : UNKNOWN}</span></span>
               ))}
             </li>
+            {ownBases.length > 0 && (
+              <li>
+                Raid boss exclusive bases:{' '}
+                {ownBases.map((b, i) => {
+                  const found = baseFound(s, b.id, raid.tier);
+                  return (
+                    <span key={b.id}>{i > 0 && ', '}<span className={found ? '' : 'muted'} title={found ? b.family : `An undiscovered ${b.family.toLowerCase()}`}>{found ? b.name(raid.tier) : UNKNOWN}</span></span>
+                  );
+                })}
+              </li>
+            )}
             <li>{raid.tokens} raid tokens · {fmt(boss.gold)} gold · {fmt(boss.xp)} XP</li>
           </ul>
           <p className={left > 0 ? 'c-ok' : 'muted'}>

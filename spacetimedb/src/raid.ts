@@ -7,6 +7,7 @@ import { defenseAgainst, effectDamageMult, mitigation, type CombatStats } from '
 import { Effect, effectAmount } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
+import { base } from './data/bases';
 import { makeItem, makeUnique, seededRng, type NewItem, type Rng } from './loot';
 
 const RAID_SALT = 0x72616964n; // "raid"
@@ -260,13 +261,17 @@ export function decodeSetup(json: string): RaidSetup {
 
 // ---------------------------------------------------------------- rewards
 
-/** One fighter's item for a rewarded kill: Epic or better of the raid's tier, a Unique from the raid's own pool. */
+/**
+ * One fighter's item for a rewarded kill: Epic or better of the raid's tier, a Unique from the raid's own pool.
+ * An Epic or Legendary is one of the raid's own bases `ownBaseShare` of the time, else any zone base.
+ */
 export function rollRaidItem(rng: Rng, raid: RaidDef): NewItem {
   const r = rng();
   const uniques = raidUniques(raid.id);
   if (r < RAID_RARITY_ODDS.Unique && uniques.length) return makeUnique(rng, uniques[Math.floor(rng() * uniques.length)]);
   const rarity = r < RAID_RARITY_ODDS.Unique + RAID_RARITY_ODDS.Legendary ? 'Legendary' : 'Epic';
-  const drops = raid.boss.drops;
+  const own = raid.boss.drops.filter(id => base(id).raidId === raid.id);
+  const drops = own.length && rng() < raid.ownBaseShare ? own : raid.boss.drops.filter(id => base(id).raidId === undefined);
   return makeItem(rng, drops[Math.floor(rng() * drops.length)], raid.tier, rarity);
 }
 

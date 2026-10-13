@@ -84,8 +84,6 @@ under the map (tapping a spot scrolls to it); on a desktop it sits beside the ma
 ```
 [T1 Greenhollow ✔] [T2 Thornwood] [🔒 T3 Frostmaw Pass]
 Greenhollow  Lv 1–15
-Explored 34%                         next area in 80 kills
-██████░░░░░░░░░░
 Discovered: areas 2/4 · enemies 3/5 · items 12/33
 ┌──────────────────────────────┐
 │     (?)┄┄┄┄┄┄┄┄┄┄(☠)         │
@@ -100,6 +98,9 @@ Old Mill  YOU ARE HERE                          Lv 7–10
   › ???           RISKY  Lv 10                     [ Fight  ]
 ```
 
+- The map always fits the screen, with no panning (panning fights page scrolling on
+  phones and hides spots). Spots are placed on an inset stage, so markers and labels
+  never clip; below 380 px wide, markers and labels shrink a little.
 - Spots: a glyph for revealed areas, `?` for unrevealed ones (dashed), a pin where the
   character is fighting, a skull for the lair. The picked spot gets a ring. Paths are
   solid between two revealed areas, dashed otherwise.

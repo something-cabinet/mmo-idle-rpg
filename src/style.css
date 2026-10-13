@@ -931,30 +931,6 @@ select:focus,
   font-weight: 600;
 }
 /* Zone map: areas as spots on a map, joined by paths; the picked area's panel beside or below it. */
-.explore {
-  margin-bottom: 10px;
-}
-.explore-text {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 13px;
-}
-.explore-text .muted {
-  font-size: 12px;
-}
-.explore-bar {
-  height: 6px;
-  margin-top: 5px;
-  border-radius: 3px;
-  background: var(--surface-3);
-  overflow: hidden;
-}
-.explore-bar > div {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.3s;
-}
 .zones-layout {
   display: grid;
   gap: 12px;
@@ -969,7 +945,8 @@ select:focus,
   --land: var(--surface-2);
   position: relative;
   width: 100%;
-  aspect-ratio: 1 / 0.9;
+  aspect-ratio: 1 / 1;
+  min-height: 300px;
   max-height: 460px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -985,6 +962,11 @@ select:focus,
 .zmap.locked {
   filter: grayscale(0.8);
   opacity: 0.7;
+}
+.zmap-stage {
+  /* Room around the spots: half a marker above, marker and two-line label below, half a label at the sides. */
+  position: absolute;
+  inset: 30px 50px 62px;
 }
 .zmap-paths {
   position: absolute;
@@ -1014,7 +996,7 @@ select:focus,
   border: 0;
   background: none;
   color: var(--text);
-  max-width: 120px;
+  width: 100px;
   cursor: pointer;
 }
 .spot-mark {
@@ -1070,6 +1052,22 @@ select:focus,
   font-size: 10px;
   font-weight: 500;
   color: var(--muted);
+}
+@media (max-width: 380px) {
+  .zmap-stage {
+    inset: 26px 44px 56px;
+  }
+  .spot {
+    width: 88px;
+    transform: translate(-50%, -19px);
+  }
+  .spot-mark {
+    width: 38px;
+    height: 38px;
+  }
+  .spot-label {
+    font-size: 11px;
+  }
 }
 .area-panel {
   min-width: 0;

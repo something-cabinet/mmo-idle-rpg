@@ -19,17 +19,16 @@ fixed route (data/zones.ts `areas`, `links`).
 - **Nothing inside an open zone is locked.** Any enemy can be fought at any time; the
   real limit is gear, not a grind gate, and an idle player never has to switch
   targets to make progress.
-- **Exploration is zone-wide:** every kill of any of the zone's enemies, online or
-  offline, explores it. An area is revealed (named on the map) once the zone's
-  lifetime kills reach its `reveal` threshold, *illustrative* 0 / 100 / 250 / 500
-  (the last ≈ 2 h of farming), or as soon as the player fights in it. "Explored %"
-  is the zone's kills over the last threshold.
+- **Areas are revealed by visiting:** an area shows by name on the map once the
+  player has a kill there, and while they are fighting there. No progress bar or
+  thresholds: a first try with zone-wide kill thresholds felt like a chore.
 - Unrevealed areas show as `???` with their level range and can still be fought; the
   lair always names its boss (bosses are the zone's goal). The client toasts "New
   area found" when its projection reveals one.
 - **Cost: none.** Revealing is derived on the client from `enemy_kill`; the server
   doesn't know about areas.
-- Area IDs are `zoneId × 10 + n` and permanent; map positions are presentation only.
+- Area IDs are `zoneId × 10 + n` and permanent; map positions are presentation only,
+  as % of an inset stage that always leaves room for a spot's marker and label.
   Hidden areas (exploration-todo.md) can hang off the same map later.
 - Walk flavour lines come from the zone's general lines plus the target's area.
 

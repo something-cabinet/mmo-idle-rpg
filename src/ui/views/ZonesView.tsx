@@ -2,11 +2,11 @@ import { memo, useRef, useState, type RefObject } from 'react';
 import { matchup } from '../../../spacetimedb/src/combat';
 import { ENEMIES_BY_ID, ZONES, ZONES_BY_ID, areaIndexOf, bossOf, previousZone, type AreaDef, type EnemyDef, type ZoneDef } from '../../../spacetimedb/src/data/zones';
 import { call, useSticky } from '../../store';
-import { fmt, pct } from '../format';
+import { fmt } from '../format';
 import { Icon } from '../Icon';
 import { EnemyDetail } from '../enemy';
 import { ViewHeader } from '../shared';
-import { UNKNOWN, areaRevealed, enemyKnown, exploration, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
+import { UNKNOWN, areaRevealed, enemyKnown, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
 import type { Snapshot } from '../snapshot';
 
 const levels = (es: EnemyDef[]) => {
@@ -25,7 +25,7 @@ const AREA_ICONS: Record<number, string> = {
 
 /**
  * A zone as a map (zones.md, "Zone map"): areas joined by paths, shown as ??? until the
- * zone's kills reveal them or the player fights there. Every area of an open zone can
+ * player fights there. Every area of an open zone can
  * be fought in. Tapping an area opens its panel with the enemies.
  */
 export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
@@ -38,7 +38,6 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
   const prev = previousZone(z);
   const prevBoss = prev && bossOf(prev);
   const found = zoneDiscovery(s, z);
-  const explored = exploration(s, z);
   const here = s.target?.zone === z ? z.areas[areaIndexOf(z, s.target.enemy.id)] : undefined;
   const area = z.areas.find(a => a.id === picked) ?? here ?? z.areas[0];
   const revealed = new Set(z.areas.filter(a => areaRevealed(s, z, a)).map(a => a.id));
@@ -74,57 +73,55 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
           )}
         </div>
         {unlocked && (
-          <div className="explore" title="Every kill in the zone explores it and reveals more of the map. Fighting in an area reveals it at once.">
-            <div className="explore-text">
-              <span>Explored <strong>{pct(explored.share)}</strong></span>
-              <span className="muted">{explored.toNext !== undefined ? `next area in ${fmt(explored.toNext)} kills` : 'map complete'}</span>
-            </div>
-            <div className="explore-bar"><div style={{ width: `${explored.share * 100}%` }} /></div>
-            <p className="muted discovered">Discovered: areas {revealed.size}/{z.areas.length} · enemies {found.enemies}/{found.enemyTotal} · items {found.items}/{found.itemTotal}</p>
-          </div>
+          <p className="muted discovered" title="Areas are revealed by fighting in them, enemies by killing them, items by seeing them drop (salvaged drops count)">
+            Discovered: areas {revealed.size}/{z.areas.length} · enemies {found.enemies}/{found.enemyTotal} · items {found.items}/{found.itemTotal}
+          </p>
         )}
         <div className="zones-layout">
           <div className={`zmap zmap-${z.id}${unlocked ? '' : ' locked'}`}>
-            <svg className="zmap-paths" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              {z.links.map(([from, to]) => {
-                const a = byId.get(from)!;
-                const b = byId.get(to)!;
-                const known = revealed.has(from) && revealed.has(to);
-                return <line key={`${from}-${to}`} className={known ? 'known' : ''} x1={a.x} y1={a.y} x2={b.x} y2={b.y} vectorEffect="non-scaling-stroke" />;
+            {/* Spots sit on an inset stage, so a marker and its label always fit inside the map. */}
+            <div className="zmap-stage">
+              <svg className="zmap-paths" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                {z.links.map(([from, to]) => {
+                  const a = byId.get(from)!;
+                  const b = byId.get(to)!;
+                  const known = revealed.has(from) && revealed.has(to);
+                  return <line key={`${from}-${to}`} className={known ? 'known' : ''} x1={a.x} y1={a.y} x2={b.x} y2={b.y} vectorEffect="non-scaling-stroke" />;
+                })}
+              </svg>
+              {z.areas.map(a => {
+                const known = revealed.has(a.id);
+                const lair = a.enemies.some(id => ENEMIES_BY_ID.get(id)!.enemy.boss);
+                const cls = ['spot', known ? 'known' : 'fog', lair && 'lair', a === here && 'here', a === area && 'picked'].filter(Boolean).join(' ');
+                return (
+                  <button
+                    key={a.id}
+                    className={cls}
+                    style={{ left: `${a.x}%`, top: `${a.y}%` }}
+                    aria-pressed={a === area}
+                    onClick={() => {
+                      setPicked(a.id);
+                      setOpen(undefined);
+                      // On a phone the panel sits below the map: bring it into view.
+                      if (matchMedia('(max-width: 900px)').matches) requestAnimationFrame(() => panel.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
+                    }}
+                  >
+                    <span className="spot-mark">
+                      {a === here ? <Icon name="pin" /> : lair ? <Icon name="skull" /> : known ? <Icon name={AREA_ICONS[a.id] ?? 'map'} /> : '?'}
+                    </span>
+                    <span className="spot-label">
+                      {known ? a.name : UNKNOWN}
+                      <small>{levels(enemiesOf(a))}</small>
+                    </span>
+                  </button>
+                );
               })}
-            </svg>
-            {z.areas.map(a => {
-              const known = revealed.has(a.id);
-              const lair = a.enemies.some(id => ENEMIES_BY_ID.get(id)!.enemy.boss);
-              const cls = ['spot', known ? 'known' : 'fog', lair && 'lair', a === here && 'here', a === area && 'picked'].filter(Boolean).join(' ');
-              return (
-                <button
-                  key={a.id}
-                  className={cls}
-                  style={{ left: `${a.x}%`, top: `${a.y}%` }}
-                  aria-pressed={a === area}
-                  onClick={() => {
-                    setPicked(a.id);
-                    setOpen(undefined);
-                    // On a phone the panel sits below the map: bring it into view.
-                    if (matchMedia('(max-width: 900px)').matches) requestAnimationFrame(() => panel.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }));
-                  }}
-                >
-                  <span className="spot-mark">
-                    {a === here ? <Icon name="pin" /> : lair ? <Icon name="skull" /> : known ? <Icon name={AREA_ICONS[a.id] ?? 'map'} /> : '?'}
-                  </span>
-                  <span className="spot-label">
-                    {known ? a.name : UNKNOWN}
-                    <small>{levels(enemiesOf(a))}</small>
-                  </span>
-                </button>
-              );
-            })}
+            </div>
           </div>
           <AreaPanel panelRef={panel} s={s} z={z} a={area} known={revealed.has(area.id)} here={area === here} unlocked={unlocked} open={open} setOpen={setOpen} />
         </div>
         <p className="muted hint">
-          Tap an area on the map, then an enemy for its rewards and drops. ??? areas and enemies can still be fought: that reveals them. Threat and numbers use your active loadout ({s.active.name}).
+          Tap an area on the map, then an enemy for its rewards and drops. Fight in a ??? area or enemy to discover it. Threat and numbers use your active loadout ({s.active.name}).
         </p>
       </div>
     </>
@@ -152,7 +149,7 @@ function AreaPanel({ panelRef, s, z, a, known, here, unlocked, open, setOpen }: 
         <span className="area-levels muted">{levels(enemies)}</span>
       </div>
       <p className="area-blurb muted">
-        {known ? a.blurb : boss ? `Lair of ${boss.name}. Explore the zone to learn more.` : 'Unexplored. Keep fighting in the zone to map it, or go and see.'}
+        {known ? a.blurb : boss ? `Lair of ${boss.name}.` : 'Unexplored. Fight here to discover it.'}
       </p>
       {unlocked ? (
         <ul className="foes">

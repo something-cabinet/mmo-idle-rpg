@@ -95,7 +95,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
         ...(src.heal ? [row('Heal', fmt(src.heal), from([Stat.Heal, Stat.HealPct], `Mind ${n1(mind)}: +${n1(0.45 * mind)}% heal`, 'Flat added heal is per hit: fast weapons get more from it'))] : []),
         row('Attack speed', `${src.attacksPerSec.toFixed(2)} /s`,
           from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, "Floor: 25% of the weapon's speed",
-            has(Effect.Ambush) && 'Ambush: × 0.7; first attack each fight deals 8×')),
+            has(Effect.Ambush) && 'Ambush: × 0.7; first attack each fight deals 5×')),
         row('Crit chance', pct(src.critChance, 1),
           from([Stat.BaseCritChance, Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
             leg(Effect.Overcrit))),

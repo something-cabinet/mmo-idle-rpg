@@ -54,7 +54,7 @@ export interface Fight {
  * formulas, HP can't go above max (overhealing is lost) and damage varies ±10%.
  * Executioner doubles your hits once the enemy is below its threshold; Second Wind
  * turns the first killing blow into a drop to its share of max HP; Ambush makes your
- * first swing 8×; Frostbite's chill shrinks the enemy's hits.
+ * first swing 5×; Frostbite's chill shrinks the enemy's hits.
  */
 export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng): Fight {
   const src = s.sources[0];
@@ -67,7 +67,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const critX = crit > 0 && src ? 1 + (src.critMult - 1) / crit : 1;
   const healPerSwing = src && m.hps > 0 ? m.hps / src.attacksPerSec : 0;
   const enemyHit = (enemy.dps / enemy.speed) * (1 - s.chill) * (1 - m.playerMitigation);
-  let ambush = s.effects.has(Effect.Ambush) ? 8 : 1;
+  let ambush = s.effects.has(Effect.Ambush) ? 5 : 1;
   const executeBelow = effectAmount(s.effects, Effect.Executioner) * enemy.hp;
   let secondWind = effectAmount(s.effects, Effect.SecondWind);
 

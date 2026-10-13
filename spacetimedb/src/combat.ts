@@ -277,10 +277,10 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
 
   // Executioner: the last `t` of the enemy's HP takes double damage, so it goes in half the time.
   let timeToKill = dps > 0 ? (e.hp / dps) * (1 - amount(Effect.Executioner) / 2) : Infinity;
-  // Ambush: the first swing (half a period in) deals 8 average hits, saving 7 periods;
+  // Ambush: the first swing (half a period in) deals 5 average hits, saving 4 periods;
   // a fight never ends before that first swing.
   const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
-  if (has(Effect.Ambush) && dps > 0 && period > 0) timeToKill = Math.max(timeToKill - 7 * period, period / 2);
+  if (has(Effect.Ambush) && dps > 0 && period > 0) timeToKill = Math.max(timeToKill - 4 * period, period / 2);
   // Second Wind: once per fight, a killing blow leaves you at a share of max HP.
   const timeToDie = netIncoming <= 0 ? Infinity : (s.maxHp * (1 + amount(Effect.SecondWind))) / netIncoming;
   const viable = timeToKill < timeToDie;

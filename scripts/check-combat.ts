@@ -265,14 +265,14 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const sponge = { ...rat, hp: 2000, dps: 0.01 };
   const ambM = matchup(amb, sponge);
   const period = 1 / amb.sources[0].attacksPerSec;
-  check('Ambush: time to kill − 7 swings', near(ambM.timeToKill, sponge.hp / ambM.dps - 7 * period, 1e-9), f(ambM.timeToKill));
+  check('Ambush: time to kill − 4 swings', near(ambM.timeToKill, sponge.hp / ambM.dps - 4 * period, 1e-9), f(ambM.timeToKill));
   check('Ambush: a one-shot ends at the first swing', near(matchup(amb, { ...rat, dps: 0.01 }).timeToKill, period / 2, 1e-9));
   const ambFights = Array.from({ length: 400 }, (_, i) => simulateFight(amb, ambM, sponge, seededRng(BigInt(i))));
   const avgLen = ambFights.reduce((a, x) => a + x.end - x.walk, 0) / ambFights.length;
   check('Ambush in live fights: average length matches the formula', near(avgLen, ambM.timeToKill, ambM.timeToKill * 0.05),
     `${f(avgLen)} s vs ${f(ambM.timeToKill)} s`);
   const first = ambFights[0].events.find(e => e.by === 'you')!;
-  check('Ambush in a live fight: the first swing is 8×', first.damage > 8 * 0.9 * ambM.dps * period / amb.sources[0].critMult - 1e-9);
+  check('Ambush in a live fight: the first swing is 5×', first.damage > 5 * 0.9 * ambM.dps * period / amb.sources[0].critMult - 1e-9);
 
   const ac = (effect: number) => combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), effect) }));
   const acBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]) }));

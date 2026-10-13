@@ -2566,7 +2566,8 @@ fieldset.affix-pick legend {
 }
 .raid-seats {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* 2 × 2 seats; one column on a phone. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -2658,6 +2659,9 @@ fieldset.affix-pick legend {
 @media (max-width: 700px) {
   .raid-parties li {
     flex-wrap: wrap;
+  }
+  .raid-seats {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

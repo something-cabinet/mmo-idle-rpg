@@ -143,6 +143,14 @@ ul {
 .c-epic { color: var(--r-epic); }
 .c-legendary { color: var(--r-legendary); }
 .c-unique { color: var(--r-unique); }
+/* Soft glow on legendary and unique names; buttons (rarity filters) stay flat. */
+.c-legendary:not(button),
+.c-unique:not(button),
+.r-legendary .item-name,
+.r-unique .item-name {
+  text-shadow: 0 0 6px color-mix(in srgb, currentColor var(--glow-text, 55%), transparent);
+}
+:root[data-theme='light'] { --glow-text: 30%; --glow-box: 22%; }
 
 /* ------------------------------------------------------------------ controls */
 .btn,
@@ -1416,6 +1424,10 @@ select:focus,
 .r-epic { --rc: var(--r-epic); }
 .r-legendary { --rc: var(--r-legendary); }
 .r-unique { --rc: var(--r-unique); }
+.item-card.r-legendary,
+.item-card.r-unique {
+  box-shadow: 0 0 12px color-mix(in srgb, var(--rc) var(--glow-box, 35%), transparent), var(--shadow);
+}
 .item-card.selected {
   outline: 2px solid var(--rc);
   outline-offset: 1px;
@@ -1755,6 +1767,18 @@ select:focus,
 .item-tile.selected {
   outline: 2px solid var(--rc);
   outline-offset: 2px;
+}
+.item-tile.r-legendary,
+.item-tile.r-unique {
+  box-shadow: 0 0 10px color-mix(in srgb, var(--rc) var(--glow-box, 35%), transparent), var(--shadow);
+}
+.item-tile.r-legendary:hover,
+.item-tile.r-unique:hover {
+  box-shadow: 0 0 0 1px var(--rc), 0 0 14px color-mix(in srgb, var(--rc) var(--glow-box, 35%), transparent), var(--shadow);
+}
+.item-tile.r-legendary .tile-ico,
+.item-tile.r-unique .tile-ico {
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rc) 60%, transparent));
 }
 .bag-grid .item-tile.selected::after {
   content: '✔';

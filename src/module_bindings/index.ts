@@ -38,6 +38,11 @@ import AcceptLinkReducer from "./accept_link_reducer";
 import AddFriendReducer from "./add_friend_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
+import DevGiveItemReducer from "./dev_give_item_reducer";
+import DevGiveUniqueReducer from "./dev_give_unique_reducer";
+import DevGrantReducer from "./dev_grant_reducer";
+import DevRevealAllReducer from "./dev_reveal_all_reducer";
+import DevUnlockZonesReducer from "./dev_unlock_zones_reducer";
 import EquipReducer from "./equip_reducer";
 import ExpandBagReducer from "./expand_bag_reducer";
 import FleeReducer from "./flee_reducer";
@@ -235,6 +240,11 @@ const reducersSchema = __reducers(
   __reducerSchema("add_friend", AddFriendReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
+  __reducerSchema("dev_give_item", DevGiveItemReducer),
+  __reducerSchema("dev_give_unique", DevGiveUniqueReducer),
+  __reducerSchema("dev_grant", DevGrantReducer),
+  __reducerSchema("dev_reveal_all", DevRevealAllReducer),
+  __reducerSchema("dev_unlock_zones", DevUnlockZonesReducer),
   __reducerSchema("equip", EquipReducer),
   __reducerSchema("expand_bag", ExpandBagReducer),
   __reducerSchema("flee", FleeReducer),

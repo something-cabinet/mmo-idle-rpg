@@ -122,6 +122,12 @@ schema change (removing or changing columns), use `npm run spacetime:publish:loc
 
 Server logs: `npm run spacetime:logs:local`.
 
+**Dev cheats.** In `npm run dev`, Settings has a Dev cheats card: reveal every item,
+enemy and area, unlock all zones, grant gold and Dust, and give any gear or unique. The
+server only accepts them when the database's `DEV_CHEATS` environment value is `1`, which
+`spacetime:publish:local` sets and `npm run deploy` never does, so they're dead on
+Maincloud (`spacetime env list --server maincloud <db>` to check).
+
 Tests: with the local server running and the module published,
 `npm run test:smoke` runs an end-to-end check with two guest clients.
 

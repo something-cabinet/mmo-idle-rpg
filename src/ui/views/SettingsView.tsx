@@ -5,6 +5,7 @@ import { setTheme, useTheme, type ThemePref } from '../theme';
 import { AccountControls, CardHead, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { floatsOn, setFloats } from '../fight';
+import { DevPanel } from '../DevPanel';
 
 export function SettingsView({ s }: { s: Snapshot }) {
   const { pref } = useTheme();
@@ -57,6 +58,8 @@ export function SettingsView({ s }: { s: Snapshot }) {
             <AccountControls conn={s.conn} />
           </div>
         </div>
+        {/* Dev builds only: Vite drops this (and the panel) from production bundles. */}
+        {import.meta.env.DEV && <DevPanel s={s} />}
       </div>
     </>
   );

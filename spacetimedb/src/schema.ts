@@ -399,4 +399,8 @@ export const spacetimedb = schema({
   discovery,
   settleLog,
   settleTimer,
+}, {
+  // Set only when publishing locally (package.json `spacetime:publish:local`); never on
+  // Maincloud, so the dev cheats (reducers/dev.ts) refuse there.
+  env: { DEV_CHEATS: t.option(t.string()) },
 });

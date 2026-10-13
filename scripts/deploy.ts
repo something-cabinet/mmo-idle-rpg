@@ -17,6 +17,10 @@ const serverOnly = args.has('--server-only');
 const deleteData = args.has('--delete-data');
 const skipChecks = args.has('--skip-checks');
 
+// The dev cheats (reducers/dev.ts) must never be switched on in production: drop the
+// value so a shell that happens to have it set can't publish it to Maincloud.
+delete process.env.DEV_CHEATS;
+
 function run(cmd: string) {
   console.log(`\n> ${cmd}`);
   const { status } = spawnSync(cmd, { stdio: 'inherit', shell: true });

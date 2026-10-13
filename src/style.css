@@ -159,7 +159,7 @@ ul {
 .r-anomaly .item-name {
   display: inline-block;
   color: var(--r-anomaly);
-  animation: anomaly-glitch 1.7s infinite steps(1, end);
+  animation: anomaly-glitch 3s infinite steps(1, end);
 }
 @keyframes anomaly-glitch {
   0%, 100% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; opacity: 1; }
@@ -1473,8 +1473,8 @@ select:focus,
 .r-unique { --rc: var(--r-unique); }
 .r-anomaly { --rc: var(--r-anomaly); }
 .item-card.r-anomaly,
-.item-tile.r-anomaly { animation: anomaly-tear 2.3s infinite steps(1, end); }
-.item-tile.r-anomaly .tile-ico { animation: anomaly-tear-ico 2.3s infinite steps(1, end); }
+.item-tile.r-anomaly { animation: anomaly-tear 3s infinite steps(1, end); }
+.item-tile.r-anomaly .tile-ico { animation: anomaly-tear-ico 3s infinite steps(1, end); }
 .item-card.r-legendary,
 .item-card.r-unique {
   box-shadow: 0 0 12px color-mix(in srgb, var(--rc) var(--glow-box, 35%), transparent), var(--shadow);

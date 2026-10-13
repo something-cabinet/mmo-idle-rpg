@@ -17,8 +17,6 @@ export const rarityRank = (r: RarityName) => RARITIES.indexOf(r);
 export const REGULAR_AFFIXES: Record<RarityName, number> = { Common: 0, Magic: 1, Rare: 2, Epic: 3, Legendary: 2, Unique: 0 };
 /** Essence per salvaged item at T1; × 2.9^(T−1) (crafting.md). */
 export const ESSENCE: Record<RarityName, number> = { Common: 1, Magic: 2, Rare: 5, Epic: 20, Legendary: 60, Unique: 60 };
-/** Kept items per settle; above it the lowest rarities are salvaged. */
-export const KEEP_CAP_PER_SETTLE = 50;
 
 export function salvageValue(rarity: RarityName, tier: number): bigint {
   return BigInt(Math.round(ESSENCE[rarity] * 2.9 ** (tier - 1)));
@@ -229,10 +227,10 @@ export function firstKillReward(rng: Rng, zone: ZoneDef, boss: EnemyDef): { gold
 export interface DropResult {
   /** Items to add to the bag, highest rarity first. */
   kept: NewItem[];
-  /** Salvaged drops per rarity (filter, per-settle cap and full bag). */
+  /** Salvaged drops per rarity (filter and full bag). */
   salvaged: Record<RarityName, number>;
   essence: bigint;
-  /** Kept by the filter but salvaged for the cap or a full bag. */
+  /** Kept by the filter but salvaged for a full bag. */
   overflow: number;
 }
 
@@ -253,8 +251,8 @@ export interface DropInput {
 
 /**
  * Samples a drop count per rarity (one draw per rarity, not per kill), rolls the
- * items, applies the loot filter, the per-settle cap and the bag limit, and
- * salvages the rest into Essence.
+ * items, applies the loot filter, fills the free bag slots (highest
+ * rarity first), and salvages the rest into Essence.
  */
 export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const salvaged = Object.fromEntries(RARITIES.map(r => [r, 0])) as Record<RarityName, number>;
@@ -291,7 +289,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
     }
   }
 
-  // Fortune's Favor upgrades kept drops only, before the cap (an upgrade ranks higher).
+  // Fortune's Favor upgrades kept drops only, before the bag limit (an upgrade ranks higher).
   if (d.fortune) {
     const chance = d.fortune;
     for (let i = 0; i < kept.length; i++) {
@@ -302,7 +300,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   }
 
   kept.sort((a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag));
-  const room = Math.max(0, Math.min(KEEP_CAP_PER_SETTLE, d.bagFree));
+  const room = Math.max(0, d.bagFree);
   const over = kept.splice(room);
   over.forEach(item => salvage(item.rarity.tag, item.tier));
   return { kept, salvaged, essence, overflow: over.length };

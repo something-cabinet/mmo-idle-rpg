@@ -30,6 +30,9 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-13 | Drop chances × 1.5 across the board (Common 6.75% … Legendary 0.0225%), and Unique a further × 5 (7.5× overall, 0.0225%, ~1.3 a day), so uniques are as common as legendaries. Tuned via `DROP_RATE_MULT` and `UNIQUE_RATE_MULT`. |
+| 2026-10-13 | Rerolls cost half (`REROLL_COST_MULT` 0.5): Magic 0.125 h, Rare 0.25 h, Epic 0.5 h, Legendary 1 h of farming. Upgrade costs unchanged. |
+| 2026-10-13 | No per-settle keep cap (was 50): kept drops fill every free bag slot, highest rarity first, and only a full bag salvages them. A long offline session now fills the bag instead of stopping at +50. |
 | 2026-10-12 | Friends, kept simple: add a character by name to a one-way friend list (no request or acceptance), see who is online, and inspect a friend's worn gear even while they're offline (as of their last settle). Max 100. |
 | 2026-10-12 | Difficulty rhythm: odd tiers from 3 are wall tiers with enemy HP and DPS × 1.1 (not compounding), so T2→T3, T4→T5… are harder steps than T1→T2, T3→T4…. Rewards unchanged. |
 | 2026-10-09 | One character per account (alts would just be extra idle farms). |

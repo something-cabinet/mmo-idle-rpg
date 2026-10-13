@@ -176,7 +176,7 @@ Used for item names, icon borders and loot log lines.
 │ ( ) +18 max HP           T5                                 │
 │ (•) +2.1% attack speed   T1   ← reroll this                 │
 │                                                             │
-│ Cost: 600 gold · 8 essence             [ Reroll ]           │
+│ Cost: 300 gold · 4 essence             [ Reroll ]           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -200,7 +200,7 @@ Shown once on login after offline time.
 │ Goblin Brute × 1,812 kills                                  │
 │ +128,400 XP   Level 14 → 16                                 │
 │ +12,700 gold   +210 essence                                 │
-│ Items kept (12):  Rare Rusted Greaves …   [View in bag]     │
+│ Items kept (12):  1× Epic, 11× Rare      [View in bag]     │
 │ Salvaged: 57 Common, 26 Magic                               │
 │ ⚠ Bag is full: 4 items were salvaged                         │
 │                                                  [ OK ]     │

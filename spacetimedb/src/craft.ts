@@ -19,14 +19,16 @@ export function craftCost(hours: number, tier: number): CraftCost {
   return { gold: BigInt(Math.round(1200 * scale)), essence: BigInt(Math.round(15 * scale)) };
 }
 
-/** Hours per affix reroll, by item rarity. Common has no affixes; Unique can't be crafted. */
+/** Tuning knob: every reroll costs REROLL_HOURS × this. */
+export const REROLL_COST_MULT = 0.5;
+/** Hours per affix reroll before REROLL_COST_MULT, by item rarity. Common has no affixes; Unique can't be crafted. */
 export const REROLL_HOURS: Partial<Record<RarityName, number>> = { Magic: 0.25, Rare: 0.5, Epic: 1, Legendary: 2 };
 /** Hours to upgrade from this rarity to the next. */
 export const UPGRADE_HOURS: Partial<Record<RarityName, number>> = { Common: 0.25, Magic: 1, Rare: 4, Epic: 24 };
 
 export const rerollCost = (it: CraftItem): CraftCost | undefined => {
   const h = REROLL_HOURS[it.rarity.tag];
-  return h === undefined ? undefined : craftCost(h, it.tier);
+  return h === undefined ? undefined : craftCost(h * REROLL_COST_MULT, it.tier);
 };
 export const upgradeCost = (it: CraftItem): CraftCost | undefined => {
   const h = UPGRADE_HOURS[it.rarity.tag];

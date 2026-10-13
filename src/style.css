@@ -380,6 +380,18 @@ select:focus,
   background: linear-gradient(90deg, var(--info), #9a7bff);
   transition: width 0.3s;
 }
+.loading {
+  text-align: center;
+  width: min(320px, 100%);
+}
+.load-bar {
+  width: 100%;
+}
+.load-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
 .xp-text {
   white-space: nowrap;
   font-size: 11px;

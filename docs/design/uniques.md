@@ -23,7 +23,7 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 
 ## Drops
 
-- Every kill rolls the Unique chance (zones.md: 0.003%, scaled by `1.12^o` and item find).
+- Every kill rolls the Unique chance (zones.md: 0.0225%, scaled by `1.12^o` and item find).
 - **Global, not per enemy:** in a tier-N zone, any unique of **tier N or below** can drop,
   from any enemy. Lower tiers are less likely: each tier below N halves the weight.
 
@@ -32,8 +32,8 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
   ```
 
 - A dropped unique keeps its own tier (a T1 unique dropped in T3 is T1).
-- **Always kept:** the loot filter never salvages a unique; they go first in the
-  per-settle cap. Only a full bag salvages one.
+- **Always kept:** the loot filter never salvages a unique; they go first into
+  free bag slots. Only a full bag salvages one.
 - If no unique exists at tier N or below, the Unique chance rolls Legendary instead.
 
 ## List

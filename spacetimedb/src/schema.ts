@@ -242,7 +242,7 @@ export const settleLog = table(
     keptItemIds: t.array(t.u64()),
     /** Salvaged drops per rarity, in loot.ts RARITIES order. */
     salvaged: t.array(t.u32()),
-    /** Kept by the filter but salvaged for the per-settle cap or a full bag. */
+    /** Kept by the filter but salvaged for a full bag. */
     overflow: t.u32(),
     /** `enemyId` killed the character; it went idle. */
     defeated: t.bool().default(false),

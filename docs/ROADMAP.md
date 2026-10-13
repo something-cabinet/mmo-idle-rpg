@@ -58,8 +58,8 @@ fighting the target enemy with the active loadout.
   unique of tier ≤ zone tier, uniques.md). Bases uniform from the enemy's `drops`, tier = zone tier;
   `makeItem` rolls affixes (weighted free pool, tier 1..N, value in its slice) and
   legendaries (group by base kind, bonus 0.25–0.5 × ref). Then the loot filter
-  (rarity threshold or whitelisted affix), the 50-item per-settle cap and the bag
-  limit (lowest rarity salvaged first), and salvage to Essence. Seeded by (character
+  (rarity threshold or whitelisted affix), then the bag limit: kept drops fill the
+  free slots, lowest rarity salvaged first, and salvage to Essence. Seeded by (character
   ID, settle start), so a settle is reproducible.
 - **Server**: `settle` inserts kept items and adds Essence; `bagCount` counts items
   not in any loadout. `setLootFilter(minRarity, keepAffixes)` settles first. A
@@ -113,7 +113,7 @@ fighting the target enemy with the active loadout.
   physical and a magic dummy matchup (same numbers as before), so auto-equip sees
   every effect. Fortune's Favor: `rollDrops({ fortune })` raises each kept drop with
   15% chance via `raiseRarity` (loot.ts, shared with crafting's `upgradeRarity`),
-  after the filter and before the per-settle cap; Epic → Legendary removes a random
+  after the filter and before the bag limit; Epic → Legendary removes a random
   affix.
 - **Settle log** (table `settle_log`, view `my_settle_log`): one row per settle with
   kills and per login settle (`offline`): elapsed time, cap hit, enemy, viable,

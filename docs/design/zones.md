@@ -165,15 +165,16 @@ Each rarity has its own chance per kill, scaled by `1.12^o` and `(1 + item find%
 
 | Rarity | Chance per kill | Per 8 h session | Per day (3 sessions) |
 |---|---|---|---|
-| Common | 4.5% | ~86 | ~260 |
-| Magic | 2.25% | ~43 | ~130 |
-| Rare | 0.75% | ~14 | ~43 |
-| Epic | 0.15% | ~3 | ~9 |
-| Legendary | 0.015% | ~0.3 | ~0.9 (about one a day) |
-| Unique | 0.003% | ~0.06 | ~0.2 (one every ~6 days) |
+| Common | 6.75% | ~128 | ~385 |
+| Magic | 3.375% | ~64 | ~192 |
+| Rare | 1.125% | ~21 | ~64 |
+| Epic | 0.225% | ~4 | ~13 |
+| Legendary | 0.0225% | ~0.4 | ~1.3 (about one a day) |
+| Unique | 0.0225% | ~0.4 | ~1.3 (about one a day) |
 
-- ~145 drops per session in total; with a typical filter (keep Rare+) about 17 are kept
+- ~218 drops per session in total; with a typical filter (keep Rare+) about 26 are kept
   and the rest become materials.
+- Tuned in `zones.ts` as base chances × `DROP_RATE_MULT` (1.5), Unique also × `UNIQUE_RATE_MULT` (5).
 - Settlement samples a count per rarity from these chances (one draw per rarity, not
   one per kill), so cost doesn't grow with kills.
 

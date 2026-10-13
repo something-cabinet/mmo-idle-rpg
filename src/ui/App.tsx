@@ -1,6 +1,6 @@
 // Top-level screens: loading, character creation, "playing elsewhere", the game.
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import * as auth from '../auth';
 import { characterOf } from '../net';
 import { STARTER_WEAPONS, base, weaponValues } from '../../spacetimedb/src/data/bases';
@@ -31,14 +31,31 @@ function Landing() {
   );
 }
 
+// The login settle (offline progress and loot) runs on the server while we connect,
+// so it can't report progress: each stage eases the bar toward its cap instead.
+const LOAD_STAGES = [
+  { text: 'Settling your time away and rolling loot…', cap: 60 },
+  { text: 'Loading your character and items…', cap: 95 },
+];
+
 function Loading() {
-  const { loginRejected } = useApp();
+  const { conn, offline, loginRejected } = useApp();
+  const stage = LOAD_STAGES[conn ? 1 : 0];
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    if (offline) return;
+    const id = setInterval(() => setProgress(p => p + (stage.cap - p) * 0.04), 100);
+    return () => clearInterval(id);
+  }, [stage, offline]);
   return (
     <>
       <TopBar />
       <section className="screen center">
-        <div className="stack">
-          <p className="muted">Loading…</p>
+        <div className="stack loading">
+          <p className="muted">{offline ? 'Could not load the game.' : stage.text}</p>
+          <div className="bar load-bar" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
+            <div className="load-fill" style={{ width: `${progress}%` }} />
+          </div>
           {/* Still allow switching login state if the server rejected this login. */}
           {loginRejected && <button className="btn small ghost" onClick={() => void auth.logout()}>Log out</button>}
         </div>

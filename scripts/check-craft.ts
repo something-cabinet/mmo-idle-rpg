@@ -9,6 +9,8 @@ import {
   craftCost,
   rerollAffix,
   rerollCost,
+  REROLL_COST_MULT,
+  REROLL_HOURS,
   upgradeCost,
   upgradeRarity,
 } from '../spacetimedb/src/craft';
@@ -31,11 +33,15 @@ const isItem = (x: NewItem | string): x is NewItem => typeof x !== 'string';
   const roughly = (c: { gold: bigint; essence: bigint } | undefined, gold: number, essence: number) =>
     !!c && Math.abs(Number(c.gold) / gold - 1) < 0.01 && Math.abs(Number(c.essence) / essence - 1) < 0.01;
 
-  check('reroll Magic T1: 300 gold, 4 Essence', same(rerollCost(t1('Magic')), 300n, 4n), fmt(rerollCost(t1('Magic'))));
-  check('reroll Rare T1: 600 gold, 8 Essence', same(rerollCost(t1('Rare')), 600n, 8n), fmt(rerollCost(t1('Rare'))));
-  check('reroll Epic T1: 1,200 gold, 15 Essence', same(rerollCost(t1('Epic')), 1200n, 15n));
-  check('reroll Legendary T1: 2,400 gold, 30 Essence', same(rerollCost(t1('Legendary')), 2400n, 30n));
-  check('reroll Legendary T9: ~12M gold, ~150k Essence', roughly(rerollCost(t9('Legendary')), 12.006e6, 150_074), fmt(rerollCost(t9('Legendary'))));
+  // Reroll expectations follow REROLL_HOURS × REROLL_COST_MULT, so tuning them doesn't break these checks.
+  for (const r of ['Magic', 'Rare', 'Epic', 'Legendary'] as const) {
+    const h = REROLL_HOURS[r]! * REROLL_COST_MULT;
+    const gold = BigInt(Math.round(1200 * h));
+    const essence = BigInt(Math.round(15 * h));
+    check(`reroll ${r} T1: ${gold} gold, ${essence} Essence`, same(rerollCost(t1(r)), gold, essence), fmt(rerollCost(t1(r))));
+  }
+  const legT9 = REROLL_HOURS.Legendary! * REROLL_COST_MULT * 2.9 ** 8;
+  check('reroll Legendary T9: × 2.9^8', roughly(rerollCost(t9('Legendary')), 1200 * legT9, 15 * legT9), fmt(rerollCost(t9('Legendary'))));
   check('Common and Unique have no reroll cost', rerollCost(t1('Common')) === undefined && rerollCost({ ...t1('Common'), rarity: { tag: 'Unique' } }) === undefined);
 
   check('upgrade Common T1: 300 gold, 4 Essence', same(upgradeCost(t1('Common')), 300n, 4n));

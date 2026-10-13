@@ -40,12 +40,15 @@ essenceCost = hours × 15    × 2.9^(T−1)     // Essence per hour at tier T
   exactly like a drop (free pool with weights, tier 1..N, value in the band).
 - The legendary affix can't be rerolled. Uniques can't be crafted at all.
 
+Hours below are after `REROLL_COST_MULT` (0.5) in `craft.ts`, which halves the base hours
+(Magic 0.25, Rare 0.5, Epic 1, Legendary 2).
+
 | Item rarity | Hours | T1 cost | T9 cost |
 |---|---|---|---|
-| Magic | 0.25 | 300 gold, 4 Essence | 1.5M gold, 19k Essence |
-| Rare | 0.5 | 600 gold, 8 Essence | 3.0M gold, 38k Essence |
-| Epic | 1 | 1,200 gold, 15 Essence | 6.0M gold, 75k Essence |
-| Legendary | 2 | 2,400 gold, 30 Essence | 12M gold, 150k Essence |
+| Magic | 0.125 | 150 gold, 2 Essence | 750k gold, 9.4k Essence |
+| Rare | 0.25 | 300 gold, 4 Essence | 1.5M gold, 19k Essence |
+| Epic | 0.5 | 600 gold, 8 Essence | 3.0M gold, 38k Essence |
+| Legendary | 1 | 1,200 gold, 15 Essence | 6.0M gold, 75k Essence |
 
 ## Upgrade rarity
 

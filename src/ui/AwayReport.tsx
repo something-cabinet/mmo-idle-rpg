@@ -6,7 +6,7 @@ import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
 import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
-import { itemName, materialsText, rarityCls } from './items';
+import { materialsText, rarityCls } from './items';
 import { CardHead, Modal } from './shared';
 import type { Snapshot } from './snapshot';
 
@@ -29,6 +29,10 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
   const close = () => setLog(undefined);
   const enemy = ENEMIES_BY_ID.get(log.enemyId)?.enemy;
   const kept = log.keptItemIds.map(id => s.items.get(id)).filter(it => it !== undefined);
+  // Counts per rarity, highest first, so a big haul stays one line.
+  const keptByRarity = [...RARITIES].reverse()
+    .map(r => [r, kept.filter(it => it.rarity.tag === r).length] as const)
+    .filter(([, n]) => n > 0);
   const salvaged = RARITIES.map((r, i) => [r, log.salvaged[i] ?? 0] as const).filter(([, n]) => n > 0);
   return (
     <Modal onClose={close}>
@@ -60,10 +64,10 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
       {kept.length > 0 && (
         <p>
           Items kept ({kept.length}):{' '}
-          {kept.map((it, i) => (
-            <span key={String(it.id)}>
+          {keptByRarity.map(([r, n], i) => (
+            <span key={r}>
               {i > 0 && ', '}
-              <span className={`c-${rarityCls(it.rarity.tag)}`}>{it.rarity.tag} {itemName(it)}</span>
+              <span className={`c-${rarityCls(r)}`}>{n}× {r}</span>
             </span>
           ))}
         </p>

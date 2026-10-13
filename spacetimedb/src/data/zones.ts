@@ -39,14 +39,28 @@ export interface ZoneDef {
 /** Base walk time between fights, seconds (combat.ts `walkTime`). */
 export const WALK_SECONDS = 5;
 
-/** Per-kill drop chance by rarity (zones.md). */
-export const DROP_CHANCE = {
+/** Tuning knobs for loot: every rarity's chance × DROP_RATE_MULT, Unique also × UNIQUE_RATE_MULT. */
+export const DROP_RATE_MULT = 1.5;
+export const UNIQUE_RATE_MULT = 5;
+
+/** Per-kill drop chance by rarity before the multipliers. */
+const BASE_DROP_CHANCE = {
   Common: 0.045,
   Magic: 0.0225,
   Rare: 0.0075,
   Epic: 0.0015,
   Legendary: 0.00015,
   Unique: 0.00003,
+} as const;
+
+/** Per-kill drop chance by rarity (zones.md). */
+export const DROP_CHANCE = {
+  Common: BASE_DROP_CHANCE.Common * DROP_RATE_MULT,
+  Magic: BASE_DROP_CHANCE.Magic * DROP_RATE_MULT,
+  Rare: BASE_DROP_CHANCE.Rare * DROP_RATE_MULT,
+  Epic: BASE_DROP_CHANCE.Epic * DROP_RATE_MULT,
+  Legendary: BASE_DROP_CHANCE.Legendary * DROP_RATE_MULT,
+  Unique: BASE_DROP_CHANCE.Unique * DROP_RATE_MULT * UNIQUE_RATE_MULT,
 } as const;
 
 // Base IDs (bases.ts): weapons 1-11, shield 20, tome 21, cloth 30-33, leather 34-37,

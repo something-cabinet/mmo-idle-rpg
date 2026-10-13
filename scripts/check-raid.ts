@@ -1,12 +1,12 @@
 // Checks for raid fights (spacetimedb/src/raid.ts) and the raid boss's balance. No server needed:
 //   npm run test:raid
 import { BASE_LIST, SLOTS } from '../spacetimedb/src/data/bases';
-import { combatStats, matchup, type CombatStats } from '../spacetimedb/src/combat';
+import { combatStats, matchup, mitigation, type CombatStats } from '../spacetimedb/src/combat';
 import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
-import { NPC_POWER, RAIDS_BY_ID, RAID_RARITY_ODDS } from '../spacetimedb/src/data/raids';
+import { NPC_POWER, RAIDS_BY_ID, RAID_RARITY_ODDS, THREAT_FOCUS } from '../spacetimedb/src/data/raids';
 import { raidUniques } from '../spacetimedb/src/data/uniques';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
-import { decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, rollRaidItem, simulateRaid, type RaidSetup } from '../spacetimedb/src/raid';
+import { aggroShares, decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, rollRaidItem, simulateRaid, type RaidSetup } from '../spacetimedb/src/raid';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -41,7 +41,7 @@ function character(seed: number, role: 'tank' | 'healer' | 'dps'): CombatStats {
 
 const party = (stats: CombatStats[], npcs = 0): RaidSetup => {
   const fighters = stats.map((s, i) => ({ characterId: BigInt(i + 1), name: `P${i + 1}`, stats: s }));
-  const npc = npcStats(stats, raid);
+  const npc = npcStats(raid);
   for (let i = 0; i < npcs; i++) fighters.push({ characterId: 0n, name: `NPC ${i + 1}`, stats: npc });
   return { raidId: raid.id, fighters };
 };
@@ -66,13 +66,25 @@ check('HP stays within 0 and max', many.every(r => r.events.every(e => e.bossHp 
 check('a win ends with the boss dead', many.filter(r => r.won).every(r => r.events.at(-1)!.bossHp <= 0));
 check('a loss ends with everyone dead, or at the enrage', many.filter(r => !r.won).every(r => r.enraged || r.events.at(-1)!.hp.every(h => h <= 0)));
 check('the dead never swing', many.every(r => r.events.every((e, k) => e.by < 0 || k === 0 || r.events[k - 1].hp[e.by] > 0)));
-const bossHits = one.events.filter(e => e.by === -1 && e.kind !== 'aoe');
-const topThreat = four.fighters.reduce((m, f, i) => (f.stats.threat > four.fighters[m].stats.threat ? i : m), 0);
-check('the boss hits the most threatening fighter while it lives', bossHits.every((e, k) => e.target === topThreat || (one.events.find(x => x.t <= e.t && x.hp[topThreat] <= 0) !== undefined)),
-  `fighter ${topThreat}`);
+// Threat: every boss attack picks a living fighter weighted by e^(THREAT_FOCUS × threat).
+const shares = aggroShares(four.fighters.map(f => f.stats.threat));
+const counts = four.fighters.map(() => 0);
+let attacks = 0;
+for (const r of many) for (const e of r.events) {
+  if (e.by !== -1 || e.kind === 'aoe') continue;
+  // Only while everyone is alive (the event's HP is after the hit, so a killing blow still counts).
+  const before = r.events[r.events.indexOf(e) - 1];
+  if (before && before.hp.some(h => h <= 0)) continue;
+  counts[e.target]++;
+  attacks++;
+}
+check('the boss spreads its attacks by threat', counts.every((c, i) => Math.abs(c / attacks - shares[i]) < 0.03),
+  `${counts.map(c => (c / attacks).toFixed(2)).join('/')} vs ${shares.map(x => x.toFixed(2)).join('/')}`);
+check('more threat, more attacks; nobody is safe', counts.every(c => c > 0) &&
+  four.fighters.every((f, i) => four.fighters.every((g, j) => f.stats.threat <= g.stats.threat || counts[i] > counts[j])));
+const tankShare = aggroShares([0.6, 0.15, 0.15, 0.15])[0];
+check(`a tank with 60% threat among 15% fighters takes most attacks (${THREAT_FOCUS})`, tankShare > 0.5 && tankShare < 0.9, tankShare.toFixed(2));
 
-const npc = npcStats([tank, healer, dps1, dps2], raid);
-const avg = (f: (s: CombatStats) => number) => [tank, healer, dps1, dps2].reduce((a, s) => a + f(s), 0) / 4;
 /** Weapon DPS against the boss: no effect damage (an NPC has no effects). */
 const dpsOf = (s: CombatStats) => {
   const x = s.sources[0];
@@ -80,10 +92,15 @@ const dpsOf = (s: CombatStats) => {
   const mit = matchup(s, { ...raid.boss, dps: 0 }).enemyMitigation;
   return (x.hit.Physical * (1 - mit.Physical) + x.hit.Magic * (1 - mit.Magic)) * x.attacksPerSec * x.critMult;
 };
-check(`an NPC has ${NPC_POWER}× the average max HP`, Math.abs(npc.maxHp - NPC_POWER * avg(s => s.maxHp)) < 1e-6);
-check(`an NPC has ${NPC_POWER}× the average DPS against the boss`, Math.abs(dpsOf(npc) / avg(dpsOf) - NPC_POWER) < 0.01,
-  `${dpsOf(npc).toFixed(1)} vs avg ${avg(dpsOf).toFixed(1)}`);
-check('an NPC from no weapons has no attack', npcStats([combatStats(LEVEL, [])], raid).sources.length === 0);
+const npc = npcStats(raid);
+const ref = raid.reference;
+const refDps = (ref.physicalPerSec * (1 - mitigation(raid.boss.armor, ref.armorPen, raid.boss.level)) +
+  ref.magicPerSec * (1 - mitigation(raid.boss.resistance, ref.magicPen, raid.boss.level))) * ref.critMult;
+check(`an NPC has ${NPC_POWER}× the reference player's max HP, defenses and threat`, [
+  [npc.maxHp, ref.maxHp], [npc.armor, ref.armor], [npc.resistance, ref.resistance], [npc.threat, ref.threat]].every(([a, b]) => Math.abs(a - NPC_POWER * b) < 1e-9));
+check(`an NPC has ${NPC_POWER}× the reference player's DPS against the boss`, Math.abs(dpsOf(npc) / refDps - NPC_POWER) < 1e-9, `${dpsOf(npc).toFixed(1)} vs ${refDps.toFixed(1)}`);
+check("an NPC doesn't depend on the party", encodeSetup({ raidId: 1, fighters: [{ characterId: 0n, name: 'x', stats: npcStats(raid) }] }) ===
+  encodeSetup({ raidId: 1, fighters: [{ characterId: 0n, name: 'x', stats: npc }] }));
 
 // ---------------------------------------------------------------- loot
 
@@ -109,6 +126,16 @@ const short = odds(parties.map(p => party(p.slice(0, 3))));
 const shortHired = odds(parties.map(p => party(p.slice(0, 3), 1)));
 const pair = odds(parties.map(p => party(p.slice(0, 2))));
 const pairHired = odds(parties.map(p => party(p.slice(0, 2), 2)));
+// The reference sheet must stay the average of these characters, or NPCs drift from "an average player".
+const everyone = parties.flat();
+const mean2 = (f: (s: CombatStats) => number) => mean(everyone.map(f));
+const near = (name: string, measured: number, sheet: number) => check(`reference ${name} matches the average player (±10%)`, Math.abs(measured / sheet - 1) < 0.1,
+  `measured ${measured.toFixed(2)}, sheet ${sheet}`);
+near('max HP', mean2(s => s.maxHp), ref.maxHp);
+near('armor', mean2(s => s.armor), ref.armor);
+near('resistance', mean2(s => s.resistance), ref.resistance);
+near('threat', mean2(s => s.threat), ref.threat);
+near('DPS vs the boss', mean2(dpsOf), refDps);
 const p0 = parties[0].map(s => ({ dps: dpsOf(s).toFixed(0), hp: s.maxHp.toFixed(0), threat: s.threat.toFixed(2) }));
 console.log(`  party 0: ${JSON.stringify(p0)}`);
 console.log(`  win odds: 4 players ${full.toFixed(2)} · 3 ${short.toFixed(2)} · 3 + NPC ${shortHired.toFixed(2)} · 2 ${pair.toFixed(2)} · 2 + 2 NPCs ${pairHired.toFixed(2)}`);
@@ -116,6 +143,7 @@ check('a full party of T3-cleared players usually wins', full >= 0.45 && full <=
 check('a party one short mostly loses', short < 0.5, short.toFixed(2));
 check('two players alone never win', pair < 0.05, pair.toFixed(2));
 check('hiring NPCs into empty seats helps', shortHired > short && pairHired > pair);
+check('an NPC is worse than a player', shortHired < full);
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

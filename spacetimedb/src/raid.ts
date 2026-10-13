@@ -3,9 +3,9 @@
 // fight when the leader starts it (that decides the outcome), and every client in the
 // party replays the very same fight from the stored setup and seed to animate it.
 
-import { defenseAgainst, effectDamageMult, mitigation, type AttackSource, type CombatStats } from './combat';
+import { defenseAgainst, effectDamageMult, mitigation, type CombatStats } from './combat';
 import { Effect, effectAmount } from './data/legendary';
-import { NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from './data/raids';
+import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { makeItem, makeUnique, seededRng, type NewItem, type Rng } from './loot';
 
@@ -55,6 +55,16 @@ export interface RaidResult {
 
 export const raidRng = (partyId: bigint, startMicros: bigint): Rng => seededRng(partyId, startMicros, RAID_SALT);
 
+/** How much of the boss's attention a fighter with `threat` draws (THREAT_FOCUS). */
+export const threatWeight = (threat: number) => Math.exp(THREAT_FOCUS * threat);
+
+/** Each fighter's share of the boss's attacks while all of `threats` are alive. */
+export function aggroShares(threats: readonly number[]): number[] {
+  const w = threats.map(threatWeight);
+  const total = w.reduce((a, b) => a + b, 0);
+  return w.map(x => x / total);
+}
+
 /** What one fighter's swings do to the boss, per swing before crits, variance and effects that need HP. */
 function offense(s: CombatStats, raid: RaidDef) {
   const src = s.sources[0];
@@ -79,8 +89,9 @@ function offense(s: CombatStats, raid: RaidDef) {
 
 /**
  * One raid fight. Every fighter swings at the boss on its own timer (the matchup
- * formulas per swing: mitigation, penetration, crits, ±10% variance). The boss hits
- * the living fighter with the most threat, dodged at that fighter's evasion, and every
+ * formulas per swing: mitigation, penetration, crits, ±10% variance). Each boss attack
+ * picks a living fighter weighted by threat (`threatWeight`): the more threat, the more
+ * of the attacks, but anyone can be hit. It is dodged at the target's evasion. Every
  * `aoe.every` seconds hits every living fighter (no dodge). Heals go to the most hurt
  * living ally ("single") or are split across the living party ("all"); lifesteal and
  * regen heal yourself. The highest Frostbite chill in the party shrinks all the boss's
@@ -104,6 +115,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const bossPeriod = 1 / boss.speed;
   const bossHit = (boss.dps / boss.speed) * (1 - chill);
   const defense = fighters.map(s => defenseAgainst(s, boss.damageType, boss.level));
+  const weight = fighters.map(s => threatWeight(s.threat));
   const aoeMit = fighters.map(s => defenseAgainst(s, raid.aoe.damageType, boss.level).mitigation);
   const aoeHit = raid.aoe.damage * (1 - chill);
   // First swings land at a random point of their first period (half a period on average).
@@ -147,9 +159,10 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       push({ t, by: -1, kind: 'aoe', target: -1, damage: aoeHit, ...(saved.length && { saved }) });
     } else if (t === nextBoss) {
       nextBoss += bossPeriod;
-      // The boss attacks the living fighter with the most threat (the first one on a tie).
-      let target = -1;
-      for (let i = 0; i < n; i++) if (alive(i) && (target < 0 || fighters[i].threat > fighters[target].threat)) target = i;
+      // The boss picks a living fighter, weighted by threat (`threatWeight`).
+      const living = hp.map((_, i) => i).filter(alive);
+      let r = rng() * living.reduce((sum, i) => sum + weight[i], 0);
+      const target = living.find(i => (r -= weight[i]) < 0) ?? living[living.length - 1];
       if (rng() < defense[target].evasion) {
         push({ t, by: -1, kind: 'dodge', target, damage: 0 });
       } else {
@@ -193,57 +206,30 @@ export function raidOdds(setup: RaidSetup, raid: RaidDef, seed: bigint): number 
 
 // ---------------------------------------------------------------- hired NPCs
 
-/**
- * A hired NPC: NPC_POWER × the party's average player (raids.md). Its DPS against the
- * boss (by damage type), heal per second, max HP, regen, armor, resistance, evasion and
- * threat are that share of the players' averages; its attack speed, crits and
- * penetration are the averages. No effects; its heals are split across the party.
- */
-export function npcStats(players: readonly CombatStats[], raid: RaidDef): CombatStats {
-  const avg = (f: (s: CombatStats) => number) => players.reduce((sum, s) => sum + f(s), 0) / Math.max(1, players.length);
-  const src = (s: CombatStats): AttackSource | undefined => s.sources[0];
-  // Speed and crits average over the armed players only.
-  const armed = players.flatMap(s => s.sources.slice(0, 1));
-  const avgArmed = (f: (x: AttackSource) => number, none: number) => (armed.length ? armed.reduce((sum, x) => sum + f(x), 0) / armed.length : none);
-  const aps = avgArmed(x => x.attacksPerSec, 0);
-  const critChance = avgArmed(x => x.critChance, 0);
-  const critMult = avgArmed(x => x.critMult, 1);
-  const armorPen = avg(s => s.armorPen);
-  const magicPen = avg(s => s.magicPen);
-  // Each player's damage per second against the boss by type (as `offense` swings it), and heal per second.
-  const perSec = (s: CombatStats, f: (x: AttackSource, o: ReturnType<typeof offense>) => number) => {
-    const x = src(s);
-    return x ? f(x, offense(s, raid)) * x.attacksPerSec * x.critMult : 0;
-  };
-  // The NPC's swing that deals NPC_POWER × those averages through the boss's mitigation at the NPC's penetration.
-  const npc = { ...offense({ ...players[0], armorPen, magicPen, effects: new Map() }, raid) };
-  const swing = aps * critMult;
-  const sources: AttackSource[] = swing > 0
-    ? [{
-        hit: {
-          Physical: (NPC_POWER * avg(s => perSec(s, (x, o) => x.hit.Physical * (1 - o.mitP)))) / swing / Math.max(1e-9, 1 - npc.mitP),
-          Magic: (NPC_POWER * avg(s => perSec(s, (x, o) => x.hit.Magic * (1 - o.mitM)))) / swing / Math.max(1e-9, 1 - npc.mitM),
-        },
-        heal: (NPC_POWER * avg(s => perSec(s, x => x.heal))) / swing,
-        healAll: true,
-        attacksPerSec: aps,
-        critChance,
-        critMult,
-      }]
-    : [];
+/** A hired NPC (raids.md): NPC_POWER × the raid's reference player, whoever is in the party. No effects, no heals. */
+export function npcStats(raid: RaidDef): CombatStats {
+  const r = raid.reference;
+  const k = NPC_POWER;
   return {
-    level: Math.round(avg(s => s.level)),
-    sources,
-    critDamage: avg(s => s.critDamage),
-    armorPen,
-    magicPen,
-    maxHp: NPC_POWER * avg(s => s.maxHp),
-    regen: NPC_POWER * avg(s => s.regen),
-    armor: NPC_POWER * avg(s => s.armor),
-    resistance: NPC_POWER * avg(s => s.resistance),
-    evasionRating: NPC_POWER * avg(s => s.evasionRating),
+    level: r.level,
+    sources: [{
+      hit: { Physical: (k * r.physicalPerSec) / r.attacksPerSec, Magic: (k * r.magicPerSec) / r.attacksPerSec },
+      heal: 0,
+      healAll: false,
+      attacksPerSec: r.attacksPerSec,
+      critChance: r.critChance,
+      critMult: r.critMult,
+    }],
+    critDamage: 1.5,
+    armorPen: r.armorPen,
+    magicPen: r.magicPen,
+    maxHp: k * r.maxHp,
+    regen: k * r.regen,
+    armor: k * r.armor,
+    resistance: k * r.resistance,
+    evasionRating: k * r.evasionRating,
     lifesteal: 0,
-    threat: NPC_POWER * avg(s => s.threat),
+    threat: k * r.threat,
     itemFind: 0,
     goldFind: 0,
     xpGain: 0,

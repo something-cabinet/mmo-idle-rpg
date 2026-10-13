@@ -6,6 +6,28 @@
 import { BASE_LIST } from './bases';
 import type { EnemyDef } from './zones';
 
+/**
+ * The reference sheet of an average player ready for a raid (raids.md): what a hired NPC
+ * is measured against. Damage is per second before mitigation and crits. No heal: hired
+ * NPCs fight, they don't heal (an averaged party-wide heal made them better than players).
+ */
+export interface ReferencePlayer {
+  level: number;
+  maxHp: number;
+  regen: number;
+  armor: number;
+  resistance: number;
+  evasionRating: number;
+  threat: number;
+  attacksPerSec: number;
+  physicalPerSec: number;
+  magicPerSec: number;
+  critChance: number;
+  critMult: number;
+  armorPen: number;
+  magicPen: number;
+}
+
 export interface RaidDef {
   id: number;
   name: string;
@@ -24,12 +46,19 @@ export interface RaidDef {
   tokens: number;
   /** Gold per hired NPC seat, paid by the leader at the start. */
   hireCost: number;
+  /** The average player for this raid; a hired NPC has NPC_POWER × it, whoever is in the party. */
+  reference: ReferencePlayer;
 }
 
 /** Seats in a raid party: players plus hired NPCs. */
 export const RAID_PARTY_SIZE = 4;
-/** A hired NPC has this × the stats of the party's average player. */
+/** A hired NPC has this × the raid's reference player (`RaidDef.reference`). */
 export const NPC_POWER = 0.8;
+/**
+ * How strongly threat draws the boss: each attack picks a living fighter with weight
+ * e^(THREAT_FOCUS × threat), so more threat means more of the attacks, never all of them.
+ */
+export const THREAT_FOCUS = 5;
 /** Rarity odds of a raid kill's item (the Unique comes from the raid's own pool). */
 export const RAID_RARITY_ODDS = { Epic: 0.75, Legendary: 0.22, Unique: 0.03 } as const;
 
@@ -45,12 +74,17 @@ export const RAIDS: RaidDef[] = [
     unlockZoneId: 3,
     boss: {
       id: 9001, name: 'Skaldrith, the Rime Wyrm', level: 40, damageType: 'Physical', defense: 'Armored', speed: 0.7,
-      hp: 20000, dps: 60, armor: 250, resistance: 100, xp: 4000, gold: 3000, drops: ALL_BASES, materials: [], boss: true,
+      hp: 20000, dps: 80, armor: 250, resistance: 100, xp: 4000, gold: 3000, drops: ALL_BASES, materials: [], boss: true,
     },
     aoe: { every: 12, damage: 45, damageType: 'Magic', name: 'Frost Breath' },
     enrageSeconds: 240,
     tokens: 10,
     hireCost: 2000,
+    // The average of level-38 characters with random T3 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
+    reference: {
+      level: 38, maxHp: 620, regen: 0.8, armor: 55, resistance: 65, evasionRating: 22, threat: 0.18,
+      attacksPerSec: 1.25, physicalPerSec: 50, magicPerSec: 39, critChance: 0.09, critMult: 1.05, armorPen: 0.02, magicPen: 0.02,
+    },
   },
 ];
 

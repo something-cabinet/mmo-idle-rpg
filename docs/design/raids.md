@@ -14,21 +14,21 @@ Opens for a character once it has killed **Hrimvald, Frost Giant Jarl** (T3 boss
 |---|---|
 | Boss | Skaldrith, the Rime Wyrm: Lv 40, physical, Armored (armor 250, resistance 100) |
 | HP | 20,000 |
-| Attack | 60 DPS (0.7 attacks/s) at the fighter with the most threat |
+| Attack | 80 DPS (0.7 attacks/s), each attack at one fighter picked by threat |
 | Frost Breath | every 12 s, 45 magic damage to every living fighter; can't be dodged |
 | Enrage | at 4:00 the party wipes |
 
 Tuned in `npm run test:raid` against random T3 characters at level 38 (60-item bags of
 Rare 60% / Epic 30% / Legendary 10%, auto-equipped per role: a Survival tank, a Healing
-Staff healer, two Damage builds). A fight lasts about 1:30. Win odds:
+Staff healer, two Damage builds). A fight lasts about 1:25. Win odds:
 
 | Party | Odds |
 |---|---|
-| 4 players | ~57% (random gear; a real tank and healer do better) |
-| 3 players | ~35% |
-| 3 players + 1 NPC | ~67% |
-| 2 players | ~1% |
-| 2 players + 2 NPCs | ~73% |
+| 4 players | ~74% (random gear; a real tank with Threat gear and a healer do better) |
+| 3 players + 1 NPC | ~57% |
+| 3 players | ~36% |
+| 2 players + 2 NPCs | ~18% |
+| 2 players, or 1 player + 3 NPCs | ~0% |
 
 *Illustrative.* Outcomes are mostly decided by the stats, like solo fights: a given
 party tends to win nearly always or nearly never.
@@ -41,8 +41,11 @@ live fights (combat.md). The server's outcome is final.
 
 - Every fighter swings at the boss on its own timer with the solo per-swing numbers:
   mitigation and penetration, crits, ±10% variance.
-- **Threat:** the boss attacks the living fighter with the most threat (`threat` =
-  Threat % + 0.25% per Vitality). That fighter can dodge (evasion vs the boss's level).
+- **Threat:** each boss attack picks one living fighter at random, weighted by
+  `e^(5 × threat)` (`THREAT_FOCUS`; `threat` = Threat % + 0.25% per Vitality). More threat
+  means more of the attacks, but anyone can be hit: equal threat spreads them evenly, a
+  60%-threat tank among 15% fighters takes ~66%. The target can dodge (evasion vs the
+  boss's level). The Raids page shows each seat's share ("Aggro").
 - **Heals land on allies:** a "single" heal (Scepter) goes to the most hurt living ally,
   an "all" heal (Healing Staff) is split evenly across the living party. Lifesteal and
   regen heal only yourself.
@@ -62,19 +65,23 @@ live fights (combat.md). The server's outcome is final.
   nobody can leave or join; a member who disconnects keeps the seat until the fight
   ends and is then removed.
 - Members see each other's level, gear and stats (views over the party's active
-  loadouts), so the page shows every seat's HP, DPS against the boss and threat, who the
-  boss will attack, and the **win odds** over 200 simulated fights.
+  loadouts), so the page shows every seat's HP, DPS against the boss, threat and share of
+  the boss's attacks, and the **win odds** over 200 simulated fights.
 - Everyone fights with their current level and **active loadout**, taken at the start
   (each member is settled first). Farming continues during a raid.
 
 ### Hired NPCs
 
 - The leader pays **2,000 gold per NPC** at the start, win or lose.
-- An NPC has **0.8×** the party's average player (the players in the party at the start):
-  its DPS against the boss (by damage type), heal per second, max HP, regen, armor,
-  resistance, evasion and threat are 0.8× the averages; attack speed, crits and
-  penetration are the averages. No effects; its heals are split across the party. An
-  NPC hardly ever draws the boss (its threat is below the average).
+- An NPC has **0.8×** the raid's **reference player** (`RaidDef.reference`), a fixed sheet
+  of an average player ready for the raid, so NPCs never scale with the party. Wyrm Hollow's:
+  Lv 38, 620 HP, 55 armor, 65 resistance, 22 evasion, 0.8 regen, 18% threat, 1.25 attacks/s
+  for 50 physical + 39 magic per second (before mitigation), 9% crit. Its DPS, HP, regen,
+  defenses and threat are 0.8× that; speed, crits and penetration as listed. No effects.
+- `test:raid` checks the sheet stays within 10% of the measured average of level-38
+  characters with random T3 gear; update it when gear or stats change.
+- **NPCs fight but don't heal.** An "average" player heals a little (a quarter of a
+  healer), and a party-wide heal on every NPC made 2 players + 2 NPCs beat 4 players.
 
 ## Rewards
 

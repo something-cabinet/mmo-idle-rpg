@@ -7,7 +7,7 @@ import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src
 import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
-import { RAID_ODDS_SAMPLES, decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
+import { RAID_ODDS_SAMPLES, aggroShares, decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
 import { call } from '../../store';
 import { nowMicros } from '../clock';
 import { UNKNOWN, uniqueFound } from '../discovery';
@@ -67,7 +67,7 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
             <DefTag defense={boss.defense} />
           </div>
           <ul className="raid-facts muted">
-            <li>HP {fmt(boss.hp)} · DPS {fmt(boss.dps)}, against whoever has the most <strong>threat</strong></li>
+            <li>HP {fmt(boss.hp)} · DPS {fmt(boss.dps)} at one fighter at a time: the more <strong>threat</strong>, the more often it's you</li>
             <li>{raid.aoe.name}: {fmt(raid.aoe.damage)} {raid.aoe.damageType.toLowerCase()} damage to everyone every {raid.aoe.every} s (can't be dodged)</li>
             <li>Enrages after {clock(raid.enrageSeconds)}: the party wipes</li>
           </ul>
@@ -149,11 +149,12 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
     return ch && lo && { characterId: ch.id, name: m.name, stats: combatStats(ch.level, gearFor(lo.slots, items)) };
   });
   const known = players.every(p => p) ? (players as RaidFighter[]) : undefined;
-  const npc = known && party.hired > 0 ? npcStats(known.map(p => p.stats), raid) : undefined;
-  const setup = known && { raidId: raid.id, fighters: [...known, ...Array.from({ length: party.hired }, (_, i) => ({ characterId: 0n, name: `Hireling ${i + 1}`, stats: npc! }))] };
+  const npc = npcStats(raid);
+  const setup = known && { raidId: raid.id, fighters: [...known, ...Array.from({ length: party.hired }, (_, i) => ({ characterId: 0n, name: `Hireling ${i + 1}`, stats: npc }))] };
   const key = setup && encodeSetup(setup);
   const odds = useMemo(() => (key ? raidOdds(decodeSetup(key), raid, party.id) : undefined), [key]); // eslint-disable-line react-hooks/exhaustive-deps -- the key is the setup
-  const target = setup?.fighters.reduce((m, f, i) => (f.stats.threat > setup.fighters[m].stats.threat ? i : m), 0);
+  // Each seat's share of the boss's attacks while everyone is alive.
+  const aggro = setup && aggroShares(setup.fighters.map(f => f.stats.threat));
 
   const offline = members.filter(m => !online.has(m.characterId));
   const cost = BigInt(party.hired) * BigInt(raid.hireCost);
@@ -168,7 +169,11 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
       <div className="raid-seat-stats muted">
         HP {fmt(stats.maxHp)} · DPS {fmt(matchup(stats, raid.boss).dps)} · Threat {pct(stats.threat)}
         {stats.sources[0]?.heal ? ` · Heals ${stats.sources[0].healAll ? 'all' : 'one'}` : ''}
-        {i === target && <span className="tag raid-target" title="Most threat: the boss attacks this seat"><Icon name="shield" />Boss target</span>}
+        {aggro && (
+          <span className={`tag${aggro[i] === Math.max(...aggro) ? ' raid-target' : ''}`} title="Share of the boss's attacks while everyone is alive (more threat, more attacks)">
+            <Icon name="shield" />Aggro {pct(aggro[i])}
+          </span>
+        )}
       </div>
     );
 
@@ -202,7 +207,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           <div key={`npc${i}`} className="raid-seat npc">
             <div className="raid-seat-name">
               <strong>Hireling {i + 1}</strong>
-              <span className="muted">NPC, {NPC_POWER}× the party's average</span>
+              <span className="muted">NPC, {NPC_POWER}× an average player</span>
               {leading && !fighting && (
                 <button className="btn icon ghost small" title="Dismiss" onClick={() => call(conn.reducers.setRaidHires({ count: party.hired - 1 }))}>
                   <Icon name="x" />
@@ -246,9 +251,9 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
         </div>
       )}
       <p className="muted hint">
-        Everyone fights with their current level and active loadout. The boss attacks whoever has the most threat (Vitality and
-        Threat raise it), so bring a tank; heals land on allies. Hired NPCs have {NPC_POWER}× the stats of the party's average player,
-        paid by the leader at the start.
+        Everyone fights with their current level and active loadout. The boss can attack anyone, but more threat (Vitality and
+        Threat raise it) draws more of its attacks, so bring a tank; heals land on allies. Hired NPCs have {NPC_POWER}× the stats of an
+        average player ready for this raid, whoever is in the party; they fight but don't heal. The leader pays for them at the start.
       </p>
 
       {party.fight && <RaidFight key={String(party.fight.startedAt.microsSinceUnixEpoch)} s={s} raid={raid} party={party} />}

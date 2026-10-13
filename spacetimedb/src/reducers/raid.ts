@@ -124,7 +124,7 @@ export const startRaid = spacetimedb.reducer(ctx => {
     ctx.db.character.id.update(ch);
     players.push({ characterId: ch.id, name: ch.name, stats: combatStats(ch.level, gearOf(ctx, ch)) });
   }
-  const npc = npcStats(players.map(p => p.stats), raid);
+  const npc = npcStats(raid);
   const hired = Array.from({ length: party.hired }, (_, i): RaidFighter => ({ characterId: 0n, name: `Hireling ${i + 1}`, stats: npc }));
   const setup = { raidId: raid.id, fighters: [...players, ...hired] };
 

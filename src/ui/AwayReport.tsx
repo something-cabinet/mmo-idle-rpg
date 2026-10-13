@@ -9,6 +9,7 @@ import { duration, fmtBig } from './format';
 import { materialsText, rarityCls } from './items';
 import { Icon } from './Icon';
 import { foundName } from './discovery';
+import { encounterText } from './encounters';
 import { CardHead, Modal } from './shared';
 import type { Snapshot } from './snapshot';
 
@@ -61,6 +62,14 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
           {log.gold > 0n && log.dust > 0n && ' · '}
           {log.dust > 0n && <span className="c-dust">+{fmtBig(log.dust)} Dust</span>}
         </p>
+      )}
+      {log.encounters.length > 0 && (
+        <div className="encounter">
+          <p><Icon name="zap" />Encounters ({log.encounters.length}):</p>
+          <ul className="encounter-list">
+            {log.encounters.map((e, i) => <li key={i}>{encounterText(e, log.enemyId, id => s.items.get(id))}</li>)}
+          </ul>
+        </div>
       )}
       {log.discovered.length > 0 && (
         <p className="discovery"><Icon name="sparkles" />New discoveries: {log.discovered.map(foundName).join(', ')}</p>

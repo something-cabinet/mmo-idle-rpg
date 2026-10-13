@@ -150,6 +150,19 @@ export const MaterialCount = t.object('MaterialCount', {
   count: t.u32(),
 });
 
+/** One rare encounter in a settle (encounters.ts). */
+export const Encounter = t.object('Encounter', {
+  /** encounters.ts `EncounterKind`. */
+  kind: t.u8(),
+  /** An elite was beaten; false: the character fled. */
+  won: t.bool(),
+  xp: t.u64(),
+  gold: t.u64(),
+  materials: t.array(MaterialCount),
+  /** A cache's item; 0 if it was salvaged for a full bag. */
+  itemId: t.u64(),
+});
+
 /**
  * Materials a character holds: one row per material it has ever had. Private;
  * owners read theirs via `my_materials`.
@@ -282,6 +295,8 @@ export const settleLog = table(
     dust: t.u64().default(0n),
     /** Bases and uniques this settle's drops showed for the first time (discovery). */
     discovered: t.array(Found).default([]),
+    /** Rare encounters met (encounters.ts); their gains are in the totals above. */
+    encounters: t.array(Encounter).default([]),
   }
 );
 

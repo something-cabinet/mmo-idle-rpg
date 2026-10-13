@@ -12,6 +12,7 @@ import {
 import {
   MaterialCount,
   Found,
+  Encounter,
 } from "./types";
 
 
@@ -41,5 +42,8 @@ export default __t.row({
   dust: __t.u64(),
   get discovered() {
     return __t.array(Found);
+  },
+  get encounters() {
+    return __t.array(Encounter);
   },
 });

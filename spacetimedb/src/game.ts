@@ -39,6 +39,17 @@ export function xpToNext(level: number): bigint {
   return BigInt(Math.round(166 * 1.19 ** level));
 }
 
+/** `level` and `xp` after gaining `gain` XP, with level-ups (none at max level). */
+export function addXp(level: number, xp: bigint, gain: bigint): { level: number; xp: bigint } {
+  if (level >= MAX_LEVEL) return { level, xp: 0n };
+  xp += gain;
+  for (let need = xpToNext(level); level < MAX_LEVEL && xp >= need; need = xpToNext(level)) {
+    xp -= need;
+    level += 1;
+  }
+  return { level, xp: level >= MAX_LEVEL ? 0n : xp };
+}
+
 export interface Progress {
   level: number;
   xp: bigint;

@@ -6,6 +6,7 @@ import type { DbConnection } from './module_bindings';
 import type { SettleLog } from './module_bindings/types';
 import { ZONES_BY_ID, bossOf } from '../spacetimedb/src/data/zones';
 import { toast } from './store';
+import { encounterText } from './ui/encounters';
 
 /** Online settles (not the login one, which is time away), by ID. */
 const settles = new Map<bigint, SettleLog>();
@@ -13,8 +14,11 @@ const settles = new Map<bigint, SettleLog>();
 let targetChangedAt = 0n;
 
 export function trackSettles(conn: DbConnection) {
-  conn.db.mySettleLog.onInsert((_ctx, log) => {
+  conn.db.mySettleLog.onInsert((ctx, log) => {
     if (!log.offline) settles.set(log.id, log);
+    // Encounters met while online pop up; the away report covers the offline ones.
+    if (ctx.event.tag === 'SubscribeApplied' || log.offline) return;
+    for (const e of log.encounters) toast(encounterText(e, log.enemyId, id => conn.db.myItems.id.find(id) ?? undefined), 'info');
   });
   // A boss's first kill (not the rows loaded on connect) unlocks the next zone.
   conn.db.myBossKills.onInsert((ctx, kill) => {

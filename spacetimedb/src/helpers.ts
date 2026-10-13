@@ -2,13 +2,14 @@
 // may only export reducers/views.
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
-import { Found as FoundType, account, character, item, presence, settleLog, spacetimedb } from './schema';
-import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, offlineCapMicros, project } from './game';
+import { Encounter as EncounterType, Found as FoundType, account, character, item, presence, settleLog, spacetimedb } from './schema';
+import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project } from './game';
+import { rollEncounters } from './encounters';
 import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
 import { Effect, effectAmount } from './data/legendary';
-import { combatStats, matchup } from './combat';
-import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
+import { MAX_LEVEL, combatStats, matchup } from './combat';
+import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, salvageValue, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
 import { simulate } from './sim';
 
 /** Settle log rows kept per character. */
@@ -21,6 +22,7 @@ export type Presence = Infer<typeof presence.rowType>;
 export type Item = Infer<typeof item.rowType>;
 export type SettleLog = Infer<typeof settleLog.rowType>;
 export type Found = Infer<typeof FoundType>;
+export type Encounter = Infer<typeof EncounterType>;
 
 /** The caller's account; throws if missing or banned. */
 export function requireAccount(ctx: Ctx): Account {
@@ -136,6 +138,42 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   }
   if (target && p.kills > 0) addKills(ctx, ch.id, target.enemy.id, p.kills);
 
+  // Rare encounters, with the stats reached by the end of the settle.
+  let { level, xp } = p;
+  let xpGained = p.xpGained;
+  const encounters: Encounter[] = [];
+  if (target && p.kills > 0) {
+    const rolls = rollEncounters(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, ENCOUNTER_SALT), {
+      kills: p.kills,
+      zone: target.zone,
+      enemy: target.enemy,
+      stats: combatStats(p.level, gear),
+    });
+    let bagFree = rolls.some(r => r.item) ? ch.bagSize - bagCount(ctx, ch.id) : 0;
+    for (const r of rolls) {
+      let itemId = 0n;
+      if (r.item) {
+        discovered.push(...discover(ctx, ch.id, target.zone.tier, [{ baseId: r.item.baseId }]));
+        if (bagFree > 0) {
+          itemId = ctx.db.item.insert({ ...r.item, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id;
+          keptItemIds.push(itemId);
+          bagFree--;
+        } else {
+          dust += salvageValue(r.item.rarity.tag, r.item.tier);
+        }
+      }
+      if (r.xp > 0n) {
+        const before = { level, xp };
+        ({ level, xp } = addXp(level, xp, r.xp));
+        if (before.level < MAX_LEVEL) xpGained += r.xp;
+      }
+      gold += r.gold;
+      addMaterials(ctx, ch.id, r.materials);
+      materials = mergeMaterials(materials, r.materials);
+      encounters.push({ kind: r.kind, won: r.won, xp: r.xp, gold: r.gold, materials: r.materials, itemId });
+    }
+  }
+
   const offline = capMicros !== undefined;
   if (p.kills > 0 || offline || p.defeatedAt !== undefined) {
     const elapsed = ctx.timestamp.microsSinceUnixEpoch - ch.lastSettledAt.microsSinceUnixEpoch;
@@ -146,8 +184,8 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       capped: offline && elapsed > capMicros,
       viable: !!target && matchup(combatStats(ch.level, gear), target.enemy).viable,
       kills: p.kills,
-      levelTo: p.level,
-      xp: p.xpGained,
+      levelTo: level,
+      xp: xpGained,
       gold: gold - ch.gold,
       dust: dust - dustBefore,
       keptItemIds,
@@ -155,6 +193,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       overflow: drops?.overflow ?? 0,
       materials,
       discovered,
+      encounters,
       defeated: p.defeatedAt !== undefined,
       idleMicros: idle > 0n ? idle : 0n,
     });
@@ -162,8 +201,8 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
 
   return {
     ...ch,
-    level: p.level,
-    xp: p.xp,
+    level,
+    xp,
     gold,
     dust,
     essence: 0n,
@@ -197,6 +236,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     idleMicros: 0n,
     materials: [],
     discovered: [],
+    encounters: [],
     ...row,
   });
   pruneSettleLog(ctx, ch.id);
@@ -291,6 +331,18 @@ export const MAX_FRIENDS = 100;
 /** Mixed into material roll seeds, so they never reuse an item roll's seed. */
 const MATERIAL_SALT = 0x6d6174n; // "mat"
 const DISCOVER_SALT = 0x6469736376n; // "discv"
+const ENCOUNTER_SALT = 0x656e636fn; // "enco"
+
+/** `a` plus `b`, one entry per material. */
+function mergeMaterials(a: readonly MaterialDrop[], b: readonly MaterialDrop[]): MaterialDrop[] {
+  const out = a.map(d => ({ ...d }));
+  for (const d of b) {
+    const row = out.find(o => o.materialId === d.materialId);
+    if (row) row.count += d.count;
+    else out.push({ ...d });
+  }
+  return out;
+}
 
 /** Records the drops (of `tier`) the character sees for the first time (discovery table) and returns them. */
 export function discover(ctx: Ctx, characterId: bigint, tier: number, seen: readonly Seen[]): Found[] {

@@ -1032,6 +1032,9 @@ select:focus,
 }
 .discovered { margin-top: 4px; font-size: 12px; }
 .discovery { color: var(--gold); }
+.encounter { color: var(--info); }
+.encounter .ico { margin-right: 4px; }
+.encounter-list { margin: 0 0 8px; padding-left: 22px; }
 .item-card.unknown { opacity: 0.6; }
 .discovery .ico { margin-right: 4px; }
 .unknown-threat {

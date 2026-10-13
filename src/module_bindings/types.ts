@@ -97,6 +97,18 @@ export const Discovery = __t.object("Discovery", {
 });
 export type Discovery = __Infer<typeof Discovery>;
 
+export const Encounter = __t.object("Encounter", {
+  kind: __t.u8(),
+  won: __t.bool(),
+  xp: __t.u64(),
+  gold: __t.u64(),
+  get materials() {
+    return __t.array(MaterialCount);
+  },
+  itemId: __t.u64(),
+});
+export type Encounter = __Infer<typeof Encounter>;
+
 export const EnemyKill = __t.object("EnemyKill", {
   id: __t.u64(),
   characterId: __t.u64(),
@@ -315,6 +327,9 @@ export const SettleLog = __t.object("SettleLog", {
   dust: __t.u64(),
   get discovered() {
     return __t.array(Found);
+  },
+  get encounters() {
+    return __t.array(Encounter);
   },
 });
 export type SettleLog = __Infer<typeof SettleLog>;

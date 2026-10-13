@@ -10,6 +10,7 @@ import { DmgTag, EnemyDetail } from '../enemy';
 import { startFight, stopFight } from '../fight';
 import { walkLine } from '../flavor';
 import { foundName } from '../discovery';
+import { encounterText } from '../encounters';
 import { duration, fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { itemName, materialsText, rarityCls } from '../items';
@@ -19,6 +20,14 @@ import { snapshot, type Snapshot } from '../snapshot';
 function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?: number }) {
   const lines: React.ReactNode[] = [];
   for (const log of logs) {
+    log.encounters.forEach((enc, i) =>
+      lines.push(
+        <li key={`e${log.id}-${i}`} className="encounter">
+          <span><Icon name="zap" />{encounterText(enc, log.enemyId, id => s.items.get(id))}</span>
+          <span className="muted">encounter</span>
+        </li>
+      )
+    );
     if (log.discovered.length) {
       lines.push(
         <li key={`d${log.id}`} className="discovery">

@@ -103,6 +103,7 @@ await a.conn.reducers.sendChat({ text: 'hello world' });
 await expectError('chat rate limit', a.conn.reducers.sendChat({ text: 'spam' }), 'Slow down');
 
 await expectError('unknown enemy rejected', a.conn.reducers.setTarget({ enemyId: 999 }), 'No such enemy');
+await expectError('secret enemy hidden until its area is found', a.conn.reducers.setTarget({ enemyId: 107 }), 'No such enemy');
 await expectError('locked zone rejected', a.conn.reducers.setTarget({ enemyId: 201 }), 'Zone is locked');
 {
   // A starter sword kills a Field Rat every ~8.3 s (5 s walk + ~3.3 s live fight, which varies).

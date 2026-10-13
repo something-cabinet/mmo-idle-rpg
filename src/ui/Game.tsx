@@ -8,7 +8,7 @@ import { call, toast, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
 import { nowMicros, syncClock } from './clock';
 import { DefeatReport } from './DefeatReport';
-import { revealedAreas } from './discovery';
+import { revealedAreas, rumouredAreas } from './discovery';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
@@ -284,17 +284,22 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
   useEffect(() => {
     if (content.current) content.current.scrollTop = 0;
   }, [view]);
-  // Kills explore the zone: say so as soon as the projection reveals an area.
+  // Areas found and secrets rumoured: say so as soon as the projection gets there.
   const revealed = live ? revealedAreas(live) : [];
-  const revealedKey = revealed.map(a => a.id).join(',');
-  const revealedBefore = useRef('');
+  const rumoured = live ? rumouredAreas(live) : [];
+  const mapKey = [...revealed.map(a => `${a.id}`), ...rumoured.map(a => `r${a.id}`)].join(',');
+  const mapBefore = useRef('');
   useEffect(() => {
-    const before = revealedBefore.current;
-    revealedBefore.current = revealedKey;
+    const before = mapBefore.current.split(',');
+    const first = !mapBefore.current;
+    mapBefore.current = mapKey;
     // Nothing to compare against on the first load.
-    const found = before && revealed.find(a => !before.split(',').includes(String(a.id)));
-    if (found) toast(`New area found: ${found.name}`, 'info');
-  }, [revealedKey]); // eslint-disable-line react-hooks/exhaustive-deps -- `revealed` changes with its key
+    if (first) return;
+    const found = revealed.find(a => !before.includes(`${a.id}`));
+    const rumour = rumoured.find(a => !before.includes(`r${a.id}`));
+    if (found) toast(found.secret ? `Secret found: ${found.name}!` : `New area found: ${found.name}`, 'info');
+    else if (rumour?.secret) toast(rumour.secret.rumour, 'info');
+  }, [mapKey]); // eslint-disable-line react-hooks/exhaustive-deps -- the lists change with the key
 
   if (!row || !viewSnap || !live) return <TopBar />;
   const online = conn.db.presence.count();

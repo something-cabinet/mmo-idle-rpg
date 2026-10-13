@@ -26,6 +26,8 @@ export interface EnemyDef {
   /** Material kinds this enemy drops (1–3), of the zone's tier (data/materials.ts). Core only from magical creatures. */
   materials: MaterialKind[];
   boss?: boolean;
+  /** Lives in a secret area (`AreaDef.secret`): fightable once that area is found. */
+  secret?: boolean;
 }
 
 /** An area on the zone's map (zones.md, "Zone map"). Every area can be fought in; it shows as ??? until visited. */
@@ -35,6 +37,11 @@ export interface AreaDef {
   blurb: string;
   /** Enemy IDs, weakest first. */
   enemies: number[];
+  /**
+   * A secret area: off the map until `hint` kills of `enemyId` (a rumour spot), found at
+   * `kills`. Only then can its enemies be fought (zones.md, "Secret areas").
+   */
+  secret?: { enemyId: number; kills: number; hint: number; rumour: string };
   /** Position on the zone map's stage, % of its width and height (presentation only; the stage leaves room for labels). */
   x: number;
   y: number;
@@ -46,7 +53,7 @@ export interface ZoneDef {
   name: string;
   blurb: string;
   enemies: EnemyDef[];
-  /** Every enemy is in exactly one area; the last is the boss's lair. */
+  /** Every enemy is in exactly one area; one is the boss's lair. */
   areas: AreaDef[];
   /** Paths drawn between areas on the map, as pairs of area IDs. */
   links: [number, number][];
@@ -118,14 +125,18 @@ export const ZONES: ZoneDef[] = [
       { id: 104, name: 'Bog Wisp', level: 10, damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 80, dps: 16, armor: 10, resistance: 60, xp: 20, gold: 5, drops: T1_DROPS.wisp, materials: ['Core', 'Reagent'] },
       { id: 105, name: 'Goblin Brute', level: 13, damageType: 'Physical', defense: 'Armored', speed: 0.7, hp: 101, dps: 20.2, armor: 78, resistance: 13, xp: 28, gold: 7, drops: T1_DROPS.brute, materials: ['Metal', 'Gem'] },
       { id: 106, name: 'Grubnak, Goblin Chief', level: 15, damageType: 'Physical', defense: 'Balanced', speed: 0.9, hp: 138, dps: 27.4, armor: 37.5, resistance: 37.5, xp: 44, gold: 11, drops: all(T1_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
+      // Secret (Sunken Chapel): magic damage behind armor, a mix no other T1 enemy has.
+      { id: 107, name: 'Drowned Bellringer', level: 12, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 94, dps: 18.7, armor: 72, resistance: 12, xp: 30, gold: 8, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true },
     ],
     areas: [
       { id: 11, name: 'Village Fields', blurb: 'Trampled wheat and gnawed fences just past the last houses.', enemies: [101, 102], x: 8, y: 90 },
       { id: 12, name: 'Old Mill', blurb: 'A silent mill where the fields sink into bog.', enemies: [103, 104], x: 92, y: 64 },
       { id: 13, name: 'Goblin Camp', blurb: 'Palisades and cookfires hidden in the woods.', enemies: [105], x: 14, y: 30 },
       { id: 14, name: "Chieftain's Tent", blurb: 'Grubnak holds court among his stolen treasures.', enemies: [106], x: 86, y: 6 },
+      { id: 15, name: 'Sunken Chapel', blurb: 'A chapel swallowed by the bog. Its bell still tolls for a drowned choir.', enemies: [107], x: 62, y: 96,
+        secret: { enemyId: 104, kills: 1000, hint: 500, rumour: 'Bells ring somewhere beneath the bog water…' } },
     ],
-    links: [[11, 12], [11, 13], [12, 13], [13, 14]],
+    links: [[11, 12], [11, 13], [12, 13], [13, 14], [12, 15]],
   },
   {
     id: 2,
@@ -176,6 +187,13 @@ export const ZONES_BY_ID: ReadonlyMap<number, ZoneDef> = new Map(ZONES.map(z => 
 export const ENEMIES_BY_ID: ReadonlyMap<number, { zone: ZoneDef; enemy: EnemyDef }> = new Map(
   ZONES.flatMap(zone => zone.enemies.map(enemy => [enemy.id, { zone, enemy }] as const))
 );
+
+/** Whether a secret area is found (or only rumoured), from lifetime kills by enemy ID. Areas that aren't secret are always found. */
+export function secretState(area: AreaDef, kills: (enemyId: number) => number): 'found' | 'rumour' | 'hidden' {
+  if (!area.secret) return 'found';
+  const n = kills(area.secret.enemyId);
+  return n >= area.secret.kills ? 'found' : n >= area.secret.hint ? 'rumour' : 'hidden';
+}
 
 /** The index of the area holding `enemy` in `zone.areas`. */
 export const areaIndexOf = (zone: ZoneDef, enemyId: number) => zone.areas.findIndex(a => a.enemies.includes(enemyId));

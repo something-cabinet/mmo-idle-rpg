@@ -7,7 +7,7 @@
 import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
-import { ZONES, previousZone, type AreaDef, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
+import { ZONES, previousZone, secretState, type AreaDef, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import type { Snapshot } from './snapshot';
 
 export const UNKNOWN = '???';
@@ -35,9 +35,9 @@ export function threat(m: Matchup): { label: string; cls: string } {
 /** Distinct bases the zone's enemies drop. */
 export const zoneBases = (z: ZoneDef) => [...new Set(z.enemies.flatMap(e => e.drops))];
 
-/** "Enemies 4/5 · Items 31/38" counts for a zone. */
+/** "Enemies 4/5 · Items 31/38" counts for a zone. A secret area's enemy only counts once the area is found. */
 export function zoneDiscovery(s: Snapshot, z: ZoneDef) {
-  const enemies = z.enemies.filter(e => !e.boss);
+  const enemies = z.enemies.filter(e => !e.boss && (!e.secret || areaSecret(s, z.areas.find(a => a.enemies.includes(e.id))!) === 'found'));
   const bases = zoneBases(z);
   return {
     enemies: enemies.filter(e => enemyKnown(s, e)).length,
@@ -47,15 +47,28 @@ export function zoneDiscovery(s: Snapshot, z: ZoneDef) {
   };
 }
 
+/** A secret area's state for the player (zones.ts `secretState`); other areas are 'found'. */
+export const areaSecret = (s: Snapshot, a: AreaDef) => secretState(a, id => s.kills.get(id) ?? 0);
+
 /** The previous zone's boss is dead (the first zone is always open). */
 export function zoneUnlocked(s: Snapshot, z: ZoneDef) {
   const prev = previousZone(z);
   return !prev || s.killedZones.has(prev.id);
 }
 
-/** The area shows on the map by name once the player has fought there (or is heading there now). A zone's first area is always shown. */
-export const areaRevealed = (s: Snapshot, z: ZoneDef, a: AreaDef) =>
-  zoneUnlocked(s, z) && (a === z.areas[0] || a.enemies.some(id => (s.kills.get(id) ?? 0) > 0 || s.row.targetEnemyId === id));
+/**
+ * The area shows on the map by name: once the player has fought there (or is heading
+ * there now), and a zone's first area always. A secret area shows once found.
+ */
+export function areaRevealed(s: Snapshot, z: ZoneDef, a: AreaDef) {
+  if (!zoneUnlocked(s, z)) return false;
+  if (a.secret) return areaSecret(s, a) === 'found';
+  return a === z.areas[0] || a.enemies.some(id => (s.kills.get(id) ?? 0) > 0 || s.row.targetEnemyId === id);
+}
 
 /** Every area revealed to the player, in all zones. */
 export const revealedAreas = (s: Snapshot): AreaDef[] => ZONES.flatMap(z => z.areas.filter(a => areaRevealed(s, z, a)));
+
+/** Secret areas the player has heard a rumour of but not found yet. */
+export const rumouredAreas = (s: Snapshot): AreaDef[] =>
+  ZONES.flatMap(z => (zoneUnlocked(s, z) ? z.areas.filter(a => areaSecret(s, a) === 'rumour') : []));

@@ -24,6 +24,8 @@ export interface UniqueDef {
   /** Effect IDs (data/legendary.ts): unique-only or legendary. */
   effects: number[];
   stats: UniqueStat[];
+  /** Drops only from this enemy (a secret area's), which then drops no other unique. */
+  enemyId?: number;
 }
 
 /** Each stat rolls in [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] × its value (uniques.md). */
@@ -38,6 +40,8 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.GoldFindPct }, { stat: Stat.ItemFindPct }, { stat: Stat.Finesse }] },
   { id: 3, name: "Tutor's Pendant", tier: 1, baseId: 56, effects: [Effect.ScholarsFocus],
     stats: [{ stat: Stat.XpGainPct }, { stat: Stat.Mind }, { stat: Stat.MaxHpPct }] },
+  { id: 11, name: 'The Drowned Hymnal', tier: 1, baseId: 21, effects: [Effect.ZealotsOath, Effect.Spellward], enemyId: 107,
+    stats: [{ stat: Stat.HealPct }, { stat: Stat.MagicDamagePct }, { stat: Stat.ResistancePct }] },
   // T2
   { id: 4, name: 'Hexblade', tier: 2, baseId: 1, effects: [Effect.Spellblade],
     stats: [{ stat: Stat.PhysDamagePct }, { stat: Stat.MagicDamagePct }, { stat: Stat.AttackSpeedPct }] },
@@ -61,5 +65,17 @@ export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map
 /**
  * Drop weight of a unique in a tier-`zoneTier` zone: every unique of that tier and
  * below can drop, current-tier ones most (each tier lower halves the weight).
+ * Enemy-bound uniques never drop this way (see `uniquePool`).
  */
-export const uniqueWeight = (u: UniqueDef, zoneTier: number): number => (u.tier > zoneTier ? 0 : 0.5 ** (zoneTier - u.tier));
+export const uniqueWeight = (u: UniqueDef, zoneTier: number): number =>
+  u.enemyId !== undefined || u.tier > zoneTier ? 0 : 0.5 ** (zoneTier - u.tier);
+
+/**
+ * The uniques `enemyId` can drop in a tier-`zoneTier` zone, with weights: its own if
+ * any are bound to it (equal weight), else the global pool (`uniqueWeight`).
+ */
+export function uniquePool(zoneTier: number, enemyId?: number): { u: UniqueDef; weight: number }[] {
+  const own = UNIQUES.filter(u => enemyId !== undefined && u.enemyId === enemyId);
+  if (own.length) return own.map(u => ({ u, weight: 1 }));
+  return UNIQUES.map(u => ({ u, weight: uniqueWeight(u, zoneTier) })).filter(x => x.weight > 0);
+}

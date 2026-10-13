@@ -173,7 +173,9 @@ function UnknownUniqueCard({ u }: { u: UniqueDef }) {
         <span>Unique</span>
         <span>{b.family.split(' · ')[0]}</span>
       </div>
-      <p className="muted">Not found yet. Its name, effects and stats are revealed when one drops for you.</p>
+      <p className="muted">
+        Not found yet. Its name, effects and stats are revealed when one drops for you.{u.enemyId !== undefined && ' Rumoured to drop in one hidden place only.'}
+      </p>
     </div>
   );
 }

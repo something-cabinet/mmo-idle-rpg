@@ -5,7 +5,7 @@
 import { BASE_LIST, base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
 import { STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
-import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniqueWeight, type UniqueDef } from './data/uniques';
+import { UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniquePool, type UniqueDef } from './data/uniques';
 import { MATERIAL_CHANCE, materialOf } from './data/materials';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
@@ -157,15 +157,15 @@ export function makeUnique(rng: Rng, u: UniqueDef): NewItem {
   };
 }
 
-/** A unique that can drop in a tier-`zoneTier` zone, weighted by `uniqueWeight`; undefined if none. */
-export function pickUnique(rng: Rng, zoneTier: number): UniqueDef | undefined {
-  const pool = UNIQUES.filter(u => uniqueWeight(u, zoneTier) > 0);
-  let r = rng() * pool.reduce((sum, u) => sum + uniqueWeight(u, zoneTier), 0);
-  return pool.find(u => (r -= uniqueWeight(u, zoneTier)) < 0) ?? pool[pool.length - 1];
+/** A unique that `enemyId` can drop in a tier-`zoneTier` zone (data/uniques.ts `uniquePool`); undefined if none. */
+export function pickUnique(rng: Rng, zoneTier: number, enemyId?: number): UniqueDef | undefined {
+  const pool = uniquePool(zoneTier, enemyId);
+  let r = rng() * pool.reduce((sum, x) => sum + x.weight, 0);
+  return (pool.find(x => (r -= x.weight) < 0) ?? pool[pool.length - 1])?.u;
 }
 
-/** Whether any unique can drop in a tier-`zoneTier` zone (if not, the Unique chance rolls Legendary). */
-export const hasUniques = (zoneTier: number) => UNIQUES.some(u => u.tier <= zoneTier);
+/** Whether `enemyId` can drop any unique in a tier-`zoneTier` zone (if not, the Unique chance rolls Legendary). */
+export const hasUniques = (zoneTier: number, enemyId?: number) => uniquePool(zoneTier, enemyId).length > 0;
 
 /** What a rarity step needs from an item: an `item` row or a `NewItem`. */
 export type RaisableItem = Pick<NewItem, 'baseId' | 'tier' | 'rarity' | 'affixes' | 'legendary'>;
@@ -278,14 +278,14 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const scale = d.kills * d.rewardScale * (1 + d.itemFind);
   const kept: NewItem[] = [];
   const seen: Seen[] = [];
-  const uniques = hasUniques(d.tier);
+  const uniques = hasUniques(d.tier, d.enemy.id);
   for (const rarity of RARITIES) {
     if (rarity === 'Unique') {
-      // Uniques drop from any enemy: every unique of the zone's tier and below. Always kept.
+      // Uniques drop from any enemy: every unique of the zone's tier and below, or the enemy's own. Always kept.
       if (!uniques) continue;
       const count = samplePoisson(rng, scale * DROP_CHANCE.Unique);
       for (let i = 0; i < count; i++) {
-        const u = makeUnique(rng, pickUnique(rng, d.tier)!);
+        const u = makeUnique(rng, pickUnique(rng, d.tier, d.enemy.id)!);
         kept.push(u);
         seen.push({ baseId: u.baseId, uniqueId: u.uniqueId });
       }

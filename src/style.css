@@ -1093,6 +1093,41 @@ select:focus,
     font-size: 11px;
   }
 }
+.spot.rumour .spot-mark {
+  color: var(--r-unique);
+  border-color: color-mix(in srgb, var(--r-unique) 60%, transparent);
+  animation: shimmer 2.4s ease-in-out infinite;
+}
+.spot.secret.known .spot-mark {
+  color: var(--r-unique);
+  border: 2px solid var(--r-unique);
+  background: color-mix(in srgb, var(--r-unique) 12%, var(--surface));
+}
+@keyframes shimmer {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--r-unique) 0%, transparent); opacity: 0.75; }
+  50% { box-shadow: 0 0 14px 4px color-mix(in srgb, var(--r-unique) 45%, transparent); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spot.rumour .spot-mark { animation: none; }
+}
+.secret-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--r-unique);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.secret-tag .ico {
+  width: 12px;
+  height: 12px;
+}
+.rumour-text {
+  font-style: italic;
+  color: var(--text);
+}
 .area-panel {
   min-width: 0;
 }

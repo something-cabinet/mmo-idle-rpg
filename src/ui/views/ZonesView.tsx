@@ -6,7 +6,7 @@ import { fmt } from '../format';
 import { Icon } from '../Icon';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
 import { ViewHeader } from '../shared';
-import { UNKNOWN, areaRevealed, enemyKnown, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
+import { UNKNOWN, areaRevealed, areaSecret, enemyKnown, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
 import type { Snapshot } from '../snapshot';
 
 const levels = (es: EnemyDef[]) => {
@@ -19,6 +19,7 @@ const enemiesOf = (a: AreaDef) => a.enemies.map(id => ENEMIES_BY_ID.get(id)!.ene
 /** Map glyphs by area ID (placeholders, Icon.tsx). */
 const AREA_ICONS: Record<number, string> = {
   11: 'a-field', 12: 'a-mill', 13: 'a-tent',
+  15: 'a-bell',
   21: 'a-road', 22: 'a-tree', 23: 'a-den',
   31: 'a-mountain', 32: 'a-shrine', 33: 'a-gate',
 };
@@ -39,9 +40,12 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
   const prevBoss = prev && bossOf(prev);
   const found = zoneDiscovery(s, z);
   const here = s.target?.zone === z ? z.areas[areaIndexOf(z, s.target.enemy.id)] : undefined;
-  const area = z.areas.find(a => a.id === picked) ?? here ?? z.areas[0];
+  // Secret areas stay off the map until rumoured.
+  const shown = z.areas.filter(a => !a.secret || (unlocked && areaSecret(s, a) !== 'hidden'));
+  const area = shown.find(a => a.id === picked) ?? here ?? z.areas[0];
   const revealed = new Set(z.areas.filter(a => areaRevealed(s, z, a)).map(a => a.id));
-  const byId = new Map(z.areas.map(a => [a.id, a]));
+  const rumour = (a: AreaDef) => !!a.secret && !revealed.has(a.id);
+  const byId = new Map(shown.map(a => [a.id, a]));
 
   return (
     <>
@@ -74,7 +78,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
         </div>
         {unlocked && (
           <p className="muted discovered" title="Areas are revealed by fighting in them, enemies by killing them, items by seeing them drop (salvaged drops count)">
-            Discovered: areas {revealed.size}/{z.areas.length} · enemies {found.enemies}/{found.enemyTotal} · items {found.items}/{found.itemTotal}
+            Discovered: areas {revealed.size}/{z.areas.filter(a => !a.secret || revealed.has(a.id)).length} · enemies {found.enemies}/{found.enemyTotal} · items {found.items}/{found.itemTotal}
           </p>
         )}
         <div className="zones-layout">
@@ -82,17 +86,18 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
             {/* Spots sit on an inset stage, so a marker and its label always fit inside the map. */}
             <div className="zmap-stage">
               <svg className="zmap-paths" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                {z.links.map(([from, to]) => {
+                {z.links.filter(([from, to]) => byId.has(from) && byId.has(to)).map(([from, to]) => {
                   const a = byId.get(from)!;
                   const b = byId.get(to)!;
                   const known = revealed.has(from) && revealed.has(to);
                   return <line key={`${from}-${to}`} className={known ? 'known' : ''} x1={a.x} y1={a.y} x2={b.x} y2={b.y} vectorEffect="non-scaling-stroke" />;
                 })}
               </svg>
-              {z.areas.map(a => {
+              {shown.map(a => {
                 const known = revealed.has(a.id);
                 const lair = a.enemies.some(id => ENEMIES_BY_ID.get(id)!.enemy.boss);
-                const cls = ['spot', known ? 'known' : 'fog', lair && 'lair', a === here && 'here', a === area && 'picked'].filter(Boolean).join(' ');
+                const cls = ['spot', known ? 'known' : rumour(a) ? 'rumour' : 'fog', a.secret && 'secret', lair && 'lair', a === here && 'here', a === area && 'picked']
+                  .filter(Boolean).join(' ');
                 return (
                   <button
                     key={a.id}
@@ -107,18 +112,26 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
                     }}
                   >
                     <span className="spot-mark">
-                      {a === here ? <Icon name="pin" /> : lair ? <Icon name="skull" /> : known ? <Icon name={AREA_ICONS[a.id] ?? 'map'} /> : '?'}
+                      {a === here ? <Icon name="pin" /> : lair ? <Icon name="skull" /> : rumour(a) ? <Icon name="sparkles" /> : known ? <Icon name={AREA_ICONS[a.id] ?? 'map'} /> : '?'}
                     </span>
                     <span className="spot-label">
                       {known ? a.name : UNKNOWN}
-                      <small>{levels(enemiesOf(a))}</small>
+                      {!rumour(a) && <small>{levels(enemiesOf(a))}</small>}
                     </span>
                   </button>
                 );
               })}
             </div>
           </div>
-          <AreaPanel panelRef={panel} s={s} z={z} a={area} known={revealed.has(area.id)} here={area === here} unlocked={unlocked} open={open} setOpen={setOpen} />
+          {rumour(area) ? (
+            <div className="area-panel" ref={panel}>
+              <div className="area-title"><h3>{UNKNOWN}</h3><span className="secret-tag"><Icon name="sparkles" />Rumour</span></div>
+              <p className="area-blurb rumour-text">{area.secret!.rumour}</p>
+              <p className="muted">Something is hidden here. The {ENEMIES_BY_ID.get(area.secret!.enemyId)!.enemy.name}s seem drawn to it.</p>
+            </div>
+          ) : (
+            <AreaPanel panelRef={panel} s={s} z={z} a={area} known={revealed.has(area.id)} here={area === here} unlocked={unlocked} open={open} setOpen={setOpen} />
+          )}
         </div>
         <p className="muted hint">
           Tap an area on the map, then an enemy for its rewards and drops. Fight in a ??? area or enemy to discover it. Threat and numbers use your active loadout ({s.active.name}).
@@ -145,6 +158,7 @@ function AreaPanel({ panelRef, s, z, a, known, here, unlocked, open, setOpen }: 
     <div className="area-panel" ref={panelRef}>
       <div className="area-title">
         <h3>{known ? a.name : UNKNOWN}</h3>
+        {a.secret && <span className="secret-tag"><Icon name="sparkles" />Secret</span>}
         {here && <span className="here-tag">You are here</span>}
         <span className="area-levels muted">{levels(enemies)}</span>
       </div>

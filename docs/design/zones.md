@@ -33,6 +33,28 @@ fixed route (data/zones.ts `areas`, `links`).
   Hidden areas (exploration-todo.md) can hang off the same map later.
 - Walk flavour lines come from the zone's general lines plus the target's area.
 
+## Secret areas
+
+Areas that aren't on the map at first (`AreaDef.secret`), found by an obsession: lots
+of kills of one of the zone's regular enemies.
+
+- **Hidden** until `hint` kills of that enemy: nothing on the map, only a flavour line
+  in a nearby area hints at it.
+- **Rumoured** from `hint` kills: a shimmering ✦ spot appears on a path from the nearby
+  area, with a rumour line ("Bells ring somewhere beneath the bog water…") and which
+  enemy seems drawn to it. Its enemies aren't listed. The client toasts the rumour.
+- **Found** at `kills`: the spot is named and marked Secret, its enemies can be fought,
+  and the client toasts "Secret found".
+- The server enforces it: `setTarget` answers "No such enemy" for a secret enemy until
+  its area is found, so the secret doesn't leak. Derived from `enemy_kill`; no new table.
+- A secret enemy (`secret: true`) stays out of the zone's base deal (every base from
+  exactly one regular enemy) and its discovery counts until found. It can have its own
+  unique (uniques.md, "Enemy-bound uniques").
+
+| Zone | Secret area | Found by | Hint | Enemy | Unique |
+|---|---|---|---|---|---|
+| Greenhollow | Sunken Chapel | 1,000 Bog Wisp kills (≈ 4 h on Wisps) | 500 | Drowned Bellringer (Lv 12, Magic, Armored) | The Drowned Hymnal |
+
 ## Enemy level
 
 - Enemies in a tier-T zone average **level 10 × T**.

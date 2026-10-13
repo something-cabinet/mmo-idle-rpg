@@ -4,6 +4,7 @@ import { BAG_START, validateCharacterName } from '../game';
 import { ENEMIES_BY_ID, STARTING_TARGET, STARTING_ZONE } from '../data/zones';
 import { STARTER_WEAPONS } from '../data/bases';
 import {
+  areaFound,
   ensureCharacterRows,
   enterWorld,
   grantStarterKit,
@@ -57,7 +58,8 @@ export const playHere = spacetimedb.reducer(ctx => {
 });
 
 /**
- * Chooses the enemy to fight. Its zone must be unlocked. Any enemy can be picked,
+ * Chooses the enemy to fight. Its zone must be unlocked, and a secret area's enemy
+ * found (it is "No such enemy" until then, so the secret doesn't leak). Any enemy can be picked,
  * bosses included (a challenge until the first kill); a losing fight ends in a
  * defeat. Settles at the old target first.
  */
@@ -67,7 +69,10 @@ export const setTarget = spacetimedb.reducer({ enemyId: t.u16() }, (ctx, { enemy
   if (!found) throw new SenderError('No such enemy');
   const { zone, enemy } = found;
   if (!zoneUnlocked(ctx, ch.id, zone)) throw new SenderError('Zone is locked');
-  ctx.db.character.id.update({ ...settle(ctx, ch), zoneId: zone.id, targetEnemyId: enemy.id });
+  // Settle first, so kills up to now count toward finding a secret area.
+  const settled = settle(ctx, ch);
+  if (!areaFound(ctx, ch.id, zone, enemy.id)) throw new SenderError('No such enemy');
+  ctx.db.character.id.update({ ...settled, zoneId: zone.id, targetEnemyId: enemy.id });
 });
 
 /** Stops fighting: settles, then goes idle (no target, no gains). */

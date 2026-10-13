@@ -35,6 +35,10 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 - **Always kept:** the loot filter never salvages a unique; they go first into
   free bag slots. Only a full bag salvages one.
 - If no unique exists at tier N or below, the Unique chance rolls Legendary instead.
+- **Enemy-bound uniques** (`enemyId`): a secret area's enemy (zones.md, "Secret areas")
+  can have its own unique. It drops only from that enemy, at the usual Unique chance,
+  and that enemy drops no other unique, so it can be target-farmed. Bound uniques
+  never join the global pool.
 
 ## List
 
@@ -43,6 +47,7 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 1 | T1 | **Grubnak's Cleaver** | Greatsword | Glass Cannon | Physical damage %, crit damage, armor pen % |
 | 2 | T1 | **Gilded Signet** | Emerald ring | Midas Touch | Gold find %, item find %, Finesse |
 | 3 | T1 | **Tutor's Pendant** | Sapphire amulet | Scholar's Focus | XP gain %, Mind, max HP % |
+| 11 | T1 | **The Drowned Hymnal** | Tome | Zealot's Oath, Spellward | Heal %, magic damage %, resistance %. *Only from the Drowned Bellringer (Sunken Chapel).* |
 | 4 | T2 | **Hexblade** | Sword | Spellblade | Physical damage %, magic damage %, attack speed % |
 | 5 | T2 | **Bulwark of the Hollow** | Plate chest | Juggernaut, Thornshell | Armor %, max HP, HP regen |
 | 6 | T2 | **Veil of Whispers** | Cloth chest | Spellward, Second Wind | Resistance %, Mind, max HP % |

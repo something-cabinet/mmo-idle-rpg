@@ -6,7 +6,7 @@ import { Encounter as EncounterType, Found as FoundType, account, character, ite
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project } from './game';
 import { rollEncounters } from './encounters';
 import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
-import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
+import { ENEMIES_BY_ID, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
 import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, salvageValue, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
@@ -252,6 +252,14 @@ function pruneSettleLog(ctx: Ctx, characterId: bigint) {
 /** Whether `characterId` has killed the boss of zone `zoneId`. */
 export function hasKilledBoss(ctx: Ctx, characterId: bigint, zoneId: number): boolean {
   return [...ctx.db.bossKill.characterId.filter(characterId)].some(k => k.zoneId === zoneId);
+}
+
+/** Whether the character has found the area holding `enemyId` (only secret areas need finding, zones.ts `secretState`). */
+export function areaFound(ctx: Ctx, characterId: bigint, zone: ZoneDef, enemyId: number): boolean {
+  const area = zone.areas.find(a => a.enemies.includes(enemyId));
+  if (!area?.secret) return true;
+  const kills = new Map([...ctx.db.enemyKill.characterId.filter(characterId)].map(k => [k.enemyId, Number(k.kills)]));
+  return secretState(area, id => kills.get(id) ?? 0) === 'found';
 }
 
 /** A zone is open once the previous zone's boss is dead (the first zone always is). */

@@ -10,7 +10,9 @@ whatever can be derived there.
 
 ## Hidden areas
 
-Secret areas on the zone map (zones.md, "Zone map") that only appear when a condition is met, for example:
+Secret areas on the zone map that only appear when a condition is met (zones.md,
+"Secret areas"). The first, the Sunken Chapel (1,000 Bog Wisp kills), is done. Ideas
+for more:
 
 - kill 500 Bog Wisps;
 - enter with a certain unique equipped;

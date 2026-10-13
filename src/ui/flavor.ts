@@ -48,6 +48,7 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'Faint green lights drift over the bog water.',
     'Flour sacks lie slashed open, the flour long blown away.',
     'Reeds hiss in the wind, though the air is still.',
+    'Bubbles rise from the bog in a slow, steady rhythm.',
   ],
   13: [
     'Someone has painted a crude goblin face on a tree.',
@@ -60,6 +61,12 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'A throne of stolen chairs, lashed together with rope.',
     'Shiny trinkets are heaped around the tent pole.',
     'The guards are gone. Only the chief remains.',
+  ],
+  15: [
+    'Cold water drips from the vaulted ceiling.',
+    'A bell tolls, and the water trembles with it.',
+    'Pews rot beneath a green, glowing tide.',
+    'Hymns echo from somewhere below, sung by no one.',
   ],
   21: [
     'Webs stretch between the trees, thick as rope.',

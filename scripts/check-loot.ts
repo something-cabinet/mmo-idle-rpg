@@ -267,11 +267,17 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('T1 zone drops only T1 uniques', Array.from({ length: 300 }, () => pickUnique(rng, 1)!).every(u => u.tier === 1));
   const t2 = Array.from({ length: 6000 }, () => pickUnique(rng, 2)!);
   const shareT1 = t2.filter(u => u.tier === 1).length / t2.length;
-  const n1 = UNIQUES.filter(u => u.tier === 1).length;
-  const n2 = UNIQUES.filter(u => u.tier === 2).length;
+  // The global pool: enemy-bound uniques only drop from their enemy.
+  const n1 = UNIQUES.filter(u => u.tier === 1 && u.enemyId === undefined).length;
+  const n2 = UNIQUES.filter(u => u.tier === 2 && u.enemyId === undefined).length;
   check('T2 zone drops T1 and T2 uniques, lower tiers at half weight', near(shareT1, (n1 * 0.5) / (n1 * 0.5 + n2), 0.02), shareT1.toFixed(3));
   check('higher-tier uniques never drop', uniqueWeight(UNIQUES.find(u => u.tier === 2)!, 1) === 0);
   check('every zone tier with uniques has some', hasUniques(1) && hasUniques(9) && !hasUniques(0));
+  const bound = UNIQUES.filter(u => u.enemyId !== undefined);
+  check('enemy-bound uniques never drop from the global pool', Array.from({ length: 3000 }, () => pickUnique(rng, 9)!).every(u => u.enemyId === undefined));
+  check('an enemy with its own unique drops only that one', bound.every(u =>
+    Array.from({ length: 200 }, () => pickUnique(rng, u.tier, u.enemyId)!).every(x => x.id === u.id)));
+  check('regular enemies drop from the global pool', pickUnique(rng, 1, 101)!.enemyId === undefined && hasUniques(1, 101));
 
   // A big session with a filter that keeps nothing else: every unique is kept, from any enemy.
   const keepNone = { minRarity: 'Legendary' as const, keepAffixes: [], keepBases: [], minAffixTier: 9 };
@@ -280,7 +286,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   const uniq = runs.flatMap(r => r.kept.filter(it => it.rarity.tag === 'Unique'));
   const expected = 40 * uniqueKills * DROP_CHANCE.Unique;
   check('uniques drop at the Unique chance and are always kept', near(uniq.length, expected, 4 * Math.sqrt(expected)), `${uniq.length} vs ~${expected.toFixed(0)}`);
-  check('… from the T1 and T2 pool', uniq.every(it => UNIQUES_BY_ID.get(it.uniqueId!)!.tier <= 2) && new Set(uniq.map(it => it.uniqueId)).size === UNIQUES.filter(u => u.tier <= 2).length);
+  check('… from the T1 and T2 pool', uniq.every(it => UNIQUES_BY_ID.get(it.uniqueId!)!.tier <= 2) && new Set(uniq.map(it => it.uniqueId)).size === UNIQUES.filter(u => u.tier <= 2 && u.enemyId === undefined).length);
 }
 
 // ---------------------------------------------------------------- materials

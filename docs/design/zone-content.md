@@ -45,6 +45,7 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 | Bog Wisp | 10 | **Magic** | Warded | 1.0/s | 80 | 16 | 10 / 60 | 20 | 5 |
 | Goblin Brute | 13 | Phys | Armored | 0.7/s | 101 | 20 | 78 / 13 | 28 | 7 |
 | **Boss: Grubnak, Goblin Chief** | 15 | Phys | Balanced | 0.9/s | 138 | 27 | 37.5 / 37.5 | 44 | 11 |
+| *Secret: Drowned Bellringer* (Sunken Chapel) | 12 | **Magic** | Armored | 0.6/s | 94 | 18.7 | 72 / 12 | 30 | 8 |
 
 **Checks** (simulated):
 

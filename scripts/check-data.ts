@@ -29,6 +29,8 @@ check('unique IDs unique', unique(UNIQUES.map(u => u.id)));
 check('uniques: base exists, tier 1–9, effects exist and are distinct, stats can roll', UNIQUES.every(u =>
   BASE_LIST.some(b => b.id === u.baseId) && u.tier >= 1 && u.tier <= 9 && u.effects.length > 0 && unique(u.effects) &&
   u.effects.every(e => EFFECTS_BY_ID.has(e)) && u.stats.length > 0 && u.stats.every(s => STATS[s.stat].ref !== undefined)));
+check('enemy-bound uniques: a secret enemy of their own tier', UNIQUES.every(u => u.enemyId === undefined ||
+  (ENEMIES_BY_ID.get(u.enemyId)?.enemy.secret === true && ENEMIES_BY_ID.get(u.enemyId)!.zone.tier === u.tier)));
 check('every unique-only effect is on some unique', UNIQUE_EFFECTS.every(e => UNIQUES.some(u => u.effects.includes(e.id))));
 check('material IDs unique and tier × 10 + kind', unique(MATERIALS.map(m => m.id)) &&
   MATERIALS.every(m => m.id === m.tier * 10 + MATERIAL_KINDS.indexOf(m.kind) + 1));
@@ -42,7 +44,7 @@ for (const zone of ZONES) {
 check('stat IDs match keys', Object.entries(STATS).every(([k, d]) => Number(k) === d.id));
 
 for (const zone of ZONES) {
-  const regular = zone.enemies.filter(e => !e.boss);
+  const regular = zone.enemies.filter(e => !e.boss && !e.secret);
   const drops = regular.flatMap(e => e.drops);
   check(`${zone.name}: every base drops from exactly one enemy`, unique(drops) && drops.length === BASE_LIST.length,
     `${drops.length} drops`);
@@ -52,10 +54,18 @@ for (const zone of ZONES) {
   check(`${zone.name}: every enemy in exactly one area`, unique(inAreas) && inAreas.length === zone.enemies.length &&
     zone.enemies.every(e => inAreas.includes(e.id)));
   check(`${zone.name}: area IDs are zone × 10 + n`, zone.areas.every((a, i) => a.id === zone.id * 10 + i + 1));
-  check(`${zone.name}: boss alone in the last area`, zone.areas.at(-1)!.enemies.length === 1 &&
-    ENEMIES_BY_ID.get(zone.areas.at(-1)!.enemies[0])!.enemy.boss === true);
-  check(`${zone.name}: areas in level order`, inAreas.every((id, i) => i === 0 ||
-    ENEMIES_BY_ID.get(id)!.enemy.level > ENEMIES_BY_ID.get(inAreas[i - 1])!.enemy.level));
+  const lair = zone.areas.find(a => a.enemies.some(id => ENEMIES_BY_ID.get(id)!.enemy.boss));
+  check(`${zone.name}: boss alone in its lair`, lair?.enemies.length === 1 && !lair.secret);
+  const open = zone.areas.filter(a => !a.secret).flatMap(a => a.enemies);
+  check(`${zone.name}: areas in level order`, open.every((id, i) => i === 0 ||
+    ENEMIES_BY_ID.get(id)!.enemy.level > ENEMIES_BY_ID.get(open[i - 1])!.enemy.level));
+  check(`${zone.name}: the first area is not secret`, !zone.areas[0].secret);
+  check(`${zone.name}: secret areas hold exactly the secret enemies`, zone.areas.every(a =>
+    a.enemies.every(id => !!ENEMIES_BY_ID.get(id)!.enemy.secret === !!a.secret)));
+  check(`${zone.name}: secrets are found by killing a regular enemy of the zone, hinted first`, zone.areas.every(a => !a.secret ||
+    (regular.some(e => e.id === a.secret!.enemyId) && a.secret.hint > 0 && a.secret.hint < a.secret.kills)));
+  check(`${zone.name}: secret enemies drop existing bases`, zone.enemies.filter(e => e.secret).every(e =>
+    e.drops.length > 0 && e.drops.every(id => BASE_LIST.some(b => b.id === id))));
   check(`${zone.name}: map spots inside the map`, zone.areas.every(a => a.x >= 0 && a.x <= 100 && a.y >= 0 && a.y <= 100));
   const ids = new Set(zone.areas.map(a => a.id));
   check(`${zone.name}: map paths join two of its areas`, zone.links.every(([a, b]) => a !== b && ids.has(a) && ids.has(b)));

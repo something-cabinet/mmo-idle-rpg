@@ -69,6 +69,7 @@ import InspectedItemsRow from "./inspected_items_table";
 import InspectedLoadoutRow from "./inspected_loadout_table";
 import MyAccountRow from "./my_account_table";
 import MyBossKillsRow from "./my_boss_kills_table";
+import MyDiscoveriesRow from "./my_discoveries_table";
 import MyEnemyKillsRow from "./my_enemy_kills_table";
 import MyFriendCharactersRow from "./my_friend_characters_table";
 import MyFriendsRow from "./my_friends_table";
@@ -163,6 +164,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyBossKillsRow),
+  myDiscoveries: __table({
+    name: 'my_discoveries',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyDiscoveriesRow),
   myEnemyKills: __table({
     name: 'my_enemy_kills',
     indexes: [
@@ -265,6 +273,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_account": Omit<typeof tablesSchema.schemaType.tables["myAccount"], "accessorName"> & { readonly accessorName: "my_account" };
     /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
     readonly "my_boss_kills": Omit<typeof tablesSchema.schemaType.tables["myBossKills"], "accessorName"> & { readonly accessorName: "my_boss_kills" };
+    /** @deprecated Use `myDiscoveries` instead. This alias will be removed in the next major version. */
+    readonly "my_discoveries": Omit<typeof tablesSchema.schemaType.tables["myDiscoveries"], "accessorName"> & { readonly accessorName: "my_discoveries" };
     /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
     readonly "my_enemy_kills": Omit<typeof tablesSchema.schemaType.tables["myEnemyKills"], "accessorName"> & { readonly accessorName: "my_enemy_kills" };
     /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
@@ -304,6 +314,7 @@ const tableAccessorAliases = {
   "inspected_loadout": "inspectedLoadout",
   "my_account": "myAccount",
   "my_boss_kills": "myBossKills",
+  "my_discoveries": "myDiscoveries",
   "my_enemy_kills": "myEnemyKills",
   "my_friend_characters": "myFriendCharacters",
   "my_friends": "myFriends",
@@ -342,6 +353,8 @@ export type DbView = __DbViewBase & {
   readonly "my_account": __DbViewBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
   readonly "my_boss_kills": __DbViewBase["myBossKills"];
+  /** @deprecated Use `myDiscoveries` instead. This alias will be removed in the next major version. */
+  readonly "my_discoveries": __DbViewBase["myDiscoveries"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
   readonly "my_enemy_kills": __DbViewBase["myEnemyKills"];
   /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
@@ -372,6 +385,8 @@ export type Tables = __TablesBase & {
   readonly "my_account": __TablesBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
   readonly "my_boss_kills": __TablesBase["myBossKills"];
+  /** @deprecated Use `myDiscoveries` instead. This alias will be removed in the next major version. */
+  readonly "my_discoveries": __TablesBase["myDiscoveries"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
   readonly "my_enemy_kills": __TablesBase["myEnemyKills"];
   /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */

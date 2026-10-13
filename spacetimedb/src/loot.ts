@@ -232,6 +232,14 @@ export interface DropResult {
   dust: bigint;
   /** Kept by the filter but salvaged for a full bag. */
   overflow: number;
+  /** Every drop, salvaged ones included (discovery). Drops salvaged unrolled only with `discoverRng`. */
+  seen: Seen[];
+}
+
+/** A drop's identity for discovery: its base, and its unique if it is one. */
+export interface Seen {
+  baseId: number;
+  uniqueId?: number;
 }
 
 export interface DropInput {
@@ -247,6 +255,11 @@ export interface DropInput {
   bagFree: number;
   /** Fortune's Favor: chance per kept drop to be raised one rarity (max Legendary). */
   fortune?: number;
+  /**
+   * Picks the bases of drops salvaged without rolling them, for `seen`. Its own
+   * generator, so discovery doesn't change the item rolls.
+   */
+  discoverRng?: Rng;
 }
 
 /**
@@ -264,13 +277,18 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
 
   const scale = d.kills * d.rewardScale * (1 + d.itemFind);
   const kept: NewItem[] = [];
+  const seen: Seen[] = [];
   const uniques = hasUniques(d.tier);
   for (const rarity of RARITIES) {
     if (rarity === 'Unique') {
       // Uniques drop from any enemy: every unique of the zone's tier and below. Always kept.
       if (!uniques) continue;
       const count = samplePoisson(rng, scale * DROP_CHANCE.Unique);
-      for (let i = 0; i < count; i++) kept.push(makeUnique(rng, pickUnique(rng, d.tier)!));
+      for (let i = 0; i < count; i++) {
+        const u = makeUnique(rng, pickUnique(rng, d.tier)!);
+        kept.push(u);
+        seen.push({ baseId: u.baseId, uniqueId: u.uniqueId });
+      }
       continue;
     }
     // With no unique to drop yet, the Unique chance rolls Legendary.
@@ -281,9 +299,11 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
     for (let i = 0; i < count; i++) {
       if (skip) {
         salvage(rarity);
+        if (d.discoverRng) seen.push({ baseId: pick(d.discoverRng, d.enemy.drops) });
         continue;
       }
       const item = makeItem(rng, pick(rng, d.enemy.drops), d.tier, rarity);
+      seen.push({ baseId: item.baseId });
       if (passesFilter(item, d.filter)) kept.push(item);
       else salvage(rarity);
     }
@@ -303,7 +323,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const room = Math.max(0, d.bagFree);
   const over = kept.splice(room);
   over.forEach(item => salvage(item.rarity.tag, item.tier));
-  return { kept, salvaged, dust, overflow: over.length };
+  return { kept, salvaged, dust, overflow: over.length, seen };
 }
 
 // ---------------------------------------------------------------- materials

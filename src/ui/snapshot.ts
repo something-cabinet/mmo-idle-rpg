@@ -5,6 +5,7 @@ import type { Character, Item, Loadout, LootFilter, SettleLog } from '../module_
 import { combatStats, matchup, type CombatStats, type Matchup } from '../../spacetimedb/src/combat';
 import { ENEMIES_BY_ID, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { simulate, type Simulated } from '../../spacetimedb/src/sim';
+import { foundKey } from './discovery';
 
 export interface Snapshot {
   conn: DbConnection;
@@ -32,6 +33,8 @@ export interface Snapshot {
   killedZones: Set<number>;
   /** Enemy ID → lifetime kills, online and offline, including `pending`. */
   kills: Map<number, number>;
+  /** Bases and uniques seen dropping (`foundKey`); others show as ??? (discovery.ts). */
+  found: Set<string>;
   /** Newest first. */
   logs: SettleLog[];
   /** Undefined when idle, including after a defeat the server hasn't recorded yet. */
@@ -84,6 +87,7 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     filter: [...conn.db.myLootFilter.iter()][0],
     killedZones,
     kills,
+    found: new Set([...conn.db.myDiscoveries.iter()].map(d => foundKey(d.baseId, d.tier, d.uniqueId))),
     logs: [...conn.db.mySettleLog.iter()].sort((a, b) => (a.id < b.id ? 1 : -1)),
     target,
     defeated,

@@ -12,6 +12,7 @@ import { Icon } from '../Icon';
 import { affixLabel, itemIconName, statText } from '../items';
 import { CardHead, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
+import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
 
 const KIND_TITLE: Record<BaseKind, string> = { weapon: 'Weapons', offhand: 'Off-hands', armor: 'Armor', jewelry: 'Jewelry' };
 const SLOT_LABEL: Record<string, string> = { MainHand: 'Main hand', OffHand: 'Off-hand', Ring1: 'Ring', Ring2: 'Ring' };
@@ -20,10 +21,20 @@ const slotText = (b: BaseDef) => [...new Set(b.slots.map(s => SLOT_LABEL[s] ?? s
 /** A base's implicit lines at tier `t`. */
 const implicitLines = (b: BaseDef, t: number) => b.implicits.map(imp => statText(imp.stat, toStored(implicitValue(imp, t))));
 
+/** A base's name at `tier`, or ??? until it has dropped for the player. */
+function BaseName({ b, tier, found }: { b: BaseDef; tier: number; found: boolean }) {
+  return (
+    <td className="name">
+      <Icon name={itemIconName({ baseId: b.id })} />
+      {found ? b.name(tier) : <span className="muted" title="Not found yet: see it drop to learn its name">{UNKNOWN}</span>}
+    </td>
+  );
+}
+
 const damageText = (w: WeaponValues) => `${fmt(w.hit)} ${w.damageType === 'Physical' ? 'phys' : 'magic'}`;
 const healText = (w: WeaponValues) => (w.heal > 0 ? `${fmt(w.heal)}${w.healTarget === 'All' ? ' (all)' : ''}` : '');
 
-function WeaponTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
+function WeaponTable({ bases, tier, found }: { bases: BaseDef[]; tier: number; found: (b: BaseDef) => boolean }) {
   return (
     <div className="table-wrap">
       <table className="table">
@@ -38,7 +49,7 @@ function WeaponTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
             const w = weaponValues(b.weapon!, tier);
             return (
               <tr key={b.id}>
-                <td className="name"><Icon name={itemIconName({ baseId: b.id })} />{b.name(tier)}</td>
+                <BaseName b={b} tier={tier} found={found(b)} />
                 <td>{w.twoHanded ? '2H' : '1H'}{w.ranged ? ' ranged' : ''}</td>
                 <td className="num">{damageText(w)}</td>
                 <td className="num">{w.speed}/s</td>
@@ -55,7 +66,7 @@ function WeaponTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
   );
 }
 
-function BaseTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
+function BaseTable({ bases, tier, found }: { bases: BaseDef[]; tier: number; found: (b: BaseDef) => boolean }) {
   return (
     <div className="table-wrap">
       <table className="table">
@@ -65,7 +76,7 @@ function BaseTable({ bases, tier }: { bases: BaseDef[]; tier: number }) {
         <tbody>
           {bases.map(b => (
             <tr key={b.id}>
-              <td className="name"><Icon name={itemIconName({ baseId: b.id })} />{b.name(tier)}</td>
+              <BaseName b={b} tier={tier} found={found(b)} />
               <td>{b.family.split(' · ')[0]}</td>
               <td>{slotText(b)}</td>
               <td className="muted">{implicitLines(b, tier).join(' · ')}</td>
@@ -149,6 +160,24 @@ function rangeText(stat: UniqueDef['stats'][number], tier: number): string {
   return `+${num(lo)}–${num(hi)}${d.percent ? '%' : ''} ${d.name}`;
 }
 
+/** An undiscovered unique: only its tier and base are known. */
+function UnknownUniqueCard({ u }: { u: UniqueDef }) {
+  const b = BASE_LIST.find(x => x.id === u.baseId)!;
+  return (
+    <div className="item-card r-unique unknown">
+      <div className="item-head">
+        <span className="item-name">{UNKNOWN}</span>
+        <span className="badge r-unique">T{u.tier}</span>
+      </div>
+      <div className="item-sub">
+        <span>Unique</span>
+        <span>{b.family.split(' · ')[0]}</span>
+      </div>
+      <p className="muted">Not found yet. Its name, effects and stats are revealed when one drops for you.</p>
+    </div>
+  );
+}
+
 function UniqueCard({ u }: { u: UniqueDef }) {
   const b = BASE_LIST.find(x => x.id === u.baseId)!;
   const w = b.weapon && weaponValues(b.weapon, u.tier);
@@ -191,6 +220,9 @@ export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot })
   const [tab, setTab] = useSticky<'bases' | 'affixes' | 'uniques'>('indexTab', 'bases');
   const [tier, setTier] = useSticky('indexTier', s.target?.zone.tier ?? 1);
   const uniques = [...UNIQUES].sort((a, b) => a.tier - b.tier || a.id - b.id);
+  const uniquesFound = uniques.filter(u => uniqueFound(s, u)).length;
+  const found = (b: BaseDef) => baseFound(s, b.id, tier);
+  const basesFound = BASE_LIST.filter(found).length;
 
   return (
     <>
@@ -229,14 +261,14 @@ export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot })
                 <button key={t} className={`seg-btn${t === tier ? ' active' : ''}`} onClick={() => setTier(t)}>T{t}</button>
               ))}
             </div>
-            <span className="muted">Base stats only: affixes roll on top (Magic and up).</span>
+            <span className="muted">Found {basesFound}/{BASE_LIST.length} at T{tier}. Base stats only: affixes roll on top (Magic and up).</span>
           </div>
           {(Object.keys(KIND_TITLE) as BaseKind[]).map(kind => {
             const bases = BASE_LIST.filter(b => b.kind === kind);
             return (
               <div className="card" key={kind}>
                 <CardHead title={KIND_TITLE[kind]} />
-                {kind === 'weapon' ? <WeaponTable bases={bases} tier={tier} /> : <BaseTable bases={bases} tier={tier} />}
+                {kind === 'weapon' ? <WeaponTable bases={bases} tier={tier} found={found} /> : <BaseTable bases={bases} tier={tier} found={found} />}
               </div>
             );
           })}
@@ -245,10 +277,10 @@ export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot })
         <>
           <p className="muted">
             Uniques drop from any enemy in a zone of their tier or higher, and are always kept. Each stat rolls in the range
-            shown; effects with a cost apply once however many items carry them.
+            shown; effects with a cost apply once however many items carry them. Found {uniquesFound}/{uniques.length}.
           </p>
           <div className="index-uniques">
-            {uniques.map(u => <UniqueCard key={u.id} u={u} />)}
+            {uniques.map(u => (uniqueFound(s, u) ? <UniqueCard key={u.id} u={u} /> : <UnknownUniqueCard key={u.id} u={u} />))}
           </div>
         </>
       )}

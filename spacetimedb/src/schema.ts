@@ -136,6 +136,14 @@ export const item = table(
   }
 );
 
+/** A base at one tier, or a unique (uniqueId ≠ 0): one discovery. */
+export const Found = t.object('Found', {
+  baseId: t.u16(),
+  tier: t.u8(),
+  /** 0 for a plain base. */
+  uniqueId: t.u16(),
+});
+
 /** A count of one material (data/materials.ts). */
 export const MaterialCount = t.object('MaterialCount', {
   materialId: t.u16(),
@@ -216,6 +224,23 @@ export const enemyKill = table(
 );
 
 /**
+ * A base (at one tier) or unique a character has seen drop, salvaged drops included:
+ * the client shows undiscovered ones as ???. One row per first sighting. Private;
+ * owners read theirs via `my_discoveries`.
+ */
+export const discovery = table(
+  { name: 'discovery' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    baseId: t.u16(),
+    tier: t.u8(),
+    /** 0 for a plain base. */
+    uniqueId: t.u16(),
+  }
+);
+
+/**
  * What one settle granted, for the loot log and the away report. Written for every
  * settle with kills and for every login (`offline`); the newest SETTLE_LOG_KEEP per
  * character are kept. Private; owners read theirs via `my_settle_log`.
@@ -255,6 +280,8 @@ export const settleLog = table(
     materials: t.array(MaterialCount).default([]),
     /** Dust gained (was `essence`). */
     dust: t.u64().default(0n),
+    /** Bases and uniques this settle's drops showed for the first time (discovery). */
+    discovered: t.array(Found).default([]),
   }
 );
 
@@ -280,6 +307,16 @@ export const presence = table(
     characterId: t.u64().unique(),
     characterName: t.string(),
     since: t.timestamp(),
+    /** Deprecated: replaced by `chat_cooldown` (writing it re-sent the row to every client). Drop on the next wipe. */
+    lastChatAt: t.timestamp(),
+  }
+);
+
+/** When each player in the world last chatted, for the cooldown. Private, unlike `presence`. */
+export const chatCooldown = table(
+  { name: 'chat_cooldown' },
+  {
+    identity: t.identity().primaryKey(),
     lastChatAt: t.timestamp(),
   }
 );
@@ -337,12 +374,14 @@ export const spacetimedb = schema({
   friend,
   linkOffer,
   chatMessage,
+  chatCooldown,
   item,
   material,
   loadout,
   lootFilter,
   bossKill,
   enemyKill,
+  discovery,
   settleLog,
   settleTimer,
 });

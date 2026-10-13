@@ -65,6 +65,7 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
       tables.myLootFilter,
       tables.myBossKills,
       tables.myEnemyKills,
+      tables.myDiscoveries,
       tables.mySettleLog,
       tables.inspectedCharacter,
       tables.inspectedLoadout,
@@ -76,9 +77,9 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
 
 /** Calls `onChange` on any change to subscribed rows. */
 export function watchAll(conn: DbConnection, onChange: () => void) {
-  const { myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, mySettleLog } = conn.db;
+  const { myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog } = conn.db;
   const { inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters } = conn.db;
-  for (const table of [myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, mySettleLog,
+  for (const table of [myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog,
     inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters]) {
     table.onInsert(onChange);
     table.onDelete(onChange);

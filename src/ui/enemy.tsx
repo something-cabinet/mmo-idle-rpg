@@ -11,6 +11,7 @@ import { Icon } from './Icon';
 import { itemIconName, materialIconName, materialName, rarityCls } from './items';
 import { StatRows } from './shared';
 import type { Snapshot } from './snapshot';
+import { UNKNOWN, baseFound, uniqueFound } from './discovery';
 
 export const DmgTag = ({ magic }: { magic: boolean }) => <span className={`tag ${magic ? 'magic' : 'phys'}`}>{magic ? 'Magic' : 'Phys'}</span>;
 
@@ -78,6 +79,7 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
   }));
   const anyItem = rarities.reduce((sum, x) => sum + x.mean, 0);
   const baseItems = anyItem - (uniques ? scale * DROP_CHANCE.Unique : 0);
+  const foundCount = e.drops.filter(d => baseFound(s, d, z.tier)).length;
   return (
     <>
       <div className="drop-group">
@@ -108,17 +110,17 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
         </ul>
       </div>
       <div className="drop-group">
-        <h4>Items</h4>
+        <h4>Items <span className="muted" title="Found by seeing them drop, salvaged drops included">{foundCount}/{e.drops.length} found</span></h4>
         <ul className="drop-list">
           {e.drops.map(d => (
             <li key={d}>
               <Icon name={itemIconName({ baseId: d })} />
-              <span>{base(d).name(z.tier)}</span>
+              {baseFound(s, d, z.tier) ? <span>{base(d).name(z.tier)}</span> : <span className="muted" title={`An undiscovered ${base(d).family.toLowerCase()}`}>{UNKNOWN}</span>}
               <span className="num muted">{chanceText(atLeastOne(baseItems / e.drops.length))}</span>
             </li>
           ))}
           {uniques && (
-            <li title={uniquePool.map(u => `${u.name} (T${u.tier})`).join('\n')}>
+            <li title={uniquePool.map(u => `${uniqueFound(s, u) ? u.name : UNKNOWN} (T${u.tier})`).join('\n')}>
               <Icon name="sparkles" className="c-unique" />
               <span>Any of {uniquePool.length} uniques</span>
               <span className="num muted">{chanceText(atLeastOne(scale * DROP_CHANCE.Unique))}</span>

@@ -13,8 +13,8 @@ export const ONLINE_SETTLE_MICROS = 60n * 1_000_000n;
 
 export const MAX_CHAT_LENGTH = 200;
 export const CHAT_COOLDOWN_MICROS = 1_000_000n;
-/** Only the newest N chat messages are kept. */
-export const CHAT_HISTORY = 200n;
+/** Only the newest N chat messages are kept (the client shows 50; every joining client downloads all of them). */
+export const CHAT_HISTORY = 50n;
 /** A guest's offer to merge into a logged-in account expires after this. */
 export const LINK_OFFER_TTL_MICROS = 10n * 60n * 1_000_000n;
 

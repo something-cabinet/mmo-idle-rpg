@@ -36,11 +36,20 @@ export function stopFight() {
 
 /**
  * Animates `first`, then each following fight from `next(now)` (a fresh projection
- * once the current fight is over; undefined when idle or defeated).
+ * once the current fight is over; undefined when idle or defeated). `caption` gives
+ * each fight's flavour line, shown from its walk until the next fight.
  */
-export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFight | undefined) {
+export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFight | undefined, caption?: (c: CurrentFight) => string | undefined) {
   stopFight();
   let cur = first;
+  const showCaption = () => {
+    const el = $('scene-flavor');
+    el.textContent = caption?.(cur) ?? '';
+    // Restart the fade-in for the new line.
+    el.classList.remove('in');
+    void el.offsetWidth;
+    el.classList.add('in');
+  };
   /** Seconds into `cur` at the previous frame, to spot new events. */
   let lastT = -1;
 
@@ -115,11 +124,13 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
       if (n && n.startMicros > cur.startMicros) {
         cur = n;
         lastT = -1;
+        showCaption();
         draw(cur, now);
       }
     }
   }
 
+  showCaption();
   step();
   timer = window.setInterval(step, 50);
 }

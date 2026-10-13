@@ -2,13 +2,13 @@
 // may only export reducers/views.
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
-import { account, character, item, presence, settleLog, spacetimedb } from './schema';
+import { Found as FoundType, account, character, item, presence, settleLog, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, offlineCapMicros, project } from './game';
 import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
 import { Effect, effectAmount } from './data/legendary';
 import { combatStats, matchup } from './combat';
-import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, seededRng, type DropResult, type MaterialDrop } from './loot';
+import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
 import { simulate } from './sim';
 
 /** Settle log rows kept per character. */
@@ -20,6 +20,7 @@ export type Character = Infer<typeof character.rowType>;
 export type Presence = Infer<typeof presence.rowType>;
 export type Item = Infer<typeof item.rowType>;
 export type SettleLog = Infer<typeof settleLog.rowType>;
+export type Found = Infer<typeof FoundType>;
 
 /** The caller's account; throws if missing or banned. */
 export function requireAccount(ctx: Ctx): Account {
@@ -89,6 +90,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   let dust = dustBefore;
   let drops: DropResult | undefined;
   const keptItemIds: bigint[] = [];
+  const discovered: Found[] = [];
   let materials: MaterialDrop[] = [];
   if (target && p.kills > 0) {
     const filter = ctx.db.lootFilter.characterId.find(ch.id);
@@ -108,7 +110,9 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       },
       bagFree: ch.bagSize - bagCount(ctx, ch.id),
       fortune: effectAmount(stats.effects, Effect.FortunesFavor),
+      discoverRng: seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, DISCOVER_SALT),
     });
+    discovered.push(...discover(ctx, ch.id, target.zone.tier, drops.seen));
     for (const it of drops.kept) {
       const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp });
       keptItemIds.push(row.id);
@@ -126,6 +130,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     // The guaranteed item ignores the bag limit (it only limits drops).
     const row = ctx.db.item.insert({ ...reward.item, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp });
     keptItemIds.push(row.id);
+    discovered.push(...discover(ctx, ch.id, target.zone.tier, [{ baseId: reward.item.baseId }]));
     ctx.db.bossKill.insert({ id: 0n, characterId: ch.id, zoneId: target.zone.id, killedAt: ctx.timestamp });
     gold += reward.gold;
   }
@@ -149,6 +154,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       salvaged: RARITIES.map(r => drops?.salvaged[r] ?? 0),
       overflow: drops?.overflow ?? 0,
       materials,
+      discovered,
       defeated: p.defeatedAt !== undefined,
       idleMicros: idle > 0n ? idle : 0n,
     });
@@ -190,6 +196,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     defeated: false,
     idleMicros: 0n,
     materials: [],
+    discovered: [],
     ...row,
   });
   pruneSettleLog(ctx, ch.id);
@@ -239,6 +246,13 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
       minAffixTier: 1,
     });
   }
+  // Characters from before discovery: what they own counts as found.
+  if (ctx.db.discovery.characterId.filter(characterId).next().done) {
+    const byTier = new Map<number, Seen[]>();
+    for (const it of ctx.db.item.characterId.filter(characterId))
+      byTier.set(it.tier, [...(byTier.get(it.tier) ?? []), { baseId: it.baseId, uniqueId: it.uniqueId }]);
+    for (const [tier, seen] of byTier) discover(ctx, characterId, tier, seen);
+  }
 }
 
 /**
@@ -276,6 +290,24 @@ export const MAX_FRIENDS = 100;
 
 /** Mixed into material roll seeds, so they never reuse an item roll's seed. */
 const MATERIAL_SALT = 0x6d6174n; // "mat"
+const DISCOVER_SALT = 0x6469736376n; // "discv"
+
+/** Records the drops (of `tier`) the character sees for the first time (discovery table) and returns them. */
+export function discover(ctx: Ctx, characterId: bigint, tier: number, seen: readonly Seen[]): Found[] {
+  const found: Found[] = [];
+  if (!seen.length) return found;
+  const key = (baseId: number, t: number, uniqueId: number) => `${baseId}:${t}:${uniqueId}`;
+  const have = new Set([...ctx.db.discovery.characterId.filter(characterId)].map(d => key(d.baseId, d.tier, d.uniqueId)));
+  for (const s of seen) {
+    const k = key(s.baseId, tier, s.uniqueId ?? 0);
+    if (have.has(k)) continue;
+    have.add(k);
+    const f = { baseId: s.baseId, tier, uniqueId: s.uniqueId ?? 0 };
+    ctx.db.discovery.insert({ id: 0n, characterId, ...f });
+    found.push(f);
+  }
+  return found;
+}
 
 /** Adds dropped materials to `characterId`'s stock. */
 export function addMaterials(ctx: Ctx, characterId: bigint, drops: readonly MaterialDrop[]) {
@@ -301,6 +333,7 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.enemyKill.characterId.delete(characterId);
   ctx.db.material.characterId.delete(characterId);
   ctx.db.settleLog.characterId.delete(characterId);
+  ctx.db.discovery.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);
   ctx.db.friend.characterId.delete(characterId);
   ctx.db.friend.friendId.delete(characterId);
@@ -337,5 +370,6 @@ export function leaveWorld(ctx: Ctx, who: Identity) {
   const ch = ctx.db.character.id.find(pres.characterId);
   if (ch) ctx.db.character.id.update(settle(ctx, ch));
   ctx.db.presence.identity.delete(who);
+  ctx.db.chatCooldown.identity.delete(who);
   ctx.db.inspect.viewer.delete(who);
 }

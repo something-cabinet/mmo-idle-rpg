@@ -7,6 +7,8 @@ import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
 import { materialsText, rarityCls } from './items';
+import { Icon } from './Icon';
+import { foundName } from './discovery';
 import { CardHead, Modal } from './shared';
 import type { Snapshot } from './snapshot';
 
@@ -59,6 +61,9 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
           {log.gold > 0n && log.dust > 0n && ' · '}
           {log.dust > 0n && <span className="c-dust">+{fmtBig(log.dust)} Dust</span>}
         </p>
+      )}
+      {log.discovered.length > 0 && (
+        <p className="discovery"><Icon name="sparkles" />New discoveries: {log.discovered.map(foundName).join(', ')}</p>
       )}
       {log.materials.length > 0 && <p>Materials: <span className="c-material">{materialsText(log.materials)}</span></p>}
       {kept.length > 0 && (

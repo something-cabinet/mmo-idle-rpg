@@ -860,6 +860,27 @@ select:focus,
   from { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
   to { opacity: 0; transform: translate(-50%, -36px) scale(1); }
 }
+.scene-flavor {
+  position: absolute;
+  top: 6px;
+  left: 16px;
+  right: 16px;
+  text-align: center;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--muted);
+  opacity: 0;
+}
+.scene-flavor.in {
+  animation: flavor-in 0.8s ease-out forwards;
+}
+@keyframes flavor-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-flavor.in { animation: none; opacity: 1; }
+}
 .scene-status {
   position: absolute;
   bottom: 8px;
@@ -1008,6 +1029,17 @@ select:focus,
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+.discovered { margin-top: 4px; font-size: 12px; }
+.discovery { color: var(--gold); }
+.item-card.unknown { opacity: 0.6; }
+.discovery .ico { margin-right: 4px; }
+.unknown-threat {
+  margin-left: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .drop-group h4 {
   margin: 0 0 4px;

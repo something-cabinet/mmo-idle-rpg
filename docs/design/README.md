@@ -30,6 +30,8 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-13 | Discovery, for a sense of exploration: enemies show as ??? (level and a threat read visible, still fightable) until killed or targeted; bosses stay named. In an enemy's drop list, items (per base and tier) show as ??? until one drops for the character, salvaged drops included, and the Item Index shows them (and uniques) as ??? too, so players find out who drops what and slowly fill out the index. Recorded in a private `discovery` table inside the settle (one row per first sighting, no extra reducer calls); existing characters are backfilled from their bag. Each settle's new finds are listed in its settle log (`discovered`) and shown as "New discovery" in the loot log and away report. Zones show "Discovered: enemies x/y · items x/y". |
+| 2026-10-13 | Flavour text: a line per walk between fights, per zone, picked client-side from a seed (character, fight start). No server cost. |
 | 2026-10-13 | Essence renamed to Dust (the word "Essence" is reserved for a future item or material). Stored in new `dust` columns; the old `essence` columns stay until the next wipe, and each settle moves what is left in `character.essence` into `dust`. |
 | 2026-10-13 | Drop chances × 1.5 across the board (Common 6.75% … Legendary 0.0225%), and Unique a further × 5 (7.5× overall, 0.0225%, ~1.3 a day), so uniques are as common as legendaries. Tuned via `DROP_RATE_MULT` and `UNIQUE_RATE_MULT`. |
 | 2026-10-13 | Rerolls cost half (`REROLL_COST_MULT` 0.5): Magic 0.125 h, Rare 0.25 h, Epic 0.5 h, Legendary 1 h of farming. Upgrade costs unchanged. |

@@ -167,6 +167,14 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('drops are reproducible from the seed', JSON.stringify(again, (_k, v) => typeof v === 'bigint' ? String(v) : v) ===
     JSON.stringify(runs[5], (_k, v) => typeof v === 'bigint' ? String(v) : v));
 
+  // Discovery: `seen` lists every drop, salvaged ones included, without changing the rolls.
+  const seenRun = rollDrops(seededRng(5n), session({ kills, discoverRng: seededRng(5n, 1n) }));
+  check('discovery doesn\'t change the item rolls', JSON.stringify(seenRun.kept, (_k, v) => typeof v === 'bigint' ? String(v) : v) ===
+    JSON.stringify(runs[5].kept, (_k, v) => typeof v === 'bigint' ? String(v) : v));
+  check('seen: one entry per drop, from the enemy\'s bases or a unique', seenRun.seen.length === total(seenRun) &&
+    seenRun.seen.every(x => x.uniqueId !== undefined || wisp.enemy.drops.includes(x.baseId)), `${seenRun.seen.length} seen`);
+  check('seen without discoverRng skips drops salvaged unrolled', runs[5].seen.length === total(runs[5]) - runs[5].salvaged.Common - runs[5].salvaged.Magic);
+
   const found = mean(Array.from({ length: 200 }, (_, i) => total(rollDrops(seededRng(BigInt(i)), session({ kills, itemFind: 1 })))));
   check('+100% item find doubles drops', near(found, expDrops * 2, expDrops * 0.1), found.toFixed(1));
   const rats = mean(Array.from({ length: 200 }, (_, i) => total(rollDrops(seededRng(BigInt(i)), session({ kills, rewardScale: 0.35 })))));

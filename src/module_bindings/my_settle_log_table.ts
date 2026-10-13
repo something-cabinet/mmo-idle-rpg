@@ -11,6 +11,7 @@ import {
 } from "spacetimedb";
 import {
   MaterialCount,
+  Found,
 } from "./types";
 
 
@@ -38,4 +39,7 @@ export default __t.row({
     return __t.array(MaterialCount);
   },
   dust: __t.u64(),
+  get discovered() {
+    return __t.array(Found);
+  },
 });

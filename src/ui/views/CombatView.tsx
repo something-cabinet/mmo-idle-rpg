@@ -8,6 +8,8 @@ import { RARITIES, restrictsAffixes, restrictsBases } from '../../../spacetimedb
 import { nowMicros } from '../clock';
 import { DmgTag, EnemyDetail } from '../enemy';
 import { startFight, stopFight } from '../fight';
+import { walkLine } from '../flavor';
+import { foundName } from '../discovery';
 import { duration, fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { itemName, materialsText, rarityCls } from '../items';
@@ -17,6 +19,14 @@ import { snapshot, type Snapshot } from '../snapshot';
 function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?: number }) {
   const lines: React.ReactNode[] = [];
   for (const log of logs) {
+    if (log.discovered.length) {
+      lines.push(
+        <li key={`d${log.id}`} className="discovery">
+          <span><Icon name="sparkles" />New discovery: {log.discovered.map(foundName).join(', ')}</span>
+          <span className="muted">found</span>
+        </li>
+      );
+    }
     for (const id of log.keptItemIds) {
       const it = s.items.get(id);
       if (!it) continue;
@@ -110,7 +120,7 @@ function keepLabel(s: Snapshot) {
  */
 const FightScene = memo(
   function FightScene({ s }: { s: Snapshot }) {
-    const { enemy: e } = s.target!;
+    const { zone, enemy: e } = s.target!;
     useEffect(() => {
       // Each fight comes from a fresh projection, so it uses the latest row and gear.
       const fresh = (now: bigint) => {
@@ -122,7 +132,7 @@ const FightScene = memo(
       let retry = 0;
       const begin = () => {
         const first = s.current ?? fresh(nowMicros());
-        if (first) startFight(first, fresh);
+        if (first) startFight(first, fresh, c => walkLine(zone.id, s.row.id, c.startMicros));
         else retry = window.setTimeout(begin, 100);
       };
       begin();
@@ -150,6 +160,7 @@ const FightScene = memo(
         {fighter('you', <Icon name="user" />, <>{s.row.name} <span className="muted">Lv {s.level}</span></>)}
         <div className="versus">VS</div>
         {fighter('enemy', <Icon name={e.boss ? 'skull' : 'swords'} />, <>{e.name} <span className="muted">Lv {e.level}</span></>)}
+        <div className="scene-flavor" id="scene-flavor" />
         <div className="scene-status" id="scene-status" />
       </div>
     );

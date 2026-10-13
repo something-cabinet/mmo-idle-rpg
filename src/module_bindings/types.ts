@@ -66,6 +66,12 @@ export const Character = __t.object("Character", {
 });
 export type Character = __Infer<typeof Character>;
 
+export const ChatCooldown = __t.object("ChatCooldown", {
+  identity: __t.identity(),
+  lastChatAt: __t.timestamp(),
+});
+export type ChatCooldown = __Infer<typeof ChatCooldown>;
+
 export const ChatMessage = __t.object("ChatMessage", {
   id: __t.u64(),
   sender: __t.identity(),
@@ -82,6 +88,15 @@ export const DamageType = __t.enum("DamageType", {
 });
 export type DamageType = __Infer<typeof DamageType>;
 
+export const Discovery = __t.object("Discovery", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  baseId: __t.u16(),
+  tier: __t.u8(),
+  uniqueId: __t.u16(),
+});
+export type Discovery = __Infer<typeof Discovery>;
+
 export const EnemyKill = __t.object("EnemyKill", {
   id: __t.u64(),
   characterId: __t.u64(),
@@ -97,6 +112,13 @@ export const EquipProfile = __t.enum("EquipProfile", {
   Loot: __t.unit(),
 });
 export type EquipProfile = __Infer<typeof EquipProfile>;
+
+export const Found = __t.object("Found", {
+  baseId: __t.u16(),
+  tier: __t.u8(),
+  uniqueId: __t.u16(),
+});
+export type Found = __Infer<typeof Found>;
 
 export const Friend = __t.object("Friend", {
   id: __t.u64(),
@@ -212,6 +234,9 @@ export type MyAccount = __Infer<typeof MyAccount>;
 export const MyBossKills = __t.object("MyBossKills", {});
 export type MyBossKills = __Infer<typeof MyBossKills>;
 
+export const MyDiscoveries = __t.object("MyDiscoveries", {});
+export type MyDiscoveries = __Infer<typeof MyDiscoveries>;
+
 export const MyEnemyKills = __t.object("MyEnemyKills", {});
 export type MyEnemyKills = __Infer<typeof MyEnemyKills>;
 
@@ -288,6 +313,9 @@ export const SettleLog = __t.object("SettleLog", {
     return __t.array(MaterialCount);
   },
   dust: __t.u64(),
+  get discovered() {
+    return __t.array(Found);
+  },
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

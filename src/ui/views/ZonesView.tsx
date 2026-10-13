@@ -69,7 +69,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
       <div className="card">
         <div className="zone-head">
           <div>
-            <h2>{z.name} <span className="muted">{levels(z.enemies)}</span></h2>
+            <h2>{z.name} <span className="muted">{levels(z.enemies.filter(e => !e.secret))}</span></h2>
             <p className="muted">{z.blurb}</p>
           </div>
           {!unlocked && (

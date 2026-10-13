@@ -48,12 +48,15 @@ of kills of one of the zone's regular enemies.
 - The server enforces it: `setTarget` answers "No such enemy" for a secret enemy until
   its area is found, so the secret doesn't leak. Derived from `enemy_kill`; no new table.
 - A secret enemy (`secret: true`) stays out of the zone's base deal (every base from
-  exactly one regular enemy) and its discovery counts until found. It can have its own
-  unique (uniques.md, "Enemy-bound uniques").
+  exactly one regular enemy), the zone's level range, and its discovery counts until
+  found. It can have its own unique (uniques.md, "Enemy-bound uniques").
+- A secret enemy can be much stronger than its zone (the Bellringer is T2 strength in
+  T1), paid for with higher XP and gold, which raise its drop rate too, and an optional
+  `rareDropMult` on Rare and better drops (Unique included).
 
 | Zone | Secret area | Found by | Hint | Enemy | Unique |
 |---|---|---|---|---|---|
-| Greenhollow | Sunken Chapel | 1,000 Bog Wisp kills (≈ 4 h on Wisps) | 500 | Drowned Bellringer (Lv 12, Magic, Armored) | The Drowned Hymnal |
+| Greenhollow | Sunken Chapel | 1,000 Bog Wisp kills (≈ 4 h on Wisps) | 500 | Drowned Bellringer (Lv 22, T2 strength, Magic, Armored) | The Drowned Hymnal |
 
 ## Enemy level
 

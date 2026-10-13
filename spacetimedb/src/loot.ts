@@ -157,6 +157,10 @@ export function makeUnique(rng: Rng, u: UniqueDef): NewItem {
   };
 }
 
+/** Per-kill chance of a `rarity` drop from `enemy` before `rewardScale` and item find: Rare and better × its `rareDropMult`. */
+export const dropChance = (rarity: RarityName, enemy: EnemyDef) =>
+  DROP_CHANCE[rarity] * (rarityRank(rarity) >= rarityRank('Rare') ? (enemy.rareDropMult ?? 1) : 1);
+
 /** A unique that `enemyId` can drop in a tier-`zoneTier` zone (data/uniques.ts `uniquePool`); undefined if none. */
 export function pickUnique(rng: Rng, zoneTier: number, enemyId?: number): UniqueDef | undefined {
   const pool = uniquePool(zoneTier, enemyId);
@@ -283,7 +287,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
     if (rarity === 'Unique') {
       // Uniques drop from any enemy: every unique of the zone's tier and below, or the enemy's own. Always kept.
       if (!uniques) continue;
-      const count = samplePoisson(rng, scale * DROP_CHANCE.Unique);
+      const count = samplePoisson(rng, scale * dropChance('Unique', d.enemy));
       for (let i = 0; i < count; i++) {
         const u = makeUnique(rng, pickUnique(rng, d.tier, d.enemy.id)!);
         kept.push(u);
@@ -292,7 +296,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
       continue;
     }
     // With no unique to drop yet, the Unique chance rolls Legendary.
-    const chance = DROP_CHANCE[rarity] + (rarity === 'Legendary' && !uniques ? DROP_CHANCE.Unique : 0);
+    const chance = dropChance(rarity, d.enemy) + (rarity === 'Legendary' && !uniques ? dropChance('Unique', d.enemy) : 0);
     const count = samplePoisson(rng, scale * chance);
     // Drops below the threshold are salvaged without rolling them.
     const skip = rarityRank(rarity) < rarityRank(d.filter.minRarity);

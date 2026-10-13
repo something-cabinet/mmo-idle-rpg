@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
-import { DROP_CHANCE, rewardScale, type Defense, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
+import { rewardScale, type Defense, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { uniquePool } from '../../spacetimedb/src/data/uniques';
-import { RARITIES, hasUniques, materialMeans } from '../../spacetimedb/src/loot';
+import { RARITIES, dropChance, hasUniques, materialMeans } from '../../spacetimedb/src/loot';
 import { fmt, pct } from './format';
 import { Icon } from './Icon';
 import { itemIconName, materialIconName, materialName, rarityCls } from './items';
@@ -93,10 +93,10 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
   const own = pool.length === 1 && pool[0].enemyId === e.id ? pool[0] : undefined;
   const rarities = RARITIES.filter(r => r !== 'Unique' || uniques).map(r => ({
     r,
-    mean: scale * (DROP_CHANCE[r] + (r === 'Legendary' && !uniques ? DROP_CHANCE.Unique : 0)),
+    mean: scale * (dropChance(r, e) + (r === 'Legendary' && !uniques ? dropChance('Unique', e) : 0)),
   }));
   const anyItem = rarities.reduce((sum, x) => sum + x.mean, 0);
-  const baseItems = anyItem - (uniques ? scale * DROP_CHANCE.Unique : 0);
+  const baseItems = anyItem - (uniques ? scale * dropChance('Unique', e) : 0);
   const foundCount = e.drops.filter(d => baseFound(s, d, z.tier)).length;
   return (
     <>
@@ -141,14 +141,14 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
             <li title="Drops only here, and is the only unique that does">
               <Icon name="sparkles" className="c-unique" />
               {uniqueFound(s, own) ? <span className="c-unique">{own.name}</span> : <span className="c-unique">{UNKNOWN} <span className="muted">(only drops here)</span></span>}
-              <span className="num muted">{chanceText(atLeastOne(scale * DROP_CHANCE.Unique))}</span>
+              <span className="num muted">{chanceText(atLeastOne(scale * dropChance('Unique', e)))}</span>
             </li>
           )}
           {uniques && !own && (
             <li title={pool.map(u => `${uniqueFound(s, u) ? u.name : UNKNOWN} (T${u.tier})`).join('\n')}>
               <Icon name="sparkles" className="c-unique" />
               <span>Any of {pool.length} uniques</span>
-              <span className="num muted">{chanceText(atLeastOne(scale * DROP_CHANCE.Unique))}</span>
+              <span className="num muted">{chanceText(atLeastOne(scale * dropChance('Unique', e)))}</span>
             </li>
           )}
         </ul>

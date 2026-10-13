@@ -28,6 +28,8 @@ export interface EnemyDef {
   boss?: boolean;
   /** Lives in a secret area (`AreaDef.secret`): fightable once that area is found. */
   secret?: boolean;
+  /** × the chance of Rare and better drops (Unique included), on top of `rewardScale`. Default 1. */
+  rareDropMult?: number;
 }
 
 /** An area on the zone's map (zones.md, "Zone map"). Every area can be fought in; it shows as ??? until visited. */
@@ -125,8 +127,10 @@ export const ZONES: ZoneDef[] = [
       { id: 104, name: 'Bog Wisp', level: 10, damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 80, dps: 16, armor: 10, resistance: 60, xp: 20, gold: 5, drops: T1_DROPS.wisp, materials: ['Core', 'Reagent'] },
       { id: 105, name: 'Goblin Brute', level: 13, damageType: 'Physical', defense: 'Armored', speed: 0.7, hp: 101, dps: 20.2, armor: 78, resistance: 13, xp: 28, gold: 7, drops: T1_DROPS.brute, materials: ['Metal', 'Gem'] },
       { id: 106, name: 'Grubnak, Goblin Chief', level: 15, damageType: 'Physical', defense: 'Balanced', speed: 0.9, hp: 138, dps: 27.4, armor: 37.5, resistance: 37.5, xp: 44, gold: 11, drops: all(T1_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
-      // Secret (Sunken Chapel): magic damage behind armor, a mix no other T1 enemy has.
-      { id: 107, name: 'Drowned Bellringer', level: 12, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 94, dps: 18.7, armor: 72, resistance: 12, xp: 30, gold: 8, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true },
+      // Secret (Sunken Chapel): a T2-strength enemy (Ironbark Treant's level, HP and DPS) hidden in T1,
+      // magic damage behind armor. Pays far above T1: XP and gold past a strong T2 enemy, so
+      // ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
+      { id: 107, name: 'Drowned Bellringer', level: 22, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 223, dps: 26.5, armor: 132, resistance: 22, xp: 90, gold: 24, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5 },
     ],
     areas: [
       { id: 11, name: 'Village Fields', blurb: 'Trampled wheat and gnawed fences just past the last houses.', enemies: [101, 102], x: 8, y: 90 },

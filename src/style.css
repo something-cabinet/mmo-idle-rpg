@@ -159,28 +159,44 @@ ul {
 .r-anomaly .item-name {
   display: inline-block;
   color: var(--r-anomaly);
-  animation: anomaly-glitch 3.7s infinite steps(1, end);
+  animation: anomaly-glitch 1.7s infinite steps(1, end);
 }
 @keyframes anomaly-glitch {
-  0%, 100% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; filter: none; }
-  30% { text-shadow: 0 0 10px color-mix(in srgb, var(--r-anomaly) 80%, transparent); filter: brightness(1.35); }
-  55% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); filter: none; }
-  86% { text-shadow: -2px 0 #ff2a6d, 2px 0 #05d9e8; transform: translateX(1px) skewX(-12deg); }
-  88% { text-shadow: 2px 0 #ff2a6d, -2px 0 #05d9e8; transform: translateX(-2px); opacity: 0.7; }
-  90% { text-shadow: -1px 1px #ff2a6d, 1px -1px #05d9e8; transform: translateX(1px) skewX(6deg); opacity: 1; }
-  92% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; }
-  95% { text-shadow: 3px 0 #05d9e8, -3px 0 #ff2a6d; transform: translateX(-1px) scaleY(0.9); }
-  96% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; }
+  0%, 100% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; opacity: 1; }
+  12% { text-shadow: -2px 0 #ff2a6d, 2px 0 #05d9e8; transform: translateX(1px) skewX(-12deg); }
+  15% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; }
+  38% { text-shadow: 0 0 10px color-mix(in srgb, var(--r-anomaly) 80%, transparent); }
+  47% { text-shadow: 2px 0 #ff2a6d, -2px 0 #05d9e8; transform: translateX(-2px); opacity: 0.7; }
+  49% { text-shadow: -1px 1px #ff2a6d, 1px -1px #05d9e8; transform: translateX(1px) skewX(8deg); opacity: 1; }
+  52% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; }
+  74% { text-shadow: 3px 0 #05d9e8, -3px 0 #ff2a6d; transform: translateX(-1px) scaleY(0.9); }
+  76% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; }
+  88% { text-shadow: -3px 0 #ff2a6d, 3px 0 #05d9e8; transform: translateX(2px) skewX(14deg); opacity: 0.6; }
+  90% { text-shadow: 0 0 6px color-mix(in srgb, var(--r-anomaly) 55%, transparent); transform: none; opacity: 1; }
 }
-@keyframes anomaly-shimmer {
-  0%, 100% { box-shadow: 0 0 6px color-mix(in srgb, var(--rc) 25%, transparent), var(--shadow); }
-  50% { box-shadow: 0 0 14px color-mix(in srgb, var(--rc) 55%, transparent), var(--shadow); }
+/* Cards and bag tiles don't glow: they tear now and then, in red and cyan. */
+@keyframes anomaly-tear {
+  0%, 100% { box-shadow: var(--shadow); transform: none; }
+  22% { box-shadow: -3px 0 0 #ff2a6d, 3px 0 0 #05d9e8, var(--shadow); transform: translateX(1px); }
+  24% { box-shadow: 2px 1px 0 #ff2a6d, -2px -1px 0 #05d9e8, var(--shadow); transform: translateX(-2px) skewX(-3deg); }
+  26% { box-shadow: var(--shadow); transform: none; }
+  61% { box-shadow: 3px 0 0 #05d9e8, -3px 0 0 #ff2a6d, var(--shadow); transform: translateX(-1px); }
+  63% { box-shadow: var(--shadow); transform: none; }
+}
+@keyframes anomaly-tear-ico {
+  0%, 100% { filter: none; transform: none; }
+  22% { filter: drop-shadow(-2px 0 #ff2a6d) drop-shadow(2px 0 #05d9e8); transform: translateX(2px); }
+  24% { filter: drop-shadow(2px 0 #ff2a6d) drop-shadow(-2px 0 #05d9e8); transform: translateX(-2px) skewX(10deg); }
+  26% { filter: none; transform: none; }
+  61% { filter: drop-shadow(3px 0 #05d9e8) drop-shadow(-3px 0 #ff2a6d); transform: translateY(-1px); }
+  63% { filter: none; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .c-anomaly:not(button),
   .r-anomaly .item-name,
   .item-card.r-anomaly,
-  .item-tile.r-anomaly { animation: none; }
+  .item-tile.r-anomaly,
+  .item-tile.r-anomaly .tile-ico { animation: none; }
 }
 
 /* ------------------------------------------------------------------ controls */
@@ -1457,7 +1473,8 @@ select:focus,
 .r-unique { --rc: var(--r-unique); }
 .r-anomaly { --rc: var(--r-anomaly); }
 .item-card.r-anomaly,
-.item-tile.r-anomaly { animation: anomaly-shimmer 2.4s ease-in-out infinite; }
+.item-tile.r-anomaly { animation: anomaly-tear 2.3s infinite steps(1, end); }
+.item-tile.r-anomaly .tile-ico { animation: anomaly-tear-ico 2.3s infinite steps(1, end); }
 .item-card.r-legendary,
 .item-card.r-unique {
   box-shadow: 0 0 12px color-mix(in srgb, var(--rc) var(--glow-box, 35%), transparent), var(--shadow);

@@ -2,7 +2,7 @@
 
 import type { Item } from '../module_bindings/types';
 import { base } from '../../spacetimedb/src/data/bases';
-import { EFFECTS_BY_ID } from '../../spacetimedb/src/data/legendary';
+import { EFFECTS_BY_ID, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
 import { MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
@@ -96,10 +96,11 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
           <span className="muted">{statText(it.legendary!.stat, it.legendary!.value)}</span>
         </div>
       )}
+      {/* A unique's effects: legendary ones in orange, unique-only ones in magenta. */}
       {it.effects.map(id => {
         const e = EFFECTS_BY_ID.get(id);
         return (
-          <div className="item-legendary unique" key={id}>
+          <div className={`item-legendary${LEGENDARIES_BY_ID.has(id) ? '' : ' unique'}`} key={id}>
             <strong>
               <Icon name="sparkles" />
               {e?.name ?? `Effect ${id}`}

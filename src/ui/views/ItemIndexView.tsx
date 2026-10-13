@@ -2,7 +2,7 @@
 
 import { memo } from 'react';
 import { BASE_LIST, implicitValue, weaponValues, type BaseDef, type BaseKind, type WeaponValues } from '../../../spacetimedb/src/data/bases';
-import { EFFECTS_BY_ID, LEGENDARIES, type LegendaryGroup } from '../../../spacetimedb/src/data/legendary';
+import { EFFECTS_BY_ID, LEGENDARIES, LEGENDARIES_BY_ID, type LegendaryGroup } from '../../../spacetimedb/src/data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatId } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS } from '../../../spacetimedb/src/loot';
 import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, type UniqueDef } from '../../../spacetimedb/src/data/uniques';
@@ -203,7 +203,7 @@ function UniqueCard({ u }: { u: UniqueDef }) {
       {u.effects.map(id => {
         const e = EFFECTS_BY_ID.get(id);
         return (
-          <div className="item-legendary unique" key={id}>
+          <div className={`item-legendary${LEGENDARIES_BY_ID.has(id) ? '' : ' unique'}`} key={id}>
             <strong><Icon name="sparkles" />{e?.name ?? `Effect ${id}`}</strong>
             <span>{e?.text}</span>
           </div>

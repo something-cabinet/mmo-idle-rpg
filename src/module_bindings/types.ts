@@ -291,6 +291,9 @@ export const Rarity = __t.enum("Rarity", {
   Epic: __t.unit(),
   Legendary: __t.unit(),
   Unique: __t.unit(),
+  Ethereal: __t.unit(),
+  Mythic: __t.unit(),
+  Anomaly: __t.unit(),
 });
 export type Rarity = __Infer<typeof Rarity>;
 

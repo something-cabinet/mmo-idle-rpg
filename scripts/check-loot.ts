@@ -15,8 +15,12 @@ import {
   hasUniques,
   makeUnique,
   pickUnique,
+  ANOMALY_AFFIXES,
+  ANOMALY_CHANCE,
+  LISTED_RARITIES,
   RARITIES,
   REGULAR_AFFIXES,
+  makeAnomaly,
   makeItem,
   rarityRank,
   type RarityName,
@@ -88,7 +92,7 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   check('lifesteal is rare (weight 25)', lifesteal > hp.length / 8 && lifesteal < hp.length / 2, `${lifesteal} vs ${hp.length} max HP`);
   check('same affix can roll on every stat', new Set(rolls.map(r => r.stat)).size === Object.keys(STATS).length);
 
-  for (const rarity of RARITIES.filter(r => r !== 'Unique')) {
+  for (const rarity of LISTED_RARITIES.filter(r => r !== 'Unique')) {
     const it = makeItem(rng, 1, 3, rarity);
     check(`${rarity} has ${REGULAR_AFFIXES[rarity]} affixes${rarity === 'Legendary' ? ' + legendary' : ''}`,
       it.affixes.length === REGULAR_AFFIXES[rarity] && (rarity === 'Legendary') === !!it.legendary);
@@ -143,7 +147,7 @@ const session = (over: Partial<DropInput> = {}): DropInput => ({
 });
 // Expectations follow DROP_CHANCE, so tuning the drop rates doesn't break these checks.
 /** Summed per-kill chance of `min` rarity or better. */
-const chanceFrom = (min: RarityName) => RARITIES.filter(r => rarityRank(r) >= rarityRank(min)).reduce((sum, r) => sum + DROP_CHANCE[r], 0);
+const chanceFrom = (min: RarityName) => LISTED_RARITIES.filter(r => rarityRank(r) >= rarityRank(min)).reduce((sum, r) => sum + DROP_CHANCE[r], 0);
 /** Kills that yield ~`drops` of `min` rarity or better (keeps tests clear of the bag limit). */
 const killsFor = (drops: number, min: RarityName) => Math.round(drops / chanceFrom(min));
 const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values(r.salvaged).reduce((a, b) => a + b, 0);
@@ -309,6 +313,37 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   }
   check('materials: same seed, same drops', JSON.stringify(rollMaterials(seededRng(7n), golem.enemy, 3, kills, 1.5)) === JSON.stringify(drops));
   check('materials: no kills, none', rollMaterials(seededRng(7n), golem.enemy, 3, 0, 1.5).length === 0);
+}
+
+// ---------------------------------------------------------------- anomalies
+
+{
+  const rng = seededRng(99n);
+  const items = Array.from({ length: 2000 }, (_, i) => makeAnomaly(rng, BASE_LIST[i % BASE_LIST.length].id, 1 + (i % 9)));
+  const counts = new Set(items.map(it => it.affixes.length));
+  check(`anomalies have ${ANOMALY_AFFIXES[0]} to ${ANOMALY_AFFIXES[1]} affixes, every count seen`,
+    counts.size === ANOMALY_AFFIXES[1] - ANOMALY_AFFIXES[0] + 1 && [...counts].every(n => n >= ANOMALY_AFFIXES[0] && n <= ANOMALY_AFFIXES[1]));
+  const affixes = items.flatMap(it => it.affixes);
+  check('anomaly affixes stay within ± the best T9 roll, any item tier', affixes.every(a => {
+    const top = affixRef(a.stat as keyof typeof STATS, 9);
+    return Math.abs(Number(a.value) / 100) <= top + 0.5;
+  }));
+  check('anomaly affixes roll both signs on every stat', Object.values(STATS).filter(d => d.ref !== undefined).every(d =>
+    affixes.some(a => a.stat === d.id && a.value < 0n) && affixes.some(a => a.stat === d.id && a.value > 0n)));
+  const t1 = items.filter(it => it.tier === 1).flatMap(it => it.affixes).filter(a => a.stat === Stat.PhysDamage);
+  check('a T1 anomaly can roll far past T1 ranges', t1.some(a => Number(a.value) / 100 > 300) && t1.some(a => Number(a.value) / 100 < -300));
+  check('anomalies can repeat a stat', items.some(it => new Set(it.affixes.map(a => a.stat)).size < it.affixes.length));
+  check('anomalies: rarity Anomaly, affix tier 0, no legendary, base values like a Common', items.every(it =>
+    it.rarity.tag === 'Anomaly' && it.affixes.every(a => a.tier === 0) && !it.legendary && it.uniqueId === undefined) &&
+    makeItem(seededRng(1n), 1, 4, 'Common').weapon?.hit === makeAnomaly(seededRng(1n), 1, 4).weapon?.hit);
+
+  // Strict filter and a full bag: anomalies are still kept.
+  const kills = Math.round(20 / ANOMALY_CHANCE);
+  const r = rollDrops(seededRng(3n), session({ kills, filter: { minRarity: 'Legendary', keepAffixes: [1], keepBases: [2], minAffixTier: 9 }, bagFree: 0 }));
+  const kept = r.kept.filter(it => it.rarity.tag === 'Anomaly').length;
+  check(`~20 anomalies in ${kills.toLocaleString()} kills, kept past the filter and a full bag`,
+    kept === r.kept.length && kept > 5 && kept < 40 && r.salvaged.Anomaly === 0, `${kept} kept`);
+  check('Ethereal and Mythic never drop', RARITIES.includes('Ethereal') && r.salvaged.Ethereal === 0 && r.salvaged.Mythic === 0);
 }
 
 // ---------------------------------------------------------------- boss first kill

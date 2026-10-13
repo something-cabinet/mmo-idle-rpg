@@ -5,7 +5,7 @@ import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
 import { MATERIALS } from '../../../spacetimedb/src/data/materials';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
-import { RARITIES, rarityRank, salvageValue } from '../../../spacetimedb/src/loot';
+import { LISTED_RARITIES, rarityRank, salvageValue } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
@@ -156,7 +156,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
         </select>
       </div>
       <MaterialsCard s={s} />
-      <ItemFilterCard f={filter} storageKey="bag_filters_collapsed" rarities={RARITIES} shown={shown.length} total={s.bag.length} />
+      <ItemFilterCard f={filter} storageKey="bag_filters_collapsed" rarities={LISTED_RARITIES} shown={shown.length} total={s.bag.length} />
       <div className="bag-grid">
         {shown.length ? (
           shown.map(it => <ItemTile key={String(it.id)} it={it} selected={sel.has(it.id)} onClick={ev => clickTile(ev, it.id)} />)

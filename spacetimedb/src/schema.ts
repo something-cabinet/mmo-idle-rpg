@@ -68,6 +68,11 @@ export const Rarity = t.enum('Rarity', {
   Epic: t.unit(),
   Legendary: t.unit(),
   Unique: t.unit(),
+  // Reserved, unused yet.
+  Ethereal: t.unit(),
+  Mythic: t.unit(),
+  // Never named in the game (loot.ts `makeAnomaly`). New variants go at the end.
+  Anomaly: t.unit(),
 });
 
 export const DamageType = t.enum('DamageType', { Physical: t.unit(), Magic: t.unit() });

@@ -143,13 +143,14 @@ export function combatStats(level: number, gear: Gear): CombatStats {
       const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
       const base = w.damageType.tag === from ? fromStored(w.hit) : 0;
       // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
-      hit[t] = (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult;
+      // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
+      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult);
     }
     const baseHeal = fromStored(w.heal);
-    const heal = baseHeal > 0 ? (baseHeal + flat(Stat.Heal)) * (1 + healPct) : 0;
-    const critChance = (w.baseCritBp / 10_000 + pct(Stat.BaseCritChance)) * (1 + critIncreased);
-    // Overcrit: each 1% of crit chance above 100% gives +2% crit damage per copy.
-    const critDmg = critDamage + amount(Effect.Overcrit) * Math.max(0, critChance - 1);
+    const heal = baseHeal > 0 ? Math.max(0, (baseHeal + flat(Stat.Heal)) * (1 + healPct)) : 0;
+    const critChance = Math.max(0, (w.baseCritBp / 10_000 + pct(Stat.BaseCritChance)) * (1 + critIncreased));
+    // Overcrit: each 1% of crit chance above 100% gives +2% crit damage per copy. A crit never hits softer than a normal hit.
+    const critDmg = Math.max(1, critDamage + amount(Effect.Overcrit) * Math.max(0, critChance - 1));
     sources.push({
       hit,
       heal,
@@ -161,10 +162,12 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     });
   }
 
-  const maxHp =
+  const maxHp = Math.max(
+    1,
     (100 + 10 * (level - 1) + flat(Stat.MaxHp)) *
     (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality) *
-    (has(Effect.GlassCannon) ? 0.5 : 1);
+    (has(Effect.GlassCannon) ? 0.5 : 1),
+  );
   const frozenBlood = has(Effect.FrozenBlood);
   // Frozen Blood adds max HP / 10 to both. Ironclad and Runeguard convert from armor and
   // resistance before either is added, so they don't loop (max HP never depends on them).
@@ -179,15 +182,16 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     armorPen: Math.min(CAPS.penetration / 100, pct(Stat.ArmorPenPct)),
     magicPen: Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct)),
     maxHp,
-    regen: frozenBlood ? 0 : flat(Stat.HpRegen) * (1 + 0.01 * vitality),
+    regen: frozenBlood ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.01 * vitality)),
     armor: armor + amount(Effect.Runeguard) * resistance,
     resistance: resistance + amount(Effect.Ironclad) * armor,
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse),
-    lifesteal: frozenBlood ? 0 : Math.min(CAPS.lifesteal / 100, pct(Stat.LifestealPct)),
+    lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100, pct(Stat.LifestealPct))),
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
-    itemFind: pct(Stat.ItemFindPct),
-    goldFind: pct(Stat.GoldFindPct),
-    xpGain: pct(Stat.XpGainPct),
+    // At worst −100%: nothing found, never negative gold or XP.
+    itemFind: Math.max(-1, pct(Stat.ItemFindPct)),
+    goldFind: Math.max(-1, pct(Stat.GoldFindPct)),
+    xpGain: Math.max(-1, pct(Stat.XpGainPct)),
     walkTime: WALK_SECONDS * (1 - amount(Effect.SwiftHunter)),
     offlineHours: BASE_OFFLINE_HOURS + amount(Effect.Seasoned),
     chill: has(Effect.Frostbite) ? 0.5 * Math.min(1, sources[0]?.critChance ?? 0) : 0,

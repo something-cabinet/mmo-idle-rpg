@@ -7,14 +7,14 @@ import { MAX_TIER } from '../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS, type RarityName } from '../../spacetimedb/src/loot';
 import { useSticky } from '../store';
 import { Icon } from './Icon';
-import { affixLabel, itemName, rarityCls, statText } from './items';
+import { affixLabel, itemName, rarityCls, rarityLabel, statText } from './items';
 import { SLOT_FILTERS, toggle } from './shared';
 
 const AFFIX_OPTIONS = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) })).sort((a, b) => a.label.localeCompare(b.label));
 
 /** Lowercased text the search matches: name, family, rarity and every stat line. */
 const searchText = (it: Item) =>
-  [itemName(it), base(it.baseId).family, it.rarity.tag, ...[...it.implicits, ...it.affixes].map(a => statText(a.stat, a.value))].join(' ').toLowerCase();
+  [itemName(it), base(it.baseId).family, rarityLabel(it.rarity.tag), ...[...it.implicits, ...it.affixes].map(a => statText(a.stat, a.value))].join(' ').toLowerCase();
 
 /** The item has every chosen affix at the minimum tier, or (none chosen) any affix at it. */
 function matchesAffixes(it: Item, affixes: readonly number[], minTier: number): boolean {
@@ -35,7 +35,8 @@ export function useItemFilter(prefix: string) {
     /** How many filters are on (each selected button counts). */
     active: (words.length ? 1 : 0) + rarities.length + slots.length + affixes.length + (minAffixTier > 1 ? 1 : 0),
     matches: (it: Item) =>
-      (!rarities.length || rarities.includes(it.rarity.tag)) &&
+      // An Anomaly passes for a Common.
+      (!rarities.length || rarities.includes(it.rarity.tag === 'Anomaly' ? 'Common' : it.rarity.tag)) &&
       (!slots.length || slots.includes(base(it.baseId).slots[0])) &&
       matchesAffixes(it, affixes, minAffixTier) &&
       (!words.length || (t => words.every(w => t.includes(w)))(searchText(it))),

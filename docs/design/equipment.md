@@ -128,6 +128,17 @@ affix rolls tier 1 to N (N = item tier, 1–9).
   behaviour behind an effect ID is code, so effect IDs are permanent and changing an
   effect's logic deliberately affects items already owned. Uniques use the same effect
   library, plus unique-only effects that may carry a trade-off and don't stack.
+- **Ethereal and Mythic** are reserved rarities (in the schema enum, after Unique);
+  nothing drops or uses them yet.
+- **Anomaly** is a secret rarity the game never names. 1 in 1,000,000 kills from any
+  enemy (no reward scale, item find or enemy multiplier). It looks like a Common of the
+  zone's tier (white, rarity shown as "???", a shimmering, glitching name) with 5–9
+  affixes from the regular pool, repeats allowed, each uniform between minus and plus
+  the best T9 roll of its stat whatever the item tier (e.g. −756 to +756 Physical
+  damage). Always kept: it ignores the loot filter and the bag limit, and drops locked.
+  It can't be crafted. Combat floors keep negative totals sane: max HP ≥ 1, hits,
+  heals, crit chance, regen and lifesteal ≥ 0, crits never weaker than a normal hit,
+  item/gold find and XP gain ≥ −100%.
 
 ## Random affixes
 

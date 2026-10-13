@@ -116,7 +116,8 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     });
     discovered.push(...discover(ctx, ch.id, target.zone.tier, drops.seen));
     for (const it of drops.kept) {
-      const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp });
+      // Anomalies drop locked, so a bulk salvage of Commons can't take one.
+      const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: it.rarity.tag === 'Anomaly', createdAt: ctx.timestamp });
       keptItemIds.push(row.id);
     }
     dust += drops.dust;

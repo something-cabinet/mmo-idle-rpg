@@ -4,19 +4,39 @@
 
 import { BASE_LIST, base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES, legendaryGroup } from './data/legendary';
-import { STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
+import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
 import { UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniquePool, type UniqueDef } from './data/uniques';
 import { MATERIAL_CHANCE, materialOf } from './data/materials';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
-export const RARITIES = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Unique'] as const;
+/** The rarities the game names: drop tables, filters, the loot filter, logs. */
+export const LISTED_RARITIES = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Unique'] as const;
+export type ListedRarity = (typeof LISTED_RARITIES)[number];
+/**
+ * Every rarity, in rank order (the order of the schema's `Rarity` enum). Ethereal and
+ * Mythic are reserved, unused yet. Anomaly is never named: it drops looking like a
+ * Common, see `makeAnomaly`.
+ */
+export const RARITIES = [...LISTED_RARITIES, 'Ethereal', 'Mythic', 'Anomaly'] as const;
 export type RarityName = (typeof RARITIES)[number];
 export const rarityRank = (r: RarityName) => RARITIES.indexOf(r);
 
 /** Regular affixes per rarity (equipment.md). Legendary adds one legendary affix. */
-export const REGULAR_AFFIXES: Record<RarityName, number> = { Common: 0, Magic: 1, Rare: 2, Epic: 3, Legendary: 2, Unique: 0 };
+export const REGULAR_AFFIXES: Record<RarityName, number> = {
+  Common: 0, Magic: 1, Rare: 2, Epic: 3, Legendary: 2, Unique: 0, Ethereal: 0, Mythic: 0, Anomaly: 0,
+};
 /** Dust per salvaged item at T1; × 2.9^(T−1) (crafting.md). */
-export const DUST: Record<RarityName, number> = { Common: 1, Magic: 2, Rare: 5, Epic: 20, Legendary: 60, Unique: 60 };
+export const DUST: Record<RarityName, number> = {
+  Common: 1, Magic: 2, Rare: 5, Epic: 20, Legendary: 60, Unique: 60, Ethereal: 60, Mythic: 60, Anomaly: 60,
+};
+
+/** What the dev panel can give with `makeItem`: gear rarities, and an Anomaly to test with. */
+export const DEV_RARITIES: readonly RarityName[] = ['Common', 'Magic', 'Rare', 'Epic', 'Legendary', 'Anomaly'];
+
+/** Per-kill chance of an Anomaly from any enemy: no reward scale, item find or enemy multiplier. */
+export const ANOMALY_CHANCE = 1e-6;
+/** Fewest and most affixes on an Anomaly. */
+export const ANOMALY_AFFIXES = [5, 9] as const;
 
 export function salvageValue(rarity: RarityName, tier: number): bigint {
   return BigInt(Math.round(DUST[rarity] * 2.9 ** (tier - 1)));
@@ -97,10 +117,15 @@ const AFFIX_WEIGHT = AFFIX_POOL.reduce((sum, d) => sum + (d.weight ?? 100), 0);
 /** Stat IDs of every regular affix: the loot filter's default (keep any affix). */
 export const AFFIX_STAT_IDS: readonly number[] = AFFIX_POOL.map(d => d.id);
 
+/** An affix stat from the weighted free pool. */
+function pickAffixStat(rng: Rng): StatDef {
+  let r = rng() * AFFIX_WEIGHT;
+  return AFFIX_POOL.find(d => (r -= d.weight ?? 100) < 0) ?? AFFIX_POOL[AFFIX_POOL.length - 1];
+}
+
 /** A regular affix on a tier-`tier` item: weighted free pool, affix tier 1..N, value uniform in that tier's range (then rounded). */
 export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
-  let r = rng() * AFFIX_WEIGHT;
-  const def = AFFIX_POOL.find(d => (r -= d.weight ?? 100) < 0) ?? AFFIX_POOL[AFFIX_POOL.length - 1];
+  const def = pickAffixStat(rng);
   const k = 1 + Math.floor(rng() * tier);
   const [lo, hi] = affixRange(def.id, k);
   const value = lo + (hi - lo) * rng();
@@ -118,6 +143,7 @@ export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullab
 
 /** An item of `baseId` at `tier`: base values computed and stored literally, affixes rolled. */
 export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityName): NewItem {
+  if (rarity === 'Anomaly') return makeAnomaly(rng, baseId, tier);
   const b = base(baseId);
   const w = b.weapon && weaponValues(b.weapon, tier);
   return {
@@ -157,8 +183,27 @@ export function makeUnique(rng: Rng, u: UniqueDef): NewItem {
   };
 }
 
+/**
+ * An Anomaly: a Common of `baseId` at `tier` with 5 to 9 affixes from the weighted
+ * pool, repeats allowed, each uniform between minus and plus the best T9 roll of its
+ * stat whatever the item's tier. Stored with affix tier 0, like a unique's stats.
+ */
+export function makeAnomaly(rng: Rng, baseId: number, tier: number): NewItem {
+  const [min, max] = ANOMALY_AFFIXES;
+  const count = min + Math.floor(rng() * (max - min + 1));
+  return {
+    ...makeItem(rng, baseId, tier, 'Common'),
+    rarity: { tag: 'Anomaly' },
+    affixes: Array.from({ length: count }, () => {
+      const def = pickAffixStat(rng);
+      const value = affixRef(def.id, MAX_TIER) * (2 * rng() - 1);
+      return { stat: def.id, tier: 0, value: toStored(roundStat(def.id, value)) };
+    }),
+  };
+}
+
 /** Per-kill chance of a `rarity` drop from `enemy` before `rewardScale` and item find: Rare and better × its `rareDropMult`. */
-export const dropChance = (rarity: RarityName, enemy: EnemyDef) =>
+export const dropChance = (rarity: ListedRarity, enemy: EnemyDef) =>
   DROP_CHANCE[rarity] * (rarityRank(rarity) >= rarityRank('Rare') ? (enemy.rareDropMult ?? 1) : 1);
 
 /** A unique that `enemyId` can drop in a tier-`zoneTier` zone (data/uniques.ts `uniquePool`); undefined if none. */
@@ -283,7 +328,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const kept: NewItem[] = [];
   const seen: Seen[] = [];
   const uniques = hasUniques(d.tier, d.enemy.id);
-  for (const rarity of RARITIES) {
+  for (const rarity of LISTED_RARITIES) {
     if (rarity === 'Unique') {
       // Uniques drop from any enemy: every unique of the zone's tier and below, or the enemy's own. Always kept.
       if (!uniques) continue;
@@ -313,6 +358,14 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
     }
   }
 
+  // Anomalies: from any enemy, always kept, and they skip the bag limit (added after it).
+  const anomalies: NewItem[] = [];
+  for (let i = samplePoisson(rng, d.kills * ANOMALY_CHANCE); i > 0; i--) {
+    const it = makeAnomaly(rng, pick(rng, d.enemy.drops), d.tier);
+    anomalies.push(it);
+    seen.push({ baseId: it.baseId });
+  }
+
   // Fortune's Favor upgrades kept drops only, before the bag limit (an upgrade ranks higher).
   if (d.fortune) {
     const chance = d.fortune;
@@ -327,6 +380,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const room = Math.max(0, d.bagFree);
   const over = kept.splice(room);
   over.forEach(item => salvage(item.rarity.tag, item.tier));
+  kept.unshift(...anomalies);
   return { kept, salvaged, dust, overflow: over.length, seen };
 }
 

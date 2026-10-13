@@ -7,7 +7,7 @@ import { BASE_LIST } from '../data/bases';
 import { MAX_TIER } from '../data/stats';
 import { UNIQUES, UNIQUES_BY_ID } from '../data/uniques';
 import { ZONES } from '../data/zones';
-import { RARITIES, makeItem, makeUnique, seededRng, type RarityName } from '../loot';
+import { DEV_RARITIES, makeItem, makeUnique, seededRng, type RarityName } from '../loot';
 import { discover, requireActive, type Character, type Ctx } from '../helpers';
 
 function requireCheats(ctx: Ctx) {
@@ -60,7 +60,7 @@ export const devGiveItem = spacetimedb.reducer({ baseId: t.u16(), tier: t.u8(), 
   const { ch } = requireCheats(ctx);
   if (!BASE_LIST.some(b => b.id === baseId)) throw new SenderError('No such base');
   if (tier < 1 || tier > MAX_TIER) throw new SenderError('Bad tier');
-  if (!RARITIES.includes(rarity as RarityName) || rarity === 'Unique') throw new SenderError('Bad rarity');
+  if (!DEV_RARITIES.includes(rarity as RarityName)) throw new SenderError('Bad rarity');
   giveItem(ctx, ch, makeItem(seededRng(ch.id, ctx.timestamp.microsSinceUnixEpoch), baseId, tier, rarity as RarityName));
 });
 

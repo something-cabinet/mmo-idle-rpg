@@ -5,7 +5,7 @@ import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
 import { rewardScale, type Defense, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { uniquePool } from '../../spacetimedb/src/data/uniques';
-import { RARITIES, dropChance, hasUniques, materialMeans } from '../../spacetimedb/src/loot';
+import { LISTED_RARITIES, dropChance, hasUniques, materialMeans } from '../../spacetimedb/src/loot';
 import { fmt, pct } from './format';
 import { Icon } from './Icon';
 import { itemIconName, materialIconName, materialName, rarityCls } from './items';
@@ -91,7 +91,7 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
   const uniques = hasUniques(z.tier, e.id);
   const pool = uniquePool(z.tier, e.id).map(x => x.u);
   const own = pool.length === 1 && pool[0].enemyId === e.id ? pool[0] : undefined;
-  const rarities = RARITIES.filter(r => r !== 'Unique' || uniques).map(r => ({
+  const rarities = LISTED_RARITIES.filter(r => r !== 'Unique' || uniques).map(r => ({
     r,
     mean: scale * (dropChance(r, e) + (r === 'Legendary' && !uniques ? dropChance('Unique', e) : 0)),
   }));

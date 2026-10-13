@@ -1,8 +1,8 @@
 import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
-import { rerollCost, upgradeCost } from '../../../spacetimedb/src/craft';
+import { craftable as canCraft, rerollCost, uncraftable, upgradeCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
-import { RARITIES, rarityRank, type RarityName } from '../../../spacetimedb/src/loot';
+import { LISTED_RARITIES, RARITIES, rarityRank, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
@@ -15,7 +15,7 @@ type Where = 'all' | 'equipped' | 'bag';
 type CraftSort = 'rarity' | 'tier' | 'newest' | 'slot';
 
 /** Rarities that can be crafted: uniques can't. */
-const CRAFT_RARITIES = RARITIES.filter(r => r !== 'Unique');
+const CRAFT_RARITIES = LISTED_RARITIES.filter(r => r !== 'Unique');
 
 function AffixPick({ it, name, value, onChange }: { it: Item; name: string; value: number; onChange: (i: number) => void }) {
   return (
@@ -40,7 +40,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const [removeIndex, setRemoveIndex] = useState(0);
   const r = s.conn.reducers;
 
-  const craftable = [...s.items.values()].filter(it => it.rarity.tag !== 'Unique');
+  const craftable = [...s.items.values()].filter(canCraft);
   const by: Record<CraftSort, (a: Item, b: Item) => number> = {
     rarity: (a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag) || b.tier - a.tier,
     tier: (a, b) => b.tier - a.tier || rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag),
@@ -102,7 +102,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   }
 
   const rarity = item.rarity.tag as RarityName;
-  const unique = rarity === 'Unique';
+  const unique = !canCraft(item);
   const next = RARITIES[rarityRank(rarity) + 1];
   const toLegendary = rarity === 'Epic';
 
@@ -110,7 +110,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const rCost = item.affixes.length ? rerollCost(item) : undefined;
   const rBlocked = rCost ? cantAfford(s, rCost) : 'Nothing to reroll';
   const rerollBody = unique ? (
-    <p className="muted">Uniques can't be crafted.</p>
+    <p className="muted">{uncraftable(item)}.</p>
   ) : item.affixes.length ? (
     <>
       <p className="muted">The chosen affix is replaced by a new random one, rolled like a drop.{item.legendary ? ' The legendary affix stays.' : ''}</p>
@@ -124,7 +124,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const uCost = upgradeCost(item);
   const uBlocked = uCost ? cantAfford(s, uCost) : 'Nothing to upgrade';
   const upgradeBody = unique ? (
-    <p className="muted">Uniques can't be crafted.</p>
+    <p className="muted">{uncraftable(item)}.</p>
   ) : uCost ? (
     <>
       <p>

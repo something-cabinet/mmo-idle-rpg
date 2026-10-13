@@ -3,7 +3,7 @@
 // the drop rolls from loot.ts.
 
 import { BAG_MAX, BAG_START } from './game';
-import { raiseRarity, rollAffix, type RaisableItem, type RarityName, type Rng } from './loot';
+import { raiseRarity, rarityRank, rollAffix, type RaisableItem, type RarityName, type Rng } from './loot';
 
 /** What crafting needs from an item: an `item` row or a `NewItem`. */
 export type CraftItem = RaisableItem;
@@ -21,10 +21,16 @@ export function craftCost(hours: number, tier: number): CraftCost {
 
 /** Tuning knob: every reroll costs REROLL_HOURS × this. */
 export const REROLL_COST_MULT = 0.5;
-/** Hours per affix reroll before REROLL_COST_MULT, by item rarity. Common has no affixes; Unique can't be crafted. */
+/** Hours per affix reroll before REROLL_COST_MULT, by item rarity. Common has no affixes; Unique and above can't be crafted. */
 export const REROLL_HOURS: Partial<Record<RarityName, number>> = { Magic: 0.25, Rare: 0.5, Epic: 1, Legendary: 2 };
 /** Hours to upgrade from this rarity to the next. */
 export const UPGRADE_HOURS: Partial<Record<RarityName, number>> = { Common: 0.25, Magic: 1, Rare: 4, Epic: 24 };
+
+/** Common to Legendary: Unique and the rarities above it can't be crafted. */
+export const craftable = (it: Pick<CraftItem, 'rarity'>) => rarityRank(it.rarity.tag) < rarityRank('Unique');
+
+/** Why `it` (not craftable) can't be crafted. */
+export const uncraftable = (it: Pick<CraftItem, 'rarity'>) => (it.rarity.tag === 'Unique' ? "Uniques can't be crafted" : "This item can't be crafted");
 
 export const rerollCost = (it: CraftItem): CraftCost | undefined => {
   const h = REROLL_HOURS[it.rarity.tag];
@@ -37,7 +43,7 @@ export const upgradeCost = (it: CraftItem): CraftCost | undefined => {
 
 /** The item with regular affix `index` replaced by a fresh roll, or an error message. */
 export function rerollAffix<T extends CraftItem>(rng: Rng, it: T, index: number): T | string {
-  if (it.rarity.tag === 'Unique') return "Uniques can't be crafted";
+  if (!craftable(it)) return uncraftable(it);
   if (index >= it.affixes.length) return 'No such affix';
   return { ...it, affixes: it.affixes.map((a, i) => (i === index ? rollAffix(rng, it.tier) : a)) };
 }
@@ -48,7 +54,7 @@ export function rerollAffix<T extends CraftItem>(rng: Rng, it: T, index: number)
  */
 export function upgradeRarity<T extends CraftItem>(rng: Rng, it: T, removeIndex?: number): T | string {
   if (UPGRADE_HOURS[it.rarity.tag] === undefined) {
-    return it.rarity.tag === 'Unique' ? "Uniques can't be crafted" : 'Legendary is the highest craftable rarity';
+    return !craftable(it) ? uncraftable(it) : 'Legendary is the highest craftable rarity';
   }
   if (it.rarity.tag !== 'Epic') return raiseRarity(rng, it, 0);
   if (removeIndex === undefined || removeIndex >= it.affixes.length) return 'Pick an affix to remove';

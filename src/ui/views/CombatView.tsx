@@ -14,7 +14,7 @@ import { foundName } from '../discovery';
 import { encounterText } from '../encounters';
 import { duration, fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { itemName, materialsText, rarityCls } from '../items';
+import { itemName, materialsText, rarityCls, rarityLabel } from '../items';
 import { CardHead, openCraft, perHour, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
 
@@ -50,7 +50,7 @@ function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?
               openCraft(it.id);
             }}
           >
-            {it.rarity.tag} {itemName(it)}
+            {rarityLabel(it.rarity.tag)} {itemName(it)}
           </a>
           <span className="muted">kept</span>
         </li>

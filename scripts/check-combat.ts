@@ -374,5 +374,22 @@ const rats = { gear: starter, enemy: enemy(101) };
   check('gold find multiplies gold', rich.gold > once.gold, `${rich.gold} vs ${once.gold}`);
 }
 
+// ---------------------------------------------------------------- floors (Anomaly affixes can be very negative)
+
+{
+  const cursed = item(1, 1, [
+    [Stat.PhysDamage, -756], [Stat.MaxHp, -20000], [Stat.CritDamage, -500], [Stat.BaseCritChance, -5], [Stat.HpRegen, -500],
+    [Stat.LifestealPct, -10], [Stat.HealPct, -500], [Stat.ItemFindPct, -500], [Stat.GoldFindPct, -500], [Stat.XpGainPct, -500],
+  ]);
+  const s = combatStats(1, gear({ MainHand: cursed }));
+  const src = s.sources[0];
+  check('negative stats floor: HP ≥ 1, hits and crits never below 0, no negative regen, lifesteal or finds',
+    s.maxHp >= 1 && src.hit.Physical === 0 && src.critChance >= 0 && src.critMult >= 1 && s.regen === 0 && s.lifesteal === 0 &&
+    s.itemFind === -1 && s.goldFind === -1 && s.xpGain === -1);
+  const m = matchup(s, enemy(101));
+  check('… and a fight still works out (no NaN, no negative gold or XP)', !Number.isNaN(m.timeToDie) && m.goldPerKill >= 0 && m.xpPerKill >= 0,
+    `ttd ${f(m.timeToDie)}, gold ${m.goldPerKill}, xp ${m.xpPerKill}`);
+}
+
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

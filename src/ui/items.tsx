@@ -10,6 +10,8 @@ import { fmt } from './format';
 import { Icon } from './Icon';
 
 export const rarityCls = (tag: string) => tag.toLowerCase();
+/** A rarity's name in the game: an Anomaly is never named. */
+export const rarityLabel = (tag: string) => (tag === 'Anomaly' ? '???' : tag);
 export const itemName = (it: { baseId: number; tier: number; uniqueId?: number }) =>
   (it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier);
 
@@ -73,7 +75,7 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
         <span className={`badge r-${r}`}>T{it.tier}</span>
       </div>
       <div className="item-sub">
-        <span>{it.rarity.tag}</span>
+        <span>{rarityLabel(it.rarity.tag)}</span>
         <span>{it.uniqueId !== undefined ? base(it.baseId).name(it.tier) : base(it.baseId).family}</span>
       </div>
       {note && (
@@ -132,7 +134,7 @@ export const EmptyCard = ({ text = 'Empty' }: { text?: string }) => (
 /** Square item icon tile (bag, equipment, slot picker). */
 export function ItemTile({ it, selected, badge, title, onClick }: { it: Item; selected?: boolean; badge?: React.ReactNode; title?: string; onClick: (ev: React.MouseEvent) => void }) {
   return (
-    <button className={`item-tile r-${rarityCls(it.rarity.tag)}${selected ? ' selected' : ''}`} title={title ?? `${it.rarity.tag} ${itemName(it)}`} onClick={onClick}>
+    <button className={`item-tile r-${rarityCls(it.rarity.tag)}${selected ? ' selected' : ''}`} title={title ?? `${rarityLabel(it.rarity.tag)} ${itemName(it)}`} onClick={onClick}>
       <Icon name={itemIconName(it)} className="tile-ico" />
       <span className="tile-tier">T{it.tier}</span>
       {it.locked && (

@@ -6,7 +6,7 @@ import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
 import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
-import { materialsText, rarityCls } from './items';
+import { materialsText, rarityCls, rarityLabel } from './items';
 import { Icon } from './Icon';
 import { foundName } from './discovery';
 import { encounterText } from './encounters';
@@ -87,7 +87,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
           {keptByRarity.map(([r, n], i) => (
             <span key={r}>
               {i > 0 && ', '}
-              <span className={`c-${rarityCls(r)}`}>{n}× {r}</span>
+              <span className={`c-${rarityCls(r)}`}>{n}× {rarityLabel(r)}</span>
             </span>
           ))}
         </p>

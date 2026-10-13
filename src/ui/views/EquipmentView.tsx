@@ -6,7 +6,7 @@ import { rarityRank } from "../../../spacetimedb/src/loot";
 import { call, useSticky } from "../../store";
 import { fmt } from "../format";
 import { Icon } from "../Icon";
-import { EmptyCard, ItemCard, ItemTile, itemName, rarityCls } from "../items";
+import { EmptyCard, ItemCard, ItemTile, itemName, rarityCls, rarityLabel } from "../items";
 import {
   CardHead,
   CompareTable,
@@ -128,7 +128,7 @@ function SlotPopup({
                 it={c.it}
                 selected={c === pick}
                 badge={<DeltaBadge c={c} />}
-                title={`${c.it.rarity.tag} ${itemName(c.it)}${typeof c.next === "string" ? ` · ${c.next}` : c.delta !== undefined ? ` · DPS ${c.delta >= 0 ? "+" : ""}${fmt(c.delta)}` : ""}`}
+                title={`${rarityLabel(c.it.rarity.tag)} ${itemName(c.it)}${typeof c.next === "string" ? ` · ${c.next}` : c.delta !== undefined ? ` · DPS ${c.delta >= 0 ? "+" : ""}${fmt(c.delta)}` : ""}`}
                 onClick={() => setPickId(c.it.id)}
               />
             ))

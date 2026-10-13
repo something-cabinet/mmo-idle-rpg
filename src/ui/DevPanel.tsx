@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { BASE_LIST } from '../../spacetimedb/src/data/bases';
 import { MAX_TIER } from '../../spacetimedb/src/data/stats';
 import { UNIQUES } from '../../spacetimedb/src/data/uniques';
-import { RARITIES } from '../../spacetimedb/src/loot';
+import { DEV_RARITIES } from '../../spacetimedb/src/loot';
 import { call, useSticky } from '../store';
 import { CardHead } from './shared';
 import type { Snapshot } from './snapshot';
@@ -16,7 +16,6 @@ const KINDS = [
   ['armor', 'Armor'],
   ['jewelry', 'Jewelry'],
 ] as const;
-const GEAR_RARITIES = RARITIES.filter(r => r !== 'Unique');
 
 export function DevPanel({ s }: { s: Snapshot }) {
   const r = s.conn.reducers;
@@ -71,7 +70,7 @@ export function DevPanel({ s }: { s: Snapshot }) {
         <label>
           Rarity
           <select value={rarity} onChange={e => setRarity(e.target.value)}>
-            {GEAR_RARITIES.map(x => <option key={x}>{x}</option>)}
+            {DEV_RARITIES.map(x => <option key={x}>{x}</option>)}
           </select>
         </label>
         <button className="btn small primary" onClick={() => call(r.devGiveItem({ baseId, tier, rarity }), `Gave a T${tier} ${rarity} ${BASE_LIST.find(b => b.id === baseId)?.family}`)}>

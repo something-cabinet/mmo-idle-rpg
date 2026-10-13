@@ -2512,3 +2512,149 @@ fieldset.affix-pick legend {
 .duel .duel-start {
   min-width: 140px;
 }
+
+/* ------------------------------------------------------------------ raids (RaidsView.tsx) */
+.raid-boss {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.raid-facts,
+.raid-rewards ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 3px;
+  font-size: 13px;
+}
+.raid-rewards {
+  margin-top: 12px;
+}
+.raid-rewards h3 {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+.raid-rewards h3 .muted {
+  font-weight: 400;
+  font-size: 12px;
+}
+.raid-rewards p {
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.raid-parties {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.raid-parties li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+.raid-seats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.raid-seat {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  min-width: 0;
+}
+.raid-seat.me {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+.raid-seat.npc {
+  border-style: dashed;
+}
+.raid-seat.empty {
+  border-style: dashed;
+  background: transparent;
+  justify-items: start;
+}
+.raid-seat-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.raid-seat-name strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.raid-seat-name .btn {
+  margin-left: auto;
+}
+.raid-seat-stats {
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.tag.raid-target {
+  color: var(--accent);
+}
+.raid-actions {
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+.raid-fight {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.raid-boss-bar {
+  display: grid;
+  gap: 6px;
+}
+.raid-boss-bar .hpbar {
+  width: 100%;
+  height: 20px;
+}
+.raid-boss-bar .duelist-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.raid-party-bars {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 14px;
+}
+.raid-party-bars .duelist:last-of-type {
+  justify-items: stretch;
+  text-align: left;
+}
+.raid-loot {
+  display: grid;
+  gap: 8px;
+}
+@media (max-width: 700px) {
+  .raid-parties li {
+    flex-wrap: wrap;
+  }
+}

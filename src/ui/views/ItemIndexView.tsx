@@ -6,6 +6,7 @@ import { EFFECTS_BY_ID, LEGENDARIES, LEGENDARIES_BY_ID, type LegendaryGroup } fr
 import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatId } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS } from '../../../spacetimedb/src/loot';
 import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, type UniqueDef } from '../../../spacetimedb/src/data/uniques';
+import { RAIDS_BY_ID } from '../../../spacetimedb/src/data/raids';
 import { useSticky } from '../../store';
 import { fmt } from '../format';
 import { Icon } from '../Icon';
@@ -175,6 +176,7 @@ function UnknownUniqueCard({ u }: { u: UniqueDef }) {
       </div>
       <p className="muted">
         Not found yet. Its name, effects and stats are revealed when one drops for you.{u.enemyId !== undefined && ' Rumoured to drop in one hidden place only.'}
+        {u.raidId !== undefined && ` Drops only from the ${RAIDS_BY_ID.get(u.raidId)?.name ?? 'raid'} raid.`}
       </p>
     </div>
   );

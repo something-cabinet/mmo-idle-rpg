@@ -123,9 +123,6 @@ drops  = per rarity: sample(kills × dropChance[rarity] × (1 + itemFind%))
 
 ## Raids (online only)
 
-Multiplayer raid bosses cannot be farmed offline. Draft rules:
-
-- The boss attacks whoever has the highest threat.
-- Heals target allies: "all" heals spread across the party; "single" heals go to the
-  most injured ally.
-- Party size, boss mechanics and rewards are open.
+Multiplayer raid bosses cannot be farmed offline: see raids.md. The boss attacks
+whoever has the highest threat; heals target allies ("all" heals are split across the
+party, "single" heals go to the most injured ally).

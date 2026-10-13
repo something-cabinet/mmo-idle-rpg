@@ -63,6 +63,7 @@ export const Character = __t.object("Character", {
   zoneId: __t.u16(),
   targetEnemyId: __t.u16(),
   dust: __t.u64(),
+  raidTokens: __t.u64(),
 });
 export type Character = __Infer<typeof Character>;
 
@@ -270,6 +271,9 @@ export type MyLootFilter = __Infer<typeof MyLootFilter>;
 export const MyMaterials = __t.object("MyMaterials", {});
 export type MyMaterials = __Infer<typeof MyMaterials>;
 
+export const MyRaidLog = __t.object("MyRaidLog", {});
+export type MyRaidLog = __Infer<typeof MyRaidLog>;
+
 export const MySettleLog = __t.object("MySettleLog", {});
 export type MySettleLog = __Infer<typeof MySettleLog>;
 
@@ -282,6 +286,68 @@ export const Presence = __t.object("Presence", {
   lastChatAt: __t.timestamp(),
 });
 export type Presence = __Infer<typeof Presence>;
+
+export const RaidFight = __t.object("RaidFight", {
+  startedAt: __t.timestamp(),
+  endsAt: __t.timestamp(),
+  setup: __t.string(),
+  won: __t.bool(),
+  hireCost: __t.u64(),
+  finished: __t.bool(),
+});
+export type RaidFight = __Infer<typeof RaidFight>;
+
+export const RaidLog = __t.object("RaidLog", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  raidId: __t.u16(),
+  partyId: __t.u64(),
+  startedAt: __t.timestamp(),
+  won: __t.bool(),
+  rewarded: __t.bool(),
+  itemId: __t.u64(),
+  tokens: __t.u64(),
+  gold: __t.u64(),
+  xp: __t.u64(),
+  hireCost: __t.u64(),
+});
+export type RaidLog = __Infer<typeof RaidLog>;
+
+export const RaidMember = __t.object("RaidMember", {
+  characterId: __t.u64(),
+  partyId: __t.u64(),
+  name: __t.string(),
+  joinedAt: __t.timestamp(),
+});
+export type RaidMember = __Infer<typeof RaidMember>;
+
+export const RaidParty = __t.object("RaidParty", {
+  id: __t.u64(),
+  raidId: __t.u16(),
+  leaderId: __t.u64(),
+  hired: __t.u8(),
+  createdAt: __t.timestamp(),
+  get fight() {
+    return __t.option(RaidFight);
+  },
+});
+export type RaidParty = __Infer<typeof RaidParty>;
+
+export const RaidPartyCharacters = __t.object("RaidPartyCharacters", {});
+export type RaidPartyCharacters = __Infer<typeof RaidPartyCharacters>;
+
+export const RaidPartyItems = __t.object("RaidPartyItems", {});
+export type RaidPartyItems = __Infer<typeof RaidPartyItems>;
+
+export const RaidPartyLoadouts = __t.object("RaidPartyLoadouts", {});
+export type RaidPartyLoadouts = __Infer<typeof RaidPartyLoadouts>;
+
+export const RaidTimer = __t.object("RaidTimer", {
+  scheduledId: __t.u64(),
+  scheduledAt: __t.scheduleAt(),
+  partyId: __t.u64(),
+});
+export type RaidTimer = __Infer<typeof RaidTimer>;
 
 // The tagged union or sum type for the algebraic type `Rarity`.
 export const Rarity = __t.enum("Rarity", {

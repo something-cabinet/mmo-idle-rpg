@@ -23,11 +23,12 @@ import { CraftingView } from './views/CraftingView';
 import { EquipmentView } from './views/EquipmentView';
 import { FilterView } from './views/FilterView';
 import { ItemIndexView } from './views/ItemIndexView';
+import { RaidsView } from './views/RaidsView';
 import { SettingsView } from './views/SettingsView';
 import { ZonesView } from './views/ZonesView';
 
 const NAV: [string, [View, string, string][]][] = [
-  ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones']]],
+  ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones'], ['raids', 'crown', 'Raids']]],
   ['Character', [['character', 'user', 'Character'], ['equipment', 'shield', 'Equipment'], ['bag', 'bag', 'Bag']]],
   ['Workshop', [['crafting', 'hammer', 'Crafting'], ['filter', 'filter', 'Loot filter']]],
   ['Codex', [['index', 'book', 'Item index']]],
@@ -226,6 +227,7 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
   switch (view) {
     case 'combat': return <CombatView s={s} />;
     case 'zones': return <ZonesView s={s} />;
+    case 'raids': return <RaidsView s={s} />;
     case 'character': return <CharacterView s={s} />;
     case 'equipment': return <EquipmentView s={s} />;
     case 'bag': return <BagView s={s} />;

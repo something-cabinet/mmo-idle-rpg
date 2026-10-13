@@ -56,6 +56,9 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 8 | T3 | **Rimewind Longbow** | Bow | Frostbite | Increased crit chance %, evasion rating %, attack speed % |
 | 9 | T3 | **Glacier Heart** | Amber amulet | Frozen Blood | Max HP %, Vitality, resistance % |
 | 10 | T3 | **Avalanche Staff** | Fire Staff | Ambush | Magic damage %, crit damage, max HP |
+| 12 | T3 | **Wyrmscale Aegis** | Shield | Ironclad, Second Wind | Threat % (×1.5), armor %, max HP %. *Raid only: Wyrm Hollow (raids.md).* |
+| 13 | T3 | **Hoardkeeper's Censer** | Healing Staff | Zealot's Oath, Runeguard | Heal % (×1.25), Mind, resistance %. *Raid only: Wyrm Hollow.* |
+| 14 | T3 | **Skaldrith's Fang** | Dagger | Executioner, Rending | Crit damage, physical damage %, attack speed %. *Raid only: Wyrm Hollow.* |
 
 Unique IDs are permanent, like effect IDs.
 

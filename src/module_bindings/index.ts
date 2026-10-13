@@ -38,6 +38,7 @@ import AcceptLinkReducer from "./accept_link_reducer";
 import AddFriendReducer from "./add_friend_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
+import CreateRaidPartyReducer from "./create_raid_party_reducer";
 import DevGiveItemReducer from "./dev_give_item_reducer";
 import DevGiveUniqueReducer from "./dev_give_unique_reducer";
 import DevGrantReducer from "./dev_grant_reducer";
@@ -47,6 +48,9 @@ import EquipReducer from "./equip_reducer";
 import ExpandBagReducer from "./expand_bag_reducer";
 import FleeReducer from "./flee_reducer";
 import InspectCharacterReducer from "./inspect_character_reducer";
+import JoinRaidPartyReducer from "./join_raid_party_reducer";
+import KickFromRaidReducer from "./kick_from_raid_reducer";
+import LeaveRaidReducer from "./leave_raid_reducer";
 import LockItemReducer from "./lock_item_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
@@ -58,8 +62,10 @@ import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
 import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetProfileReducer from "./set_profile_reducer";
+import SetRaidHiresReducer from "./set_raid_hires_reducer";
 import SetTargetReducer from "./set_target_reducer";
 import SettleNowReducer from "./settle_now_reducer";
+import StartRaidReducer from "./start_raid_reducer";
 import SwitchLoadoutReducer from "./switch_loadout_reducer";
 import UnequipReducer from "./unequip_reducer";
 import UpgradeRarityReducer from "./upgrade_rarity_reducer";
@@ -82,8 +88,14 @@ import MyItemsRow from "./my_items_table";
 import MyLoadoutsRow from "./my_loadouts_table";
 import MyLootFilterRow from "./my_loot_filter_table";
 import MyMaterialsRow from "./my_materials_table";
+import MyRaidLogRow from "./my_raid_log_table";
 import MySettleLogRow from "./my_settle_log_table";
 import PresenceRow from "./presence_table";
+import RaidMemberRow from "./raid_member_table";
+import RaidPartyRow from "./raid_party_table";
+import RaidPartyCharactersRow from "./raid_party_characters_table";
+import RaidPartyItemsRow from "./raid_party_items_table";
+import RaidPartyLoadoutsRow from "./raid_party_loadouts_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -134,6 +146,31 @@ const tablesSchema = __schema({
       { name: 'presence_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, PresenceRow),
+  raidMember: __table({
+    name: 'raid_member',
+    indexes: [
+      { accessor: 'characterId', name: 'raid_member_character_id_idx_btree', algorithm: 'btree', columns: [
+        'characterId',
+      ] },
+      { accessor: 'partyId', name: 'raid_member_party_id_idx_btree', algorithm: 'btree', columns: [
+        'partyId',
+      ] },
+    ],
+    constraints: [
+      { name: 'raid_member_character_id_key', constraint: 'unique', columns: ['characterId'] },
+    ],
+  }, RaidMemberRow),
+  raidParty: __table({
+    name: 'raid_party',
+    indexes: [
+      { accessor: 'id', name: 'raid_party_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'raid_party_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, RaidPartyRow),
   inspectedCharacter: __table({
     name: 'inspected_character',
     indexes: [
@@ -225,6 +262,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyMaterialsRow),
+  myRaidLog: __table({
+    name: 'my_raid_log',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRaidLogRow),
   mySettleLog: __table({
     name: 'my_settle_log',
     indexes: [
@@ -232,6 +276,27 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MySettleLogRow),
+  raidPartyCharacters: __table({
+    name: 'raid_party_characters',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RaidPartyCharactersRow),
+  raidPartyItems: __table({
+    name: 'raid_party_items',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RaidPartyItemsRow),
+  raidPartyLoadouts: __table({
+    name: 'raid_party_loadouts',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, RaidPartyLoadoutsRow),
 });
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
@@ -240,6 +305,7 @@ const reducersSchema = __reducers(
   __reducerSchema("add_friend", AddFriendReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
+  __reducerSchema("create_raid_party", CreateRaidPartyReducer),
   __reducerSchema("dev_give_item", DevGiveItemReducer),
   __reducerSchema("dev_give_unique", DevGiveUniqueReducer),
   __reducerSchema("dev_grant", DevGrantReducer),
@@ -249,6 +315,9 @@ const reducersSchema = __reducers(
   __reducerSchema("expand_bag", ExpandBagReducer),
   __reducerSchema("flee", FleeReducer),
   __reducerSchema("inspect_character", InspectCharacterReducer),
+  __reducerSchema("join_raid_party", JoinRaidPartyReducer),
+  __reducerSchema("kick_from_raid", KickFromRaidReducer),
+  __reducerSchema("leave_raid", LeaveRaidReducer),
   __reducerSchema("lock_item", LockItemReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
@@ -260,8 +329,10 @@ const reducersSchema = __reducers(
   __reducerSchema("set_banned", SetBannedReducer),
   __reducerSchema("set_loot_filter", SetLootFilterReducer),
   __reducerSchema("set_profile", SetProfileReducer),
+  __reducerSchema("set_raid_hires", SetRaidHiresReducer),
   __reducerSchema("set_target", SetTargetReducer),
   __reducerSchema("settle_now", SettleNowReducer),
+  __reducerSchema("start_raid", StartRaidReducer),
   __reducerSchema("switch_loadout", SwitchLoadoutReducer),
   __reducerSchema("unequip", UnequipReducer),
   __reducerSchema("upgrade_rarity", UpgradeRarityReducer),
@@ -299,8 +370,16 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_loot_filter": Omit<typeof tablesSchema.schemaType.tables["myLootFilter"], "accessorName"> & { readonly accessorName: "my_loot_filter" };
     /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
     readonly "my_materials": Omit<typeof tablesSchema.schemaType.tables["myMaterials"], "accessorName"> & { readonly accessorName: "my_materials" };
+    /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
+    readonly "my_raid_log": Omit<typeof tablesSchema.schemaType.tables["myRaidLog"], "accessorName"> & { readonly accessorName: "my_raid_log" };
     /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
     readonly "my_settle_log": Omit<typeof tablesSchema.schemaType.tables["mySettleLog"], "accessorName"> & { readonly accessorName: "my_settle_log" };
+    /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
+    readonly "raid_party_characters": Omit<typeof tablesSchema.schemaType.tables["raidPartyCharacters"], "accessorName"> & { readonly accessorName: "raid_party_characters" };
+    /** @deprecated Use `raidPartyItems` instead. This alias will be removed in the next major version. */
+    readonly "raid_party_items": Omit<typeof tablesSchema.schemaType.tables["raidPartyItems"], "accessorName"> & { readonly accessorName: "raid_party_items" };
+    /** @deprecated Use `raidPartyLoadouts` instead. This alias will be removed in the next major version. */
+    readonly "raid_party_loadouts": Omit<typeof tablesSchema.schemaType.tables["raidPartyLoadouts"], "accessorName"> & { readonly accessorName: "raid_party_loadouts" };
   };
 };
 
@@ -332,7 +411,11 @@ const tableAccessorAliases = {
   "my_loadouts": "myLoadouts",
   "my_loot_filter": "myLootFilter",
   "my_materials": "myMaterials",
+  "my_raid_log": "myRaidLog",
   "my_settle_log": "mySettleLog",
+  "raid_party_characters": "raidPartyCharacters",
+  "raid_party_items": "raidPartyItems",
+  "raid_party_loadouts": "raidPartyLoadouts",
 } as const;
 
 function __withTableAccessorAliases<T extends object>(target: T, freeze = false): T {
@@ -379,8 +462,16 @@ export type DbView = __DbViewBase & {
   readonly "my_loot_filter": __DbViewBase["myLootFilter"];
   /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
   readonly "my_materials": __DbViewBase["myMaterials"];
+  /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
+  readonly "my_raid_log": __DbViewBase["myRaidLog"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __DbViewBase["mySettleLog"];
+  /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
+  readonly "raid_party_characters": __DbViewBase["raidPartyCharacters"];
+  /** @deprecated Use `raidPartyItems` instead. This alias will be removed in the next major version. */
+  readonly "raid_party_items": __DbViewBase["raidPartyItems"];
+  /** @deprecated Use `raidPartyLoadouts` instead. This alias will be removed in the next major version. */
+  readonly "raid_party_loadouts": __DbViewBase["raidPartyLoadouts"];
 };
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
@@ -411,8 +502,16 @@ export type Tables = __TablesBase & {
   readonly "my_loot_filter": __TablesBase["myLootFilter"];
   /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
   readonly "my_materials": __TablesBase["myMaterials"];
+  /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
+  readonly "my_raid_log": __TablesBase["myRaidLog"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __TablesBase["mySettleLog"];
+  /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
+  readonly "raid_party_characters": __TablesBase["raidPartyCharacters"];
+  /** @deprecated Use `raidPartyItems` instead. This alias will be removed in the next major version. */
+  readonly "raid_party_items": __TablesBase["raidPartyItems"];
+  /** @deprecated Use `raidPartyLoadouts` instead. This alias will be removed in the next major version. */
+  readonly "raid_party_loadouts": __TablesBase["raidPartyLoadouts"];
 };
 
 /** The tables available in this remote SpacetimeDB module. Each table reference doubles as a query builder. */

@@ -112,7 +112,7 @@ export function useTick(ms: number) {
 }
 
 /** The view named in the URL hash (#bag), or 'combat'. */
-export const VIEWS = ['combat', 'zones', 'character', 'equipment', 'bag', 'crafting', 'filter', 'index', 'settings'] as const;
+export const VIEWS = ['combat', 'zones', 'raids', 'character', 'equipment', 'bag', 'crafting', 'filter', 'index', 'settings'] as const;
 export type View = (typeof VIEWS)[number];
 const hashView = (): View => {
   const h = location.hash.slice(1) as View;

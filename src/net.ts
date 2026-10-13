@@ -72,6 +72,12 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
       tables.inspectedItems,
       tables.myFriends,
       tables.myFriendCharacters,
+      tables.raidParty,
+      tables.raidMember,
+      tables.myRaidLog,
+      tables.raidPartyCharacters,
+      tables.raidPartyLoadouts,
+      tables.raidPartyItems,
     ]);
 }
 
@@ -79,14 +85,15 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
 export function watchAll(conn: DbConnection, onChange: () => void) {
   const { myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog } = conn.db;
   const { inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters } = conn.db;
+  const { raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems } = conn.db;
   for (const table of [myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog,
-    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters]) {
+    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems]) {
     table.onInsert(onChange);
     table.onDelete(onChange);
   }
   // Rows with a primary key (views included) change in place.
   for (const table of [character, presence, myItems, myMaterials, myLoadouts, myLootFilter, myEnemyKills, inspectedCharacter, inspectedLoadout, inspectedItems,
-    myFriendCharacters])
+    myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems])
     table.onUpdate(onChange);
 }
 

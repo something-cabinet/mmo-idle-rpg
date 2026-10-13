@@ -30,6 +30,7 @@ const PATHS: Record<string, string> = {
   scales: 'M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0L5 7zM19 7l-3 7a3 3 0 0 0 6 0l-3-7z',
   ward: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7l4.5 8h-9L12 7z',
   pin: 'M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
+  crown: 'M3 18h18M4 18 2.5 7l5.5 4.5L12 4l4 7.5L21.5 7 20 18M12 14h.01',
   skull:'M12 2a8 8 0 0 0-8 8c0 3 1.6 5.2 4 6.4V20h8v-3.6c2.4-1.2 4-3.4 4-6.4a8 8 0 0 0-8-8zM9 11h.01M15 11h.01M10 20v2M14 20v2',
 
   // Zone map area glyphs (placeholders).

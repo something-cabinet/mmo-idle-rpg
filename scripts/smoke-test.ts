@@ -4,6 +4,9 @@ import { DbConnection } from '../src/module_bindings';
 import type { Identity } from 'spacetimedb';
 import { combatStats, matchup } from '../spacetimedb/src/combat';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
+import { RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
+import { decodeSetup, raidRng, simulateRaid } from '../spacetimedb/src/raid';
+import { RARITIES } from '../spacetimedb/src/loot';
 
 const HOST = process.env.SPACETIMEDB_HOST ?? 'ws://localhost:3000';
 const DB = process.env.SPACETIMEDB_DB_NAME ?? 'mmo-idle-rpg';
@@ -122,7 +125,7 @@ await expectError('locked zone rejected', a.conn.reducers.setTarget({ enemyId: 2
   const last = logs.at(-1)!;
   check('a settle with kills is logged with its rewards', !last.offline && last.kills > 0 && last.enemyId === 101 &&
     last.xp === BigInt(last.kills * 7) && last.gold === BigInt(last.kills * 2) && last.viable &&
-    last.salvaged.length === 6 && last.levelFrom === 1, `kills=${last.kills} xp=${last.xp} gold=${last.gold}`);
+    last.salvaged.length === RARITIES.length && last.levelFrom === 1, `kills=${last.kills} xp=${last.xp} gold=${last.gold}`);
 }
 
 // Bosses: a fresh character loses to Grubnak (winning needs gear the test can't get).
@@ -236,6 +239,61 @@ await sleep(200);
 await b.conn.reducers.inspectCharacter({ characterId: 0n });
 await sleep(200);
 check('stop inspecting clears the views', b.conn.db.inspectedCharacter.count() === 0n && b.conn.db.inspectedItems.count() === 0n);
+
+// Raids: party up, hire NPCs, start; the scheduled finish logs it. The dev cheats unlock the raid and pay for the hires.
+{
+  const partyOf = (c: Client) => {
+    const m = c.conn.db.raidMember.characterId.find(charOf(c)!.id);
+    return m ? c.conn.db.raidParty.id.find(m.partyId) : undefined;
+  };
+  await expectError('raid locked before the T3 boss', a.conn.reducers.createRaidParty({ raidId: 1 }), 'to unlock');
+  await a.conn.reducers.devUnlockZones({});
+  await b.conn.reducers.devUnlockZones({});
+  await expectError('unknown raid rejected', a.conn.reducers.createRaidParty({ raidId: 99 }), 'No such raid');
+  await a.conn.reducers.createRaidParty({ raidId: 1 });
+  await sleep(200);
+  const party = partyOf(a)!;
+  check('a raid party is formed, led by its creator', party?.leaderId === charOf(a)!.id);
+  await expectError('one raid party at a time', a.conn.reducers.createRaidParty({ raidId: 1 }), 'Leave your raid party first');
+  await b.conn.reducers.joinRaidParty({ partyId: party.id });
+  await expectError('only the leader hires', b.conn.reducers.setRaidHires({ count: 1 }), 'Only the party leader');
+  await expectError('no more hires than empty seats', a.conn.reducers.setRaidHires({ count: 3 }), 'Not enough empty seats');
+  await a.conn.reducers.setRaidHires({ count: 2 });
+  await sleep(200);
+  check('two NPCs hired', partyOf(a)!.hired === 2);
+  check("members see each other's gear through the party views", b.conn.db.raidPartyCharacters.count() === 2n && b.conn.db.raidPartyLoadouts.count() === 2n &&
+    b.conn.db.raidPartyItems.count() > 0n);
+  if (charOf(a)!.gold < 4000n) await expectError('hires need gold', a.conn.reducers.startRaid({}), 'costs 4');
+  await a.conn.reducers.devGrant({ gold: 4000n, dust: 0n });
+  await sleep(200);
+  const gold = charOf(a)!.gold;
+  await expectError('only the leader starts', b.conn.reducers.startRaid({}), 'Only the party leader');
+  await a.conn.reducers.startRaid({});
+  await sleep(200);
+  const fight = partyOf(a)!.fight!;
+  check('the fight starts with 2 players and 2 NPCs', !!fight && !fight.finished && decodeSetup(fight.setup).fighters.map(f => f.characterId === 0n).join() === 'false,false,true,true');
+  check('the leader paid 4,000 gold for the hires', fight.hireCost === 4000n && charOf(a)!.gold >= gold - 4000n && charOf(a)!.gold <= gold + 500n - 4000n,
+    `${gold} → ${charOf(a)!.gold}`);
+  await expectError('no leaving mid-fight', b.conn.reducers.leaveRaid({}), 'wait for it');
+  await expectError('no joining mid-fight', a.conn.reducers.joinRaidParty({ partyId: party.id }), 'Leave your raid party first');
+  // Level-1 characters wipe within seconds.
+  const left = Number(fight.endsAt.microsSinceUnixEpoch / 1000n) - Date.now();
+  console.log(`… waiting ${(Math.max(0, left) / 1000 + 1.5).toFixed(1)} s for the raid fight`);
+  await sleep(Math.max(0, left) + 1500);
+  const done = partyOf(a)!.fight!;
+  const logA = [...a.conn.db.myRaidLog.iter()].find(l => l.partyId === party.id);
+  const logB = [...b.conn.db.myRaidLog.iter()].find(l => l.partyId === party.id);
+  check('the fight is settled when it ends: starter gear wipes', done.finished && !done.won);
+  check('the clients replay the very fight the server played', simulateRaid(decodeSetup(done.setup), RAIDS_BY_ID.get(1)!, raidRng(party.id, done.startedAt.microsSinceUnixEpoch)).won === done.won);
+  check('each player gets a raid log; a loss rewards nothing', !!logA && !!logB && !logA.rewarded && !logB.rewarded && logA.itemId === 0n &&
+    logA.hireCost === 4000n && logB.hireCost === 0n);
+  await a.conn.reducers.leaveRaid({});
+  await sleep(200);
+  check('the leader leaving passes the lead on', partyOf(b)?.leaderId === charOf(b)!.id && partyOf(b)!.hired === 2);
+  await b.conn.reducers.leaveRaid({});
+  await sleep(200);
+  check('an empty party disbands', !a.conn.db.raidParty.id.find(party.id));
+}
 
 await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.me, banned: true }), 'Admins only');
 await b.conn.reducers.offerLink({ target: a.me });

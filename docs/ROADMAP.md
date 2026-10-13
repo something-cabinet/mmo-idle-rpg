@@ -152,6 +152,13 @@ fighting the target enemy with the active loadout.
   - Character: every stat row's tooltip lists its base, primary bonuses, caps,
     active legendary effects and the items that add to it.
   - Settings: number format, short (1.2k) or full (1,234), in `format.ts`.
+- **Raids** (raids.md): `data/raids.ts` (Wyrm Hollow, T3), `raid.ts` (pure: `simulateRaid`,
+  `npcStats`, `raidOdds`, `rollRaidItem`, lockout), tables `raid_party` / `raid_member`
+  (public), `raid_log` (private, view `my_raid_log`), `raid_timer` (scheduled `finishRaid`),
+  `character.raidTokens`; views `raid_party_characters` / `_loadouts` / `_items` for the
+  party's stats. Reducers `createRaidParty`, `joinRaidParty`, `leaveRaid`, `kickFromRaid`,
+  `setRaidHires`, `startRaid`. Raids page (`RaidsView.tsx`). Checks: `npm run test:raid`, and
+  a raid flow in the smoke test.
 - **Not yet** (ui.md): mobile layout.
   The loot log and the away report's item lines were checked in code and the smoke
   test, but not seen in the browser with real drops (they're rare early on).
@@ -178,7 +185,7 @@ The planned milestones are done. Candidates, to pick with the user:
   `npm run spacetime:publish:local -- -y` (the prompt needs `-y` when the schema
   changes), `npm run spacetime:generate` after schema changes, `npm run dev`.
 - **Checks**: `npm run typecheck`, `npm run test:data`, `test:combat`, `test:loot`,
-  `test:equip`, `test:craft`
+  `test:equip`, `test:craft`, `test:raid`
   (no server), `npm run test:smoke`
   (needs the local server with the module published).
 - **Stopping the dev server**: stopping `npm run dev` can leave Vite's node process

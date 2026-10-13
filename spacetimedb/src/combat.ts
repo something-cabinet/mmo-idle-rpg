@@ -26,6 +26,8 @@ export interface GearWeapon {
   speedMilli: number;
   baseCritBp: number;
   heal: bigint;
+  /** Who a heal lands on in a raid; solo, heals always land on yourself. */
+  healTarget?: { tag: 'Single' | 'All' };
 }
 export interface GearItem {
   implicits: readonly GearStat[];
@@ -46,6 +48,8 @@ export interface AttackSource {
   hit: Record<DamageType, number>;
   /** Heal per hit after scaling; 0 for weapons without a heal effect. */
   heal: number;
+  /** In a raid the heal is split across the party; otherwise it goes to the most hurt ally (raid.ts). */
+  healAll: boolean;
   attacksPerSec: number;
   /** Uncapped; rolls use at most 1. */
   critChance: number;
@@ -154,6 +158,7 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     sources.push({
       hit,
       heal,
+      healAll: w.healTarget?.tag === 'All',
       // Ambush: × 0.7 after the floor, so it always costs speed.
       attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1),
       critChance,

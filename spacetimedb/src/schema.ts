@@ -58,6 +58,8 @@ export const character = table(
     targetEnemyId: t.u16().default(101),
     /** Crafting material from salvage (was `essence`). */
     dust: t.u64().default(0n),
+    /** Currency from raid kills (raids.md), to trade for things later. */
+    raidTokens: t.u64().default(0n),
   }
 );
 
@@ -386,6 +388,83 @@ export const chatMessage = table(
   }
 );
 
+/** A raid fight, decided when the leader starts it (raid.ts `simulateRaid`); clients replay it from `setup`. */
+export const RaidFight = t.object('RaidFight', {
+  startedAt: t.timestamp(),
+  /** When the fight is over and `finishRaid` grants the rewards. */
+  endsAt: t.timestamp(),
+  /** raid.ts `RaidSetup` (`encodeSetup`): every fighter's name and combat stats as of the start. */
+  setup: t.string(),
+  won: t.bool(),
+  /** Gold the leader paid for the hired NPCs. */
+  hireCost: t.u64(),
+  /** `finishRaid` has granted the rewards: the party can start again. */
+  finished: t.bool(),
+});
+
+/**
+ * A raid party (raids.md): players in `raid_member` plus `hired` NPC seats. Public, so
+ * players can find a party to join. Online only: members who leave the world leave it.
+ */
+export const raidParty = table(
+  { name: 'raid_party', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    /** Raid ID from data/raids.ts. */
+    raidId: t.u16(),
+    leaderId: t.u64(),
+    hired: t.u8(),
+    createdAt: t.timestamp(),
+    /** The fight in progress, or the last one (until the next starts). */
+    fight: RaidFight.optional(),
+  }
+);
+
+/** A player in a raid party; seats go in `joinedAt` order. Public, with the party. */
+export const raidMember = table(
+  { name: 'raid_member', public: true },
+  {
+    characterId: t.u64().primaryKey(),
+    partyId: t.u64().index('btree'),
+    /** Snapshot, so the party list needs no character rows. */
+    name: t.string(),
+    joinedAt: t.timestamp(),
+  }
+);
+
+/** One raid fight a character took part in, and what it got. Private; owners read theirs via `my_raid_log`. */
+export const raidLog = table(
+  { name: 'raid_log' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    raidId: t.u16(),
+    partyId: t.u64(),
+    /** The fight's start. */
+    startedAt: t.timestamp(),
+    won: t.bool(),
+    /** A win that granted rewards (false: lost, or rewards already claimed today). */
+    rewarded: t.bool(),
+    /** The item granted; 0 if none. */
+    itemId: t.u64(),
+    tokens: t.u64(),
+    gold: t.u64(),
+    xp: t.u64(),
+    /** Gold this character paid for hired NPCs (the leader). */
+    hireCost: t.u64(),
+  }
+);
+
+/** Drives `finishRaid`: one row per fight in progress, due when it ends. */
+export const raidTimer = table(
+  { name: 'raid_timer' },
+  {
+    scheduledId: t.u64().primaryKey().autoInc(),
+    scheduledAt: t.scheduleAt(),
+    partyId: t.u64(),
+  }
+);
+
 export const spacetimedb = schema({
   account,
   character,
@@ -404,6 +483,10 @@ export const spacetimedb = schema({
   discovery,
   settleLog,
   settleTimer,
+  raidParty,
+  raidMember,
+  raidLog,
+  raidTimer,
 }, {
   // Set only when publishing locally (package.json `spacetime:publish:local`); never on
   // Maincloud, so the dev cheats (reducers/dev.ts) refuse there.

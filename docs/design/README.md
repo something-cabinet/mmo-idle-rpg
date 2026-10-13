@@ -5,7 +5,8 @@ not decisions.
 
 | Doc | Covers |
 |---|---|
-| [combat.md](combat.md) | Auto-combat model, formulas, viability, settlement, raids |
+| [combat.md](combat.md) | Auto-combat model, formulas, viability, settlement |
+| [raids.md](raids.md) | Raid bosses: party of 4 online, threat, NPC hires, rewards and daily lockout |
 | [attributes.md](attributes.md) | Primary attributes, combat stats, stat IDs |
 | [equipment.md](equipment.md) | Slots, hands, weapon/armor bases, storage, loadouts |
 | [bases.md](bases.md) | Base templates and names per tier |
@@ -32,6 +33,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-13 | Raids (raids.md): party of 4, online only, a Raids page under Adventure. First raid Wyrm Hollow (T3, opens after Hrimvald): one fight per start, played by the server and replayed by the clients; the boss hits the top-threat fighter plus a party-wide breath, heals land on allies. Empty seats can be filled with hired NPCs (2,000 gold each, paid by the leader) at 0.8× the party's average player. A win gives each player once a day (00:00 UTC) a T3 Epic+ item (Epic 75 / Legendary 22 / Unique 3% from a raid-only pool), 10 raid tokens, gold and XP. Token shop and a precious raid material are planned, not built. *Illustrative numbers.* |
 | 2026-10-13 | Friendly duels (duels.md): fight a friend's character (current level and active loadout) for fun, no rewards. Client-only simulation, player against player with the combat formulas, 90 s limit then points; replayed hit by hit at real speed (2× toggle), with win odds over 500 duels. |
 | 2026-10-13 | Secret areas (zones.md): found by kills of one regular enemy of the zone, rumoured halfway (a shimmering spot and a rumour line), enforced in `setTarget` from `enemy_kill`. First: the Sunken Chapel in Greenhollow (1,000 Bog Wisp kills, hint at 500) with the Drowned Bellringer (T2 strength: Lv 22, Magic, Armored; XP 90, gold 24, so ~4.5× drops, and Rare and better × 2.5 via `rareDropMult`), whose enemy-bound unique The Drowned Hymnal drops only there (~0.25% per kill) and is its only unique. |
 | 2026-10-13 | Zone map (zones.md): each zone is a 2D map of 4 areas joined by branching paths. Nothing in an open zone is locked; an area shows as ??? until the player fights there (first kill, or while fighting there). Client-only, derived from `enemy_kill`; no server change. Replaces two earlier tries: a linear path with per-area kill gates (felt like a list, made idle players keep switching targets) and zone-wide kill thresholds with an Explored % bar (felt like a chore). |
@@ -134,5 +136,5 @@ not decisions.
 
 - **Zones and enemies:** curves in zones.md are illustrative; check them against the gear
   curves once those are set.
-- **Raids:** party size, boss mechanics, rewards.
+- **Raids:** what raid tokens buy; the precious raid material (raids.md "Planned").
 - **Stat ID freeze:** the list in attributes.md is a draft until the first item is saved.

@@ -24,7 +24,8 @@
     "test:craft": "tsx scripts/check-craft.ts",
     "test:sim": "tsx scripts/check-sim.ts",
     "test:encounters": "tsx scripts/check-encounters.ts",
-    "test:duel": "tsx scripts/check-duel.ts"
+    "test:duel": "tsx scripts/check-duel.ts",
+    "test:raid": "tsx scripts/check-raid.ts"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

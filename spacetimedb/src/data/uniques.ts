@@ -26,6 +26,8 @@ export interface UniqueDef {
   stats: UniqueStat[];
   /** Drops only from this enemy (a secret area's), which then drops no other unique. */
   enemyId?: number;
+  /** Drops only from this raid's boss (data/raids.ts), never from zone enemies. */
+  raidId?: number;
 }
 
 /** Each stat rolls in [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] × its value (uniques.md). */
@@ -58,6 +60,13 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.MaxHpPct }, { stat: Stat.Vitality }, { stat: Stat.ResistancePct }] },
   { id: 10, name: 'Avalanche Staff', tier: 3, baseId: 9, effects: [Effect.Ambush],
     stats: [{ stat: Stat.MagicDamagePct }, { stat: Stat.CritDamage }, { stat: Stat.MaxHp }] },
+  // Raid: Wyrm Hollow (T3). One per raid role: tank, healer, damage.
+  { id: 12, name: 'Wyrmscale Aegis', tier: 3, baseId: 20, effects: [Effect.Ironclad, Effect.SecondWind], raidId: 1,
+    stats: [{ stat: Stat.ThreatPct, x: 1.5 }, { stat: Stat.ArmorPct }, { stat: Stat.MaxHpPct }] },
+  { id: 13, name: "Hoardkeeper's Censer", tier: 3, baseId: 10, effects: [Effect.ZealotsOath, Effect.Runeguard], raidId: 1,
+    stats: [{ stat: Stat.HealPct, x: 1.25 }, { stat: Stat.Mind }, { stat: Stat.ResistancePct }] },
+  { id: 14, name: "Skaldrith's Fang", tier: 3, baseId: 2, effects: [Effect.Executioner, Effect.Rending], raidId: 1,
+    stats: [{ stat: Stat.CritDamage }, { stat: Stat.PhysDamagePct }, { stat: Stat.AttackSpeedPct }] },
 ];
 
 export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map(u => [u.id, u]));
@@ -65,10 +74,13 @@ export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map
 /**
  * Drop weight of a unique in a tier-`zoneTier` zone: every unique of that tier and
  * below can drop, current-tier ones most (each tier lower halves the weight).
- * Enemy-bound uniques never drop this way (see `uniquePool`).
+ * Enemy- and raid-bound uniques never drop this way (see `uniquePool`).
  */
 export const uniqueWeight = (u: UniqueDef, zoneTier: number): number =>
-  u.enemyId !== undefined || u.tier > zoneTier ? 0 : 0.5 ** (zoneTier - u.tier);
+  u.enemyId !== undefined || u.raidId !== undefined || u.tier > zoneTier ? 0 : 0.5 ** (zoneTier - u.tier);
+
+/** The uniques only raid `raidId`'s boss drops. */
+export const raidUniques = (raidId: number): UniqueDef[] => UNIQUES.filter(u => u.raidId === raidId);
 
 /**
  * The uniques `enemyId` can drop in a tier-`zoneTier` zone, with weights: its own if

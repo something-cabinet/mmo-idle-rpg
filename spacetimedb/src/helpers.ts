@@ -387,7 +387,32 @@ export function isFriend(ctx: Ctx, characterId: bigint, friendId: bigint): boole
   return false;
 }
 
+/**
+ * Takes `characterId` out of its raid party. The leader's seat passes to the next
+ * member; an empty party is disbanded. Callers must not do this during a fight.
+ */
+export function leaveRaidParty(ctx: Ctx, characterId: bigint) {
+  const m = ctx.db.raidMember.characterId.find(characterId);
+  if (!m) return;
+  ctx.db.raidMember.characterId.delete(characterId);
+  const party = ctx.db.raidParty.id.find(m.partyId);
+  if (!party) return;
+  const rest = raidMembers(ctx, party.id);
+  if (!rest.length) ctx.db.raidParty.id.delete(party.id);
+  else if (party.leaderId === characterId) ctx.db.raidParty.id.update({ ...party, leaderId: rest[0].characterId });
+}
+
+/** A raid party's members in seat order (joining order). */
+export function raidMembers(ctx: Ctx, partyId: bigint) {
+  return [...ctx.db.raidMember.partyId.filter(partyId)].sort((a, b) => (a.joinedAt.microsSinceUnixEpoch < b.joinedAt.microsSinceUnixEpoch ? -1 : 1));
+}
+
+/** The party is in a fight that hasn't been settled yet. */
+export const raidFighting = (party: { fight?: { finished: boolean } }) => !!party.fight && !party.fight.finished;
+
 export function deleteCharacter(ctx: Ctx, characterId: bigint) {
+  leaveRaidParty(ctx, characterId);
+  ctx.db.raidLog.characterId.delete(characterId);
   ctx.db.item.characterId.delete(characterId);
   ctx.db.loadout.characterId.delete(characterId);
   ctx.db.bossKill.characterId.delete(characterId);
@@ -430,6 +455,10 @@ export function leaveWorld(ctx: Ctx, who: Identity) {
   if (!pres) return;
   const ch = ctx.db.character.id.find(pres.characterId);
   if (ch) ctx.db.character.id.update(settle(ctx, ch));
+  // Raids are online only. Mid-fight the seat stays until `finishRaid`, which then drops it.
+  const m = ctx.db.raidMember.characterId.find(pres.characterId);
+  const party = m && ctx.db.raidParty.id.find(m.partyId);
+  if (m && !(party && raidFighting(party))) leaveRaidParty(ctx, pres.characterId);
   ctx.db.presence.identity.delete(who);
   ctx.db.chatCooldown.identity.delete(who);
   ctx.db.inspect.viewer.delete(who);

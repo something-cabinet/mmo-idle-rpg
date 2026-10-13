@@ -26,4 +26,5 @@ export default __t.row({
   zoneId: __t.u16().name("zone_id"),
   targetEnemyId: __t.u16().name("target_enemy_id"),
   dust: __t.u64(),
+  raidTokens: __t.u64().name("raid_tokens"),
 });

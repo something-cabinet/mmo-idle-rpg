@@ -7,8 +7,8 @@ main one. All costs scale steeply with item tier and rarity.
 
 - **Dust** is the salvage material, stored as a counter on the character (never as rows).
 - Enemies also drop tiered **Metal, Hide, Core, Cloth, Wood, Reagent and Gem** materials
-  (zones.md, "Materials"). Nothing uses them yet; they are for future recipes, potions
-  and hideout upgrades.
+  (zones.md, "Materials"). Life skills use them: recipes, buffs, tools and the
+  Hideout (life-skills.md).
 - Salvaging an item gives `dust(rarity) × 2.9^(T−1)`, the same ×2.9-per-tier growth
   as XP and gold, so old low-tier Dust barely helps with high-tier crafting.
 

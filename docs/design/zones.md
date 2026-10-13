@@ -217,10 +217,11 @@ each per tier, and an enemy drops only its zone's tier:
   added by hand where wanted.
 - Names per tier and the per-enemy lists are in zone-content.md
   (data/materials.ts, data/zones.ts).
-- No use yet: they are for future crafting recipes.
+- Used by life skills (life-skills.md), which also add Fish (kind 8) and gather Metal,
+  Wood, Reagent and Gem directly.
 
 ## Open
 
-- Material sinks (crafting recipes) and whether item find should raise material drops.
+- Whether item find should raise material drops.
 - Check the reference player's curves against the gear curves in detail (base
   templates per family, affix averages, level primaries).

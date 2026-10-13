@@ -5,8 +5,9 @@ import { useState } from 'react';
 import type { DbConnection } from '../module_bindings';
 import { call } from '../store';
 import { Icon } from './Icon';
+import type { InspectTab } from './Inspect';
 
-export function FriendsTab({ conn, onInspect }: { conn: DbConnection; onInspect: (characterId: bigint) => void }) {
+export function FriendsTab({ conn, onInspect }: { conn: DbConnection; onInspect: (characterId: bigint, tab?: InspectTab) => void }) {
   const [name, setName] = useState('');
   const online = new Set([...conn.db.presence.iter()].map(p => p.characterId));
   const chars = new Map([...conn.db.myFriendCharacters.iter()].map(c => [c.id, c]));
@@ -41,6 +42,9 @@ export function FriendsTab({ conn, onInspect }: { conn: DbConnection; onInspect:
                 {c.name}
               </button>
               <span className="muted">Lv {c.level}</span>
+              <button className="btn icon ghost friend-duel" title={`Duel ${c.name} (just for fun)`} onClick={() => onInspect(c.id, 'duel')}>
+                <Icon name="swords" />
+              </button>
               <button
                 className="btn icon ghost friend-remove"
                 title="Remove friend"

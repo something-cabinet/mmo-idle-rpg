@@ -13,7 +13,7 @@ import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
 import { FriendsTab } from './Friends';
-import { InspectPopup } from './Inspect';
+import { InspectPopup, type InspectTab } from './Inspect';
 import { AccountControls, Modal, perHour } from './shared';
 import { snapshot, type Snapshot } from './snapshot';
 import { BagView } from './views/BagView';
@@ -143,7 +143,7 @@ const useNarrow = () =>
     return () => narrow.removeEventListener('change', l);
   }, () => narrow.matches);
 
-function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnection; pres: Presence; mobile: boolean; onCollapse: (collapsed: boolean) => void; onInspect: (characterId: bigint) => void }) {
+function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnection; pres: Presence; mobile: boolean; onCollapse: (collapsed: boolean) => void; onInspect: (characterId: bigint, tab?: InspectTab) => void }) {
   const [tab, setTab] = useState<'chat' | 'online' | 'friends'>('chat');
   const [text, setText] = useState('');
   const log = useRef<HTMLUListElement>(null);
@@ -269,7 +269,7 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
   }, [chatVisible, latestChat]);
   let unread = 0;
   if (!chatVisible) for (const m of conn.db.chatMessage.iter()) if (m.id > seenChat) unread++;
-  const [inspecting, setInspecting] = useState<bigint>();
+  const [inspecting, setInspecting] = useState<{ id: bigint; tab?: InspectTab }>();
   const content = useRef<HTMLElement>(null);
   syncClock(pres);
   const row = conn.db.character.id.find(pres.characterId);
@@ -329,14 +329,22 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
           pres={pres}
           mobile={mobile}
           onCollapse={collapsed => (mobile ? setChatOpen(!collapsed) : collapseSocial(collapsed))}
-          onInspect={setInspecting}
+          onInspect={(id, tab) => setInspecting({ id, tab })}
         />
       </div>
       <BottomNav conn={conn} view={view} onNavigate={() => setChatOpen(false)} />
       <AwayReport s={viewSnap} pres={pres} />
       <DefeatReport s={viewSnap} pres={pres} />
       {inspecting !== undefined && (
-        <InspectPopup key={String(inspecting)} conn={conn} characterId={inspecting} version={version} onClose={() => setInspecting(undefined)} />
+        <InspectPopup
+          key={`${inspecting.id}:${inspecting.tab ?? 'gear'}`}
+          conn={conn}
+          characterId={inspecting.id}
+          version={version}
+          me={{ id: live.row.id, name: live.row.name, level: live.level, stats: live.stats }}
+          tab={inspecting.tab}
+          onClose={() => setInspecting(undefined)}
+        />
       )}
     </>
   );

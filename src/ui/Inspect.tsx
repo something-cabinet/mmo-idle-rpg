@@ -2,6 +2,7 @@
 // The server sends the inspected character through the `inspected_*` views (reducers/inspect.ts).
 
 import { useEffect, useMemo, useState } from 'react';
+import { DuelPanel, type Duelist } from './Duel';
 import type { DbConnection } from '../module_bindings';
 import { combatStats } from '../../spacetimedb/src/combat';
 import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
@@ -13,8 +14,21 @@ import { gearFor } from './snapshot';
 import { statSheet } from './statSheet';
 import { SLOT_GRID, SlotCell } from './views/EquipmentView';
 
-export function InspectPopup({ conn, characterId, version, onClose }: { conn: DbConnection; characterId: bigint; version: number; onClose: () => void }) {
+export type InspectTab = 'gear' | 'duel';
+
+export function InspectPopup({ conn, characterId, version, me, tab: initialTab = 'gear', onClose }: {
+  conn: DbConnection;
+  characterId: bigint;
+  version: number;
+  /** You, for a duel. */
+  me: Duelist;
+  tab?: InspectTab;
+  onClose: () => void;
+}) {
   const [openSlot, setOpenSlot] = useState<number>();
+  // Duels are with friends only.
+  const friend = [...conn.db.myFriends.iter()].some(f => f.friendId === characterId);
+  const [tab, setTab] = useState<InspectTab>(friend ? initialTab : 'gear');
   useEffect(() => {
     call(conn.reducers.inspectCharacter({ characterId }));
     return () => call(conn.reducers.inspectCharacter({ characterId: 0n }));
@@ -48,6 +62,18 @@ export function InspectPopup({ conn, characterId, version, onClose }: { conn: Db
       ) : (
         <>
           <p className="muted">{target ? `Fighting ${target.zone.name} › ${target.enemy.name}` : 'Idle'}</p>
+          {friend && (
+            <div className="seg">
+              <button className={`seg-btn${tab === 'gear' ? ' active' : ''}`} onClick={() => setTab('gear')}>Gear</button>
+              <button className={`seg-btn${tab === 'duel' ? ' active' : ''}`} onClick={() => setTab('duel')}>
+                <Icon name="swords" />Duel
+              </button>
+            </div>
+          )}
+          {tab === 'duel' ? (
+            <DuelPanel me={me} foe={{ id: characterId, name, level: view.ch.level, stats: view.stats }} />
+          ) : (
+          <>
           <div className="equip-layout">
             <div className="card equip-slots">
               {SLOT_GRID.map(i => (
@@ -61,6 +87,8 @@ export function InspectPopup({ conn, characterId, version, onClose }: { conn: Db
           <p className="muted hint">
             Click a slot to see its item. Evasion and DPS are against an average enemy of their level (Lv {view.ch.level}).
           </p>
+          </>
+          )}
         </>
       )}
     </Modal>

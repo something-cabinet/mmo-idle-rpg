@@ -740,7 +740,8 @@ select:focus,
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.friend-remove {
+.friend-remove,
+.friend-duel {
   flex: 0 0 auto;
 }
 
@@ -2331,4 +2332,100 @@ fieldset.affix-pick legend {
 }
 .dev-row select {
   max-width: 100%;
+}
+
+/* ------------------------------------------------------------------ duels (Duel.tsx) */
+.duel {
+  display: grid;
+  gap: 12px;
+}
+.duel-arena {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.duel-vs {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: 800;
+  color: var(--muted);
+}
+.duelist {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  transition: opacity 0.3s;
+}
+.duelist:last-of-type {
+  justify-items: end;
+  text-align: right;
+}
+.duelist .hpbar {
+  width: 100%;
+}
+.duelist-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.duelist.won .duelist-name::after {
+  content: ' 🏆';
+}
+.duelist.lost {
+  opacity: 0.55;
+}
+.duel-status {
+  text-align: center;
+  min-height: 22px;
+}
+.duel-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+  min-height: 105px;
+  font-size: 13px;
+}
+.duel-log li {
+  padding: 2px 8px;
+  border-left: 3px solid var(--border-strong);
+}
+.duel-log li.mine {
+  border-left-color: var(--ok);
+}
+.duel-log li.theirs {
+  border-left-color: var(--bad);
+}
+.duel-log li.crit {
+  font-weight: 700;
+  color: var(--gold);
+}
+.duel-log li:first-child {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+.duel-odds {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.duel-odds-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--bad) 55%, var(--surface-3));
+}
+.duel-odds-bar > div {
+  height: 100%;
+  background: var(--ok);
 }

@@ -203,7 +203,7 @@ function UniqueCard({ u }: { u: UniqueDef }) {
       {u.effects.map(id => {
         const e = EFFECTS_BY_ID.get(id);
         return (
-          <div className="item-legendary" key={id}>
+          <div className="item-legendary unique" key={id}>
             <strong><Icon name="sparkles" />{e?.name ?? `Effect ${id}`}</strong>
             <span>{e?.text}</span>
           </div>

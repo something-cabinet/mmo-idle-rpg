@@ -114,30 +114,44 @@ function stackedEffect(effects: EffectCounts, id: number, n: number): { text: st
   return { text: l.describe(effectAmount(effects, id)), waste };
 }
 
+/** Worn effects: legendary affixes and unique affixes in separate cards. */
 export function EffectsCard({ effects }: { effects: EffectCounts }) {
-  if (!effects.size) return null;
+  const all = [...effects];
+  const legendary = all.filter(([id]) => LEGENDARIES_BY_ID.has(id));
+  const unique = all.filter(([id]) => !LEGENDARIES_BY_ID.has(id));
   const both = effects.has(Effect.MidasTouch) && effects.has(Effect.ScholarsFocus);
+  const row = ([id, n]: [number, number], cls?: string) => {
+    const { text, waste } = stackedEffect(effects, id, n);
+    return (
+      <div className="stat-row" key={id}>
+        <span className={cls}>
+          <Icon name="sparkles" />
+          {EFFECTS_BY_ID.get(id)?.name ?? `Effect ${id}`}
+          {n > 1 && ` ×${n}`}
+        </span>
+        <span className="muted">
+          {text}
+          {waste && <span className="c-bad"> {waste}.</span>}
+        </span>
+      </div>
+    );
+  };
   return (
-    <div className="card">
-      <CardHead title="Legendary effects" />
-      {[...effects].map(([id, n]) => {
-        const { text, waste } = stackedEffect(effects, id, n);
-        return (
-          <div className="stat-row" key={id}>
-            <span>
-              <Icon name="sparkles" />
-              {EFFECTS_BY_ID.get(id)?.name ?? `Effect ${id}`}
-              {n > 1 && ` ×${n}`}
-            </span>
-            <span className="muted">
-              {text}
-              {waste && <span className="c-bad"> {waste}.</span>}
-            </span>
-          </div>
-        );
-      })}
-      {both && <p className="c-bad">Midas Touch and Scholar's Focus together: no XP and only × 1.25 gold.</p>}
-    </div>
+    <>
+      {legendary.length > 0 && (
+        <div className="card">
+          <CardHead title="Legendary affixes" />
+          {legendary.map(e => row(e, 'c-legendary'))}
+          {both && <p className="c-bad">Midas Touch and Scholar's Focus together: no XP and only × 1.25 gold.</p>}
+        </div>
+      )}
+      {unique.length > 0 && (
+        <div className="card">
+          <CardHead title="Unique affixes" />
+          {unique.map(e => row(e, 'c-unique'))}
+        </div>
+      )}
+    </>
   );
 }
 

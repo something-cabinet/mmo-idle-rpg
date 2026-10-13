@@ -99,7 +99,7 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
       {it.effects.map(id => {
         const e = EFFECTS_BY_ID.get(id);
         return (
-          <div className="item-legendary" key={id}>
+          <div className="item-legendary unique" key={id}>
             <strong>
               <Icon name="sparkles" />
               {e?.name ?? `Effect ${id}`}
@@ -140,7 +140,7 @@ export function ItemTile({ it, selected, badge, title, onClick }: { it: Item; se
         </span>
       )}
       {(it.legendary || it.effects.length > 0) && (
-        <span className="tile-leg">
+        <span className={`tile-leg${it.legendary ? '' : ' unique'}`}>
           <Icon name="sparkles" />
         </span>
       )}

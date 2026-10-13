@@ -1472,6 +1472,11 @@ select:focus,
   gap: 5px;
   color: var(--r-legendary);
 }
+.item-legendary.unique {
+  border-color: color-mix(in srgb, var(--r-unique) 45%, transparent);
+  background: color-mix(in srgb, var(--r-unique) 12%, transparent);
+}
+.item-legendary.unique strong { color: var(--r-unique); }
 .item-affixes {
   display: grid;
   gap: 3px;
@@ -1787,6 +1792,7 @@ select:focus,
   bottom: auto;
   color: var(--r-legendary);
 }
+.tile-leg.unique { color: var(--r-unique); }
 .tile-lock .ico,
 .tile-leg .ico {
   width: 13px;

@@ -214,10 +214,12 @@ export const lootFilter = table(
     minRarity: Rarity,
     /** Stat IDs: drops are kept only with one of these affixes (empty or all = any). */
     keepAffixes: t.array(t.u16()),
-    /** Base IDs: drops are kept only of these families (empty or all = any). */
+    /** Unused: base IDs from before item types. Drop at the M9 save reset. */
     keepBases: t.array(t.u16()).default([]),
     /** Drops are kept only with an affix of at least this tier (1 = any). */
     minAffixTier: t.u8().default(1),
+    /** Type IDs: drops are kept only of these types (empty = any; a full list is stored as empty). */
+    keepTypes: t.array(t.u16()).default([]),
   }
 );
 

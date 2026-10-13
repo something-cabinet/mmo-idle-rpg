@@ -1,5 +1,5 @@
 import { Fragment, memo } from 'react';
-import { BASE_LIST, type BaseKind } from '../../../spacetimedb/src/data/bases';
+import { TYPE_LIST, type BaseKind } from '../../../spacetimedb/src/data/bases';
 import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS, RARITIES } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
@@ -12,8 +12,8 @@ type LootFilterArgs = Parameters<Snapshot['conn']['reducers']['setLootFilter']>[
 
 const AFFIX_ENTRIES = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) }));
 const KIND_GROUP: Record<BaseKind, string> = { weapon: 'Weapons', offhand: 'Off-hands', armor: 'Armor', jewelry: 'Jewelry' };
-const BASE_ENTRIES = (Object.keys(KIND_GROUP) as BaseKind[]).flatMap(kind =>
-  BASE_LIST.filter(b => b.kind === kind).map(b => ({ id: b.id, label: b.family, group: KIND_GROUP[kind] }))
+const TYPE_ENTRIES = (Object.keys(KIND_GROUP) as BaseKind[]).flatMap(kind =>
+  TYPE_LIST.filter(t => t.kind === kind).map(t => ({ id: t.id, label: t.name, group: KIND_GROUP[kind] }))
 );
 
 function FilterSummary({ s }: { s: Snapshot }) {
@@ -91,7 +91,7 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
   const f: LootFilterArgs = {
     minRarity: s.filter?.minRarity ?? { tag: 'Magic' },
     keepAffixes: s.filter?.keepAffixes ?? [],
-    keepBases: s.filter?.keepBases ?? [],
+    keepTypes: s.filter?.keepTypes ?? [],
     minAffixTier: s.filter?.minAffixTier ?? 1,
   };
   const setFilter = (patch: Partial<LootFilterArgs>) => call(s.conn.reducers.setLootFilter({ ...f, ...patch }));
@@ -138,12 +138,13 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
         </div>
         <div className="card">
           <KeepList
-            title="Only keep these families"
-            one="family"
-            many="families"
-            entries={BASE_ENTRIES}
-            keep={new Set(f.keepBases)}
-            onChange={keepBases => setFilter({ keepBases })}
+            title="Only keep these item types"
+            one="item type"
+            many="item types"
+            entries={TYPE_ENTRIES}
+            // Stored empty when all are kept (so new types are kept too); shown all checked.
+            keep={new Set(f.keepTypes.length ? f.keepTypes : TYPE_ENTRIES.map(e => e.id))}
+            onChange={keepTypes => setFilter({ keepTypes })}
           />
         </div>
       </div>

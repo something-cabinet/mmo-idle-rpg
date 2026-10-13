@@ -1,6 +1,6 @@
 // Consistency checks for the static game data (spacetimedb/src/data). No server needed:
 //   npm run test:data
-import { BASE_LIST, ZONE_BASES, TRACKS, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
+import { BASE_LIST, TYPES, TYPE_LIST, ZONE_BASES, TRACKS, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
@@ -18,7 +18,15 @@ const unique = (xs: number[]) => new Set(xs).size === xs.length;
 const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
 check('base IDs unique', unique(BASE_LIST.map(b => b.id)));
-check('35 bases', BASE_LIST.length === 35, String(BASE_LIST.length));
+check('34 types', TYPE_LIST.length === 34, String(TYPE_LIST.length));
+check('type IDs unique', unique(TYPE_LIST.map(t => t.id)));
+check('every type has a core base of its ID; the core bases are the zone bases', TYPE_LIST.every(t => base(t.id).typeId === t.id) &&
+  ZONE_BASES.length === TYPE_LIST.length);
+check('bases match their type', BASE_LIST.every(b => {
+  const t = TYPES.get(b.typeId);
+  return !!t && t.kind === b.kind && t.name === b.family && t.slots.join() === b.slots.join();
+}));
+check('variants have a source', BASE_LIST.every(b => b.id === b.typeId || b.raidId !== undefined));
 check('raid-only bases: their raid exists and drops them', BASE_LIST.every(b => b.raidId === undefined ||
   RAIDS_BY_ID.get(b.raidId)?.boss.drops.includes(b.id) === true));
 check("raids drop no other raid's bases", RAIDS.every(r => r.boss.drops.every(id => [undefined, r.id].includes(base(id).raidId))));

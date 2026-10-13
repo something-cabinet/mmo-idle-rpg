@@ -1,9 +1,15 @@
-// Item bases (docs/design/bases.md). A base is a family; an item is (base, tier).
-// Pure data, shared by server and client.
+// Item types and bases (docs/design/bases.md). Pure data, shared by server and client.
 //
-// PERMANENT IDS: base IDs are stored on items and in loot tables; never reuse or
-// renumber them. Names and templates may change (they only affect new drops).
+// A type is a category (Sword, Plate · Chest): slot, glyph, legendary group, loot-filter
+// entry. A base is a variant of a type with its own name and stats. An item is
+// (base, tier). Every type has a core base with the same ID that drops in every zone;
+// any other base of the type (a variant) has a source instead, e.g. a raid.
+//
+// PERMANENT IDS: base IDs are stored on items and in loot tables, type IDs in loot
+// filters; never reuse or renumber them. Names and templates may change (they only
+// affect new drops).
 
+import type { LegendaryGroup } from './legendary';
 import { MAX_TIER, Stat, curve, roundStat, wholeValue, type Curve, type StatId } from './stats';
 
 /** Equipment slots, in loadout order. Stored as indexes: never reorder. */
@@ -38,10 +44,24 @@ export interface WeaponTemplate {
   ranged: boolean;
 }
 
-export interface BaseDef {
+export interface TypeDef {
   id: number;
   kind: BaseKind;
-  /** Display family, e.g. "Sword", "Plate · Chest". */
+  /** Display name, e.g. "Sword", "Plate · Chest". */
+  name: string;
+  slots: readonly Slot[];
+  /** Item glyph: src/ui/Icon.tsx `i-<icon>`. */
+  icon: string;
+  /** The legendary group its items roll from (legendary.md). */
+  group: LegendaryGroup;
+}
+
+export interface BaseDef {
+  id: number;
+  /** Its type (`TYPES`); kind, family and slots are the type's. */
+  typeId: number;
+  kind: BaseKind;
+  /** The type's name, e.g. "Sword", "Plate · Chest". */
   family: string;
   slots: readonly Slot[];
   /** Name for tier t (1..9). */
@@ -81,13 +101,18 @@ const gemName = (primary: keyof typeof GEMS, piece: string) => (t: number) =>
 const pct = (stat: StatId, p: number): Implicit => ({ stat, value: p, curve: 'percent' });
 const lin = (stat: StatId, v: number): Implicit => ({ stat, value: v, curve: 'linear' });
 
+/** A type and its core base in one: the core base takes the type's ID. */
+type CoreDef = Omit<BaseDef, 'typeId'> & { icon?: string; group?: LegendaryGroup };
+
+const KIND_GROUP: Record<BaseKind, LegendaryGroup> = { weapon: 'Offense', offhand: 'Offense', armor: 'Defense', jewelry: 'Utility' };
+
 function weapon(
   id: number,
   family: string,
   track: keyof typeof TRACKS,
   w: WeaponTemplate,
   implicits: Implicit[] = []
-): BaseDef {
+): CoreDef {
   return { id, kind: 'weapon', family, slots: ['MainHand'], name: tracked(track, family), implicits, weapon: w };
 }
 
@@ -115,7 +140,7 @@ const ARMOR_SETS: Record<keyof typeof ARMOR_PIECES, Implicit[]> = {
 const ARMOR_TRACK = { cloth: 'cloth', leather: 'leather', plate: 'metal' } as const;
 const ARMOR_FIRST_ID = { cloth: 30, leather: 34, plate: 38 } as const;
 
-function armorBases(): BaseDef[] {
+function armorBases(): CoreDef[] {
   return (Object.keys(ARMOR_PIECES) as (keyof typeof ARMOR_PIECES)[]).flatMap(weight =>
     ARMOR_SLOTS.map((slot, i) => ({
       id: ARMOR_FIRST_ID[weight] + i,
@@ -123,6 +148,7 @@ function armorBases(): BaseDef[] {
       family: `${weight[0].toUpperCase()}${weight.slice(1)} · ${slot}`,
       slots: [slot],
       name: tracked(ARMOR_TRACK[weight], ARMOR_PIECES[weight][i]),
+      icon: slot.toLowerCase(),
       implicits: ARMOR_SETS[weight].map(imp => ({ ...imp, value: imp.value * SHARE[i] })),
     }))
   );
@@ -130,7 +156,7 @@ function armorBases(): BaseDef[] {
 
 const PRIMARY_STAT = { Might: Stat.Might, Finesse: Stat.Finesse, Mind: Stat.Mind, Vitality: Stat.Vitality } as const;
 
-function jewelryBases(): BaseDef[] {
+function jewelryBases(): CoreDef[] {
   return (Object.keys(GEMS) as (keyof typeof GEMS)[]).flatMap((primary, i) => [
     {
       id: 50 + i,
@@ -138,6 +164,7 @@ function jewelryBases(): BaseDef[] {
       family: `Ring · ${GEMS[primary][0]}`,
       slots: ['Ring1', 'Ring2'] as const,
       name: gemName(primary, 'Ring'),
+      icon: 'ring',
       implicits: [pct(PRIMARY_STAT[primary], 20)],
     },
     {
@@ -146,12 +173,13 @@ function jewelryBases(): BaseDef[] {
       family: `Amulet · ${GEMS[primary][0]}`,
       slots: ['Amulet'] as const,
       name: gemName(primary, 'Amulet'),
+      icon: 'amulet',
       implicits: [pct(PRIMARY_STAT[primary], 30)],
     },
   ]);
 }
 
-export const BASE_LIST: BaseDef[] = [
+const CORE: CoreDef[] = [
   weapon(1, 'Sword', 'metal', { damageType: 'Physical', hit: 10, speed: 1.0, baseCrit: 5, twoHanded: false, ranged: false }, [pct(Stat.Might, 60)]),
   weapon(2, 'Dagger', 'metal', { damageType: 'Physical', hit: 4.75, speed: 2.0, baseCrit: 8, twoHanded: false, ranged: false }, [pct(Stat.CritChancePct, 30)]),
   weapon(3, 'Mace', 'metal', { damageType: 'Physical', hit: 11.75, speed: 0.8, baseCrit: 5, twoHanded: false, ranged: false }, [pct(Stat.ArmorPenPct, 15)]),
@@ -163,21 +191,13 @@ export const BASE_LIST: BaseDef[] = [
   weapon(9, 'Fire Staff', 'wood', { damageType: 'Magic', hit: 18.75, speed: 0.8, baseCrit: 5, twoHanded: true, ranged: true }),
   weapon(10, 'Healing Staff', 'wood', { damageType: 'Magic', hit: 5, speed: 1.0, baseCrit: 5, heal: 7.5, healTarget: 'All', twoHanded: true, ranged: true }),
   weapon(11, 'Crossbow', 'wood', { damageType: 'Physical', hit: 18, speed: 0.7, baseCrit: 12, twoHanded: true, ranged: true }, [pct(Stat.CritDamage, 40)]),
-  // Wyrm Hollow (raid 1, T3): a sword carved from the Rime Wyrm's fang. A little faster than a sword, with frost resistance.
-  {
-    ...weapon(12, 'Sword · Wyrmfang', 'metal', { damageType: 'Physical', hit: 10, speed: 1.1, baseCrit: 6, twoHanded: false, ranged: false }, [
-      pct(Stat.Might, 60),
-      lin(Stat.Resistance, 4),
-    ]),
-    name: () => 'Wyrmfang Sword',
-    raidId: 1,
-  },
   {
     id: 20,
     kind: 'offhand',
     family: 'Shield',
     slots: ['OffHand'],
     name: tracked('metal', 'Shield'),
+    group: 'Defense',
     implicits: [lin(Stat.Armor, 8), { stat: Stat.MaxHp, value: 5, curve: 'life' }, pct(Stat.ThreatPct, 15)],
   },
   {
@@ -186,6 +206,7 @@ export const BASE_LIST: BaseDef[] = [
     family: 'Greatshield',
     slots: ['OffHand'],
     name: tracked('metal', 'Greatshield'),
+    group: 'Defense',
     implicits: [
       lin(Stat.Armor, 10),
       { stat: Stat.MaxHp, value: 7, curve: 'life' },
@@ -205,13 +226,32 @@ export const BASE_LIST: BaseDef[] = [
   ...jewelryBases(),
 ];
 
+export const TYPE_LIST: TypeDef[] = CORE.map(c => ({
+  id: c.id,
+  kind: c.kind,
+  name: c.family,
+  slots: c.slots,
+  icon: c.icon ?? c.family.toLowerCase().replace(/ /g, '-'),
+  group: c.group ?? KIND_GROUP[c.kind],
+}));
+export const TYPES: ReadonlyMap<number, TypeDef> = new Map(TYPE_LIST.map(t => [t.id, t]));
+
+/**
+ * Variants: bases of an existing type with their own name and stats, never dropped in
+ * zones, so each needs a source (`raidId`). Kind, family and slots copy the type's.
+ * None yet.
+ */
+const VARIANTS: BaseDef[] = [];
+
+export const BASE_LIST: BaseDef[] = [...CORE.map(({ icon: _icon, group: _group, ...c }) => ({ ...c, typeId: c.id })), ...VARIANTS];
+
 /** Starter weapons a new character picks from (zone-content.md): sword, bow, wand, healing staff. */
 export const STARTER_WEAPONS = [1, 8, 5, 10] as const;
 /** Every new character also gets these, Common T1: Ratskin Vest and Ratskin Boots. */
 export const STARTER_ARMOR = [35, 37] as const;
 
-/** Bases that drop from zone enemies: every base but the raid-only ones. */
-export const ZONE_BASES = BASE_LIST.filter(b => b.raidId === undefined);
+/** Bases that drop from zone enemies: the core bases, one per type. */
+export const ZONE_BASES = BASE_LIST.filter(b => b.id === b.typeId);
 
 export const BASES: ReadonlyMap<number, BaseDef> = new Map(BASE_LIST.map(b => [b.id, b]));
 
@@ -219,6 +259,11 @@ export function base(id: number): BaseDef {
   const b = BASES.get(id);
   if (!b) throw new Error(`Unknown base ${id}`);
   return b;
+}
+
+/** The type of base `baseId`. */
+export function baseType(baseId: number): TypeDef {
+  return TYPES.get(base(baseId).typeId)!;
 }
 
 // ------------------------------------------------------------------ values at a tier

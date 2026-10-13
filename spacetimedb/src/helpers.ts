@@ -5,7 +5,7 @@ import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { Encounter as EncounterType, Found as FoundType, account, character, item, presence, settleLog, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project } from './game';
 import { rollEncounters } from './encounters';
-import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
+import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
@@ -107,7 +107,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       filter: {
         minRarity: filter?.minRarity.tag ?? 'Magic',
         keepAffixes: filter?.keepAffixes ?? [],
-        keepBases: filter?.keepBases ?? [],
+        keepTypes: filter?.keepTypes ?? [],
         minAffixTier: filter?.minAffixTier ?? 1,
       },
       bagFree: ch.bagSize - bagCount(ctx, ch.id),
@@ -291,8 +291,9 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
       characterId,
       minRarity: { tag: 'Magic' },
       keepAffixes: [...AFFIX_STAT_IDS],
-      keepBases: BASE_LIST.map(b => b.id),
+      keepBases: [],
       minAffixTier: 1,
+      keepTypes: [],
     });
   }
   // Characters from before discovery: what they own counts as found.

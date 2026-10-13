@@ -4,7 +4,7 @@ import { sessionStart, sessionTotals, sinceTargetChange } from '../../session';
 import { call, useTick } from '../../store';
 import { MAX_LEVEL } from '../../../spacetimedb/src/combat';
 import { xpToNext } from '../../../spacetimedb/src/game';
-import { RARITIES, restrictsAffixes, restrictsBases } from '../../../spacetimedb/src/loot';
+import { RARITIES, restrictsAffixes, restrictsTypes } from '../../../spacetimedb/src/loot';
 import { areaIndexOf } from '../../../spacetimedb/src/data/zones';
 import { nowMicros } from '../clock';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
@@ -118,7 +118,7 @@ function keepLabel(s: Snapshot) {
   const f = s.filter;
   const limits = [
     f && restrictsAffixes(f) && `${f.keepAffixes.length} affixes`,
-    f && restrictsBases(f) && `${f.keepBases.length} families`,
+    f && restrictsTypes(f) && `${f.keepTypes.length} item types`,
     f && f.minAffixTier > 1 && `T${f.minAffixTier}+ affix`,
   ].filter(Boolean);
   return `Keeping ${f?.minRarity.tag ?? 'Magic'}+${limits.length ? ` · ${limits.join(' · ')}` : ''}`;

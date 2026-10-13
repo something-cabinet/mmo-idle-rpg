@@ -2,8 +2,8 @@
 // legendary.md, crafting.md). Pure: shared by server and client, and every roll
 // comes from a seeded generator so a settle is reproducible.
 
-import { BASE_LIST, base, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
-import { LEGENDARIES, legendaryGroup } from './data/legendary';
+import { TYPE_LIST, base, baseType, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
+import { LEGENDARIES } from './data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
 import { UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniquePool, type UniqueDef } from './data/uniques';
 import { MATERIAL_CHANCE, materialOf } from './data/materials';
@@ -134,7 +134,7 @@ export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
 
 /** A legendary affix from the base's group: equal weights, bonus is half a regular affix roll of the item's top affix tier. */
 export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullable<NewItem['legendary']> {
-  const group = legendaryGroup(baseId, base(baseId).kind);
+  const group = baseType(baseId).group;
   const def = pick(rng, LEGENDARIES.filter(l => l.group === group));
   const [lo, hi] = affixRange(def.bonusStat, tier);
   const value = (lo + (hi - lo) * rng()) / 2;
@@ -244,20 +244,20 @@ export interface LootFilter {
    * these affixes. Empty or every affix means no affix restriction.
    */
   keepAffixes: readonly number[];
-  /** Base IDs (distinct): drops are kept only of these families. Empty or every base means any. */
-  keepBases: readonly number[];
+  /** Type IDs (distinct): drops are kept only of these types. Empty or every type means any. */
+  keepTypes: readonly number[];
   /** Drops are kept only with a regular affix of at least this tier; 1 means any. */
   minAffixTier: number;
 }
 
 /** The filter restricts affixes: some, but not all, are selected. */
 export const restrictsAffixes = (f: Pick<LootFilter, 'keepAffixes'>) => f.keepAffixes.length > 0 && f.keepAffixes.length < AFFIX_STAT_IDS.length;
-/** The filter restricts families: some, but not all, are selected. */
-export const restrictsBases = (f: Pick<LootFilter, 'keepBases'>) => f.keepBases.length > 0 && f.keepBases.length < BASE_LIST.length;
+/** The filter restricts types: some, but not all, are selected. */
+export const restrictsTypes = (f: Pick<LootFilter, 'keepTypes'>) => f.keepTypes.length > 0 && f.keepTypes.length < TYPE_LIST.length;
 
 export function passesFilter(item: NewItem, f: LootFilter): boolean {
   if (rarityRank(item.rarity.tag) < rarityRank(f.minRarity)) return false;
-  if (restrictsBases(f) && !f.keepBases.includes(item.baseId)) return false;
+  if (restrictsTypes(f) && !f.keepTypes.includes(base(item.baseId).typeId)) return false;
   if (f.minAffixTier > 1 && !item.affixes.some(a => a.tier >= f.minAffixTier)) return false;
   return !restrictsAffixes(f) || item.affixes.some(a => f.keepAffixes.includes(a.stat));
 }

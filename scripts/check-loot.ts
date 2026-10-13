@@ -1,7 +1,7 @@
 // Checks for drops, affix rolls, the loot filter and salvage (spacetimedb/src/loot.ts).
 // No server needed:
 //   npm run test:loot
-import { BASE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
+import { BASE_LIST, TYPE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, LEGENDARIES_BY_ID, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRange, affixRef, toStored } from '../spacetimedb/src/data/stats';
 import { UNIQUES, UNIQUES_BY_ID, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniqueWeight } from '../spacetimedb/src/data/uniques';
@@ -141,7 +141,7 @@ const session = (over: Partial<DropInput> = {}): DropInput => ({
   tier: 1,
   rewardScale: 1,
   itemFind: 0,
-  filter: { minRarity: 'Rare', keepAffixes: [], keepBases: [], minAffixTier: 1 },
+  filter: { minRarity: 'Rare', keepAffixes: [], keepTypes: [], minAffixTier: 1 },
   bagFree: 200,
   ...over,
 });
@@ -187,33 +187,33 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
 
   // Few enough drops to stay clear of the bag limit; uniques are always kept, so they're exempt.
   const filterKills = killsFor(45, 'Magic');
-  const wl = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [Stat.ItemFindPct], keepBases: [], minAffixTier: 1 } }));
+  const wl = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [Stat.ItemFindPct], keepTypes: [], minAffixTier: 1 } }));
   check('affix filter keeps only drops with a checked affix',
     wl.kept.length > 0 && wl.kept.every(it => it.uniqueId !== undefined || it.rarity.tag !== 'Common' && it.affixes.some(a => a.stat === Stat.ItemFindPct)),
     `${wl.kept.length} kept`);
-  const allAffixes = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: AFFIX_STAT_IDS, keepBases: [], minAffixTier: 1 } }));
-  const noAffixes = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [], keepBases: [], minAffixTier: 1 } }));
+  const allAffixes = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: AFFIX_STAT_IDS, keepTypes: [], minAffixTier: 1 } }));
+  const noAffixes = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [], keepTypes: [], minAffixTier: 1 } }));
   check('all affixes checked or none: no affix restriction',
     allAffixes.kept.length > wl.kept.length && allAffixes.kept.length === noAffixes.kept.length && allAffixes.salvaged.Magic === noAffixes.salvaged.Magic,
     `${allAffixes.kept.length} / ${noAffixes.kept.length} kept`);
 
   const family = wisp.enemy.drops[0];
-  const oneFamily = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [], keepBases: [family], minAffixTier: 1 } }));
+  const oneFamily = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [], keepTypes: [family], minAffixTier: 1 } }));
   check('family filter keeps only checked families',
     oneFamily.kept.length > 0 && oneFamily.kept.length < noAffixes.kept.length && oneFamily.kept.every(it => it.uniqueId !== undefined || it.baseId === family),
     `${oneFamily.kept.length} kept`);
-  const allBases = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [], keepBases: BASE_LIST.map(b => b.id), minAffixTier: 1 } }));
+  const allBases = rollDrops(seededRng(9n), session({ kills: filterKills, filter: { minRarity: 'Magic', keepAffixes: [], keepTypes: TYPE_LIST.map(t => t.id), minAffixTier: 1 } }));
   check('all families checked: no family restriction', allBases.kept.length === noAffixes.kept.length, `${allBases.kept.length} kept`);
-  const t3 = rollDrops(seededRng(9n), session({ tier: 5, kills: killsFor(35, 'Magic'), filter: { minRarity: 'Magic', keepAffixes: [], keepBases: [], minAffixTier: 3 } }));
-  const t3all = rollDrops(seededRng(9n), session({ tier: 5, kills: killsFor(35, 'Magic'), filter: { minRarity: 'Magic', keepAffixes: [], keepBases: [], minAffixTier: 1 } }));
+  const t3 = rollDrops(seededRng(9n), session({ tier: 5, kills: killsFor(35, 'Magic'), filter: { minRarity: 'Magic', keepAffixes: [], keepTypes: [], minAffixTier: 3 } }));
+  const t3all = rollDrops(seededRng(9n), session({ tier: 5, kills: killsFor(35, 'Magic'), filter: { minRarity: 'Magic', keepAffixes: [], keepTypes: [], minAffixTier: 1 } }));
   check('minimum affix tier keeps only drops with an affix that high',
     t3.kept.length > 0 && t3.kept.length < t3all.kept.length && t3.kept.every(it => it.uniqueId !== undefined || it.affixes.some(a => a.tier >= 3)),
     `${t3.kept.length} of ${t3all.kept.length} kept`);
 
   // A long session fills the bag to the last free slot (no per-settle cap below that).
-  const flood = rollDrops(seededRng(3n), session({ kills: killsFor(35, 'Epic'), bagFree: 50, filter: { minRarity: 'Common', keepAffixes: [], keepBases: [], minAffixTier: 1 } }));
+  const flood = rollDrops(seededRng(3n), session({ kills: killsFor(35, 'Epic'), bagFree: 50, filter: { minRarity: 'Common', keepAffixes: [], keepTypes: [], minAffixTier: 1 } }));
   check('bag limit keeps exactly the free slots', flood.kept.length === 50 && flood.overflow > 0, `overflow ${flood.overflow}`);
-  const roomy = rollDrops(seededRng(3n), session({ kills: 20_000, bagFree: 400, filter: { minRarity: 'Common', keepAffixes: [], keepBases: [], minAffixTier: 1 } }));
+  const roomy = rollDrops(seededRng(3n), session({ kills: 20_000, bagFree: 400, filter: { minRarity: 'Common', keepAffixes: [], keepTypes: [], minAffixTier: 1 } }));
   check('a long session fills a big bag', roomy.kept.length === 400, `${roomy.kept.length} kept`);
   check('… salvaging the lowest rarities first', flood.salvaged.Epic === 0 && flood.salvaged.Legendary === 0 &&
     flood.kept.every((it, i, xs) => i === 0 || rarityRank(xs[i - 1].rarity.tag) >= rarityRank(it.rarity.tag)));
@@ -229,8 +229,8 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   const FORTUNE = 0.15;
   // The upgrade rolls come after every drop roll, so the same seed keeps the same drops.
   const pairs = Array.from({ length: 300 }, (_, i) => [
-    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepBases: [], minAffixTier: 1 }, kills: killsFor(35, 'Common') })),
-    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepBases: [], minAffixTier: 1 }, kills: killsFor(35, 'Common'), fortune: FORTUNE })),
+    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepTypes: [], minAffixTier: 1 }, kills: killsFor(35, 'Common') })),
+    rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepTypes: [], minAffixTier: 1 }, kills: killsFor(35, 'Common'), fortune: FORTUNE })),
   ]);
   let eligible = 0;
   let raised = 0;
@@ -289,7 +289,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('regular enemies drop from the global pool', pickUnique(rng, 1, 101)!.enemyId === undefined && hasUniques(1, 101));
 
   // A big session with a filter that keeps nothing else: every unique is kept, from any enemy.
-  const keepNone = { minRarity: 'Legendary' as const, keepAffixes: [], keepBases: [], minAffixTier: 9 };
+  const keepNone = { minRarity: 'Legendary' as const, keepAffixes: [], keepTypes: [], minAffixTier: 9 };
   const uniqueKills = killsFor(30, 'Legendary');
   const runs = Array.from({ length: 40 }, (_, i) => rollDrops(seededRng(BigInt(1000 + i)), session({ kills: uniqueKills, tier: 2, filter: keepNone })));
   const uniq = runs.flatMap(r => r.kept.filter(it => it.rarity.tag === 'Unique'));
@@ -339,7 +339,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
 
   // Strict filter and a full bag: anomalies are still kept.
   const kills = Math.round(20 / ANOMALY_CHANCE);
-  const r = rollDrops(seededRng(3n), session({ kills, filter: { minRarity: 'Legendary', keepAffixes: [1], keepBases: [2], minAffixTier: 9 }, bagFree: 0 }));
+  const r = rollDrops(seededRng(3n), session({ kills, filter: { minRarity: 'Legendary', keepAffixes: [1], keepTypes: [2], minAffixTier: 9 }, bagFree: 0 }));
   const kept = r.kept.filter(it => it.rarity.tag === 'Anomaly').length;
   check(`~20 anomalies in ${kills.toLocaleString()} kills, kept past the filter and a full bag`,
     kept === r.kept.length && kept > 5 && kept < 40 && r.salvaged.Anomaly === 0, `${kept} kept`);

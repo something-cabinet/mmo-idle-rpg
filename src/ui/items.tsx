@@ -1,7 +1,7 @@
 // Item text and cards from `item` rows (names, stat lines, legendary effects).
 
 import type { Item } from '../module_bindings/types';
-import { base } from '../../spacetimedb/src/data/bases';
+import { base, baseType } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
 import { MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
@@ -22,14 +22,7 @@ export const materialIconName = (id: number) => `m-${(MATERIALS_BY_ID.get(id)?.k
 export const materialsText = (ms: readonly { materialId: number; count: number }[]) =>
   ms.map(m => `${m.count.toLocaleString()} ${materialName(m.materialId)}`).join(', ');
 
-export function itemIconName(it: { baseId: number }): string {
-  const b = base(it.baseId);
-  const name =
-    b.kind === 'armor' ? b.slots[0].toLowerCase()
-    : b.kind === 'jewelry' ? (b.slots[0] === 'Amulet' ? 'amulet' : 'ring')
-    : b.family.split(' · ')[0].toLowerCase().replace(/ /g, '-'); // "Sword · Wyrmfang" uses the sword glyph
-  return `i-${name}`;
-}
+export const itemIconName = (it: { baseId: number }) => `i-${baseType(it.baseId).icon}`;
 
 const num = (v: number) => String(Number(Math.abs(v).toFixed(2)));
 

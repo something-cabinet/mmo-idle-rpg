@@ -8,7 +8,6 @@
 // code, so changing it deliberately changes every item that has it.
 
 import { Stat, type StatId } from './stats';
-import type { BaseKind } from './bases';
 
 /** Effect IDs, for the formulas that check them. */
 export const Effect = {
@@ -129,16 +128,3 @@ export function effectAmount(effects: EffectCounts, id: number): number {
 
 /** Copies of `def` that reach its cap (Infinity if uncapped). */
 export const copiesToCap = (def: LegendaryDef): number => Math.ceil(def.cap / def.perCopy - 1e-9);
-
-/** Which legendary group a base kind rolls from. */
-export const GROUP_FOR_KIND: Record<BaseKind, LegendaryGroup> = {
-  weapon: 'Offense',
-  offhand: 'Offense', // tome; shields are overridden below
-  armor: 'Defense',
-  jewelry: 'Utility',
-};
-
-/** Shield (base 20) and greatshield (22) roll Defense; tome (21) rolls Offense. */
-export function legendaryGroup(baseId: number, kind: BaseKind): LegendaryGroup {
-  return baseId === 20 || baseId === 22 ? 'Defense' : GROUP_FOR_KIND[kind];
-}

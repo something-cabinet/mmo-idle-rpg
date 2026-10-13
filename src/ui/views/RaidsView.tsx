@@ -1,8 +1,8 @@
 // Raids (docs/design/raids.md): the raid boss, its rewards, the raid parties, and the
 // party's fight replayed from the stored setup (raid.ts). Online only.
 
-import { memo, useEffect, useMemo, useState } from 'react';
-import type { RaidMember, RaidParty } from '../../module_bindings/types';
+import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
+import type { Item, RaidLog, RaidMember, RaidParty } from '../../module_bindings/types';
 import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src/combat';
 import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
@@ -14,9 +14,10 @@ import { UNKNOWN, uniqueFound } from '../discovery';
 import { DefTag, DmgTag } from '../enemy';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
-import { ItemCard } from '../items';
-import { CardHead, ViewHeader } from '../shared';
+import { ItemCard, rarityCls, rarityLabel } from '../items';
+import { CardHead, Modal, ViewHeader } from '../shared';
 import { gearFor, type Snapshot } from '../snapshot';
+import { rarityRank } from '../../../spacetimedb/src/loot';
 
 /** "1:32". */
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
@@ -177,6 +178,9 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
     : offline.length ? `${offline.map(m => m.name).join(', ')} offline`
     : s.gold < cost ? `Need ${fmtBig(cost - s.gold)} more gold to hire` : undefined;
   const leader = members.find(m => m.characterId === party.leaderId);
+  const clearsLeft = Math.max(0, raid.clearsPerDay - clearsToday(conn.db.myRaidLog.iter(), raid.id, nowMicros()));
+  const [confirming, setConfirming] = useState(false);
+  const again = !!party.fight?.finished;
 
   const seat = (stats: CombatStats | undefined, i: number) =>
     stats && (
@@ -243,28 +247,66 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
         ))}
       </div>
 
-      {odds !== undefined && !fighting && (
-        <div className="duel-odds" title={`${RAID_ODDS_SAMPLES} simulated fights with this party`}>
-          <span>Win odds</span>
-          <div className="duel-odds-bar"><div style={{ width: `${odds * 100}%` }} /></div>
-          <strong>{pct(odds)}</strong>
+      {party.fight && <RaidFight key={String(party.fight.startedAt.microsSinceUnixEpoch)} s={s} raid={raid} party={party} />}
+
+      {!fighting && (
+        <div className={`raid-launch${leading ? ' leading' : ''}`}>
+          <div className="raid-launch-head">
+            <Icon name="swords" />
+            <div>
+              <div className="raid-launch-title">{again ? 'Fight again?' : 'Ready to fight?'}</div>
+              <div className="muted">{leading ? 'You lead: start when everyone is set.' : `${leader?.name ?? 'The leader'} starts the fight.`}</div>
+            </div>
+          </div>
+          <div className="raid-launch-facts">
+            <div><span>Party</span><strong>{members.length + party.hired}/{RAID_PARTY_SIZE}</strong>{party.hired > 0 && <small>{party.hired} hired</small>}</div>
+            <div title={`${RAID_ODDS_SAMPLES} simulated fights with this party`}>
+              <span>Win odds</span>
+              <strong className={odds === undefined ? '' : odds >= 0.6 ? 'c-ok' : odds >= 0.3 ? 'c-gold' : 'c-bad'}>{odds === undefined ? '…' : pct(odds)}</strong>
+            </div>
+            <div><span>Your clears</span><strong className={clearsLeft ? '' : 'c-bad'}>{clearsLeft}/{raid.clearsPerDay}</strong><small>left today</small></div>
+            {leading && <div><span>Hire cost</span><strong>{cost > 0n ? fmtBig(cost) : '0'}</strong><small>gold</small></div>}
+          </div>
+          {leading ? (
+            <div className="raid-launch-go">
+              <button className="btn primary raid-start" disabled={!!startBlock} onClick={() => setConfirming(true)}>
+                <Icon name="swords" />
+                {again ? 'Start again' : 'Start the raid'}
+              </button>
+              {startBlock && <span className="c-bad">{startBlock}</span>}
+            </div>
+          ) : (
+            <div className="raid-launch-wait">Waiting for {leader?.name ?? 'the leader'}<span className="dots"><i>.</i><i>.</i><i>.</i></span></div>
+          )}
         </div>
       )}
 
-      {!fighting && (
-        <div className="row raid-actions">
-          {leading ? (
-            <button className="btn primary" disabled={!!startBlock} title={startBlock} onClick={() => call(conn.reducers.startRaid({}))}>
+      {confirming && (
+        <Modal className="raid-confirm" onClose={() => setConfirming(false)}>
+          <CardHead title={`Fight ${raid.boss.name.split(',')[0]}?`} />
+          <ul className="raid-confirm-list">
+            <li><span>Party</span><strong>{[...members.map(m => m.name), ...Array.from({ length: party.hired }, (_, i) => `Hireling ${i + 1}`)].join(', ')}</strong></li>
+            <li><span>Win odds</span><strong>{odds === undefined ? '…' : pct(odds)}</strong></li>
+            {cost > 0n && <li><span>Hiring {party.hired} NPC{party.hired === 1 ? '' : 's'}</span><strong>{fmtBig(cost)} gold, paid now, win or lose</strong></li>}
+            <li><span>Your clears today</span><strong>{clearsLeft}/{raid.clearsPerDay} left</strong></li>
+          </ul>
+          {clearsLeft === 0 && <p className="c-bad">You have no clears left today: a win gives you no loot.</p>}
+          {odds !== undefined && odds < 0.3 && <p className="c-bad">Low odds: this party will most likely wipe.</p>}
+          <div className="row raid-confirm-actions">
+            <button className="btn ghost" onClick={() => setConfirming(false)}>Cancel</button>
+            <button
+              className="btn primary"
+              onClick={() => {
+                setConfirming(false);
+                call(conn.reducers.startRaid({}));
+              }}
+            >
               <Icon name="swords" />
-              Start the raid{cost > 0n ? ` · ${fmtBig(cost)} gold` : ''}
+              Start the fight
             </button>
-          ) : (
-            <span className="muted">Waiting for {leader?.name ?? 'the leader'} to start.</span>
-          )}
-          {startBlock && leading && <span className="muted">{startBlock}</span>}
-        </div>
+          </div>
+        </Modal>
       )}
-      {party.fight && <RaidFight key={String(party.fight.startedAt.microsSinceUnixEpoch)} s={s} raid={raid} party={party} />}
     </div>
   );
 }
@@ -336,9 +378,7 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
             </span>
           </div>
         ) : (
-          <strong className={fight.won ? 'c-ok' : 'c-bad'}>
-            {fight.won ? `Victory! ${raid.boss.name} falls at ${clock(result.end)}.` : result.enraged ? `${raid.boss.name} enrages: the party wipes.` : `The party wipes at ${clock(result.end)}.`}
-          </strong>
+          <RaidResult won={fight.won} text={fight.won ? `${raid.boss.name} falls at ${clock(result.end)}` : result.enraged ? `${raid.boss.name} enrages at ${clock(raid.enrageSeconds)}: the party wipes` : `The party wipes at ${clock(result.end)}`} />
         )}
       </div>
       {live && (
@@ -354,19 +394,63 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
       {!live && fight.won && (
         log ? (
           log.rewarded ? (
-            <div className="raid-loot">
-              <span>Your reward: {fmt(Number(log.tokens))} tokens · {fmtBig(log.gold)} gold · {fmtBig(log.xp)} XP</span>
-              <div className="raid-loot-items">
-                {loot.map(it => <ItemCard key={String(it.id)} it={it} compact />)}
-              </div>
-            </div>
+            <RaidLoot log={log} loot={loot} />
           ) : (
-            <p className="muted">No clears left today: nothing this time.</p>
+            <p className="raid-no-loot">No clears left today: no loot this time.</p>
           )
         ) : setup.fighters.some(f => f.characterId === s.row.id) ? (
-          <p className="muted">Collecting the loot…</p>
+          <div className="raid-loot-pending">
+            {Array.from({ length: raid.itemsPerClear }, (_, i) => <span key={i} style={{ '--delay': `${i * 0.15}s` } as CSSProperties}><Icon name="gem" /></span>)}
+            <div className="muted">Opening the hoard…</div>
+          </div>
         ) : null
       )}
+    </div>
+  );
+}
+
+/** Sparks over the victory banner: left position (%) and delay (s). */
+const SPARKS = [[8, 0], [18, 0.5], [27, 0.2], [36, 0.8], [45, 0.1], [55, 0.6], [63, 0.3], [72, 0.9], [81, 0.15], [90, 0.55]];
+
+/** The fight's verdict, as a banner. */
+function RaidResult({ won, text }: { won: boolean; text: string }) {
+  return (
+    <div className={`raid-result ${won ? 'victory' : 'defeat'}`}>
+      {won && (
+        <div className="raid-sparks" aria-hidden="true">
+          {SPARKS.map(([x, d], i) => <span key={i} style={{ '--x': `${x}%`, '--d': `${d}s` } as CSSProperties} />)}
+        </div>
+      )}
+      <div className="raid-result-title">{won ? 'Victory!' : 'Defeat'}</div>
+      <div className="raid-result-sub">{text}</div>
+    </div>
+  );
+}
+
+/** Your rewards from a win: the gains, then each item revealed in turn, rarer ones louder. */
+function RaidLoot({ log, loot }: { log: RaidLog; loot: Item[] }) {
+  const step = 0.7;
+  const first = 0.9;
+  const sorted = [...loot].sort((a, b) => rarityRank(a.rarity.tag) - rarityRank(b.rarity.tag)); // the best comes last
+  return (
+    <div className="raid-loot">
+      <div className="raid-loot-head">Your loot</div>
+      <div className="raid-gains">
+        <span style={{ '--delay': '0.2s' } as CSSProperties}><Icon name="crown" className="c-gold" />+{fmt(Number(log.tokens))} tokens</span>
+        <span style={{ '--delay': '0.35s' } as CSSProperties}><Icon name="coins" className="c-gold" />+{fmtBig(log.gold)} gold</span>
+        {log.xp > 0n && <span style={{ '--delay': '0.5s' } as CSSProperties}><Icon name="star" className="c-ok" />+{fmtBig(log.xp)} XP</span>}
+      </div>
+      <div className="raid-loot-items">
+        {sorted.map((it, i) => {
+          const big = rarityRank(it.rarity.tag) >= rarityRank('Legendary');
+          return (
+            <div key={String(it.id)} className={`loot-drop r-${rarityCls(it.rarity.tag)}${big ? ' big' : ''}`} style={{ '--delay': `${first + i * step}s` } as CSSProperties}>
+              <div className="loot-drop-label">{rarityLabel(it.rarity.tag)}{big ? '!' : ''}</div>
+              <ItemCard it={it} compact />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

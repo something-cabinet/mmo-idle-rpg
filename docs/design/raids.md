@@ -59,7 +59,8 @@ live fights (combat.md). The server's outcome is final.
 
 - Any character with the raid unlocked can **form a party** (it leads) or **join** an open
   one with a free seat. One party at a time. Parties are public, listed on the Raids page.
-- The leader can remove members, hire NPCs into empty seats, and start.
+- The leader can remove members, hire NPCs into empty seats, and start, after a confirm
+  that sums up the party, the odds, the hire cost and their clears left today.
 - **Online only:** leaving the world leaves the party (the lead passes to the next
   member; an empty party disbands). Starting needs every member online. Mid-fight,
   nobody can leave or join; a member who disconnects keeps the seat until the fight

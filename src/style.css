@@ -2910,3 +2910,321 @@ fieldset.affix-pick legend {
   color: var(--text);
   text-shadow: 0 0 2px var(--surface), 0 0 3px var(--surface), 0 0 5px var(--surface);
 }
+
+/* ------------------------------------------------------------------ raids: launch panel, confirm, result and loot */
+.raid-launch {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+}
+.raid-launch.leading {
+  border: 2px solid color-mix(in srgb, var(--accent) 65%, transparent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 14%, var(--surface-2)), var(--surface-2) 60%);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.raid-launch-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.raid-launch-head > .ico {
+  width: 28px;
+  height: 28px;
+  color: var(--accent);
+  flex: none;
+}
+.raid-launch-title {
+  font-size: 18px;
+  font-weight: 800;
+}
+.raid-launch-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 8px;
+}
+.raid-launch-facts > div {
+  display: grid;
+  gap: 1px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-3);
+}
+.raid-launch-facts span {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.raid-launch-facts strong {
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.raid-launch-facts small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.raid-launch-go {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+.btn.raid-start {
+  font-size: 16px;
+  font-weight: 800;
+  padding: 11px 26px;
+  min-width: 220px;
+  justify-content: center;
+}
+.btn.raid-start:not(:disabled) {
+  animation: raid-start-glow 2.2s ease-in-out infinite;
+}
+@keyframes raid-start-glow {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+  50% { box-shadow: 0 0 18px 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+}
+.raid-launch-wait {
+  font-size: 15px;
+  font-weight: 600;
+}
+.raid-launch-wait .dots i {
+  font-style: normal;
+  animation: wait-dot 1.2s infinite;
+}
+.raid-launch-wait .dots i:nth-child(2) { animation-delay: 0.2s; }
+.raid-launch-wait .dots i:nth-child(3) { animation-delay: 0.4s; }
+@keyframes wait-dot {
+  0%, 60%, 100% { opacity: 0.2; }
+  30% { opacity: 1; }
+}
+.raid-confirm-list {
+  list-style: none;
+  margin: 4px 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+.raid-confirm-list li {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 8px;
+}
+.raid-confirm-list span {
+  color: var(--muted);
+}
+.raid-confirm-actions {
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* The verdict. */
+.raid-result {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 18px 12px 16px;
+  border-radius: 12px;
+  overflow: hidden;
+  animation: result-in 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.raid-result.victory {
+  background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--gold) 30%, transparent), transparent 70%);
+  border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--gold) 22%, transparent);
+}
+.raid-result.defeat {
+  background: radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--bad) 22%, transparent), transparent 70%);
+  border: 1px solid color-mix(in srgb, var(--bad) 40%, transparent);
+}
+.raid-result-title {
+  font-size: 44px;
+  line-height: 1.05;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.raid-result.victory .raid-result-title {
+  background: linear-gradient(100deg, var(--gold) 0%, color-mix(in srgb, var(--gold) 55%, #fff) 45%, var(--gold) 55%, color-mix(in srgb, var(--gold) 70%, #ff9a3d) 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--gold) 45%, transparent));
+  animation: title-shine 2.4s linear infinite;
+}
+.raid-result.defeat .raid-result-title {
+  color: var(--bad);
+}
+.raid-result-sub {
+  font-size: 15px;
+  font-weight: 600;
+}
+@keyframes result-in {
+  from { opacity: 0; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes title-shine {
+  from { background-position: 100% 0; }
+  to { background-position: -150% 0; }
+}
+.raid-sparks span {
+  position: absolute;
+  left: var(--x);
+  bottom: -6px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+  opacity: 0;
+  animation: spark-rise 2.2s ease-out var(--d) infinite;
+}
+@keyframes spark-rise {
+  0% { opacity: 0; transform: translateY(0) scale(1); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-110px) scale(0.4); }
+}
+
+/* The loot. */
+.raid-loot {
+  display: grid;
+  gap: 10px;
+}
+.raid-loot-head {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: center;
+}
+.raid-gains {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.raid-gains > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 800;
+  background: var(--surface-3);
+  animation: pop-in 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) var(--delay) both;
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+.loot-drop {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 12px;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--rc) 28%, transparent), transparent 75%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rc) 45%, transparent), 0 0 18px color-mix(in srgb, var(--rc) 25%, transparent);
+  animation: loot-in 0.6s cubic-bezier(0.2, 1.5, 0.4, 1) var(--delay) both;
+}
+.loot-drop::before {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--rc) 55%, transparent), transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+  animation: loot-burst 0.9s ease-out var(--delay) both;
+}
+.loot-drop-label {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--rc);
+}
+.loot-drop.big {
+  box-shadow: 0 0 0 2px var(--rc), 0 0 30px color-mix(in srgb, var(--rc) 45%, transparent);
+}
+.loot-drop.big .loot-drop-label {
+  font-size: 16px;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--rc) 70%, transparent);
+}
+.loot-drop.big::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(110deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: loot-shine 2.6s ease-in-out calc(var(--delay) + 0.5s) infinite;
+  background-position: 150% 0;
+}
+@keyframes loot-in {
+  0% { opacity: 0; transform: translateY(26px) scale(0.6); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes loot-burst {
+  0% { opacity: 0; transform: scale(0.3); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@keyframes loot-shine {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
+}
+.raid-loot-pending {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+}
+.raid-loot-pending > span .ico {
+  width: 30px;
+  height: 30px;
+  color: var(--gold);
+  animation: chest-bob 0.9s ease-in-out var(--delay) infinite alternate;
+}
+.raid-loot-pending > div {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  text-align: center;
+}
+@keyframes chest-bob {
+  from { transform: translateY(0) rotate(-6deg); }
+  to { transform: translateY(-6px) rotate(6deg); }
+}
+.raid-no-loot {
+  text-align: center;
+  font-weight: 600;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .raid-result-title { font-size: 34px; }
+  .raid-confirm-list li { grid-template-columns: 1fr; gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .raid-result, .raid-result-title, .raid-sparks span, .raid-gains > span, .loot-drop, .loot-drop::before, .loot-drop.big::after,
+  .btn.raid-start, .raid-launch-wait .dots i, .raid-loot-pending > span .ico {
+    animation: none !important;
+    opacity: 1;
+  }
+  .raid-sparks { display: none; }
+}

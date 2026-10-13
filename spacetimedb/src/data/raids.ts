@@ -53,7 +53,7 @@ export interface RaidDef {
 /** Seats in a raid party: players plus hired NPCs. */
 export const RAID_PARTY_SIZE = 4;
 /** A hired NPC has this × the raid's reference player (`RaidDef.reference`). */
-export const NPC_POWER = 0.8;
+export const NPC_POWER = 0.5;
 /**
  * How strongly threat draws the boss: each attack picks a living fighter with weight
  * e^(THREAT_FOCUS × threat), so more threat means more of the attacks, never all of them.

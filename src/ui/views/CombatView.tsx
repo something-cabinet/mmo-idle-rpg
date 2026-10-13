@@ -5,6 +5,7 @@ import { call, useTick } from '../../store';
 import { MAX_LEVEL } from '../../../spacetimedb/src/combat';
 import { xpToNext } from '../../../spacetimedb/src/game';
 import { RARITIES, restrictsAffixes, restrictsBases } from '../../../spacetimedb/src/loot';
+import { areaIndexOf } from '../../../spacetimedb/src/data/zones';
 import { nowMicros } from '../clock';
 import { DmgTag, EnemyDetail } from '../enemy';
 import { startFight, stopFight } from '../fight';
@@ -129,7 +130,7 @@ function keepLabel(s: Snapshot) {
  */
 const FightScene = memo(
   function FightScene({ s }: { s: Snapshot }) {
-    const { zone, enemy: e } = s.target!;
+    const { enemy: e } = s.target!;
     useEffect(() => {
       // Each fight comes from a fresh projection, so it uses the latest row and gear.
       const fresh = (now: bigint) => {
@@ -141,7 +142,7 @@ const FightScene = memo(
       let retry = 0;
       const begin = () => {
         const first = s.current ?? fresh(nowMicros());
-        if (first) startFight(first, fresh, c => walkLine(zone.id, s.row.id, c.startMicros));
+        if (first) startFight(first, fresh, c => walkLine(e.id, s.row.id, c.startMicros));
         else retry = window.setTimeout(begin, 100);
       };
       begin();
@@ -198,7 +199,7 @@ export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
       <ViewHeader title="Combat" icon="swords" />
       <div className="fight-target">
         <div>
-          <div className="crumb">{zone.name} <span className="muted">T{zone.tier}</span></div>
+          <div className="crumb">{zone.name} › {zone.areas[areaIndexOf(zone, e.id)]?.name} <span className="muted">T{zone.tier}</span></div>
           <div className="target-name">{e.boss && <Icon name="skull" className="boss" />}{e.name}</div>
           <div className="tags">
             <span className="tag">Lv {e.level}</span>

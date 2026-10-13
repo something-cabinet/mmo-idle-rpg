@@ -7,7 +7,7 @@
 import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
-import type { EnemyDef, ZoneDef } from '../../spacetimedb/src/data/zones';
+import { ZONES, pathTo, previousZone, type AreaDef, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import type { Snapshot } from './snapshot';
 
 export const UNKNOWN = '???';
@@ -46,3 +46,25 @@ export function zoneDiscovery(s: Snapshot, z: ZoneDef) {
     itemTotal: bases.length,
   };
 }
+
+/** The previous zone's boss is dead (the first zone is always open). */
+export function zoneUnlocked(s: Snapshot, z: ZoneDef) {
+  const prev = previousZone(z);
+  return !prev || s.killedZones.has(prev.id);
+}
+
+/** The way to each of the zone's areas (zones.ts `pathTo`); in a locked zone none is reached. */
+export function areaPaths(s: Snapshot, z: ZoneDef) {
+  const open = zoneUnlocked(s, z);
+  return z.areas.map((_, i) => {
+    const p = pathTo(z, i, id => s.kills.get(id) ?? 0, s.killedZones.has(z.id));
+    return open ? p : { kills: 0, reached: false };
+  });
+}
+
+/** Every area the player has reached, in all zones. */
+export const reachedAreas = (s: Snapshot): AreaDef[] =>
+  ZONES.flatMap(z => {
+    const paths = areaPaths(s, z);
+    return z.areas.filter((_, i) => paths[i].reached);
+  });

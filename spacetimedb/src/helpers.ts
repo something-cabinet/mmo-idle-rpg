@@ -6,7 +6,7 @@ import { Encounter as EncounterType, Found as FoundType, account, character, ite
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project } from './game';
 import { rollEncounters } from './encounters';
 import { BASE_LIST, SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
-import { ENEMIES_BY_ID, previousZone, rewardScale, type ZoneDef } from './data/zones';
+import { ENEMIES_BY_ID, areaIndexOf, pathTo, previousZone, rewardScale, type ZoneDef } from './data/zones';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
 import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, salvageValue, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
@@ -252,6 +252,14 @@ function pruneSettleLog(ctx: Ctx, characterId: bigint) {
 /** Whether `characterId` has killed the boss of zone `zoneId`. */
 export function hasKilledBoss(ctx: Ctx, characterId: bigint, zoneId: number): boolean {
   return [...ctx.db.bossKill.characterId.filter(characterId)].some(k => k.zoneId === zoneId);
+}
+
+/** Whether the character has found the path to the area holding `enemyId` (zones.ts `pathTo`). */
+export function areaReached(ctx: Ctx, characterId: bigint, zone: ZoneDef, enemyId: number): boolean {
+  const index = areaIndexOf(zone, enemyId);
+  if (index === 0) return true;
+  const kills = new Map([...ctx.db.enemyKill.characterId.filter(characterId)].map(k => [k.enemyId, Number(k.kills)]));
+  return pathTo(zone, index, id => kills.get(id) ?? 0, hasKilledBoss(ctx, characterId, zone.id)).reached;
 }
 
 /** A zone is open once the previous zone's boss is dead (the first zone always is). */

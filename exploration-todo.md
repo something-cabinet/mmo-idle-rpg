@@ -1,33 +1,16 @@
 # Exploration TODO
 
 Later ideas for making the world feel explorable. Done so far: discovery (??? enemies
-and items, the Item Index filling up), flavour text on walks, and rare encounters (see
-the 2026-10-13 rows in [docs/design/README.md](docs/design/README.md)).
+and items, the Item Index filling up), flavour text on walks, rare encounters and the
+zone map (see the 2026-10-13 rows in [docs/design/README.md](docs/design/README.md)).
 
 The cost notes say what each idea adds to server work and traffic. The rule that keeps
 them cheap: compute inside the settle that already runs, and derive on the client
 whatever can be derived there.
 
-## Zone node map
-
-Give each zone shape: instead of a flat list of 5 enemies, a short path of sub-areas
-you push through, e.g. Greenhollow: *Village Edge → Fields → Old Mill → Bog → Goblin
-Camp (boss)*.
-
-- Each node holds 1–2 of the zone's existing enemies; reaching the next node is
-  unlocked by kills or a mini-boss in the current one.
-- The Zones screen becomes a small map instead of a table; unvisited nodes are `???`,
-  like undiscovered enemies.
-- zones.md already allows several zones per tier ("nothing should assume zone =
-  tier"), so nodes fit the data model.
-- Flavour lines (src/ui/flavor.ts) could be per node instead of per zone.
-
-**Cost: ~0.** Nodes are static data in code. Unlocks can be derived from `enemy_kill`
-and `boss_kill`, or a tiny table. Moving between nodes uses the existing `setTarget`.
-
 ## Hidden areas
 
-Secret nodes on the map that only appear when a condition is met, for example:
+Secret areas on the zone map (zones.md, "Zone map") that only appear when a condition is met, for example:
 
 - kill 500 Bog Wisps;
 - enter with a certain unique equipped;

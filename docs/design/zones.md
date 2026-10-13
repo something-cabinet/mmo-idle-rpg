@@ -8,6 +8,26 @@
 - **5 enemy types per zone** (*illustrative*), at level offsets −4, −2, 0, +2, +4 from
   the zone's average.
 
+## Zone map
+
+A zone is a short path of **areas** instead of a flat enemy list, so pushing through
+it feels like exploring (data/zones.ts `areas`).
+
+- **4 areas per zone:** the two weakest enemies, the next two, the strongest regular
+  enemy, then the boss's lair. Each two-enemy area pairs defense profiles so every
+  build has a target it can farm there (an Armored or Balanced one next to a Warded one).
+- **Finding the next area:** 25 kills (`PATH_KILLS`) in the area before it, online or
+  offline, from lifetime `enemy_kill` counts. The first area is open as soon as the
+  zone is; beating the zone's boss opens every area (so characters who cleared a zone
+  before areas existed keep full access).
+- `setTarget` settles first, then rejects an enemy whose area isn't reached. No new
+  table or reducer: reaching an area is derived from kill counts.
+- Unreached areas show as `???` with their level range; the next one shows its kill
+  progress, and the lair always names its boss (bosses are the zone's goal). The
+  client toasts "New area found" as soon as its projection crosses the threshold.
+- Area IDs are `zoneId × 10 + n` and permanent (hidden areas may store them later).
+- Walk flavour lines come from the zone's general lines plus the target's area.
+
 ## Enemy level
 
 - Enemies in a tier-T zone average **level 10 × T**.

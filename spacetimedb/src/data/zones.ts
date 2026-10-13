@@ -2,7 +2,7 @@
 //
 // PERMANENT IDS: zone and enemy IDs are stored on characters (current zone and
 // target) and in boss kills; never reuse or renumber them. Enemy IDs are
-// zoneId × 100 + n.
+// zoneId × 100 + n, area IDs zoneId × 10 + n.
 import type { MaterialKind } from './materials';
 
 export type Defense = 'Balanced' | 'Armored' | 'Warded';
@@ -28,13 +28,27 @@ export interface EnemyDef {
   boss?: boolean;
 }
 
+/** An area on the zone's map (zones.md, "Zone map"): a stop on the path toward the boss. */
+export interface AreaDef {
+  id: number;
+  name: string;
+  blurb: string;
+  /** Enemy IDs, weakest first. */
+  enemies: number[];
+}
+
 export interface ZoneDef {
   id: number;
   tier: number;
   name: string;
   blurb: string;
   enemies: EnemyDef[];
+  /** In path order; the last holds the boss. Every enemy is in exactly one area. */
+  areas: AreaDef[];
 }
+
+/** Kills in an area that find the path to the next one. */
+export const PATH_KILLS = 25;
 
 /** Base walk time between fights, seconds (combat.ts `walkTime`). */
 export const WALK_SECONDS = 5;
@@ -103,6 +117,12 @@ export const ZONES: ZoneDef[] = [
       { id: 105, name: 'Goblin Brute', level: 13, damageType: 'Physical', defense: 'Armored', speed: 0.7, hp: 101, dps: 20.2, armor: 78, resistance: 13, xp: 28, gold: 7, drops: T1_DROPS.brute, materials: ['Metal', 'Gem'] },
       { id: 106, name: 'Grubnak, Goblin Chief', level: 15, damageType: 'Physical', defense: 'Balanced', speed: 0.9, hp: 138, dps: 27.4, armor: 37.5, resistance: 37.5, xp: 44, gold: 11, drops: all(T1_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
     ],
+    areas: [
+      { id: 11, name: 'Village Fields', blurb: 'Trampled wheat and gnawed fences just past the last houses.', enemies: [101, 102] },
+      { id: 12, name: 'Old Mill', blurb: 'A silent mill where the fields sink into bog.', enemies: [103, 104] },
+      { id: 13, name: 'Goblin Camp', blurb: 'Palisades and cookfires hidden in the woods.', enemies: [105] },
+      { id: 14, name: "Chieftain's Tent", blurb: 'Grubnak holds court among his stolen treasures.', enemies: [106] },
+    ],
   },
   {
     id: 2,
@@ -116,6 +136,12 @@ export const ZONES: ZoneDef[] = [
       { id: 204, name: 'Ironbark Treant', level: 22, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 223, dps: 26.5, armor: 132, resistance: 22, xp: 73, gold: 18, drops: T2_DROPS.treant, materials: ['Core', 'Wood'] },
       { id: 205, name: 'Dire Wolf', level: 24, damageType: 'Physical', defense: 'Balanced', speed: 1.4, hp: 260, dps: 30.9, armor: 60, resistance: 60, xp: 91, gold: 23, drops: T2_DROPS.wolf, materials: ['Hide', 'Reagent'] },
       { id: 206, name: 'Morgra, the Thorn Witch', level: 25, damageType: 'Magic', defense: 'Warded', speed: 0.8, hp: 328, dps: 38.9, armor: 25, resistance: 150, xp: 128, gold: 32, drops: all(T2_DROPS), materials: ['Core', 'Reagent', 'Gem'], boss: true },
+    ],
+    areas: [
+      { id: 21, name: 'Webbed Road', blurb: 'The forest road, strung with webs and watched by bandits.', enemies: [201, 202] },
+      { id: 22, name: 'Briar Grove', blurb: 'Ancient trees where shamans tend their thorns.', enemies: [203, 204] },
+      { id: 23, name: 'Wolf Hollow', blurb: 'A den in the deep woods, littered with bones.', enemies: [205] },
+      { id: 24, name: "Witch's Glade", blurb: "A ring of thorns around Morgra's hut.", enemies: [206] },
     ],
   },
   {
@@ -132,6 +158,12 @@ export const ZONES: ZoneDef[] = [
       { id: 305, name: 'Stone Golem', level: 34, damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 670, dps: 48.3, armor: 204, resistance: 34, xp: 265, gold: 66, drops: T3_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
       { id: 306, name: 'Hrimvald, Frost Giant Jarl', level: 35, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 844, dps: 60.8, armor: 210, resistance: 35, xp: 372, gold: 93, drops: all(T3_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
     ],
+    areas: [
+      { id: 31, name: 'Switchbacks', blurb: 'The trail climbs past harpy nests and kobold tunnels.', enemies: [301, 302] },
+      { id: 32, name: 'Rime Shrine', blurb: 'A frozen shrine where cultists call up the cold dead.', enemies: [303, 304] },
+      { id: 33, name: 'Dwarven Gate', blurb: 'The broken door of the old hold, guarded by stone.', enemies: [305] },
+      { id: 34, name: "Jarl's Hall", blurb: "The giant's seat in the hold's great hall.", enemies: [306] },
+    ],
   },
 ];
 
@@ -139,6 +171,20 @@ export const ZONES_BY_ID: ReadonlyMap<number, ZoneDef> = new Map(ZONES.map(z => 
 export const ENEMIES_BY_ID: ReadonlyMap<number, { zone: ZoneDef; enemy: EnemyDef }> = new Map(
   ZONES.flatMap(zone => zone.enemies.map(enemy => [enemy.id, { zone, enemy }] as const))
 );
+
+/** The index of the area holding `enemy` in `zone.areas`. */
+export const areaIndexOf = (zone: ZoneDef, enemyId: number) => zone.areas.findIndex(a => a.enemies.includes(enemyId));
+
+/**
+ * The way to `zone.areas[index]`: kills so far in the area before it (capped at
+ * PATH_KILLS) and whether it is reached. The first area is always reached, and
+ * beating the zone's boss opens every area. Zone unlocking is checked separately.
+ */
+export function pathTo(zone: ZoneDef, index: number, kills: (enemyId: number) => number, bossDown: boolean) {
+  if (index === 0 || bossDown) return { kills: PATH_KILLS, reached: true };
+  const n = zone.areas[index - 1].enemies.reduce((sum, id) => sum + kills(id), 0);
+  return { kills: Math.min(n, PATH_KILLS), reached: n >= PATH_KILLS };
+}
 
 /**
  * Enemy HP and DPS multiplier on wall tiers: odd tiers from 3 (zones.md, "Difficulty

@@ -48,6 +48,14 @@ for (const zone of ZONES) {
     `${drops.length} drops`);
   check(`${zone.name}: one boss`, zone.enemies.filter(e => e.boss).length === 1);
   check(`${zone.name}: drop IDs exist`, drops.every(id => BASE_LIST.some(b => b.id === id)));
+  const inAreas = zone.areas.flatMap(a => a.enemies);
+  check(`${zone.name}: every enemy in exactly one area`, unique(inAreas) && inAreas.length === zone.enemies.length &&
+    zone.enemies.every(e => inAreas.includes(e.id)));
+  check(`${zone.name}: area IDs are zone × 10 + n`, zone.areas.every((a, i) => a.id === zone.id * 10 + i + 1));
+  check(`${zone.name}: boss alone in the last area`, zone.areas.at(-1)!.enemies.length === 1 &&
+    ENEMIES_BY_ID.get(zone.areas.at(-1)!.enemies[0])!.enemy.boss === true);
+  check(`${zone.name}: areas in level order`, inAreas.every((id, i) => i === 0 ||
+    ENEMIES_BY_ID.get(id)!.enemy.level > ENEMIES_BY_ID.get(inAreas[i - 1])!.enemy.level));
 }
 for (const zone of ZONES) {
   // Average enemy (o = 0) matches the reference curve, × WALL_FACTOR on wall tiers (zones.md).

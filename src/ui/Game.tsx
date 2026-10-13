@@ -4,10 +4,11 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalS
 import type { DbConnection } from '../module_bindings';
 import type { Presence } from '../module_bindings/types';
 import { xpToNext } from '../../spacetimedb/src/game';
-import { call, useTick, useView, type View } from '../store';
+import { call, toast, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
 import { nowMicros, syncClock } from './clock';
 import { DefeatReport } from './DefeatReport';
+import { reachedAreas } from './discovery';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
@@ -283,6 +284,17 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
   useEffect(() => {
     if (content.current) content.current.scrollTop = 0;
   }, [view]);
+  // Fighting finds the path to the next area: say so as soon as the projection gets there.
+  const reached = live ? reachedAreas(live) : [];
+  const reachedKey = reached.map(a => a.id).join(',');
+  const reachedBefore = useRef('');
+  useEffect(() => {
+    const before = reachedBefore.current;
+    reachedBefore.current = reachedKey;
+    // Nothing to compare against on the first load.
+    const found = before && reached.find(a => !before.split(',').includes(String(a.id)));
+    if (found) toast(`New area found: ${found.name}`, 'info');
+  }, [reachedKey]); // eslint-disable-line react-hooks/exhaustive-deps -- `reached` changes with its key
 
   if (!row || !viewSnap || !live) return <TopBar />;
   const online = conn.db.presence.count();

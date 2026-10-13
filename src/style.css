@@ -910,6 +910,7 @@ select:focus,
 /* ------------------------------------------------------------------ zones */
 .zone-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
@@ -928,6 +929,191 @@ select:focus,
   color: var(--bad);
   font-size: 12px;
   font-weight: 600;
+}
+/* Zone map: areas down a path, markers on the left. */
+.trail {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+.area {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  column-gap: 12px;
+  padding-bottom: 18px;
+}
+.area:last-child {
+  padding-bottom: 4px;
+}
+/* The path down to the next area: dashed until that area is found. */
+.area:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 17px;
+  top: 36px;
+  bottom: 0;
+  border-left: 2px dashed var(--border-strong);
+}
+.area.path-open::before {
+  border-left-style: solid;
+  border-color: var(--accent);
+}
+.area-mark {
+  position: relative;
+  z-index: 1;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 2px dashed var(--border-strong);
+}
+.area.reached .area-mark {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  border: 2px solid var(--accent);
+}
+.area.next .area-mark {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.area.lair.reached .area-mark {
+  color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, var(--surface));
+  border-color: var(--bad);
+}
+.area.here .area-mark {
+  color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 15%, var(--surface));
+  border: 2px solid var(--ok);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 18%, transparent);
+}
+.area.hidden .area-body {
+  opacity: 0.6;
+}
+.area-body {
+  min-width: 0;
+}
+.area-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  min-height: 36px;
+}
+.area-title h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.area-levels {
+  margin-left: auto;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.here-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ok);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.area-blurb {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.path-hint {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.path-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.path-bar {
+  flex: 1;
+  max-width: 260px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.path-bar > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+.foes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.foe {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.foe.boss {
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--border));
+}
+.foe.active {
+  border-color: color-mix(in srgb, var(--ok) 45%, transparent);
+  background: color-mix(in srgb, var(--ok) 7%, var(--surface-2));
+}
+.foe-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 7px 10px;
+  cursor: pointer;
+}
+.foe-row .caret {
+  color: var(--muted);
+  transform: rotate(-90deg);
+  transition: transform 0.15s;
+}
+.foe.open .caret {
+  transform: none;
+}
+.foe-info {
+  flex: 1;
+  min-width: 0;
+}
+.foe-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+.foe-name .ico {
+  margin-right: 6px;
+}
+.foe-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.foe-row .btn {
+  flex: none;
+  min-width: 80px;
+}
+.foe-detail {
+  padding: 10px 10px 12px;
+  border-top: 1px dashed var(--border);
+}
+@media (hover: hover) {
+  .foe-row:hover {
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+    border-radius: 10px;
+  }
 }
 .table-wrap {
   overflow-x: auto;
@@ -1037,7 +1223,7 @@ select:focus,
 .encounter-list { margin: 0 0 8px; padding-left: 22px; }
 .item-card.unknown { opacity: 0.6; }
 .discovery .ico { margin-right: 4px; }
-.unknown-threat {
+.threat {
   margin-left: 8px;
   font-size: 11px;
   font-weight: 600;

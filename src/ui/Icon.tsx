@@ -27,6 +27,7 @@ const PATHS: Record<string, string> = {
   chevron: 'M6 9l6 6 6-6',
   menu: 'M3 6h18M3 12h18M3 18h18',
   back: 'M19 12H5M12 19l-7-7 7-7',
+  pin: 'M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
   skull:'M12 2a8 8 0 0 0-8 8c0 3 1.6 5.2 4 6.4V20h8v-3.6c2.4-1.2 4-3.4 4-6.4a8 8 0 0 0-8-8zM9 11h.01M15 11h.01M10 20v2M14 20v2',
 
   // Item glyphs for the bag (placeholders until there is item art).

@@ -2,8 +2,6 @@
 //   npm run spacetime:start; npm run spacetime:publish:local:reset; npm run test:smoke
 import { DbConnection } from '../src/module_bindings';
 import type { Identity } from 'spacetimedb';
-import { combatStats, matchup } from '../spacetimedb/src/combat';
-import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 
 const HOST = process.env.SPACETIMEDB_HOST ?? 'ws://localhost:3000';
 const DB = process.env.SPACETIMEDB_DB_NAME ?? 'mmo-idle-rpg';
@@ -124,27 +122,11 @@ await expectError('locked zone rejected', a.conn.reducers.setTarget({ enemyId: 2
     last.salvaged.length === 6 && last.levelFrom === 1, `kills=${last.kills} xp=${last.xp} gold=${last.gold}`);
 }
 
-// Bosses: a fresh character loses to Grubnak (winning needs gear the test can't get).
+// Zone map: only the first area is open until 25 kills there find the next.
 await expectError('locked zone boss rejected', a.conn.reducers.setTarget({ enemyId: 206 }), 'Zone is locked');
-await a.conn.reducers.setTarget({ enemyId: 106 });
-check('a boss can be challenged as a target', charOf(a)!.targetEnemyId === 106);
-{
-  const stats = combatStats(charOf(a)!.level, starterGear(a));
-  const m = matchup(stats, ENEMIES_BY_ID.get(106)!.enemy);
-  // The live fight starts after the walk and varies in length: settle until it ends.
-  const expected = stats.walkTime + m.timeToDie;
-  await sleep(Math.ceil(expected * 1000));
-  const lastLog = () => [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
-  for (let i = 0; i < 20 && !lastLog().defeated; i++) {
-    await a.conn.reducers.settleNow({});
-    await sleep(500);
-  }
-  const defeat = lastLog();
-  check('the starter kit loses to Grubnak after the fight: a logged defeat', defeat.defeated && defeat.enemyId === 106 && !defeat.offline,
-    `expected after ${expected.toFixed(1)} s`);
-  check('… which leaves the character idle', charOf(a)!.targetEnemyId === 0);
-  check('a lost challenge records no kill', [...a.conn.db.myBossKills.iter()].length === 0);
-}
+await expectError('unreached area rejected', a.conn.reducers.setTarget({ enemyId: 103 }), 'Area not reached yet');
+await expectError('boss lair unreached for a fresh character', a.conn.reducers.setTarget({ enemyId: 106 }), 'Area not reached yet');
+check('a rejected target change keeps the old target', charOf(a)!.targetEnemyId === 102);
 
 // Flee: back to a target, then idle on purpose.
 await a.conn.reducers.setTarget({ enemyId: 101 });

@@ -78,28 +78,36 @@ Used for item names, icon borders and loot log lines.
 
 ### Zones
 
+A zone is a vertical path of areas (zones.md, "Zone map"), the same layout on a phone
+and a desktop:
+
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ [T1 Greenhollow ✔] [T2 Thornwood] [T3 🔒] …                      │
-├─────────────────────────────────────────────────────────────────┤
-│ Enemy           Lv  Type  Def   Result      XP/h   Gold/h  Drops│
-│ Field Rat        1  Phys  Bal   Win 31×     3.1k   780     7 ▸  │
-│ Wild Boar        4  Phys  Arm   Win 9.0×    3.8k   1.1k    7 ▸  │
-│ Goblin Scout     7  Phys  Bal   Win 5.2×    4.4k   1.3k    6 ▸  │
-│ Bog Wisp        10  Magic War   Win 1.8×    5.0k   1.4k    6 ▸  │
-│ Goblin Brute    13  Phys  Arm   Lose ✖      —      —       6 ▸  │
-│ ★ Grubnak       15  Phys  Bal   Lose ✖                [Challenge]│
-├─────────────────────────────────────────────────────────────────┤
-│ Selected: Bog Wisp — drops: Driftwood Fire Staff, Tattered Tome, …│
-│                                              [ Fight this ]     │
-└─────────────────────────────────────────────────────────────────┘
+[T1 Greenhollow ✔] [T2 Thornwood] [🔒 T3 Frostmaw Pass]
+
+Greenhollow  Lv 1–15
+Discovered: areas 2/4 · enemies 3/5 · items 12/33
+
+ (1)  Village Fields                          Lv 1–4
+  │   ┌ ▸ Field Rat  EASY          [ Fight ] ┐
+  │   └ ▸ Wild Boar  EASY          [ Fight ] ┘
+ (📍) Old Mill   YOU ARE HERE                  Lv 7–10
+  ┆   ┌ ▸ Goblin Scout  EVEN    [ Fighting ] ┐
+  ┆   └ ▸ ???  RISKY               [ Fight ] ┘
+ (🔒) ???                                      Lv 13
+  ┆   Defeat 25 enemies in Old Mill to find the way.
+  ┆   ██████░░░░░░  14/25
+ (☠) ???                                      Lv 15
+      Lair of Grubnak, Goblin Chief.
 ```
 
-- Every row runs the real formulas against the **current loadout**: Win/Lose with the
-  survival margin, and the rates the player would get.
-- **Drops ▸** expands the enemy's base list (for target farming).
-- Locked zones show what unlocks them ("Defeat Grubnak").
-- The boss row has **Challenge** instead of Fight until first kill.
+- Markers: numbered for reached areas, a pin where the character is fighting, a lock
+  for unreached ones, a skull for the lair. The line between two areas is solid once
+  the lower one is found, dashed before.
+- Each enemy is a card row: name (??? until known), a threat read against the active
+  loadout (Easy / Even / Risky / Deadly), level, damage type, defense, HP, DPS and
+  lifetime kills. Tap a row for its rewards and drops; the button fights it at once.
+- The boss row says **Challenge** instead of Fight until its first kill.
+- Locked zones show the whole path as ??? and what unlocks them ("Defeat Grubnak").
 
 ### Character
 

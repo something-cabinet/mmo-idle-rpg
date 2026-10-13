@@ -2453,3 +2453,8 @@ fieldset.affix-pick legend {
   height: 100%;
   background: var(--ok);
 }
+.duel .btn.ghost.active {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}

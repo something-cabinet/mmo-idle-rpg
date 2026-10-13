@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CombatStats } from '../../spacetimedb/src/combat';
 import { DUEL_SAMPLES, DUEL_SECONDS, duelRng, simulateDuel, winRate } from './duelSim';
+import { useSticky } from '../store';
 import { fmt, pct } from './format';
 import { Icon } from './Icon';
 
@@ -14,27 +15,34 @@ export interface Duelist {
   stats: CombatStats;
 }
 
-/** Replay speed: duel seconds per real second. */
-const SPEED = 3;
+/** Replay speed with the speed-up toggle on: duel seconds per real second (off: 1, real time like the Combat screen). */
+const FAST = 2;
 
 export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
   const [round, setRound] = useState(() => Math.floor(Math.random() * 1e9));
   const [t, setT] = useState(0);
   const skipped = useRef(false);
+  // Remembered for the session, so rematches and other duels keep it.
+  const [fast, setFast] = useSticky('duelFast', false);
+  const speed = useRef(1);
+  speed.current = fast ? FAST : 1;
   const sides: [CombatStats, CombatStats] = [me.stats, foe.stats];
   const duel = useMemo(() => simulateDuel(sides, duelRng(me.id, foe.id, round)), [round]); // eslint-disable-line react-hooks/exhaustive-deps -- stats are fixed for the panel's life
   const odds = useMemo(() => winRate(sides, me.id, foe.id), []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Play the duel back: `t` runs from 0 to its end.
+  // Play the duel back: `t` runs from 0 to its end. It advances by each frame's real time
+  // × the current speed, so toggling the speed mid-duel doesn't jump.
   useEffect(() => {
     setT(0);
     skipped.current = false;
     let raf = 0;
-    const start = performance.now();
+    let at = 0;
+    let last = performance.now();
     const tick = (now: number) => {
-      const next = skipped.current ? duel.end : Math.min(duel.end, ((now - start) / 1000) * SPEED);
-      setT(next);
-      if (next < duel.end) raf = requestAnimationFrame(tick);
+      at = skipped.current ? duel.end : Math.min(duel.end, at + ((now - last) / 1000) * speed.current);
+      last = now;
+      setT(at);
+      if (at < duel.end) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
@@ -95,6 +103,10 @@ export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
         <button className="btn small primary" onClick={() => setRound(r => r + 1)}>
           <Icon name="swords" />
           Rematch
+        </button>
+        <button className={`btn small ghost${fast ? ' active' : ''}`} aria-pressed={fast} title="Play the duel at double speed" onClick={() => setFast(!fast)}>
+          <Icon name="zap" />
+          {FAST}× speed
         </button>
         {!over && (
           <button className="btn small ghost" onClick={() => (skipped.current = true)}>

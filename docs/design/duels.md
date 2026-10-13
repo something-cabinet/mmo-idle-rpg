@@ -29,7 +29,8 @@ timer:
 
 ## What the player sees
 
-- The duel replayed at 3× speed: both HP bars, the last five blows, then the result
+- The duel replayed at real speed, like the Combat screen, or 2× with the speed toggle
+  (remembered for the session): both HP bars, the last five blows, then the result
   (knockout or on points). **Rematch** runs a new duel; **Skip** jumps to the end.
 - **Your odds:** the share of 500 duels with the same stats you would win (draws count
   half), so one lucky result doesn't mislead.

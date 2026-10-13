@@ -20,7 +20,8 @@ fixed route (data/zones.ts `areas`, `links`).
   real limit is gear, not a grind gate, and an idle player never has to switch
   targets to make progress.
 - **Areas are revealed by visiting:** an area shows by name on the map once the
-  player has a kill there, and while they are fighting there. No progress bar or
+  player has a kill there, and while they are fighting there. A zone's first area is
+  always shown. No progress bar or
   thresholds: a first try with zone-wide kill thresholds felt like a chore.
 - Unrevealed areas show as `???` with their level range and can still be fought; the
   lair always names its boss (bosses are the zone's goal). The client toasts "New

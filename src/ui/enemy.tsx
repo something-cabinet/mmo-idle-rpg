@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
-import { DROP_CHANCE, rewardScale, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
+import { DROP_CHANCE, rewardScale, type Defense, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { UNIQUES, uniqueWeight } from '../../spacetimedb/src/data/uniques';
 import { RARITIES, hasUniques, materialMeans } from '../../spacetimedb/src/loot';
 import { fmt, pct } from './format';
@@ -13,7 +13,24 @@ import { StatRows } from './shared';
 import type { Snapshot } from './snapshot';
 import { UNKNOWN, baseFound, uniqueFound } from './discovery';
 
-export const DmgTag = ({ magic }: { magic: boolean }) => <span className={`tag ${magic ? 'magic' : 'phys'}`}>{magic ? 'Magic' : 'Phys'}</span>;
+export const DmgTag = ({ magic }: { magic: boolean }) => (
+  <span className={`tag ${magic ? 'magic' : 'phys'}`} title={`Deals ${magic ? 'magic damage: resistance blocks it' : 'physical damage: armor blocks it'}`}>
+    <Icon name={magic ? 'sparkles' : 'swords'} />{magic ? 'Magic' : 'Phys'}
+  </span>
+);
+
+const DEFENSE: Record<Defense, { icon: string; title: string }> = {
+  Balanced: { icon: 'scales', title: 'Even armor and resistance: physical and magic damage work alike' },
+  Armored: { icon: 'shield', title: 'High armor, low resistance: magic damage works better' },
+  Warded: { icon: 'ward', title: 'High resistance, low armor: physical damage works better' },
+};
+
+/** An enemy's defense profile (zones.md), outlined so it reads apart from the damage tag. */
+export const DefTag = ({ defense }: { defense: Defense }) => (
+  <span className={`tag def ${defense.toLowerCase()}`} title={DEFENSE[defense].title}>
+    <Icon name={DEFENSE[defense].icon} />{defense}
+  </span>
+);
 
 /** Chance of at least one drop per kill from a Poisson mean (as loot.ts `rollDrops` samples). */
 const atLeastOne = (mean: number) => 1 - Math.exp(-mean);

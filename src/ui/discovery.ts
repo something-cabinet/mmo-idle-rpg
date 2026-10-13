@@ -53,9 +53,9 @@ export function zoneUnlocked(s: Snapshot, z: ZoneDef) {
   return !prev || s.killedZones.has(prev.id);
 }
 
-/** The area shows on the map by name once the player has fought there (or is heading there now). */
+/** The area shows on the map by name once the player has fought there (or is heading there now). A zone's first area is always shown. */
 export const areaRevealed = (s: Snapshot, z: ZoneDef, a: AreaDef) =>
-  zoneUnlocked(s, z) && a.enemies.some(id => (s.kills.get(id) ?? 0) > 0 || s.row.targetEnemyId === id);
+  zoneUnlocked(s, z) && (a === z.areas[0] || a.enemies.some(id => (s.kills.get(id) ?? 0) > 0 || s.row.targetEnemyId === id));
 
 /** Every area revealed to the player, in all zones. */
 export const revealedAreas = (s: Snapshot): AreaDef[] => ZONES.flatMap(z => z.areas.filter(a => areaRevealed(s, z, a)));

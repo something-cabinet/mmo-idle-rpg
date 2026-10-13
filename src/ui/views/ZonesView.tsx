@@ -4,7 +4,7 @@ import { ENEMIES_BY_ID, ZONES, ZONES_BY_ID, areaIndexOf, bossOf, previousZone, t
 import { call, useSticky } from '../../store';
 import { fmt } from '../format';
 import { Icon } from '../Icon';
-import { EnemyDetail } from '../enemy';
+import { DefTag, DmgTag, EnemyDetail } from '../enemy';
 import { ViewHeader } from '../shared';
 import { UNKNOWN, areaRevealed, enemyKnown, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
 import type { Snapshot } from '../snapshot';
@@ -171,9 +171,6 @@ function Foe({ s, z, e, open, toggle }: { s: Snapshot; z: ZoneDef; e: EnemyDef; 
   const known = enemyKnown(s, e);
   const look = threat(m);
   const kills = s.kills.get(e.id) ?? 0;
-  const meta = known
-    ? [`Lv ${e.level}`, e.damageType === 'Magic' ? 'Magic' : 'Phys', e.defense, `HP ${fmt(e.hp)}`, `DPS ${fmt(e.dps)}`]
-    : [`Lv ${e.level}`];
   return (
     <li className={`foe${active ? ' active' : ''}${e.boss ? ' boss' : ''}${open ? ' open' : ''}`}>
       <div className="foe-row" onClick={ev => !(ev.target as HTMLElement).closest('button') && toggle()}>
@@ -184,10 +181,24 @@ function Foe({ s, z, e, open, toggle }: { s: Snapshot; z: ZoneDef; e: EnemyDef; 
             {known ? e.name : <span className="muted">{UNKNOWN}</span>}
             <span className={`threat ${look.cls}`} title="How it looks against your active loadout">{look.label}</span>
           </div>
-          <div className="foe-meta muted">
-            {meta.join(' · ')}
-            {kills > 0 && <> · <span title="Lifetime kills, online and offline">{fmt(kills)} kills</span></>}
+          <div className="tags foe-tags">
+            <span className="tag">Lv {e.level}</span>
+            {known ? (
+              <>
+                <DmgTag magic={e.damageType === 'Magic'} />
+                <DefTag defense={e.defense} />
+              </>
+            ) : (
+              <span className="tag" title="Damage and defense: fight it to find out">?</span>
+            )}
           </div>
+          {(known || kills > 0) && (
+            <div className="foe-meta muted">
+              {known && `HP ${fmt(e.hp)} · DPS ${fmt(e.dps)}`}
+              {known && kills > 0 && ' · '}
+              {kills > 0 && <span title="Lifetime kills, online and offline">{fmt(kills)} kills</span>}
+            </div>
+          )}
         </div>
         {active ? (
           <span className="btn small fighting">Fighting</span>

@@ -7,7 +7,7 @@ import { xpToNext } from '../../../spacetimedb/src/game';
 import { RARITIES, restrictsAffixes, restrictsBases } from '../../../spacetimedb/src/loot';
 import { areaIndexOf } from '../../../spacetimedb/src/data/zones';
 import { nowMicros } from '../clock';
-import { DmgTag, EnemyDetail } from '../enemy';
+import { DefTag, DmgTag, EnemyDetail } from '../enemy';
 import { startFight, stopFight } from '../fight';
 import { walkLine } from '../flavor';
 import { foundName } from '../discovery';
@@ -204,7 +204,7 @@ export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
           <div className="tags">
             <span className="tag">Lv {e.level}</span>
             <DmgTag magic={e.damageType === 'Magic'} />
-            <span className="tag">{e.defense}</span>
+            <DefTag defense={e.defense} />
           </div>
         </div>
         <div className="row">

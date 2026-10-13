@@ -8,7 +8,7 @@ import { call, toast, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
 import { nowMicros, syncClock } from './clock';
 import { DefeatReport } from './DefeatReport';
-import { reachedAreas } from './discovery';
+import { revealedAreas } from './discovery';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
@@ -284,17 +284,17 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
   useEffect(() => {
     if (content.current) content.current.scrollTop = 0;
   }, [view]);
-  // Fighting finds the path to the next area: say so as soon as the projection gets there.
-  const reached = live ? reachedAreas(live) : [];
-  const reachedKey = reached.map(a => a.id).join(',');
-  const reachedBefore = useRef('');
+  // Kills explore the zone: say so as soon as the projection reveals an area.
+  const revealed = live ? revealedAreas(live) : [];
+  const revealedKey = revealed.map(a => a.id).join(',');
+  const revealedBefore = useRef('');
   useEffect(() => {
-    const before = reachedBefore.current;
-    reachedBefore.current = reachedKey;
+    const before = revealedBefore.current;
+    revealedBefore.current = revealedKey;
     // Nothing to compare against on the first load.
-    const found = before && reached.find(a => !before.split(',').includes(String(a.id)));
+    const found = before && revealed.find(a => !before.split(',').includes(String(a.id)));
     if (found) toast(`New area found: ${found.name}`, 'info');
-  }, [reachedKey]); // eslint-disable-line react-hooks/exhaustive-deps -- `reached` changes with its key
+  }, [revealedKey]); // eslint-disable-line react-hooks/exhaustive-deps -- `revealed` changes with its key
 
   if (!row || !viewSnap || !live) return <TopBar />;
   const online = conn.db.presence.count();

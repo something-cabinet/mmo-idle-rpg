@@ -30,6 +30,17 @@ const PATHS: Record<string, string> = {
   pin: 'M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12zM12 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z',
   skull:'M12 2a8 8 0 0 0-8 8c0 3 1.6 5.2 4 6.4V20h8v-3.6c2.4-1.2 4-3.4 4-6.4a8 8 0 0 0-8-8zM9 11h.01M15 11h.01M10 20v2M14 20v2',
 
+  // Zone map area glyphs (placeholders).
+  'a-field': 'M12 21V9M12 13c-3 0-4-2-4-4 3 0 4 2 4 4zM12 13c3 0 4-2 4-4-3 0-4 2-4 4zM12 9c-2.5 0-3.5-2-3.5-4 2.5 0 3.5 2 3.5 4zM12 9c2.5 0 3.5-2 3.5-4-2.5 0-3.5 2-3.5 4zM4 21h16',
+  'a-mill': 'M6 21V11l6-5 6 5v10H6zM10 21v-5h4v5M12 6 7 1M12 6l5-5M12 6 7 11M12 6l5 5',
+  'a-tent': 'M3 20 12 4l9 16H3zM12 4v16M9 20l3-6 3 6',
+  'a-road': 'M8 21 10 3M16 21 14 3M12 6v2M12 11v2M12 16v3',
+  'a-tree': 'M12 22v-6M12 2 5 12h4l-3 4h12l-3-4h4L12 2z',
+  'a-den': 'M2 20c0-7 4.5-12 10-12s10 5 10 12H2zM8 20c0-3 1.8-5 4-5s4 2 4 5',
+  'a-mountain': 'M2 20 9 7l4 6 3-4 6 11H2zM7.5 10l1.5 2 1.5-2',
+  'a-shrine': 'M3 8h18L12 3 3 8zM5 8v11M19 8v11M10 8v11M14 8v11M3 21h18',
+  'a-gate': 'M4 21V9a8 8 0 0 1 16 0v12M8 21v-9a4 4 0 0 1 8 0v9M2 21h20',
+
   // Item glyphs for the bag (placeholders until there is item art).
   'i-sword': 'M20 4h-4L6 14l4 4L20 8V4zM5 13l6 6M3 21l4-4',
   'i-dagger': 'M19 5h-3l-6 6 3 3 6-6V5zM8 10l6 6M5 19l3.5-3.5',

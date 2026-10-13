@@ -56,6 +56,17 @@ for (const zone of ZONES) {
     ENEMIES_BY_ID.get(zone.areas.at(-1)!.enemies[0])!.enemy.boss === true);
   check(`${zone.name}: areas in level order`, inAreas.every((id, i) => i === 0 ||
     ENEMIES_BY_ID.get(id)!.enemy.level > ENEMIES_BY_ID.get(inAreas[i - 1])!.enemy.level));
+  check(`${zone.name}: first area revealed from the start, the rest by zone kills in order`, zone.areas[0].reveal === 0 &&
+    zone.areas.every((a, i) => i === 0 || a.reveal > zone.areas[i - 1].reveal));
+  check(`${zone.name}: map spots inside the map`, zone.areas.every(a => a.x >= 10 && a.x <= 90 && a.y >= 10 && a.y <= 90));
+  const ids = new Set(zone.areas.map(a => a.id));
+  check(`${zone.name}: map paths join two of its areas`, zone.links.every(([a, b]) => a !== b && ids.has(a) && ids.has(b)));
+  const seen = new Set([zone.areas[0].id]);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const [a, b] of zone.links) if (seen.has(a) !== seen.has(b)) { seen.add(a); seen.add(b); grew = true; }
+  }
+  check(`${zone.name}: every area joined to the map`, seen.size === ids.size);
 }
 for (const zone of ZONES) {
   // Average enemy (o = 0) matches the reference curve, × WALL_FACTOR on wall tiers (zones.md).

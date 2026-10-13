@@ -7,7 +7,7 @@
 import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
-import { ZONES, pathTo, previousZone, type AreaDef, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
+import { ZONES, previousZone, type AreaDef, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import type { Snapshot } from './snapshot';
 
 export const UNKNOWN = '???';
@@ -53,18 +53,20 @@ export function zoneUnlocked(s: Snapshot, z: ZoneDef) {
   return !prev || s.killedZones.has(prev.id);
 }
 
-/** The way to each of the zone's areas (zones.ts `pathTo`); in a locked zone none is reached. */
-export function areaPaths(s: Snapshot, z: ZoneDef) {
-  const open = zoneUnlocked(s, z);
-  return z.areas.map((_, i) => {
-    const p = pathTo(z, i, id => s.kills.get(id) ?? 0, s.killedZones.has(z.id));
-    return open ? p : { kills: 0, reached: false };
-  });
+/** Lifetime kills of all the zone's enemies: they explore it (zones.md, "Zone map"). */
+export const zoneKills = (s: Snapshot, z: ZoneDef) => z.enemies.reduce((sum, e) => sum + (s.kills.get(e.id) ?? 0), 0);
+
+/** The area shows on the map by name: the zone's kills reached its threshold, or the player fought there. */
+export const areaRevealed = (s: Snapshot, z: ZoneDef, a: AreaDef) =>
+  zoneUnlocked(s, z) && (zoneKills(s, z) >= a.reveal || a.enemies.some(id => (s.kills.get(id) ?? 0) > 0 || s.row.targetEnemyId === id));
+
+/** How far the zone is explored: 0–1 of the kills that reveal its last area, and the kills to the next reveal. */
+export function exploration(s: Snapshot, z: ZoneDef) {
+  const kills = zoneKills(s, z);
+  const full = Math.max(...z.areas.map(a => a.reveal));
+  const next = z.areas.filter(a => a.reveal > kills && !areaRevealed(s, z, a)).sort((a, b) => a.reveal - b.reveal)[0];
+  return { share: full ? Math.min(1, kills / full) : 1, toNext: next && next.reveal - kills };
 }
 
-/** Every area the player has reached, in all zones. */
-export const reachedAreas = (s: Snapshot): AreaDef[] =>
-  ZONES.flatMap(z => {
-    const paths = areaPaths(s, z);
-    return z.areas.filter((_, i) => paths[i].reached);
-  });
+/** Every area revealed to the player, in all zones. */
+export const revealedAreas = (s: Snapshot): AreaDef[] => ZONES.flatMap(z => z.areas.filter(a => areaRevealed(s, z, a)));

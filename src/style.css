@@ -930,73 +930,148 @@ select:focus,
   font-size: 12px;
   font-weight: 600;
 }
-/* Zone map: areas down a path, markers on the left. */
-.trail {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
+/* Zone map: areas as spots on a map, joined by paths; the picked area's panel beside or below it. */
+.explore {
+  margin-bottom: 10px;
 }
-.area {
-  position: relative;
+.explore-text {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+.explore-text .muted {
+  font-size: 12px;
+}
+.explore-bar {
+  height: 6px;
+  margin-top: 5px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.explore-bar > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+.zones-layout {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  column-gap: 12px;
-  padding-bottom: 18px;
+  gap: 12px;
 }
-.area:last-child {
-  padding-bottom: 4px;
+@media (min-width: 901px) {
+  .zones-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
 }
-/* The path down to the next area: dashed until that area is found. */
-.area:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  left: 17px;
-  top: 36px;
-  bottom: 0;
-  border-left: 2px dashed var(--border-strong);
-}
-.area.path-open::before {
-  border-left-style: solid;
-  border-color: var(--accent);
-}
-.area-mark {
+.zmap {
+  --land: var(--surface-2);
   position: relative;
-  z-index: 1;
-  width: 36px;
-  height: 36px;
+  width: 100%;
+  aspect-ratio: 1 / 0.9;
+  max-height: 460px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--land) 70%, transparent) 0 18%, transparent 40%),
+    radial-gradient(circle at 75% 25%, color-mix(in srgb, var(--land) 60%, transparent) 0 15%, transparent 38%),
+    color-mix(in srgb, var(--land) 22%, var(--surface-2));
+}
+.zmap-1 { --land: #5f9e4f; }
+.zmap-2 { --land: #3f6b4a; }
+.zmap-3 { --land: #8fb3d9; }
+.zmap.locked {
+  filter: grayscale(0.8);
+  opacity: 0.7;
+}
+.zmap-paths {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.zmap-paths line {
+  stroke: color-mix(in srgb, var(--text) 30%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 4 5;
+  stroke-linecap: round;
+}
+.zmap-paths line.known {
+  stroke: color-mix(in srgb, var(--accent) 75%, transparent);
+  stroke-width: 3;
+  stroke-dasharray: none;
+}
+.spot {
+  position: absolute;
+  transform: translate(-50%, -22px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  max-width: 120px;
+  cursor: pointer;
+}
+.spot-mark {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: grid;
   place-items: center;
+  font-size: 18px;
   font-weight: 700;
-  font-size: 14px;
   color: var(--muted);
   background: var(--surface);
   border: 2px dashed var(--border-strong);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition: transform 0.15s, box-shadow 0.15s;
 }
-.area.reached .area-mark {
+.spot-mark .ico {
+  width: 20px;
+  height: 20px;
+}
+.spot.known .spot-mark {
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
   border: 2px solid var(--accent);
 }
-.area.next .area-mark {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-.area.lair.reached .area-mark {
+.spot.lair .spot-mark {
   color: var(--bad);
-  background: color-mix(in srgb, var(--bad) 12%, var(--surface));
   border-color: var(--bad);
 }
-.area.here .area-mark {
+.spot.here .spot-mark {
   color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 15%, var(--surface));
   border: 2px solid var(--ok);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 18%, transparent);
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
 }
-.area.hidden .area-body {
-  opacity: 0.6;
+.spot.picked .spot-mark {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 35%, transparent), 0 2px 8px rgba(0, 0, 0, 0.25);
 }
-.area-body {
+.spot-label {
+  display: grid;
+  justify-items: center;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+}
+.spot.fog .spot-label {
+  color: var(--muted);
+}
+.spot-label small {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.area-panel {
   min-width: 0;
 }
 .area-title {
@@ -1004,7 +1079,7 @@ select:focus,
   align-items: center;
   flex-wrap: wrap;
   gap: 2px 8px;
-  min-height: 36px;
+  margin-bottom: 4px;
 }
 .area-title h3 {
   margin: 0;
@@ -1025,30 +1100,6 @@ select:focus,
 .area-blurb {
   margin: 0 0 8px;
   font-size: 12px;
-}
-.path-hint {
-  font-size: 13px;
-  margin-bottom: 4px;
-}
-.path-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 6px;
-  font-size: 12px;
-}
-.path-bar {
-  flex: 1;
-  max-width: 260px;
-  height: 6px;
-  border-radius: 3px;
-  background: var(--surface-3);
-  overflow: hidden;
-}
-.path-bar > div {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.3s;
 }
 .foes {
   list-style: none;

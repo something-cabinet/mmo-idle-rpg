@@ -10,22 +10,27 @@
 
 ## Zone map
 
-A zone is a short path of **areas** instead of a flat enemy list, so pushing through
-it feels like exploring (data/zones.ts `areas`).
+A zone is a small map of **areas** joined by paths, not a flat enemy list and not a
+fixed route (data/zones.ts `areas`, `links`).
 
-- **4 areas per zone:** the two weakest enemies, the next two, the strongest regular
-  enemy, then the boss's lair. Each two-enemy area pairs defense profiles so every
-  build has a target it can farm there (an Armored or Balanced one next to a Warded one).
-- **Finding the next area:** 25 kills (`PATH_KILLS`) in the area before it, online or
-  offline, from lifetime `enemy_kill` counts. The first area is open as soon as the
-  zone is; beating the zone's boss opens every area (so characters who cleared a zone
-  before areas existed keep full access).
-- `setTarget` settles first, then rejects an enemy whose area isn't reached. No new
-  table or reducer: reaching an area is derived from kill counts.
-- Unreached areas show as `???` with their level range; the next one shows its kill
-  progress, and the lair always names its boss (bosses are the zone's goal). The
-  client toasts "New area found" as soon as its projection crosses the threshold.
-- Area IDs are `zoneId × 10 + n` and permanent (hidden areas may store them later).
+- **4 areas per zone:** the enemies grouped by place (e.g. Greenhollow: Village
+  Fields, Old Mill, Goblin Camp, Chieftain's Tent), the last being the boss's lair.
+  Paths branch, so the map has more than one way through.
+- **Nothing inside an open zone is locked.** Any enemy can be fought at any time; the
+  real limit is gear, not a grind gate, and an idle player never has to switch
+  targets to make progress.
+- **Exploration is zone-wide:** every kill of any of the zone's enemies, online or
+  offline, explores it. An area is revealed (named on the map) once the zone's
+  lifetime kills reach its `reveal` threshold, *illustrative* 0 / 100 / 250 / 500
+  (the last ≈ 2 h of farming), or as soon as the player fights in it. "Explored %"
+  is the zone's kills over the last threshold.
+- Unrevealed areas show as `???` with their level range and can still be fought; the
+  lair always names its boss (bosses are the zone's goal). The client toasts "New
+  area found" when its projection reveals one.
+- **Cost: none.** Revealing is derived on the client from `enemy_kill`; the server
+  doesn't know about areas.
+- Area IDs are `zoneId × 10 + n` and permanent; map positions are presentation only.
+  Hidden areas (exploration-todo.md) can hang off the same map later.
 - Walk flavour lines come from the zone's general lines plus the target's area.
 
 ## Enemy level

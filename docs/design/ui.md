@@ -78,36 +78,36 @@ Used for item names, icon borders and loot log lines.
 
 ### Zones
 
-A zone is a vertical path of areas (zones.md, "Zone map"), the same layout on a phone
-and a desktop:
+A zone is a 2D map of areas (zones.md, "Zone map"). On a phone the area panel sits
+under the map (tapping a spot scrolls to it); on a desktop it sits beside the map.
 
 ```
 [T1 Greenhollow ✔] [T2 Thornwood] [🔒 T3 Frostmaw Pass]
-
 Greenhollow  Lv 1–15
+Explored 34%                         next area in 80 kills
+██████░░░░░░░░░░
 Discovered: areas 2/4 · enemies 3/5 · items 12/33
-
- (1)  Village Fields                          Lv 1–4
-  │   ┌ ▸ Field Rat  EASY          [ Fight ] ┐
-  │   └ ▸ Wild Boar  EASY          [ Fight ] ┘
- (📍) Old Mill   YOU ARE HERE                  Lv 7–10
-  ┆   ┌ ▸ Goblin Scout  EVEN    [ Fighting ] ┐
-  ┆   └ ▸ ???  RISKY               [ Fight ] ┘
- (🔒) ???                                      Lv 13
-  ┆   Defeat 25 enemies in Old Mill to find the way.
-  ┆   ██████░░░░░░  14/25
- (☠) ???                                      Lv 15
-      Lair of Grubnak, Goblin Chief.
+┌──────────────────────────────┐
+│     (?)┄┄┄┄┄┄┄┄┄┄(☠)         │
+│     ??? Lv 13    ??? Lv 15   │
+│      ┆    ╲                  │
+│      ┆     (📍)Old Mill       │
+│      ┆    ╱                  │
+│  (🌾)Village Fields           │
+└──────────────────────────────┘
+Old Mill  YOU ARE HERE                          Lv 7–10
+  › Goblin Scout  EVEN   Lv 7 · Phys · Balanced …  [Fighting]
+  › ???           RISKY  Lv 10                     [ Fight  ]
 ```
 
-- Markers: numbered for reached areas, a pin where the character is fighting, a lock
-  for unreached ones, a skull for the lair. The line between two areas is solid once
-  the lower one is found, dashed before.
+- Spots: a glyph for revealed areas, `?` for unrevealed ones (dashed), a pin where the
+  character is fighting, a skull for the lair. The picked spot gets a ring. Paths are
+  solid between two revealed areas, dashed otherwise.
 - Each enemy is a card row: name (??? until known), a threat read against the active
   loadout (Easy / Even / Risky / Deadly), level, damage type, defense, HP, DPS and
   lifetime kills. Tap a row for its rewards and drops; the button fights it at once.
 - The boss row says **Challenge** instead of Fight until its first kill.
-- Locked zones show the whole path as ??? and what unlocks them ("Defeat Grubnak").
+- Locked zones show a greyed map and what unlocks them ("Defeat Grubnak").
 
 ### Character
 

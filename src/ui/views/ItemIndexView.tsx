@@ -161,6 +161,12 @@ function rangeText(stat: UniqueDef['stats'][number], tier: number): string {
   return `+${num(lo)}–${num(hi)}${d.percent ? '%' : ''} ${d.name}`;
 }
 
+type UniqueSource = 'world' | 'raid';
+const uniqueSource = (u: UniqueDef): UniqueSource => (u.raidId !== undefined ? 'raid' : 'world');
+const SOURCE_LABEL: Record<UniqueSource | 'all', string> = { all: 'All', world: 'World', raid: 'Raid' };
+/** Tiers that have uniques, ascending. */
+const UNIQUE_TIERS = [...new Set(UNIQUES.map(u => u.tier))].sort((a, b) => a - b);
+
 /** An undiscovered unique: only its tier and base are known. */
 function UnknownUniqueCard({ u }: { u: UniqueDef }) {
   const b = BASE_LIST.find(x => x.id === u.baseId)!;
@@ -223,7 +229,11 @@ function UniqueCard({ u }: { u: UniqueDef }) {
 export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot }) {
   const [tab, setTab] = useSticky<'bases' | 'affixes' | 'uniques'>('indexTab', 'bases');
   const [tier, setTier] = useSticky('indexTier', s.target?.zone.tier ?? 1);
-  const uniques = [...UNIQUES].sort((a, b) => a.tier - b.tier || a.id - b.id);
+  const [uTier, setUTier] = useSticky<number>('indexUniqueTier', 0);
+  const [uSource, setUSource] = useSticky<UniqueSource | 'all'>('indexUniqueSource', 'all');
+  const uniques = [...UNIQUES]
+    .filter(u => (uTier === 0 || u.tier === uTier) && (uSource === 'all' || uniqueSource(u) === uSource))
+    .sort((a, b) => a.tier - b.tier || a.id - b.id);
   const uniquesFound = uniques.filter(u => uniqueFound(s, u)).length;
   const found = (b: BaseDef) => baseFound(s, b.id, tier);
   // Raid-only bases drop at their raid's tier only.
@@ -281,10 +291,26 @@ export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot })
         </>
       ) : (
         <>
+          <div className="card index-toolbar">
+            <span className="toolbar-label">Tier</span>
+            <div className="seg wrap">
+              {[0, ...UNIQUE_TIERS].map(t => (
+                <button key={t} className={`seg-btn${t === uTier ? ' active' : ''}`} onClick={() => setUTier(t)}>{t === 0 ? 'All' : `T${t}`}</button>
+              ))}
+            </div>
+            <span className="toolbar-label">Source</span>
+            <div className="seg wrap">
+              {(['all', 'world', 'raid'] as const).map(src => (
+                <button key={src} className={`seg-btn${src === uSource ? ' active' : ''}`} onClick={() => setUSource(src)}>{SOURCE_LABEL[src]}</button>
+              ))}
+            </div>
+          </div>
           <p className="muted">
-            Uniques drop from any enemy in a zone of their tier or higher, and are always kept. Each stat rolls in the range
-            shown; effects with a cost apply once however many items carry them. Found {uniquesFound}/{uniques.length}.
+            World uniques drop from any enemy in a zone of their tier or higher (a few only in one hidden place), raid uniques
+            only from their raid; all are always kept. Each stat rolls in the range shown; effects with a cost apply once
+            however many items carry them. Found {uniquesFound}/{uniques.length}.
           </p>
+          {uniques.length === 0 && <p className="muted">No uniques match these filters.</p>}
           <div className="index-uniques">
             {uniques.map(u => (uniqueFound(s, u) ? <UniqueCard key={u.id} u={u} /> : <UnknownUniqueCard key={u.id} u={u} />))}
           </div>

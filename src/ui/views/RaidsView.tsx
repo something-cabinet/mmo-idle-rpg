@@ -7,7 +7,7 @@ import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src
 import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
-import { RAID_ODDS_SAMPLES, aggroShares, decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
+import { RAID_ODDS_SAMPLES, aggroShares, clearsToday, decodeSetup, encodeSetup, lockoutEnd, npcStats, raidOdds, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
 import { call } from '../../store';
 import { nowMicros } from '../clock';
 import { UNKNOWN, uniqueFound } from '../discovery';
@@ -47,7 +47,8 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
   const mine = members.find(m => m.characterId === s.row.id);
   const party = mine && parties.find(p => p.id === mine.partyId);
   const now = nowMicros();
-  const claimed = [...conn.db.myRaidLog.iter()].some(l => l.raidId === raid.id && l.rewarded && l.startedAt.microsSinceUnixEpoch >= lockoutStart(now));
+  const clears = clearsToday(conn.db.myRaidLog.iter(), raid.id, now);
+  const left = raid.clearsPerDay - clears;
 
   return (
     <>
@@ -73,7 +74,7 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
           </ul>
         </div>
         <div className="raid-rewards">
-          <h3>Rewards <span className="muted">each player, once a day (resets 00:00 UTC)</span></h3>
+          <h3>Rewards <span className="muted">each player, for {raid.clearsPerDay} wins a day (losses don't count; resets 00:00 UTC)</span></h3>
           <ul>
             <li>
               One T{raid.tier} item, <span className="c-epic">Epic</span> or better: <span className="c-legendary">Legendary</span> {pct(RAID_RARITY_ODDS.Legendary)},{' '}
@@ -84,8 +85,9 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
             </li>
             <li>{raid.tokens} raid tokens · {fmt(boss.gold)} gold · {fmt(boss.xp)} XP</li>
           </ul>
-          <p className={claimed ? 'muted' : 'c-ok'}>
-            {claimed ? `Today's reward claimed. Resets in ${duration(lockoutEnd(now) - now)}: you can still fight to help others.` : "Today's reward is waiting."}
+          <p className={left > 0 ? 'c-ok' : 'muted'}>
+            Clears today: {Math.min(clears, raid.clearsPerDay)}/{raid.clearsPerDay}.{' '}
+            {left > 0 ? `${left} rewarded win${left === 1 ? '' : 's'} left today.` : `Resets in ${duration(lockoutEnd(now) - now)}: you can still fight to help others.`}
           </p>
         </div>
       </div>
@@ -328,7 +330,7 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
               {loot && <ItemCard it={loot} compact />}
             </div>
           ) : (
-            <p className="muted">You already claimed today's reward: nothing this time.</p>
+            <p className="muted">No clears left today: nothing this time.</p>
           )
         ) : setup.fighters.some(f => f.characterId === s.row.id) ? (
           <p className="muted">Collecting the loot…</p>

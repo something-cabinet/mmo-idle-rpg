@@ -273,7 +273,15 @@ export function rollRaidItem(rng: Rng, raid: RaidDef): NewItem {
 export const raidLootRng = (partyId: bigint, startMicros: bigint, characterId: bigint): Rng => seededRng(partyId, startMicros, characterId, RAID_LOOT_SALT);
 
 const DAY_MICROS = 86_400_000_000n;
-/** Raid rewards are once per character per raid per day: the current day started here (00:00 UTC). */
+/** Raid rewards are `clearsPerDay` wins per character per raid per day: the current day started here (00:00 UTC). */
 export const lockoutStart = (nowMicros: bigint): bigint => nowMicros - (nowMicros % DAY_MICROS);
 /** When the current lockout ends. */
 export const lockoutEnd = (nowMicros: bigint): bigint => lockoutStart(nowMicros) + DAY_MICROS;
+
+/** Rewarded clears of `raidId` today, from a character's raid logs. */
+export const clearsToday = (logs: Iterable<{ raidId: number; rewarded: boolean; startedAt: { microsSinceUnixEpoch: bigint } }>, raidId: number, nowMicros: bigint): number => {
+  const since = lockoutStart(nowMicros);
+  let n = 0;
+  for (const l of logs) if (l.raidId === raidId && l.rewarded && l.startedAt.microsSinceUnixEpoch >= since) n++;
+  return n;
+};

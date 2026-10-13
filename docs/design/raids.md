@@ -87,7 +87,7 @@ live fights (combat.md). The server's outcome is final.
 
 ## Rewards
 
-On a win, each player gets, **once per raid per day** (resets 00:00 UTC):
+On a win, each player gets, for up to **3 clears per raid per day** (`clearsPerDay`; a clear is a rewarded win, losses don't count; resets 00:00 UTC):
 
 - **One T3 item, Epic or better**: Epic 75%, Legendary 22%, Unique 3%. Epic and Legendary
   are any base; a Unique comes from the raid's **own pool**, which drops nowhere else
@@ -95,7 +95,7 @@ On a win, each player gets, **once per raid per day** (resets 00:00 UTC):
   ignores the bag limit, like a first-kill reward.
 - **10 raid tokens** (`character.raidTokens`), 3,000 gold, 4,000 XP.
 
-A player who already claimed today can still join and fight to help others; they get
+A player with no clears left today can still join and fight to help others; they get
 nothing. A loss gives nothing, and the hire cost is spent. Every fight is logged per
 player (`raid_log`): win, rewarded, item, tokens, gold, XP, hire cost.
 

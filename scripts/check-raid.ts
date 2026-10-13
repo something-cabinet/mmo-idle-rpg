@@ -6,7 +6,7 @@ import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equi
 import { NPC_POWER, RAIDS_BY_ID, RAID_RARITY_ODDS, THREAT_FOCUS } from '../spacetimedb/src/data/raids';
 import { raidUniques } from '../spacetimedb/src/data/uniques';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
-import { aggroShares, decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, rollRaidItem, simulateRaid, type RaidSetup } from '../spacetimedb/src/raid';
+import { aggroShares, clearsToday, decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, rollRaidItem, simulateRaid, type RaidSetup } from '../spacetimedb/src/raid';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -114,6 +114,12 @@ check('uniques come from the raid\'s own pool, all of it', loot.filter(it => it.
   [...own].every(id => loot.some(it => it.uniqueId === id)));
 const day = 86_400_000_000n;
 check('lockout: a UTC day', lockoutStart(5n * day + 123n) === 5n * day && lockoutEnd(5n * day) === 6n * day);
+{
+  const log = (rewarded: boolean, at: bigint, raidId = raid.id) => ({ raidId, rewarded, startedAt: { microsSinceUnixEpoch: at } });
+  const now = 5n * day + 1000n;
+  const logs = [log(true, now - 10n), log(true, now - 20n), log(false, now - 30n), log(true, now - 2000n), log(true, now - 40n, 2)];
+  check(`clears today count rewarded wins of this raid since 00:00 UTC (${raid.clearsPerDay} a day)`, clearsToday(logs, raid.id, now) === 2 && raid.clearsPerDay === 3);
+}
 
 // ---------------------------------------------------------------- balance
 

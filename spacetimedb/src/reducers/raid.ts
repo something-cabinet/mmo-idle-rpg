@@ -9,7 +9,7 @@ import { addXp } from '../game';
 import { MAX_LEVEL, combatStats } from '../combat';
 import { RAIDS_BY_ID, RAID_PARTY_SIZE, type RaidDef } from '../data/raids';
 import { ZONES_BY_ID, bossOf } from '../data/zones';
-import { encodeSetup, decodeSetup, lockoutStart, npcStats, raidLootRng, raidRng, rollRaidItem, simulateRaid, type RaidFighter } from '../raid';
+import { clearsToday, encodeSetup, decodeSetup, npcStats, raidLootRng, raidRng, rollRaidItem, simulateRaid, type RaidFighter } from '../raid';
 import { discover, gearOf, hasKilledBoss, leaveRaidParty, raidFighting, raidMembers, requireActive, settle, type Character, type Ctx } from '../helpers';
 
 /** Raid log rows kept per character. */
@@ -35,14 +35,6 @@ function requireLeading(ctx: Ctx, ch: Character) {
   if (party.leaderId !== ch.id) throw new SenderError('Only the party leader can do that');
   if (raidFighting(party)) throw new SenderError('The fight is on: wait for it to end');
   return party;
-}
-
-/** Whether `characterId` already got rewards from `raidId` today (UTC). */
-function lockedOut(ctx: Ctx, characterId: bigint, raidId: number, nowMicros: bigint): boolean {
-  const since = lockoutStart(nowMicros);
-  for (const l of ctx.db.raidLog.characterId.filter(characterId))
-    if (l.raidId === raidId && l.rewarded && l.startedAt.microsSinceUnixEpoch >= since) return true;
-  return false;
 }
 
 /** Forms a new party for `raidId`, led by the caller. */
@@ -139,8 +131,8 @@ export const startRaid = spacetimedb.reducer(ctx => {
 });
 
 /**
- * A fight is over: every player in it gets a log row, and on a win, unless they were
- * already rewarded today, an Epic or better item (outside the bag limit), raid tokens,
+ * A fight is over: every player in it gets a log row, and on a win, unless they have
+ * used up today's clears (`clearsPerDay`), an Epic or better item (outside the bag limit), raid tokens,
  * gold and XP. Members who went offline during the fight leave the party.
  */
 export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer: raidTimer.rowType }, (ctx, { timer }) => {
@@ -157,7 +149,7 @@ export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer
     if (f.characterId === 0n) continue;
     const ch = ctx.db.character.id.find(f.characterId);
     if (!ch) continue;
-    const rewarded = fight.won && !lockedOut(ctx, ch.id, raid.id, now);
+    const rewarded = fight.won && clearsToday(ctx.db.raidLog.characterId.filter(ch.id), raid.id, now) < raid.clearsPerDay;
     let itemId = 0n;
     if (rewarded) {
       const item = rollRaidItem(raidLootRng(party.id, start, ch.id), raid);

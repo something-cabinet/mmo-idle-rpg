@@ -443,7 +443,7 @@ export const raidLog = table(
     /** The fight's start. */
     startedAt: t.timestamp(),
     won: t.bool(),
-    /** A win that granted rewards (false: lost, or rewards already claimed today). */
+    /** A win that granted rewards: a clear (false: lost, or no clears left today). */
     rewarded: t.bool(),
     /** The item granted; 0 if none. */
     itemId: t.u64(),

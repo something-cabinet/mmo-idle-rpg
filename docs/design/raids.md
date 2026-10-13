@@ -60,14 +60,16 @@ live fights (combat.md). The server's outcome is final.
 - Any character with the raid unlocked can **form a party** (it leads) or **join** an open
   one with a free seat. One party at a time. Parties are public, listed on the Raids page.
 - The leader can remove members, hire NPCs into empty seats, and start, after a confirm
-  that sums up the party, the odds, the hire cost and their clears left today.
+  that sums up the party, the hire cost and their clears left today.
 - **Online only:** leaving the world leaves the party (the lead passes to the next
   member; an empty party disbands). Starting needs every member online. Mid-fight,
   nobody can leave or join; a member who disconnects keeps the seat until the fight
   ends and is then removed.
 - Members see each other's level, gear and stats (views over the party's active
   loadouts), so the page shows every seat's HP, DPS against the boss, threat and share of
-  the boss's attacks, and the **win odds** over 200 simulated fights.
+  the boss's attacks.
+- **No win odds are shown.** A number to blame (or kick) a teammate over kills the fun and
+  invites toxicity; `raidOdds` stays for balancing in `test:raid` only.
 - Everyone fights with their current level and **active loadout**, taken at the start
   (each member is settled first). Farming continues during a raid.
 

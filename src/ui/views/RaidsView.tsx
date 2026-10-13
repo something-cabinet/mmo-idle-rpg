@@ -7,7 +7,7 @@ import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src
 import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
-import { RAID_ODDS_SAMPLES, aggroShares, clearsToday, decodeSetup, encodeSetup, lockoutEnd, npcStats, raidOdds, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
+import { aggroShares, clearsToday, decodeSetup, lockoutEnd, npcStats, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
 import { call } from '../../store';
 import { nowMicros } from '../clock';
 import { UNKNOWN, uniqueFound } from '../discovery';
@@ -166,8 +166,6 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   const known = players.every(p => p) ? (players as RaidFighter[]) : undefined;
   const npc = npcStats(raid);
   const setup = known && { raidId: raid.id, fighters: [...known, ...Array.from({ length: party.hired }, (_, i) => ({ characterId: 0n, name: `Hireling ${i + 1}`, stats: npc }))] };
-  const key = setup && encodeSetup(setup);
-  const odds = useMemo(() => (key ? raidOdds(decodeSetup(key), raid, party.id) : undefined), [key]); // eslint-disable-line react-hooks/exhaustive-deps -- the key is the setup
   // Each seat's share of the boss's attacks while everyone is alive.
   const aggro = setup && aggroShares(setup.fighters.map(f => f.stats.threat));
 
@@ -260,10 +258,6 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           </div>
           <div className="raid-launch-facts">
             <div><span>Party</span><strong>{members.length + party.hired}/{RAID_PARTY_SIZE}</strong>{party.hired > 0 && <small>{party.hired} hired</small>}</div>
-            <div title={`${RAID_ODDS_SAMPLES} simulated fights with this party`}>
-              <span>Win odds</span>
-              <strong className={odds === undefined ? '' : odds >= 0.6 ? 'c-ok' : odds >= 0.3 ? 'c-gold' : 'c-bad'}>{odds === undefined ? '…' : pct(odds)}</strong>
-            </div>
             <div><span>Your clears</span><strong className={clearsLeft ? '' : 'c-bad'}>{clearsLeft}/{raid.clearsPerDay}</strong><small>left today</small></div>
             {leading && <div><span>Hire cost</span><strong>{cost > 0n ? fmtBig(cost) : '0'}</strong><small>gold</small></div>}
           </div>
@@ -286,12 +280,10 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           <CardHead title={`Fight ${raid.boss.name.split(',')[0]}?`} />
           <ul className="raid-confirm-list">
             <li><span>Party</span><strong>{[...members.map(m => m.name), ...Array.from({ length: party.hired }, (_, i) => `Hireling ${i + 1}`)].join(', ')}</strong></li>
-            <li><span>Win odds</span><strong>{odds === undefined ? '…' : pct(odds)}</strong></li>
             {cost > 0n && <li><span>Hiring {party.hired} NPC{party.hired === 1 ? '' : 's'}</span><strong>{fmtBig(cost)} gold, paid now, win or lose</strong></li>}
             <li><span>Your clears today</span><strong>{clearsLeft}/{raid.clearsPerDay} left</strong></li>
           </ul>
           {clearsLeft === 0 && <p className="c-bad">You have no clears left today: a win gives you no loot.</p>}
-          {odds !== undefined && odds < 0.3 && <p className="c-bad">Low odds: this party will most likely wipe.</p>}
           <div className="row raid-confirm-actions">
             <button className="btn ghost" onClick={() => setConfirming(false)}>Cancel</button>
             <button

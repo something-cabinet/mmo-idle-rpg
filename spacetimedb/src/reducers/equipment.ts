@@ -2,7 +2,7 @@ import { SenderError, t } from 'spacetimedb/server';
 import { EquipProfile, spacetimedb } from '../schema';
 import { LOADOUT_COUNT } from '../game';
 import { SLOT_COUNT } from '../data/bases';
-import { autoEquip as bestSlots, placeItem } from '../equip';
+import { asProfile, autoEquip as bestSlots, placeItem } from '../equip';
 import { salvageValue } from '../loot';
 import { requireActive, requireItem, settle, type Character, type Ctx } from '../helpers';
 
@@ -64,14 +64,23 @@ export const setProfile = spacetimedb.reducer({ loadout: t.u8(), profile: EquipP
   ctx.db.loadout.id.update({ ...requireLoadout(ctx, ch, loadout), profile });
 });
 
-/** Equips the best owned items for the loadout's profile, scored against the reference dummy. */
+/** Locks or unlocks a loadout slot: auto-equip leaves a locked slot as it is. Manual equipping still works. */
+export const lockSlot = spacetimedb.reducer({ loadout: t.u8(), slot: t.u8(), locked: t.bool() }, (ctx, { loadout, slot, locked }) => {
+  const { ch } = requireActive(ctx);
+  const lo = requireLoadout(ctx, ch, loadout);
+  if (slot >= SLOT_COUNT) throw new SenderError('No such slot');
+  const bit = 1 << slot;
+  ctx.db.loadout.id.update({ ...lo, lockedSlots: locked ? lo.lockedSlots | bit : lo.lockedSlots & ~bit });
+});
+
+/** Equips the best owned items for the loadout's profile, scored against the reference dummy; locked slots stay. */
 export const autoEquip = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout }) => {
   const { ch } = requireActive(ctx);
   const lo = requireLoadout(ctx, ch, loadout);
   settleIfActive(ctx, ch, loadout); // may level up, which changes the scores
   const level = ctx.db.character.id.find(ch.id)!.level;
   const items = [...ctx.db.item.characterId.filter(ch.id)];
-  const slots = bestSlots(level, items, lo.slots, lo.profile.tag);
+  const slots = bestSlots(level, items, lo.slots, asProfile(lo.profile.tag), lo.lockedSlots);
   if (slots.join() !== lo.slots.join()) ctx.db.loadout.id.update({ ...lo, slots });
 });
 
@@ -81,17 +90,20 @@ export const lockItem = spacetimedb.reducer({ itemId: t.u64(), locked: t.bool() 
   ctx.db.item.id.update({ ...requireItem(ctx, ch, itemId), locked });
 });
 
-/** Turns bag items into Dust. Locked items and items in any loadout are refused. */
+/** Turns bag items into Dust and gold. Locked items and items in any loadout are refused. */
 export const salvage = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, { itemIds }) => {
   const { ch } = requireActive(ctx);
   const equipped = new Set([...ctx.db.loadout.characterId.filter(ch.id)].flatMap(l => l.slots));
   let dust = 0n;
+  let gold = 0n;
   for (const id of new Set(itemIds)) {
     const it = requireItem(ctx, ch, id);
     if (it.locked) throw new SenderError('Item is locked');
     if (equipped.has(id)) throw new SenderError('Item is in a loadout');
-    dust += salvageValue(it.rarity.tag, it.tier);
+    const v = salvageValue(it.rarity.tag, it.tier);
+    dust += v.dust;
+    gold += v.gold;
     ctx.db.item.id.delete(id);
   }
-  ctx.db.character.id.update({ ...ch, dust: ch.dust + dust });
+  ctx.db.character.id.update({ ...ch, dust: ch.dust + dust, gold: ch.gold + gold });
 });

@@ -197,7 +197,7 @@ and the player shouldn't have to review them.
   upgrade score.
 - **Bag limit:** 200, expandable to 400 with gold (crafting.md). When the bag is full,
   further kept drops are salvaged.
-- **Salvage** turns items into Dust (values in crafting.md).
+- **Salvage** turns items into Dust and gold (values in crafting.md).
 - **Per-settle cap** on kept items (*illustrative:* 50), applied after the filter; when
   it overflows, the lowest rarities are salvaged first, so a cap never eats an Epic.
 - Rough budget: 10,000 players × 200 items ≈ 2M rows ≈ 200 MB (400 MB if everyone

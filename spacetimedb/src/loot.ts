@@ -25,9 +25,13 @@ export const rarityRank = (r: RarityName) => RARITIES.indexOf(r);
 export const REGULAR_AFFIXES: Record<RarityName, number> = {
   Common: 0, Magic: 1, Rare: 2, Epic: 3, Legendary: 2, Unique: 0, Ethereal: 0, Mythic: 0, Anomaly: 0,
 };
-/** Dust per salvaged item at T1; × 2.9^(T−1) (crafting.md). */
+/** Dust per salvaged item at T1; × 2.9^(T−1), rounded (crafting.md). */
 export const DUST: Record<RarityName, number> = {
-  Common: 1, Magic: 2, Rare: 5, Epic: 20, Legendary: 60, Unique: 60, Ethereal: 60, Mythic: 60, Anomaly: 60,
+  Common: 0.8, Magic: 1.6, Rare: 4, Epic: 16, Legendary: 50, Unique: 50, Ethereal: 50, Mythic: 50, Anomaly: 50,
+};
+/** Gold per salvaged item at T1; × 2.9^(T−1) (crafting.md). */
+export const SALVAGE_GOLD: Record<RarityName, number> = {
+  Common: 10, Magic: 20, Rare: 50, Epic: 200, Legendary: 600, Unique: 600, Ethereal: 600, Mythic: 600, Anomaly: 600,
 };
 
 /** What the dev panel can give with `makeItem`: gear rarities, and an Anomaly to test with. */
@@ -38,8 +42,9 @@ export const ANOMALY_CHANCE = 1e-6;
 /** Fewest and most affixes on an Anomaly. */
 export const ANOMALY_AFFIXES = [5, 9] as const;
 
-export function salvageValue(rarity: RarityName, tier: number): bigint {
-  return BigInt(Math.round(DUST[rarity] * 2.9 ** (tier - 1)));
+export function salvageValue(rarity: RarityName, tier: number): { dust: bigint; gold: bigint } {
+  const scale = 2.9 ** (tier - 1);
+  return { dust: BigInt(Math.round(DUST[rarity] * scale)), gold: BigInt(Math.round(SALVAGE_GOLD[rarity] * scale)) };
 }
 
 // ---------------------------------------------------------------- random
@@ -279,6 +284,8 @@ export interface DropResult {
   /** Salvaged drops per rarity (filter and full bag). */
   salvaged: Record<RarityName, number>;
   dust: bigint;
+  /** Gold from salvage. */
+  gold: bigint;
   /** Kept by the filter but salvaged for a full bag. */
   overflow: number;
   /** Every drop, salvaged ones included (discovery). Drops salvaged unrolled only with `discoverRng`. */
@@ -314,14 +321,17 @@ export interface DropInput {
 /**
  * Samples a drop count per rarity (one draw per rarity, not per kill), rolls the
  * items, applies the loot filter, fills the free bag slots (highest
- * rarity first), and salvages the rest into Dust.
+ * rarity first), and salvages the rest into Dust and gold.
  */
 export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const salvaged = Object.fromEntries(RARITIES.map(r => [r, 0])) as Record<RarityName, number>;
   let dust = 0n;
+  let gold = 0n;
   const salvage = (r: RarityName, tier = d.tier) => {
     salvaged[r]++;
-    dust += salvageValue(r, tier);
+    const v = salvageValue(r, tier);
+    dust += v.dust;
+    gold += v.gold;
   };
 
   const scale = d.kills * d.rewardScale * (1 + d.itemFind);
@@ -381,7 +391,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const over = kept.splice(room);
   over.forEach(item => salvage(item.rarity.tag, item.tier));
   kept.unshift(...anomalies);
-  return { kept, salvaged, dust, overflow: over.length, seen };
+  return { kept, salvaged, dust, gold, overflow: over.length, seen };
 }
 
 // ---------------------------------------------------------------- materials

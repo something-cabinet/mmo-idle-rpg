@@ -9,20 +9,22 @@ main one. All costs scale steeply with item tier and rarity.
 - Enemies also drop tiered **Metal, Hide, Core, Cloth, Wood, Reagent and Gem** materials
   (zones.md, "Materials"). Life skills use them: recipes, buffs, tools and the
   Hideout (life-skills.md).
-- Salvaging an item gives `dust(rarity) × 2.9^(T−1)`, the same ×2.9-per-tier growth
-  as XP and gold, so old low-tier Dust barely helps with high-tier crafting.
+- Salvaging an item gives `dust(rarity) × 2.9^(T−1)` (rounded) and `gold(rarity) ×
+  2.9^(T−1)`, the same ×2.9-per-tier growth as XP and gold, so old low-tier Dust
+  barely helps with high-tier crafting.
 
-| Rarity | Dust per salvage (× 2.9^(T−1)) |
-|---|---|
-| Common | 1 |
-| Magic | 2 |
-| Rare | 5 |
-| Epic | 20 |
-| Legendary | 60 |
-| Unique | 60 |
+| Rarity | Dust per salvage (× 2.9^(T−1)) | Gold per salvage (× 2.9^(T−1)) |
+|---|---|---|
+| Common | 0.8 | 10 |
+| Magic | 1.6 | 20 |
+| Rare | 4 | 50 |
+| Epic | 16 | 200 |
+| Legendary | 50 | 600 |
+| Unique | 50 | 600 |
 
-A player who keeps Rare+ and salvages the rest gets ~15 Dust per hour × 2.9^(T−1)
-(drop rates in zones.md).
+A player who keeps Rare+ and salvages the rest gets ~12 Dust and ~150 gold per hour
+× 2.9^(T−1) (drop rates in zones.md). Crafting still prices Dust at 15 per hour of
+farming, so Dust is a little scarcer than gold.
 
 ## Cost formula
 

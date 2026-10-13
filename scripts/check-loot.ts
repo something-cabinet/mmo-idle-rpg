@@ -126,8 +126,8 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 // ---------------------------------------------------------------- drops, filter, salvage
 
-check('salvage: Rare T1 = 5 Dust', salvageValue('Rare', 1) === 5n);
-check('salvage: Epic T2 = 58 Dust', salvageValue('Epic', 2) === 58n);
+check('salvage: Rare T1 = 4 Dust, 50 gold', salvageValue('Rare', 1).dust === 4n && salvageValue('Rare', 1).gold === 50n);
+check('salvage: Epic T2 = 46 Dust, 580 gold', salvageValue('Epic', 2).dust === 46n && salvageValue('Epic', 2).gold === 580n);
 
 const wisp = ENEMIES_BY_ID.get(104)!;
 const rat = ENEMIES_BY_ID.get(101)!;
@@ -165,7 +165,9 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('drops come from the enemy\'s bases at the zone tier (uniques aside)',
     runs.every(r => r.kept.every(it => it.uniqueId !== undefined || (wisp.enemy.drops.includes(it.baseId) && it.tier === 1))));
   check('Dust is the sum of salvage values', runs.every(r =>
-    r.dust === RARITIES.reduce((sum, rar) => sum + BigInt(r.salvaged[rar]) * salvageValue(rar, 1), 0n)));
+    r.dust === RARITIES.reduce((sum, rar) => sum + BigInt(r.salvaged[rar]) * salvageValue(rar, 1).dust, 0n)));
+  check('salvage gold is the sum of salvage values', runs.every(r =>
+    r.gold === RARITIES.reduce((sum, rar) => sum + BigInt(r.salvaged[rar]) * salvageValue(rar, 1).gold, 0n)));
   check('uniques are never salvaged by the filter', runs.every(r => r.salvaged.Unique === 0));
 
   const again = rollDrops(seededRng(5n), session({ kills }));

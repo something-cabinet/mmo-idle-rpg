@@ -71,7 +71,7 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
 
 /**
  * Grants the rewards earned since `lastSettledAt` with the current gear and target:
- * XP, gold, and drops (kept items go to the bag, the rest is salvaged into Dust).
+ * XP, gold, and drops (kept items go to the bag, the rest is salvaged into Dust and gold).
  * Online time is played as live fights (sim.ts `simulate`, the fights the client
  * animates); offline time uses the expected-value formulas (game.ts `project`). A
  * boss's first kill grants its reward and unlocks the next zone (zone-content.md); a
@@ -94,6 +94,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const keptItemIds: bigint[] = [];
   const discovered: Found[] = [];
   let materials: MaterialDrop[] = [];
+  let salvageGold = 0n;
   if (target && p.kills > 0) {
     const filter = ctx.db.lootFilter.characterId.find(ch.id);
     const stats = combatStats(ch.level, gear);
@@ -121,13 +122,14 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       keptItemIds.push(row.id);
     }
     dust += drops.dust;
+    salvageGold = drops.gold;
     // Own seed, so adding materials didn't change the item rolls above.
     materials = rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, p.kills,
       rewardScale(target.zone, target.enemy));
     addMaterials(ctx, ch.id, materials);
   }
 
-  let gold = p.gold;
+  let gold = p.gold + salvageGold;
   if (target?.enemy.boss && p.kills > 0 && !hasKilledBoss(ctx, ch.id, target.zone.id)) {
     const reward = firstKillReward(seededRng(ch.id, BigInt(target.zone.id), ctx.timestamp.microsSinceUnixEpoch), target.zone, target.enemy);
     // The guaranteed item ignores the bag limit (it only limits drops).
@@ -160,7 +162,9 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
           keptItemIds.push(itemId);
           bagFree--;
         } else {
-          dust += salvageValue(r.item.rarity.tag, r.item.tier);
+          const v = salvageValue(r.item.rarity.tag, r.item.tier);
+          dust += v.dust;
+          gold += v.gold;
         }
       }
       if (r.xp > 0n) {
@@ -283,6 +287,7 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
       index: i,
       name: DEFAULT_LOADOUT_NAMES[i],
       profile: { tag: 'Damage' },
+      lockedSlots: 0,
       slots: Array.from({ length: SLOT_COUNT }, () => 0n),
     });
   }

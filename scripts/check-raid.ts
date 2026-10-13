@@ -1,6 +1,6 @@
 // Checks for raid fights (spacetimedb/src/raid.ts) and the raid boss's balance. No server needed:
 //   npm run test:raid
-import { BASE_LIST, SLOTS } from '../spacetimedb/src/data/bases';
+import { SLOTS, ZONE_BASES } from '../spacetimedb/src/data/bases';
 import { combatStats, matchup, mitigation, type CombatStats } from '../spacetimedb/src/combat';
 import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
 import { NPC_POWER, RAIDS_BY_ID, RAID_RARITY_ODDS, THREAT_FOCUS } from '../spacetimedb/src/data/raids';
@@ -28,7 +28,7 @@ function character(seed: number, role: 'tank' | 'healer' | 'dps'): CombatStats {
   const items: OwnedItem[] = Array.from({ length: 60 }, (_, i) => {
     const r = rng();
     const rarity: RarityName = r < 0.6 ? 'Rare' : r < 0.9 ? 'Epic' : 'Legendary';
-    const b = BASE_LIST[Math.floor(rng() * BASE_LIST.length)];
+    const b = ZONE_BASES[Math.floor(rng() * ZONE_BASES.length)];
     const baseId = role === 'healer' && b.weapon ? 10 : b.id;
     return { ...makeItem(rng, baseId, 3, rarity), id: BigInt(i + 1) };
   });

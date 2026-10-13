@@ -3,7 +3,7 @@
 // PERMANENT IDS: raid IDs are stored on raid parties and raid logs, and bind the
 // raid's own uniques (data/uniques.ts `raidId`). Raid boss enemy IDs are 9000 + raid
 // ID, outside the zones' zoneId × 100 + n, so `setTarget` never finds them.
-import { BASE_LIST } from './bases';
+import { BASE_LIST, ZONE_BASES } from './bases';
 import type { EnemyDef } from './zones';
 
 /**
@@ -66,8 +66,8 @@ export const THREAT_FOCUS = 5;
 /** Rarity odds of a raid kill's item (the Unique comes from the raid's own pool). */
 export const RAID_RARITY_ODDS = { Epic: 0.75, Legendary: 0.22, Unique: 0.03 } as const;
 
-// Every base: a raid can drop gear for any slot.
-const ALL_BASES = BASE_LIST.map(b => b.id);
+// Every zone base plus the raid's own: a raid can drop gear for any slot.
+const raidDrops = (raidId: number) => [...ZONE_BASES, ...BASE_LIST.filter(b => b.raidId === raidId)].map(b => b.id);
 
 export const RAIDS: RaidDef[] = [
   {
@@ -78,7 +78,7 @@ export const RAIDS: RaidDef[] = [
     unlockZoneId: 3,
     boss: {
       id: 9001, name: 'Skaldrith, the Rime Wyrm', level: 40, damageType: 'Physical', defense: 'Armored', speed: 0.7,
-      hp: 20000, dps: 80, armor: 250, resistance: 100, xp: 4000, gold: 3000, drops: ALL_BASES, materials: [], boss: true,
+      hp: 20000, dps: 80, armor: 250, resistance: 100, xp: 4000, gold: 3000, drops: raidDrops(1), materials: [], boss: true,
     },
     aoe: { every: 12, damage: 45, damageType: 'Magic', name: 'Frost Breath' },
     enrageSeconds: 240,

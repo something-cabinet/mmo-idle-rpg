@@ -16,7 +16,7 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
   - percent values and primaries: `P × (T + 3) / 12` (P/3 at T1, P at T9);
   - attack speed, base crit and the plate and greatshield attack-speed penalties don't scale.
 - Templates below are **T1 values**.
-- 34 bases per tier: 11 weapons, 12 armor (4 slots × 3 weights), shield, greatshield, tome, 4 ring
+- 34 bases per tier, plus raid-only bases (below): 11 weapons, 12 armor (4 slots × 3 weights), shield, greatshield, tome, 4 ring
   gems, 4 amulet gems.
 
 ## Name tracks
@@ -110,6 +110,15 @@ against the zone's average enemy:
 \* After the reference player's 30% mitigation and 10% evasion. Speed 1.0/s, so per hit
 = per second. With average Magic gear (heal %, flat heal, Mind) coverage is ~85–90% at
 every tier, still below 100%.
+
+### Raid-only bases
+
+A raid base (`raidId`) drops only from its raid, at the raid's tier; zone enemies never
+drop it. Its name doesn't follow a track.
+
+| Base | Raid | Hands | Type | Hit (T1) | Speed | DPS (T1) | Base crit | Trait (implicit) |
+|---|---|---|---|---|---|---|---|---|
+| Wyrmfang Sword | Wyrm Hollow (T3) | 1H | Phys | 10 | 1.1 | 11 | 6% | +60 Might (P), +4T resistance |
 
 ## Off-hands (*illustrative*)
 

@@ -1,9 +1,10 @@
 // Consistency checks for the static game data (spacetimedb/src/data). No server needed:
 //   npm run test:data
-import { BASE_LIST, TRACKS, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
+import { BASE_LIST, ZONE_BASES, TRACKS, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
+import { RAIDS, RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
 import { ENEMIES_BY_ID, WALL_FACTOR, ZONES, isWallTier } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
 import { MATERIALS, MATERIAL_KINDS, materialOf } from '../spacetimedb/src/data/materials';
@@ -17,7 +18,10 @@ const unique = (xs: number[]) => new Set(xs).size === xs.length;
 const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
 check('base IDs unique', unique(BASE_LIST.map(b => b.id)));
-check('34 bases', BASE_LIST.length === 34, String(BASE_LIST.length));
+check('35 bases', BASE_LIST.length === 35, String(BASE_LIST.length));
+check('raid-only bases: their raid exists and drops them', BASE_LIST.every(b => b.raidId === undefined ||
+  RAIDS_BY_ID.get(b.raidId)?.boss.drops.includes(b.id) === true));
+check("raids drop no other raid's bases", RAIDS.every(r => r.boss.drops.every(id => [undefined, r.id].includes(base(id).raidId))));
 check('enemy IDs unique', unique(ZONES.flatMap(z => z.enemies.map(e => e.id))));
 check('legendary and unique effect IDs unique', unique([...LEGENDARIES, ...UNIQUE_EFFECTS].map(l => l.id)));
 check('legendary effects stack: positive per copy, cap at least one copy', LEGENDARIES.every(l => l.perCopy > 0 && l.cap >= l.perCopy));
@@ -46,7 +50,8 @@ check('stat IDs match keys', Object.entries(STATS).every(([k, d]) => Number(k) =
 for (const zone of ZONES) {
   const regular = zone.enemies.filter(e => !e.boss && !e.secret);
   const drops = regular.flatMap(e => e.drops);
-  check(`${zone.name}: every base drops from exactly one enemy`, unique(drops) && drops.length === BASE_LIST.length,
+  check(`${zone.name}: every zone base drops from exactly one enemy`, unique(drops) && drops.length === ZONE_BASES.length &&
+    ZONE_BASES.every(b => drops.includes(b.id)),
     `${drops.length} drops`);
   check(`${zone.name}: one boss`, zone.enemies.filter(e => e.boss).length === 1);
   check(`${zone.name}: drop IDs exist`, drops.every(id => BASE_LIST.some(b => b.id === id)));

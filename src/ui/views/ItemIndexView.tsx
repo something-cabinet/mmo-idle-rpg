@@ -226,7 +226,9 @@ export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot })
   const uniques = [...UNIQUES].sort((a, b) => a.tier - b.tier || a.id - b.id);
   const uniquesFound = uniques.filter(u => uniqueFound(s, u)).length;
   const found = (b: BaseDef) => baseFound(s, b.id, tier);
-  const basesFound = BASE_LIST.filter(found).length;
+  // Raid-only bases drop at their raid's tier only.
+  const tierBases = BASE_LIST.filter(b => b.raidId === undefined || RAIDS_BY_ID.get(b.raidId)?.tier === tier);
+  const basesFound = tierBases.filter(found).length;
 
   return (
     <>
@@ -265,10 +267,10 @@ export const ItemIndexView = memo(function ItemIndexView({ s }: { s: Snapshot })
                 <button key={t} className={`seg-btn${t === tier ? ' active' : ''}`} onClick={() => setTier(t)}>T{t}</button>
               ))}
             </div>
-            <span className="muted">Found {basesFound}/{BASE_LIST.length} at T{tier}. Base stats only: affixes roll on top (Magic and up).</span>
+            <span className="muted">Found {basesFound}/{tierBases.length} at T{tier}. Base stats only: affixes roll on top (Magic and up).</span>
           </div>
           {(Object.keys(KIND_TITLE) as BaseKind[]).map(kind => {
-            const bases = BASE_LIST.filter(b => b.kind === kind);
+            const bases = tierBases.filter(b => b.kind === kind);
             return (
               <div className="card" key={kind}>
                 <CardHead title={KIND_TITLE[kind]} />

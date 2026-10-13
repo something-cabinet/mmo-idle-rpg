@@ -48,6 +48,8 @@ export interface BaseDef {
   name: (t: number) => string;
   implicits: Implicit[];
   weapon?: WeaponTemplate;
+  /** Drops only from this raid (data/raids.ts), at the raid's tier; never from zone enemies. */
+  raidId?: number;
 }
 
 // ------------------------------------------------------------------ names
@@ -161,6 +163,15 @@ export const BASE_LIST: BaseDef[] = [
   weapon(9, 'Fire Staff', 'wood', { damageType: 'Magic', hit: 18.75, speed: 0.8, baseCrit: 5, twoHanded: true, ranged: true }),
   weapon(10, 'Healing Staff', 'wood', { damageType: 'Magic', hit: 5, speed: 1.0, baseCrit: 5, heal: 7.5, healTarget: 'All', twoHanded: true, ranged: true }),
   weapon(11, 'Crossbow', 'wood', { damageType: 'Physical', hit: 18, speed: 0.7, baseCrit: 12, twoHanded: true, ranged: true }, [pct(Stat.CritDamage, 40)]),
+  // Wyrm Hollow (raid 1, T3): a sword carved from the Rime Wyrm's fang. A little faster than a sword, with frost resistance.
+  {
+    ...weapon(12, 'Sword · Wyrmfang', 'metal', { damageType: 'Physical', hit: 10, speed: 1.1, baseCrit: 6, twoHanded: false, ranged: false }, [
+      pct(Stat.Might, 60),
+      lin(Stat.Resistance, 4),
+    ]),
+    name: () => 'Wyrmfang Sword',
+    raidId: 1,
+  },
   {
     id: 20,
     kind: 'offhand',
@@ -198,6 +209,9 @@ export const BASE_LIST: BaseDef[] = [
 export const STARTER_WEAPONS = [1, 8, 5, 10] as const;
 /** Every new character also gets these, Common T1: Ratskin Vest and Ratskin Boots. */
 export const STARTER_ARMOR = [35, 37] as const;
+
+/** Bases that drop from zone enemies: every base but the raid-only ones. */
+export const ZONE_BASES = BASE_LIST.filter(b => b.raidId === undefined);
 
 export const BASES: ReadonlyMap<number, BaseDef> = new Map(BASE_LIST.map(b => [b.id, b]));
 

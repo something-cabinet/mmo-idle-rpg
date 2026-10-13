@@ -49,7 +49,7 @@ function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?
       lines.push(
         <li className="dim" key={`s${log.id}`}>
           <span>{salvaged.map(([r, n]) => `${n} ${r}`).join(', ')}</span>
-          <span className="muted">salvaged +{fmtBig(log.essence)} Essence</span>
+          <span className="muted">salvaged +{fmtBig(log.dust)} Dust</span>
         </li>
       );
     }

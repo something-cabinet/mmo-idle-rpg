@@ -5,14 +5,14 @@ main one. All costs scale steeply with item tier and rarity.
 
 ## Materials
 
-- **Essence** is the salvage material, stored as a counter on the character (never as rows).
+- **Dust** is the salvage material, stored as a counter on the character (never as rows).
 - Enemies also drop tiered **Metal, Hide, Core, Cloth, Wood, Reagent and Gem** materials
   (zones.md, "Materials"). Nothing uses them yet; they are for future recipes, potions
   and hideout upgrades.
-- Salvaging an item gives `essence(rarity) × 2.9^(T−1)`, the same ×2.9-per-tier growth
-  as XP and gold, so old low-tier Essence barely helps with high-tier crafting.
+- Salvaging an item gives `dust(rarity) × 2.9^(T−1)`, the same ×2.9-per-tier growth
+  as XP and gold, so old low-tier Dust barely helps with high-tier crafting.
 
-| Rarity | Essence per salvage (× 2.9^(T−1)) |
+| Rarity | Dust per salvage (× 2.9^(T−1)) |
 |---|---|
 | Common | 1 |
 | Magic | 2 |
@@ -21,7 +21,7 @@ main one. All costs scale steeply with item tier and rarity.
 | Legendary | 60 |
 | Unique | 60 |
 
-A player who keeps Rare+ and salvages the rest gets ~15 Essence per hour × 2.9^(T−1)
+A player who keeps Rare+ and salvages the rest gets ~15 Dust per hour × 2.9^(T−1)
 (drop rates in zones.md).
 
 ## Cost formula
@@ -31,7 +31,7 @@ every tier:
 
 ```
 goldCost    = hours × 1,200 × 2.9^(T−1)     // gold per hour at tier T
-essenceCost = hours × 15    × 2.9^(T−1)     // Essence per hour at tier T
+dustCost = hours × 15    × 2.9^(T−1)     // Dust per hour at tier T
 ```
 
 ## Reroll an affix
@@ -45,10 +45,10 @@ Hours below are after `REROLL_COST_MULT` (0.5) in `craft.ts`, which halves the b
 
 | Item rarity | Hours | T1 cost | T9 cost |
 |---|---|---|---|
-| Magic | 0.125 | 150 gold, 2 Essence | 750k gold, 9.4k Essence |
-| Rare | 0.25 | 300 gold, 4 Essence | 1.5M gold, 19k Essence |
-| Epic | 0.5 | 600 gold, 8 Essence | 3.0M gold, 38k Essence |
-| Legendary | 1 | 1,200 gold, 15 Essence | 6.0M gold, 75k Essence |
+| Magic | 0.125 | 150 gold, 2 Dust | 750k gold, 9.4k Dust |
+| Rare | 0.25 | 300 gold, 4 Dust | 1.5M gold, 19k Dust |
+| Epic | 0.5 | 600 gold, 8 Dust | 3.0M gold, 38k Dust |
+| Legendary | 1 | 1,200 gold, 15 Dust | 6.0M gold, 75k Dust |
 
 ## Upgrade rarity
 
@@ -56,10 +56,10 @@ Raises an item one rarity step. Its base and existing affixes stay.
 
 | Upgrade | Effect | Hours | T1 cost | T9 cost |
 |---|---|---|---|---|
-| Common → Magic | Adds 1 random affix | 0.25 | 300 gold, 4 Essence | 1.5M gold, 19k Essence |
-| Magic → Rare | Adds 1 random affix | 1 | 1,200 gold, 15 Essence | 6.0M gold, 75k Essence |
-| Rare → Epic | Adds 1 random affix | 4 | 4,800 gold, 60 Essence | 24M gold, 300k Essence |
-| Epic → Legendary | Player removes 1 regular affix; adds 1 random legendary affix | 24 | 29k gold, 360 Essence | 144M gold, 1.8M Essence |
+| Common → Magic | Adds 1 random affix | 0.25 | 300 gold, 4 Dust | 1.5M gold, 19k Dust |
+| Magic → Rare | Adds 1 random affix | 1 | 1,200 gold, 15 Dust | 6.0M gold, 75k Dust |
+| Rare → Epic | Adds 1 random affix | 4 | 4,800 gold, 60 Dust | 24M gold, 300k Dust |
+| Epic → Legendary | Player removes 1 regular affix; adds 1 random legendary affix | 24 | 29k gold, 360 Dust | 144M gold, 1.8M Dust |
 
 - Legendary is the top craftable rarity; Unique can't be crafted.
 - Epic → Legendary costs ~24 h, against a natural Legendary every ~40 h of farming:

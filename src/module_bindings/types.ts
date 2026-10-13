@@ -62,6 +62,7 @@ export const Character = __t.object("Character", {
   activeLoadout: __t.u8(),
   zoneId: __t.u16(),
   targetEnemyId: __t.u16(),
+  dust: __t.u64(),
 });
 export type Character = __Infer<typeof Character>;
 
@@ -286,6 +287,7 @@ export const SettleLog = __t.object("SettleLog", {
   get materials() {
     return __t.array(MaterialCount);
   },
+  dust: __t.u64(),
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

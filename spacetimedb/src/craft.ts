@@ -10,13 +10,13 @@ export type CraftItem = RaisableItem;
 
 export interface CraftCost {
   gold: bigint;
-  essence: bigint;
+  dust: bigint;
 }
 
-/** Costs are hours of farming at the item's tier: 1,200 gold and 15 Essence per hour × 2.9^(T−1). */
+/** Costs are hours of farming at the item's tier: 1,200 gold and 15 Dust per hour × 2.9^(T−1). */
 export function craftCost(hours: number, tier: number): CraftCost {
   const scale = hours * 2.9 ** (tier - 1);
-  return { gold: BigInt(Math.round(1200 * scale)), essence: BigInt(Math.round(15 * scale)) };
+  return { gold: BigInt(Math.round(1200 * scale)), dust: BigInt(Math.round(15 * scale)) };
 }
 
 /** Tuning knob: every reroll costs REROLL_HOURS × this. */

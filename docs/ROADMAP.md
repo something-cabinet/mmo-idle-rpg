@@ -36,7 +36,7 @@ fighting the target enemy with the active loadout.
   - `legendary.ts`: legendary effects (rollable, stacking: `perCopy`, `cap`) and unique
     effects (never roll, no stacking), groups, which base kinds roll which group.
 - **Tables** (`spacetimedb/src/schema.ts`): `item`, `loadout` (4 per character, 9 slots,
-  0 = empty), `loot_filter`, `boss_kill`; new `character` columns `essence`, `bagSize`,
+  0 = empty), `loot_filter`, `boss_kill`; new `character` columns `dust`, `bagSize`,
   `activeLoadout`, `zoneId`, `targetEnemyId` (with defaults for migration).
 - **Views** (`spacetimedb/src/reducers/views.ts`): `my_items`, `my_loadouts`,
   `my_loot_filter`, `my_boss_kills`. The client subscribes to them in `src/net.ts`.
@@ -59,9 +59,9 @@ fighting the target enemy with the active loadout.
   `makeItem` rolls affixes (weighted free pool, tier 1..N, value in its slice) and
   legendaries (group by base kind, bonus 0.25–0.5 × ref). Then the loot filter
   (rarity threshold or whitelisted affix), then the bag limit: kept drops fill the
-  free slots, lowest rarity salvaged first, and salvage to Essence. Seeded by (character
+  free slots, lowest rarity salvaged first, and salvage to Dust. Seeded by (character
   ID, settle start), so a settle is reproducible.
-- **Server**: `settle` inserts kept items and adds Essence; `bagCount` counts items
+- **Server**: `settle` inserts kept items and adds Dust; `bagCount` counts items
   not in any loadout. `setLootFilter(minRarity, keepAffixes)` settles first. A
   scheduled reducer `settleOnline` (table `settle_timer`, 60 s interval, inserted by
   `init`) settles everyone in the world so drops arrive while playing.
@@ -88,7 +88,7 @@ fighting the target enemy with the active loadout.
   outside the bag limit. A win can't be reached in the smoke test yet (starter gear
   loses); the reward is covered in `test:loot`.
 - **Crafting** (`spacetimedb/src/craft.ts`, pure, shared): `craftCost(hours, T)`
-  (`hours × 1,200 × 2.9^(T−1)` gold, `× 15` Essence, rounded), `rerollCost` /
+  (`hours × 1,200 × 2.9^(T−1)` gold, `× 15` Dust, rounded), `rerollCost` /
   `upgradeCost` from the hours tables in crafting.md, `rerollAffix` and
   `upgradeRarity` (reuse `rollAffix` / `rollLegendary`; return an error string on a
   refusal), `bagExpansionCost(bagSize)` (`50,000 × 4^n`, +25 slots up to 400).
@@ -117,7 +117,7 @@ fighting the target enemy with the active loadout.
   affix.
 - **Settle log** (table `settle_log`, view `my_settle_log`): one row per settle with
   kills and per login settle (`offline`): elapsed time, cap hit, enemy, viable,
-  kills, levels, XP / gold / Essence gained (`project` now returns `xpGained`), kept
+  kills, levels, XP / gold / Dust gained (`project` now returns `xpGained`), kept
   item IDs, salvaged counts per rarity, overflow. The newest 30 per character are
   kept (`SETTLE_LOG_KEEP`). Feeds the loot log, the away report and the filter's
   "last 8 hours".

@@ -15,11 +15,11 @@ export const rarityRank = (r: RarityName) => RARITIES.indexOf(r);
 
 /** Regular affixes per rarity (equipment.md). Legendary adds one legendary affix. */
 export const REGULAR_AFFIXES: Record<RarityName, number> = { Common: 0, Magic: 1, Rare: 2, Epic: 3, Legendary: 2, Unique: 0 };
-/** Essence per salvaged item at T1; × 2.9^(T−1) (crafting.md). */
-export const ESSENCE: Record<RarityName, number> = { Common: 1, Magic: 2, Rare: 5, Epic: 20, Legendary: 60, Unique: 60 };
+/** Dust per salvaged item at T1; × 2.9^(T−1) (crafting.md). */
+export const DUST: Record<RarityName, number> = { Common: 1, Magic: 2, Rare: 5, Epic: 20, Legendary: 60, Unique: 60 };
 
 export function salvageValue(rarity: RarityName, tier: number): bigint {
-  return BigInt(Math.round(ESSENCE[rarity] * 2.9 ** (tier - 1)));
+  return BigInt(Math.round(DUST[rarity] * 2.9 ** (tier - 1)));
 }
 
 // ---------------------------------------------------------------- random
@@ -229,7 +229,7 @@ export interface DropResult {
   kept: NewItem[];
   /** Salvaged drops per rarity (filter and full bag). */
   salvaged: Record<RarityName, number>;
-  essence: bigint;
+  dust: bigint;
   /** Kept by the filter but salvaged for a full bag. */
   overflow: number;
 }
@@ -252,14 +252,14 @@ export interface DropInput {
 /**
  * Samples a drop count per rarity (one draw per rarity, not per kill), rolls the
  * items, applies the loot filter, fills the free bag slots (highest
- * rarity first), and salvages the rest into Essence.
+ * rarity first), and salvages the rest into Dust.
  */
 export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const salvaged = Object.fromEntries(RARITIES.map(r => [r, 0])) as Record<RarityName, number>;
-  let essence = 0n;
+  let dust = 0n;
   const salvage = (r: RarityName, tier = d.tier) => {
     salvaged[r]++;
-    essence += salvageValue(r, tier);
+    dust += salvageValue(r, tier);
   };
 
   const scale = d.kills * d.rewardScale * (1 + d.itemFind);
@@ -303,7 +303,7 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const room = Math.max(0, d.bagFree);
   const over = kept.splice(room);
   over.forEach(item => salvage(item.rarity.tag, item.tier));
-  return { kept, salvaged, essence, overflow: over.length };
+  return { kept, salvaged, dust, overflow: over.length };
 }
 
 // ---------------------------------------------------------------- materials

@@ -26,7 +26,7 @@ Used for item names, icon borders and loot log lines.
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────────┐
-│ ⚔ Aria  Lv 14 [██████████░░░░ 62%]   ● 1,234 gold   ◆ 87 essence   👥 312  ⚙ │  top bar
+│ ⚔ Aria  Lv 14 [██████████░░░░ 62%]   ● 1,234 gold   ◆ 87 dust   👥 312  ⚙ │  top bar
 ├────────┬─────────────────────────────────────────────────────┬────────────────┤
 │ ⚔ Fight│ ACTIVITY: Greenhollow › Goblin Brute   9.1s / kill   │ Chat           │
 │ 🗺 Zones│ 254 kills/h · 7.1k XP/h · 1.8k gold/h · Win ✔ 3.2×  │ [Global|Online]│
@@ -39,7 +39,7 @@ Used for item names, icon borders and loot log lines.
 └────────┴─────────────────────────────────────────────────────┴────────────────┘
 ```
 
-- **Top bar:** name, level and XP bar, gold, Essence, players online, settings/account.
+- **Top bar:** name, level and XP bar, gold, Dust, players online, settings/account.
 - **Left nav:** icon + label for each screen.
 - **Activity strip:** current zone and target, time per kill, rates, and the survival
   margin (time to die ÷ time to kill). Shows **Lose ✖** in red if the build can't beat
@@ -156,7 +156,7 @@ Used for item names, icon borders and loot log lines.
 │ ▢▢▢▢▢▢▢▢▢▢▢▢   (icons with rarity-colored borders,         │
 │ ▢▢▢▢▢▢▢▢▢▢▢▢    tier number in the corner, 🔒 if locked)    │
 ├─────────────────────────────────────────────────────────────┤
-│ Selected 3   [Salvage → +11 essence]  [Lock] [Craft…]       │
+│ Selected 3   [Salvage → +11 dust]  [Lock] [Craft…]       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -176,7 +176,7 @@ Used for item names, icon borders and loot log lines.
 │ ( ) +18 max HP           T5                                 │
 │ (•) +2.1% attack speed   T1   ← reroll this                 │
 │                                                             │
-│ Cost: 300 gold · 4 essence             [ Reroll ]           │
+│ Cost: 300 gold · 4 dust             [ Reroll ]           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -189,7 +189,7 @@ Used for item names, icon borders and loot log lines.
 - Rarity threshold dropdown: "Keep Rare and above".
 - Affix whitelist: searchable checkbox list of affixes ("+crit chance", "+item find", …).
 - Preview from the last session: "Last 8 h: 95 drops, 12 kept, 83 salvaged (+210
-  essence)".
+  dust)".
 
 ### Away report
 
@@ -199,7 +199,7 @@ Shown once on login after offline time.
 ┌──────────────── While you were away (7h 42m) ───────────────┐
 │ Goblin Brute × 1,812 kills                                  │
 │ +128,400 XP   Level 14 → 16                                 │
-│ +12,700 gold   +210 essence                                 │
+│ +12,700 gold   +210 dust                                 │
 │ Items kept (12):  1× Epic, 11× Rare      [View in bag]     │
 │ Salvaged: 57 Common, 26 Magic                               │
 │ ⚠ Bag is full: 4 items were salvaged                         │

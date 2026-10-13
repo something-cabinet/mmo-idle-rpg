@@ -37,4 +37,5 @@ export default __t.row({
   get materials() {
     return __t.array(MaterialCount);
   },
+  dust: __t.u64(),
 });

@@ -38,6 +38,7 @@ export const createCharacter = spacetimedb.reducer({ name: t.string(), starterWe
     lastSettledAt: ctx.timestamp,
     createdAt: ctx.timestamp,
     essence: 0n,
+    dust: 0n,
     bagSize: BAG_START,
     activeLoadout: 0,
     zoneId: STARTING_ZONE,

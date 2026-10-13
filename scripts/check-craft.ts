@@ -20,7 +20,7 @@ function check(name: string, ok: boolean, detail = '') {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
   if (!ok) failed++;
 }
-const fmt = (c: { gold: bigint; essence: bigint } | undefined) => (c ? `${c.gold} gold, ${c.essence} Essence` : 'none');
+const fmt = (c: { gold: bigint; dust: bigint } | undefined) => (c ? `${c.gold} gold, ${c.dust} Dust` : 'none');
 const isItem = (x: NewItem | string): x is NewItem => typeof x !== 'string';
 
 // ---------------------------------------------------------------- costs (crafting.md tables)
@@ -28,27 +28,27 @@ const isItem = (x: NewItem | string): x is NewItem => typeof x !== 'string';
 {
   const t1 = (rarity: NewItem['rarity']['tag']) => makeItem(seededRng(1n), 1, 1, rarity);
   const t9 = (rarity: NewItem['rarity']['tag']) => makeItem(seededRng(1n), 1, 9, rarity);
-  const same = (c: { gold: bigint; essence: bigint } | undefined, gold: bigint, essence: bigint) =>
-    c?.gold === gold && c.essence === essence;
-  const roughly = (c: { gold: bigint; essence: bigint } | undefined, gold: number, essence: number) =>
-    !!c && Math.abs(Number(c.gold) / gold - 1) < 0.01 && Math.abs(Number(c.essence) / essence - 1) < 0.01;
+  const same = (c: { gold: bigint; dust: bigint } | undefined, gold: bigint, dust: bigint) =>
+    c?.gold === gold && c.dust === dust;
+  const roughly = (c: { gold: bigint; dust: bigint } | undefined, gold: number, dust: number) =>
+    !!c && Math.abs(Number(c.gold) / gold - 1) < 0.01 && Math.abs(Number(c.dust) / dust - 1) < 0.01;
 
   // Reroll expectations follow REROLL_HOURS × REROLL_COST_MULT, so tuning them doesn't break these checks.
   for (const r of ['Magic', 'Rare', 'Epic', 'Legendary'] as const) {
     const h = REROLL_HOURS[r]! * REROLL_COST_MULT;
     const gold = BigInt(Math.round(1200 * h));
-    const essence = BigInt(Math.round(15 * h));
-    check(`reroll ${r} T1: ${gold} gold, ${essence} Essence`, same(rerollCost(t1(r)), gold, essence), fmt(rerollCost(t1(r))));
+    const dust = BigInt(Math.round(15 * h));
+    check(`reroll ${r} T1: ${gold} gold, ${dust} Dust`, same(rerollCost(t1(r)), gold, dust), fmt(rerollCost(t1(r))));
   }
   const legT9 = REROLL_HOURS.Legendary! * REROLL_COST_MULT * 2.9 ** 8;
   check('reroll Legendary T9: × 2.9^8', roughly(rerollCost(t9('Legendary')), 1200 * legT9, 15 * legT9), fmt(rerollCost(t9('Legendary'))));
   check('Common and Unique have no reroll cost', rerollCost(t1('Common')) === undefined && rerollCost({ ...t1('Common'), rarity: { tag: 'Unique' } }) === undefined);
 
-  check('upgrade Common T1: 300 gold, 4 Essence', same(upgradeCost(t1('Common')), 300n, 4n));
-  check('upgrade Magic T1: 1,200 gold, 15 Essence', same(upgradeCost(t1('Magic')), 1200n, 15n));
-  check('upgrade Rare T1: 4,800 gold, 60 Essence', same(upgradeCost(t1('Rare')), 4800n, 60n));
-  check('upgrade Epic T1: 28,800 gold, 360 Essence', same(upgradeCost(t1('Epic')), 28_800n, 360n));
-  check('upgrade Epic T9: ~144M gold, ~1.8M Essence', roughly(upgradeCost(t9('Epic')), 144.07e6, 1.8009e6), fmt(upgradeCost(t9('Epic'))));
+  check('upgrade Common T1: 300 gold, 4 Dust', same(upgradeCost(t1('Common')), 300n, 4n));
+  check('upgrade Magic T1: 1,200 gold, 15 Dust', same(upgradeCost(t1('Magic')), 1200n, 15n));
+  check('upgrade Rare T1: 4,800 gold, 60 Dust', same(upgradeCost(t1('Rare')), 4800n, 60n));
+  check('upgrade Epic T1: 28,800 gold, 360 Dust', same(upgradeCost(t1('Epic')), 28_800n, 360n));
+  check('upgrade Epic T9: ~144M gold, ~1.8M Dust', roughly(upgradeCost(t9('Epic')), 144.07e6, 1.8009e6), fmt(upgradeCost(t9('Epic'))));
   check('Legendary has no upgrade cost', upgradeCost(t1('Legendary')) === undefined);
   check('cost grows ×2.9 per tier', craftCost(1, 2).gold === 3480n && craftCost(1, 3).gold === 10_092n);
 }

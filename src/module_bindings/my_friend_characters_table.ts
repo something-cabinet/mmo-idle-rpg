@@ -25,4 +25,5 @@ export default __t.row({
   activeLoadout: __t.u8().name("active_loadout"),
   zoneId: __t.u16().name("zone_id"),
   targetEnemyId: __t.u16().name("target_enemy_id"),
+  dust: __t.u64(),
 });

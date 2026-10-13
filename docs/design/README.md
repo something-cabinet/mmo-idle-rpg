@@ -9,7 +9,7 @@ not decisions.
 | [attributes.md](attributes.md) | Primary attributes, combat stats, stat IDs |
 | [equipment.md](equipment.md) | Slots, hands, weapon/armor bases, storage, loadouts |
 | [bases.md](bases.md) | Base templates and names per tier |
-| [crafting.md](crafting.md) | Essence, salvage, affix reroll, rarity upgrade, bag expansion |
+| [crafting.md](crafting.md) | Dust, salvage, affix reroll, rarity upgrade, bag expansion |
 | [zones.md](zones.md) | Zones, enemy levels, enemy stats, rewards, loot tables |
 | [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass: enemies, bosses, drops, starter kit |
 | [legendary.md](legendary.md) | Legendary affixes: effects, slot pools, formulas |
@@ -30,6 +30,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-13 | Essence renamed to Dust (the word "Essence" is reserved for a future item or material). Stored in new `dust` columns; the old `essence` columns stay until the next wipe, and each settle moves what is left in `character.essence` into `dust`. |
 | 2026-10-13 | Drop chances × 1.5 across the board (Common 6.75% … Legendary 0.0225%), and Unique a further × 5 (7.5× overall, 0.0225%, ~1.3 a day), so uniques are as common as legendaries. Tuned via `DROP_RATE_MULT` and `UNIQUE_RATE_MULT`. |
 | 2026-10-13 | Rerolls cost half (`REROLL_COST_MULT` 0.5): Magic 0.125 h, Rare 0.25 h, Epic 0.5 h, Legendary 1 h of farming. Upgrade costs unchanged. |
 | 2026-10-13 | No per-settle keep cap (was 50): kept drops fill every free bag slot, highest rarity first, and only a full bag salvages them. A long offline session now fills the bag instead of stopping at +50. |

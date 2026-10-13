@@ -88,7 +88,7 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
           title={it.locked ? "Locked items can't be salvaged" : undefined}
           onClick={() => call(r.salvage({ itemIds: [it.id] }))}
         >
-          Salvage → +{fmtBig(salvageValue(it.rarity.tag, it.tier))} Essence
+          Salvage → +{fmtBig(salvageValue(it.rarity.tag, it.tier))} Dust
         </button>
       </div>
     </Modal>
@@ -110,7 +110,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const selected = s.bag.filter(i => sel.has(i.id));
   const open = s.bag.find(i => i.id === openId);
   const anyLocked = selected.some(i => i.locked);
-  const essence = selected.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier), 0n);
+  const dust = selected.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier), 0n);
   const cost = bagExpansionCost(s.row.bagSize);
 
   function clickTile(ev: React.MouseEvent, id: bigint) {
@@ -205,7 +205,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
           title={anyLocked ? "Locked items can't be salvaged" : undefined}
           onClick={() => call(r.salvage({ itemIds: selected.map(i => i.id) }).then(() => setSel(new Set())))}
         >
-          Salvage → +{fmtBig(essence)} Essence
+          Salvage → +{fmtBig(dust)} Dust
         </button>
       </div>
       {open && <BagPopup key={String(open.id)} s={s} it={open} onClose={() => setOpenId(undefined)} />}

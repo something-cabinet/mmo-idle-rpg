@@ -33,7 +33,7 @@ export function fmt(n: number): string {
   return n.toFixed(1);
 }
 
-/** Big integers (gold, Essence, costs): full digits below 100k, then short. */
+/** Big integers (gold, Dust, costs): full digits below 100k, then short. */
 export const fmtBig = (n: bigint) => (numberFormat === 'full' || n < 100_000n ? n.toLocaleString() : fmt(Number(n)));
 
 export const pct = (x: number, digits = 0) => `${(x * 100).toFixed(digits)}%`;

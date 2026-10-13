@@ -190,11 +190,11 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
   await a.conn.reducers.lockItem({ itemId: boots, locked: true });
   await expectError('locked item cannot be salvaged', a.conn.reducers.salvage({ itemIds: [boots] }), 'locked');
   await a.conn.reducers.lockItem({ itemId: boots, locked: false });
-  const essence = charOf(a)!.essence;
+  const dust = charOf(a)!.dust;
   await a.conn.reducers.salvage({ itemIds: [boots] });
   await sleep(200);
-  check('salvage turns a bag item into Essence', !items().some(i => i.id === boots) && charOf(a)!.essence === essence + 1n,
-    `essence ${essence} → ${charOf(a)!.essence}`);
+  check('salvage turns a bag item into Dust', !items().some(i => i.id === boots) && charOf(a)!.dust === dust + 1n,
+    `dust ${dust} → ${charOf(a)!.dust}`);
 }
 
 // Crafting: a fresh character can't pay, so only the checks before payment are reachable.

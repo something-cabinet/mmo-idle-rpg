@@ -48,7 +48,7 @@ function TopStats({ s }: { s: Snapshot }) {
       </div>
       <span className="divider" />
       <span className="chip stat" title="Gold"><Icon name="coins" className="c-gold" /><strong>{fmtBig(s.gold)}</strong></span>
-      <span className="chip stat" title="Essence"><Icon name="gem" className="c-essence" /><strong>{fmtBig(s.row.essence)}</strong></span>
+      <span className="chip stat" title="Dust"><Icon name="gem" className="c-dust" /><strong>{fmtBig(s.row.dust)}</strong></span>
       <span className="divider" />
       <button className="chip activity" title="Current activity" onClick={() => (location.hash = '#combat')}>
         <span className={`dot ${!m ? '' : m.viable ? 'ok' : 'bad'}`} />

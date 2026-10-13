@@ -88,10 +88,10 @@ export const CardHead = ({ title, children }: { title: ReactNode; children?: Rea
 /** Why a craft can't be paid for, or undefined. */
 export function cantAfford(s: Snapshot, c: CraftCost): string | undefined {
   if (s.gold < c.gold) return `Need ${fmtBig(c.gold - s.gold)} more gold`;
-  if (s.row.essence < c.essence) return `Need ${fmtBig(c.essence - s.row.essence)} more Essence`;
+  if (s.row.dust < c.dust) return `Need ${fmtBig(c.dust - s.row.dust)} more Dust`;
   return undefined;
 }
-export const costText = (c: CraftCost) => `${fmtBig(c.gold)} gold · ${fmtBig(c.essence)} Essence`;
+export const costText = (c: CraftCost) => `${fmtBig(c.gold)} gold · ${fmtBig(c.dust)} Dust`;
 
 /** "In Farm, Boss" for an item in loadouts. */
 export function loadoutNote(s: Snapshot, it: Item) {

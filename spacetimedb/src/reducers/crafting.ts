@@ -16,9 +16,9 @@ function craft(ctx: Ctx, itemId: bigint, costOf: (it: Item) => CraftCost | undef
   if (typeof next === 'string') throw new SenderError(next);
   const cost = costOf(it)!; // `make` refuses everything without a cost
   if (settled.gold < cost.gold) throw new SenderError(`Not enough gold: costs ${cost.gold}`);
-  if (settled.essence < cost.essence) throw new SenderError(`Not enough Essence: costs ${cost.essence}`);
+  if (settled.dust < cost.dust) throw new SenderError(`Not enough Dust: costs ${cost.dust}`);
   ctx.db.item.id.update(next);
-  ctx.db.character.id.update({ ...settled, gold: settled.gold - cost.gold, essence: settled.essence - cost.essence });
+  ctx.db.character.id.update({ ...settled, gold: settled.gold - cost.gold, dust: settled.dust - cost.dust });
 }
 
 const rngFor = (ctx: Ctx, ch: Character, it: Item) => seededRng(ch.id, it.id, ctx.timestamp.microsSinceUnixEpoch);

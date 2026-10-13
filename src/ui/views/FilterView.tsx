@@ -21,14 +21,14 @@ function FilterSummary({ s }: { s: Snapshot }) {
   const recent = s.logs.filter(l => l.at.microsSinceUnixEpoch >= since);
   const kept = recent.reduce((n, l) => n + l.keptItemIds.length, 0);
   const salvaged = recent.reduce((n, l) => n + l.salvaged.reduce((a, b) => a + b, 0), 0);
-  const essence = recent.reduce((n, l) => n + l.essence, 0n);
+  const dust = recent.reduce((n, l) => n + l.dust, 0n);
   const overflow = recent.reduce((n, l) => n + l.overflow, 0);
   return (
     <StatRows
       rows={[
         ['Drops', String(kept + salvaged)],
         ['Kept', String(kept)],
-        ['Salvaged', `${salvaged} (+${fmtBig(essence)} Essence)`],
+        ['Salvaged', `${salvaged} (+${fmtBig(dust)} Dust)`],
         ...(overflow ? [['Salvaged for a full bag', String(overflow)] as [string, string]] : []),
       ]}
     />
@@ -102,7 +102,7 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
       <div className="grid-2">
         <div className="card">
           <CardHead title="Keep rarity" />
-          <p className="muted">Drops below this rarity are salvaged into Essence automatically. Uniques are always kept.</p>
+          <p className="muted">Drops below this rarity are salvaged into Dust automatically. Uniques are always kept.</p>
           <div className="seg wrap">
             {RARITIES.slice(0, 5).map(r => (
               <button key={r} className={`seg-btn c-${rarityCls(r)}${r === f.minRarity.tag ? ' active' : ''}`} onClick={() => setFilter({ minRarity: { tag: r } })}>

@@ -121,8 +121,8 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 // ---------------------------------------------------------------- drops, filter, salvage
 
-check('salvage: Rare T1 = 5 Essence', salvageValue('Rare', 1) === 5n);
-check('salvage: Epic T2 = 58 Essence', salvageValue('Epic', 2) === 58n);
+check('salvage: Rare T1 = 5 Dust', salvageValue('Rare', 1) === 5n);
+check('salvage: Epic T2 = 58 Dust', salvageValue('Epic', 2) === 58n);
 
 const wisp = ENEMIES_BY_ID.get(104)!;
 const rat = ENEMIES_BY_ID.get(101)!;
@@ -159,8 +159,8 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('kept items pass the filter', runs.every(r => r.kept.every(it => rarityRank(it.rarity.tag) >= rarityRank('Rare'))));
   check('drops come from the enemy\'s bases at the zone tier (uniques aside)',
     runs.every(r => r.kept.every(it => it.uniqueId !== undefined || (wisp.enemy.drops.includes(it.baseId) && it.tier === 1))));
-  check('Essence is the sum of salvage values', runs.every(r =>
-    r.essence === RARITIES.reduce((sum, rar) => sum + BigInt(r.salvaged[rar]) * salvageValue(rar, 1), 0n)));
+  check('Dust is the sum of salvage values', runs.every(r =>
+    r.dust === RARITIES.reduce((sum, rar) => sum + BigInt(r.salvaged[rar]) * salvageValue(rar, 1), 0n)));
   check('uniques are never salvaged by the filter', runs.every(r => r.salvaged.Unique === 0));
 
   const again = rollDrops(seededRng(5n), session({ kills }));
@@ -207,7 +207,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   const full = rollDrops(seededRng(4n), session({ bagFree: 0 }));
   check('full bag salvages every kept drop', full.kept.length === 0 && full.overflow > 0);
   const none = rollDrops(seededRng(4n), session({ kills: 0 }));
-  check('no kills, no drops', total(none) === 0 && none.essence === 0n);
+  check('no kills, no drops', total(none) === 0 && none.dust === 0n);
 }
 
 // ---------------------------------------------------------------- Fortune's Favor
@@ -225,7 +225,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   for (const [plain, lucky] of pairs) {
     const before = plain.kept.map(it => it.rarity.tag).sort();
     const after = lucky.kept.map(it => it.rarity.tag);
-    wellFormed &&= plain.kept.length === lucky.kept.length && lucky.essence === plain.essence;
+    wellFormed &&= plain.kept.length === lucky.kept.length && lucky.dust === plain.dust;
     for (const it of lucky.kept) {
       if (it.uniqueId !== undefined) continue;
       wellFormed &&= it.affixes.length === REGULAR_AFFIXES[it.rarity.tag] && (it.rarity.tag === 'Legendary') === !!it.legendary;
@@ -233,7 +233,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
     eligible += before.filter(r => r !== 'Legendary' && r !== 'Unique').length;
     raised += after.reduce((n, r) => n + rarityRank(r), 0) - before.reduce((n, r) => n + rarityRank(r), 0);
   }
-  check("Fortune's Favor keeps the same drops and Essence", wellFormed);
+  check("Fortune's Favor keeps the same drops and Dust", wellFormed);
   check(`… and raises ~${FORTUNE * 100}% of kept drops one rarity`, near(raised / eligible, FORTUNE, 0.015),
     `${raised} of ${eligible}`);
 }

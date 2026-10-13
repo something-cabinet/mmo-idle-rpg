@@ -19,7 +19,7 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
   unique-only effects (legendary.md "Unique effects": may have a trade-off, apply once)
   and legendary effects. A legendary effect on a unique counts as **one copy** toward
   stacking.
-- **Can't be crafted.** Salvage gives 60 Essence × 2.9^(T−1) at the unique's tier.
+- **Can't be crafted.** Salvage gives 60 Dust × 2.9^(T−1) at the unique's tier.
 
 ## Drops
 

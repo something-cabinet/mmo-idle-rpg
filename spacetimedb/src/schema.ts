@@ -48,7 +48,7 @@ export const character = table(
     lastSettledAt: t.timestamp(),
     createdAt: t.timestamp(),
     // New columns need defaults so existing rows migrate.
-    /** Crafting material from salvage. */
+    /** Deprecated: replaced by `dust`; settle moves what's left here into it. Drop on the next wipe. */
     essence: t.u64().default(0n),
     bagSize: t.u16().default(200),
     /** Index (0-3) of the loadout in use. */
@@ -56,6 +56,8 @@ export const character = table(
     /** Zone and enemy being farmed (IDs from data/zones.ts); enemy 0 = idle (fled or defeated). */
     zoneId: t.u16().default(1),
     targetEnemyId: t.u16().default(101),
+    /** Crafting material from salvage (was `essence`). */
+    dust: t.u64().default(0n),
   }
 );
 
@@ -237,6 +239,7 @@ export const settleLog = table(
     levelTo: t.u32(),
     xp: t.u64(),
     gold: t.u64(),
+    /** Deprecated: replaced by `dust` (always 0 now). Drop on the next wipe. */
     essence: t.u64(),
     /** Items added to the bag (they may since have been salvaged). */
     keptItemIds: t.array(t.u64()),
@@ -250,6 +253,8 @@ export const settleLog = table(
     idleMicros: t.u64().default(0n),
     /** Materials dropped. */
     materials: t.array(MaterialCount).default([]),
+    /** Dust gained (was `essence`). */
+    dust: t.u64().default(0n),
   }
 );
 

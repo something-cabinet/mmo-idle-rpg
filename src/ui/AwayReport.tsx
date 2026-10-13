@@ -53,11 +53,11 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
       {log.xp > 0n && (
         <p>+{fmtBig(log.xp)} XP{log.levelTo > log.levelFrom ? ` · Level ${log.levelFrom} → ${log.levelTo}` : ''}</p>
       )}
-      {(log.gold > 0n || log.essence > 0n) && (
+      {(log.gold > 0n || log.dust > 0n) && (
         <p>
           {log.gold > 0n && <span className="c-gold">+{fmtBig(log.gold)} gold</span>}
-          {log.gold > 0n && log.essence > 0n && ' · '}
-          {log.essence > 0n && <span className="c-essence">+{fmtBig(log.essence)} Essence</span>}
+          {log.gold > 0n && log.dust > 0n && ' · '}
+          {log.dust > 0n && <span className="c-dust">+{fmtBig(log.dust)} Dust</span>}
         </p>
       )}
       {log.materials.length > 0 && <p>Materials: <span className="c-material">{materialsText(log.materials)}</span></p>}

@@ -87,7 +87,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
     <ViewHeader title="Crafting" icon="hammer">
       <div className="head-tags">
         <span className="chip"><Icon name="coins" />{fmtBig(s.gold)}</span>
-        <span className="chip"><Icon name="gem" />{fmtBig(s.row.essence)}</span>
+        <span className="chip"><Icon name="gem" />{fmtBig(s.row.dust)}</span>
       </div>
     </ViewHeader>
   );

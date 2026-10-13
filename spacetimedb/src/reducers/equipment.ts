@@ -81,17 +81,17 @@ export const lockItem = spacetimedb.reducer({ itemId: t.u64(), locked: t.bool() 
   ctx.db.item.id.update({ ...requireItem(ctx, ch, itemId), locked });
 });
 
-/** Turns bag items into Essence. Locked items and items in any loadout are refused. */
+/** Turns bag items into Dust. Locked items and items in any loadout are refused. */
 export const salvage = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, { itemIds }) => {
   const { ch } = requireActive(ctx);
   const equipped = new Set([...ctx.db.loadout.characterId.filter(ch.id)].flatMap(l => l.slots));
-  let essence = 0n;
+  let dust = 0n;
   for (const id of new Set(itemIds)) {
     const it = requireItem(ctx, ch, id);
     if (it.locked) throw new SenderError('Item is locked');
     if (equipped.has(id)) throw new SenderError('Item is in a loadout');
-    essence += salvageValue(it.rarity.tag, it.tier);
+    dust += salvageValue(it.rarity.tag, it.tier);
     ctx.db.item.id.delete(id);
   }
-  ctx.db.character.id.update({ ...ch, essence: ch.essence + essence });
+  ctx.db.character.id.update({ ...ch, dust: ch.dust + dust });
 });

@@ -68,7 +68,7 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
 
 /**
  * Grants the rewards earned since `lastSettledAt` with the current gear and target:
- * XP, gold, and drops (kept items go to the bag, the rest is salvaged into Essence).
+ * XP, gold, and drops (kept items go to the bag, the rest is salvaged into Dust).
  * Online time is played as live fights (sim.ts `simulate`, the fights the client
  * animates); offline time uses the expected-value formulas (game.ts `project`). A
  * boss's first kill grants its reward and unlocks the next zone (zone-content.md); a
@@ -84,7 +84,9 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const now = ctx.timestamp.microsSinceUnixEpoch;
   const p = capMicros === undefined ? simulate(progress, activity, now, ch.id) : project(progress, activity, now, capMicros);
 
-  let essence = ch.essence;
+  // Folds in the deprecated `essence` column (moved to `dust` on the next settle).
+  const dustBefore = ch.dust + ch.essence;
+  let dust = dustBefore;
   let drops: DropResult | undefined;
   const keptItemIds: bigint[] = [];
   let materials: MaterialDrop[] = [];
@@ -111,7 +113,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       const row = ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp });
       keptItemIds.push(row.id);
     }
-    essence += drops.essence;
+    dust += drops.dust;
     // Own seed, so adding materials didn't change the item rolls above.
     materials = rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, p.kills,
       rewardScale(target.zone, target.enemy));
@@ -142,7 +144,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       levelTo: p.level,
       xp: p.xpGained,
       gold: gold - ch.gold,
-      essence: essence - ch.essence,
+      dust: dust - dustBefore,
       keptItemIds,
       salvaged: RARITIES.map(r => drops?.salvaged[r] ?? 0),
       overflow: drops?.overflow ?? 0,
@@ -157,7 +159,8 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     level: p.level,
     xp: p.xp,
     gold,
-    essence,
+    dust,
+    essence: 0n,
     lastSettledAt: new Timestamp(p.settledMicros),
     targetEnemyId: p.defeatedAt === undefined ? ch.targetEnemyId : 0,
   };
@@ -180,6 +183,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     xp: 0n,
     gold: 0n,
     essence: 0n,
+    dust: 0n,
     keptItemIds: [],
     salvaged: RARITIES.map(() => 0),
     overflow: 0,

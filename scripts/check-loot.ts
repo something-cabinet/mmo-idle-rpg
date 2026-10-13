@@ -115,7 +115,7 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   };
   const sample = (id: number) => Array.from({ length: 30 }, () => groupOf(id));
   check('weapons and tome roll Offense legendaries', [1, 21].flatMap(sample).every(g => g.group === 'Offense'));
-  check('armor and shield roll Defense legendaries', [35, 20].flatMap(sample).every(g => g.group === 'Defense'));
+  check('armor and shield roll Defense legendaries', [35, 20, 22].flatMap(sample).every(g => g.group === 'Defense'));
   check('jewelry rolls Utility legendaries', [50, 57].flatMap(sample).every(g => g.group === 'Utility'));
   check('legendary bonus is half a top-affix-tier roll (and no unique effect rolls)', [1, 35, 50].flatMap(sample).every(g => g.inRange));
   const seen = new Set([1, 21, 35, 20, 50, 57].flatMap(id => Array.from({ length: 200 }, () => makeItem(rng, id, 4, 'Legendary').legendary!.effect)));

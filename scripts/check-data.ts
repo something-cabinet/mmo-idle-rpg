@@ -17,7 +17,7 @@ const unique = (xs: number[]) => new Set(xs).size === xs.length;
 const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
 check('base IDs unique', unique(BASE_LIST.map(b => b.id)));
-check('33 bases', BASE_LIST.length === 33, String(BASE_LIST.length));
+check('34 bases', BASE_LIST.length === 34, String(BASE_LIST.length));
 check('enemy IDs unique', unique(ZONES.flatMap(z => z.enemies.map(e => e.id))));
 check('legendary and unique effect IDs unique', unique([...LEGENDARIES, ...UNIQUE_EFFECTS].map(l => l.id)));
 check('legendary effects stack: positive per copy, cap at least one copy', LEGENDARIES.every(l => l.perCopy > 0 && l.cap >= l.perCopy));

@@ -106,7 +106,7 @@ const ARMOR_SETS: Record<keyof typeof ARMOR_PIECES, Implicit[]> = {
     lin(Stat.Armor, 30),
     lin(Stat.Resistance, 6),
     pct(Stat.Vitality, 40),
-    pct(Stat.ThreatPct, 20),
+    pct(Stat.ThreatPct, 25),
     { stat: Stat.AttackSpeedPct, value: -8, curve: 'fixed' },
   ],
 };
@@ -167,7 +167,20 @@ export const BASE_LIST: BaseDef[] = [
     family: 'Shield',
     slots: ['OffHand'],
     name: tracked('metal', 'Shield'),
-    implicits: [lin(Stat.Armor, 8), { stat: Stat.MaxHp, value: 5, curve: 'life' }, pct(Stat.ThreatPct, 10)],
+    implicits: [lin(Stat.Armor, 8), { stat: Stat.MaxHp, value: 5, curve: 'life' }, pct(Stat.ThreatPct, 15)],
+  },
+  {
+    id: 22,
+    kind: 'offhand',
+    family: 'Greatshield',
+    slots: ['OffHand'],
+    name: tracked('metal', 'Greatshield'),
+    implicits: [
+      lin(Stat.Armor, 10),
+      { stat: Stat.MaxHp, value: 7, curve: 'life' },
+      pct(Stat.ThreatPct, 25),
+      { stat: Stat.AttackSpeedPct, value: -10, curve: 'fixed' },
+    ],
   },
   {
     id: 21,

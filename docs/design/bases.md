@@ -14,9 +14,9 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
   - damage: `template × 2.1^(T−1)`; HP: `× 1.6^(T−1)`; heal: `× 1.33^(T−1)`;
   - armor, resistance, evasion rating: `template × T`;
   - percent values and primaries: `P × (T + 3) / 12` (P/3 at T1, P at T9);
-  - attack speed, base crit and plate's attack-speed penalty don't scale.
+  - attack speed, base crit and the plate and greatshield attack-speed penalties don't scale.
 - Templates below are **T1 values**.
-- 32 bases per tier: 10 weapons, 12 armor (4 slots × 3 weights), shield, tome, 4 ring
+- 34 bases per tier: 11 weapons, 12 armor (4 slots × 3 weights), shield, greatshield, tome, 4 ring
   gems, 4 amulet gems.
 
 ## Name tracks
@@ -33,7 +33,7 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
 | 8 | Dragonbone | Dragonwood | Voidweave | Phoenixhide | Astral |
 | 9 | Celestial | Worldroot | Starweave | Starhide | Celestial |
 
-- **Metal:** sword, dagger, mace, scepter (holy mace), katana, greatsword, shield, plate.
+- **Metal:** sword, dagger, mace, scepter (holy mace), katana, greatsword, shield, greatshield, plate.
 - **Wood:** bow, crossbow, wand, fire staff, healing staff.
 - Item name = `<track> <piece>`, e.g. Dwarven Greatsword, Heartoak Bow, Spidersilk Robe,
   Wolfhide Vest, Gilded Tome.
@@ -115,7 +115,8 @@ every tier, still below 100%.
 
 | Base | Implicit |
 |---|---|
-| Shield | 8T armor, 5 max HP (life curve, T9: 215), +10% threat (P) |
+| Shield | 8T armor, 5 max HP (life curve, T9: 215), +15% threat (P) |
+| Greatshield | 10T armor, 7 max HP (life curve), +25% threat (P), −10% attack speed (fixed) |
 | Tome | +30 Mind (P), +15% magic damage (P) |
 
 ## Armor (*illustrative*)
@@ -127,7 +128,7 @@ each.
 |---|---|---|---|---|
 | Cloth | 6T | 30T | +40 Mind (P) | — |
 | Leather | 15T | 15T | +12T evasion rating, +40 Finesse (P) | — |
-| Plate | 30T | 6T | +40 Vitality (P), +20% threat (P) | −8% attack speed (fixed) |
+| Plate | 30T | 6T | +40 Vitality (P), +25% threat (P) | −8% attack speed (fixed) |
 
 Check against a matching enemy (level 10T, armor formula `d / (d + 5 × level)`):
 

@@ -133,12 +133,12 @@ export const copiesToCap = (def: LegendaryDef): number => Math.ceil(def.cap / de
 /** Which legendary group a base kind rolls from. */
 export const GROUP_FOR_KIND: Record<BaseKind, LegendaryGroup> = {
   weapon: 'Offense',
-  offhand: 'Offense', // tome; the shield is overridden below
+  offhand: 'Offense', // tome; shields are overridden below
   armor: 'Defense',
   jewelry: 'Utility',
 };
 
-/** Shield (base 20) rolls Defense; tome (21) rolls Offense. */
+/** Shield (base 20) and greatshield (22) roll Defense; tome (21) rolls Offense. */
 export function legendaryGroup(baseId: number, kind: BaseKind): LegendaryGroup {
-  return baseId === 20 ? 'Defense' : GROUP_FOR_KIND[kind];
+  return baseId === 20 || baseId === 22 ? 'Defense' : GROUP_FOR_KIND[kind];
 }

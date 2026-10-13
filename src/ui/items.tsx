@@ -27,7 +27,7 @@ export function itemIconName(it: { baseId: number }): string {
   const name =
     b.kind === 'armor' ? b.slots[0].toLowerCase()
     : b.kind === 'jewelry' ? (b.slots[0] === 'Amulet' ? 'amulet' : 'ring')
-    : b.family.toLowerCase().replace(/ /g, '-');
+    : b.family.split(' · ')[0].toLowerCase().replace(/ /g, '-'); // "Sword · Wyrmfang" uses the sword glyph
   return `i-${name}`;
 }
 

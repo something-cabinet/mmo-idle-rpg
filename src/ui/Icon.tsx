@@ -59,6 +59,7 @@ const PATHS: Record<string, string> = {
   'i-fire-staff': 'M12 22V10M12 10c-2.5-2-2.5-5 0-8 2.5 3 2.5 6 0 8z',
   'i-healing-staff': 'M12 22V11M12 2v7M8.5 5.5h7',
   'i-shield': 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 2v20M4 10h16',
+  'i-greatshield': 'M5 2h14v12c0 4-7 8-7 8s-7-4-7-8V2zM12 2v20M5 9h14',
   'i-tome': 'M5 4h11a3 3 0 0 1 3 3v14H8a3 3 0 0 1-3-3V4zM5 18a3 3 0 0 1 3-3h11M10 8h5',
   'i-head': 'M4 17a8 8 0 0 1 16 0v3h-5v-4H9v4H4v-3zM12 9v5',
   'i-chest': 'M9 3 4 6v5h3v10h10V11h3V6l-5-3a3 3 0 0 1-6 0z',

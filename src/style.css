@@ -2458,3 +2458,6 @@ fieldset.affix-pick legend {
   background: var(--accent-soft);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
 }
+.duel .duel-start {
+  min-width: 140px;
+}

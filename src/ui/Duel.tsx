@@ -21,6 +21,8 @@ const FAST = 2;
 export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
   const [round, setRound] = useState(() => Math.floor(Math.random() * 1e9));
   const [t, setT] = useState(0);
+  // The first duel waits for Start, so it doesn't spring on the player; Rematch starts at once.
+  const [started, setStarted] = useState(false);
   const skipped = useRef(false);
   // Remembered for the session, so rematches and other duels keep it.
   const [fast, setFast] = useSticky('duelFast', false);
@@ -34,6 +36,7 @@ export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
   // × the current speed, so toggling the speed mid-duel doesn't jump.
   useEffect(() => {
     setT(0);
+    if (!started) return;
     skipped.current = false;
     let raf = 0;
     let at = 0;
@@ -46,12 +49,12 @@ export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [duel]);
+  }, [duel, started]);
 
   const shown = duel.events.filter(e => e.t <= t);
   const last = shown.at(-1);
   const hp = last?.hp ?? duel.maxHp;
-  const over = t >= duel.end;
+  const over = started && t >= duel.end;
   const names = [me.name, foe.name];
   const line = (e: (typeof duel.events)[number]) => {
     const [a, b] = e.by === 0 ? ['You', foe.name] : [foe.name, 'you'];
@@ -82,8 +85,10 @@ export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
             {duel.winner === -1 ? 'Draw!' : duel.winner === 0 ? 'You win!' : `${foe.name} wins!`}{' '}
             <span className="muted">{duel.by === 'ko' ? `Knockout at ${duel.end.toFixed(1)} s` : `On points after ${DUEL_SECONDS} s`}</span>
           </strong>
-        ) : (
+        ) : started ? (
           <span className="muted">{t.toFixed(1)} s</span>
+        ) : (
+          <span className="muted">Ready?</span>
         )}
       </div>
 
@@ -100,15 +105,22 @@ export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
       </div>
 
       <div className="row">
-        <button className="btn small primary" onClick={() => setRound(r => r + 1)}>
-          <Icon name="swords" />
-          Rematch
-        </button>
+        {started ? (
+          <button className="btn small primary" onClick={() => setRound(r => r + 1)}>
+            <Icon name="swords" />
+            Rematch
+          </button>
+        ) : (
+          <button className="btn primary duel-start" onClick={() => setStarted(true)}>
+            <Icon name="swords" />
+            Start
+          </button>
+        )}
         <button className={`btn small ghost${fast ? ' active' : ''}`} aria-pressed={fast} title="Play the duel at double speed" onClick={() => setFast(!fast)}>
           <Icon name="zap" />
           {FAST}× speed
         </button>
-        {!over && (
+        {started && !over && (
           <button className="btn small ghost" onClick={() => (skipped.current = true)}>
             Skip
           </button>

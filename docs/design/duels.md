@@ -29,6 +29,8 @@ timer:
 
 ## What the player sees
 
+- The duel waits for **Start** (both at full HP, the odds already shown), so it never
+  starts out of nowhere. Rematches start at once.
 - The duel replayed at real speed, like the Combat screen, or 2× with the speed toggle
   (remembered for the session): both HP bars, the last five blows, then the result
   (knockout or on points). **Rematch** runs a new duel; **Skip** jumps to the end.

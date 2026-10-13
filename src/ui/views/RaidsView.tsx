@@ -180,11 +180,19 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   const [confirming, setConfirming] = useState(false);
   const again = !!party.fight?.finished;
 
-  const seat = (stats: CombatStats | undefined, i: number) =>
-    stats && (
+  const seat = (stats: CombatStats | undefined, i: number) => {
+    if (!stats) return undefined;
+    const m = matchup(stats, raid.boss);
+    // Heal per second from the weapon (crits included), given to allies: split across the party or to the most hurt one.
+    const hps = m.hps;
+    const healAll = !!stats.sources[0]?.healAll;
+    return (
       <div className="raid-seat-stats muted">
-        HP {fmt(stats.maxHp)} · DPS {fmt(matchup(stats, raid.boss).dps)} · Threat {pct(stats.threat)}
-        {stats.sources[0]?.heal ? ` · Heals ${stats.sources[0].healAll ? 'all' : 'one'}` : ''}
+        HP {fmt(stats.maxHp)} · DPS {fmt(m.dps)} ·{' '}
+        <span title={hps > 0 ? (healAll ? 'Heal per second, split across the party' : 'Heal per second, to the most hurt ally') : 'Heal per second: no healing weapon'}>
+          HPS {fmt(hps)}{hps > 0 ? (healAll ? ' (party)' : ' (one ally)') : ''}
+        </span>{' '}
+        · Threat {pct(stats.threat)}
         {aggro && (
           <span className={`tag${aggro[i] === Math.max(...aggro) ? ' raid-target' : ''}`} title="Share of the boss's attacks while everyone is alive (more threat, more attacks)">
             <Icon name="shield" />Aggro {pct(aggro[i])}
@@ -192,6 +200,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
         )}
       </div>
     );
+  };
 
   return (
     <div className="card">

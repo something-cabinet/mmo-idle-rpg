@@ -36,6 +36,12 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
   const keptByRarity = [...RARITIES].reverse()
     .map(r => [r, kept.filter(it => it.rarity.tag === r).length] as const)
     .filter(([, n]) => n > 0);
+  // Identical encounters (same goblin gold, same stash) share a line, in first-met order.
+  const encounterCounts = new Map<string, number>();
+  for (const e of log.encounters) {
+    const text = encounterText(e, log.enemyId, id => s.items.get(id));
+    encounterCounts.set(text, (encounterCounts.get(text) ?? 0) + 1);
+  }
   const salvaged = RARITIES.map((r, i) => [r, log.salvaged[i] ?? 0] as const).filter(([, n]) => n > 0);
   return (
     <Modal onClose={close}>
@@ -67,7 +73,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
         <div className="encounter">
           <p><Icon name="zap" />Encounters ({log.encounters.length}):</p>
           <ul className="encounter-list">
-            {log.encounters.map((e, i) => <li key={i}>{encounterText(e, log.enemyId, id => s.items.get(id))}</li>)}
+            {[...encounterCounts].map(([text, n]) => <li key={text}>{text}{n > 1 && <span className="muted"> ×{n}</span>}</li>)}
           </ul>
         </div>
       )}

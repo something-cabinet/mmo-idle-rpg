@@ -18,6 +18,7 @@
   --bad: #f06363;
   --phys: #e8a15a;
   --magicdmg: #8f7dff;
+  --frost: #6fd3ff;
   --gold: #f5c542;
   --dust: #5fd4e8;
   --material: #d9a273;
@@ -51,6 +52,7 @@
   --bad: #d64545;
   --phys: #c26a17;
   --magicdmg: #6a55e6;
+  --frost: #1593c9;
   --gold: #b88a00;
   --dust: #0e93ab;
   --material: #9a5a26;
@@ -2656,5 +2658,142 @@ fieldset.affix-pick legend {
 @media (max-width: 700px) {
   .raid-parties li {
     flex-wrap: wrap;
+  }
+}
+
+/* The raid boss's special attack (Frost Breath): a callout on the boss card; in the fight a countdown, a frost flash and damage numbers. */
+.raid-special {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--frost) 45%, transparent);
+  background: linear-gradient(100deg, color-mix(in srgb, var(--frost) 18%, transparent), color-mix(in srgb, var(--frost) 4%, transparent));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--frost) 18%, transparent);
+}
+.raid-special .raid-special-icon {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  color: var(--frost);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--frost) 60%, transparent));
+  animation: frost-spin 12s linear infinite;
+}
+.raid-special-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--frost);
+}
+.raid-special-name {
+  font-size: 17px;
+  font-weight: 800;
+}
+.raid-special-text {
+  font-size: 13px;
+}
+.raid-special-text strong {
+  color: var(--frost);
+}
+@keyframes frost-spin {
+  to { transform: rotate(360deg); }
+}
+.raid-fight {
+  position: relative;
+  overflow: hidden;
+}
+.raid-frost {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--frost) 45%, transparent), transparent 70%);
+  box-shadow: inset 0 0 40px color-mix(in srgb, var(--frost) 55%, transparent);
+  animation: frost-flash 1.4s ease-out forwards;
+}
+@keyframes frost-flash {
+  0% { opacity: 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.raid-party-bars .hpbar {
+  overflow: visible;
+}
+.raid-party-bars .hp-fill {
+  border-radius: 6px;
+}
+.raid-fight.breath .raid-party-bars .hpbar {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--frost) 70%, transparent);
+  animation: frost-shake 0.35s ease-in-out;
+}
+@keyframes frost-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+.float.frost {
+  top: -4px;
+  left: 82%;
+  color: var(--frost);
+  font-size: 17px;
+  font-weight: 900;
+  text-shadow: 0 0 2px var(--surface), 0 0 4px var(--surface), 0 1px 3px rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+.raid-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px 14px;
+}
+.raid-breath-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--frost);
+}
+.raid-breath-charge {
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-3);
+}
+.raid-breath-charge > span {
+  display: block;
+  height: 100%;
+  background: var(--frost);
+  transition: width 0.2s linear;
+}
+.raid-breath-timer.soon {
+  animation: frost-pulse 0.6s ease-in-out infinite alternate;
+}
+.raid-breath-timer.now {
+  font-weight: 800;
+}
+@keyframes frost-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}
+.duel-log li.aoe {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  color: var(--frost);
+  border-left-color: var(--frost);
+  background: color-mix(in srgb, var(--frost) 12%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .raid-special .raid-special-icon,
+  .raid-breath-timer.soon,
+  .raid-fight.breath .raid-party-bars .hpbar,
+  .raid-frost {
+    animation: none;
   }
 }

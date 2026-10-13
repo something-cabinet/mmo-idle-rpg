@@ -22,6 +22,8 @@ import { gearFor, type Snapshot } from '../snapshot';
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const byJoin = (a: RaidMember, b: RaidMember) => (a.joinedAt.microsSinceUnixEpoch < b.joinedAt.microsSinceUnixEpoch ? -1 : 1);
 const fightingNow = (p: RaidParty) => !!p.fight && !p.fight.finished;
+/** Seconds the frost flash and damage numbers stay up after the special attack. */
+const BREATH_FLASH = 1.4;
 
 export const RaidsView = memo(function RaidsView({ s }: { s: Snapshot }) {
   return (
@@ -68,10 +70,19 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
             <DefTag defense={boss.defense} />
           </div>
           <ul className="raid-facts muted">
-            <li>HP {fmt(boss.hp)} · DPS {fmt(boss.dps)} at one fighter at a time: the more <strong>threat</strong>, the more often it's you</li>
-            <li>{raid.aoe.name}: {fmt(raid.aoe.damage)} {raid.aoe.damageType.toLowerCase()} damage to everyone every {raid.aoe.every} s (can't be dodged)</li>
+            <li>HP {fmt(boss.hp)} · DPS {fmt(boss.dps)}</li>
             <li>Enrages after {clock(raid.enrageSeconds)}: the party wipes</li>
           </ul>
+          <div className="raid-special">
+            <Icon name="snowflake" className="raid-special-icon" />
+            <div>
+              <div className="raid-special-label">Special attack</div>
+              <div className="raid-special-name">{raid.aoe.name}</div>
+              <div className="raid-special-text">
+                Every <strong>{raid.aoe.every} s</strong>: <strong>{fmt(raid.aoe.damage)} {raid.aoe.damageType.toLowerCase()}</strong> damage to the whole party. Can't be dodged.
+              </div>
+            </div>
+          </div>
         </div>
         <div className="raid-rewards">
           <h3>Rewards <span className="muted">each player, for {raid.clearsPerDay} wins a day (losses don't count; resets 00:00 UTC)</span></h3>
@@ -252,12 +263,6 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           {startBlock && leading && <span className="muted">{startBlock}</span>}
         </div>
       )}
-      <p className="muted hint">
-        Everyone fights with their current level and active loadout. The boss can attack anyone, but more threat (Vitality and
-        Threat raise it) draws more of its attacks, so bring a tank; heals land on allies. Hired NPCs have {NPC_POWER}× the stats of an
-        average player ready for this raid, whoever is in the party; they fight but don't heal. The leader pays for them at the start.
-      </p>
-
       {party.fight && <RaidFight key={String(party.fight.startedAt.microsSinceUnixEpoch)} s={s} raid={raid} party={party} />}
     </div>
   );
@@ -283,11 +288,18 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
   const hp = last?.hp ?? result.maxHp;
   const bossHp = last?.bossHp ?? raid.boss.hp;
   const names = setup.fighters.map(f => f.name);
+  // The special attack: a frost flash with each fighter's damage for a moment after it lands, and a countdown to the next.
+  const lastAoe = live ? [...shown].reverse().find(e => e.kind === 'aoe') : undefined;
+  const breath = lastAoe && t - lastAoe.t < BREATH_FLASH ? lastAoe : undefined;
+  const beforeBreath = breath && shown[shown.indexOf(breath) - 1];
+  const nextAoe = Math.ceil((t + 1e-9) / raid.aoe.every) * raid.aoe.every;
+  const charge = 1 - (nextAoe - t) / raid.aoe.every;
   const log = [...s.conn.db.myRaidLog.iter()].find(l => l.partyId === party.id && l.startedAt.microsSinceUnixEpoch === start);
   const loot = log && log.itemId !== 0n ? s.items.get(log.itemId) : undefined;
 
   return (
-    <div className="raid-fight">
+    <div className={`raid-fight${breath ? ' breath' : ''}`}>
+      {breath && <div key={breath.t} className="raid-frost" aria-hidden="true" />}
       <div className="raid-boss-bar">
         <div className="duelist-name"><Icon name="skull" className="boss" />{raid.boss.name}</div>
         <div className="hpbar enemy">
@@ -300,6 +312,9 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
           <div key={i} className={`duelist${hp[i] <= 0 ? ' lost' : ''}`}>
             <div className="duelist-name">{name}{setup.fighters[i].characterId === s.row.id ? ' (you)' : ''}</div>
             <div className="hpbar">
+              {breath && beforeBreath && beforeBreath.hp[i] > 0 && (
+                <span key={breath.t} className="float frost">−{fmt(Math.max(0, beforeBreath.hp[i] - breath.hp[i]))}</span>
+              )}
               <div className="hp-fill" style={{ width: `${(hp[i] / result.maxHp[i]) * 100}%` }} />
               <span className="hp-text">{fmt(hp[i])} / {fmt(result.maxHp[i])}</span>
             </div>
@@ -308,7 +323,14 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
       </div>
       <div className="duel-status">
         {live ? (
-          <span className="muted">{clock(t)} · enrage at {clock(raid.enrageSeconds)}</span>
+          <div className="raid-status">
+            <span className="muted">{clock(t)} · enrage at {clock(raid.enrageSeconds)}</span>
+            <span className={`raid-breath-timer${breath ? ' now' : nextAoe - t < 3 ? ' soon' : ''}`} title={`${raid.aoe.name} hits the whole party every ${raid.aoe.every} s`}>
+              <Icon name="snowflake" />
+              {breath ? `${raid.aoe.name}!` : `${raid.aoe.name} in ${Math.ceil(nextAoe - t)} s`}
+              <span className="raid-breath-charge"><span style={{ width: `${(breath ? 1 : charge) * 100}%` }} /></span>
+            </span>
+          </div>
         ) : (
           <strong className={fight.won ? 'c-ok' : 'c-bad'}>
             {fight.won ? `Victory! ${raid.boss.name} falls at ${clock(result.end)}.` : result.enraged ? `${raid.boss.name} enrages: the party wipes.` : `The party wipes at ${clock(result.end)}.`}
@@ -318,7 +340,10 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
       {live && (
         <ul className="duel-log">
           {shown.slice(-6).reverse().map((e, i) => (
-            <li key={shown.length - i} className={`${e.by < 0 ? 'theirs' : 'mine'}${e.kind === 'crit' ? ' crit' : ''}`}>{eventLine(e, names, raid)}</li>
+            <li key={shown.length - i} className={`${e.by < 0 ? 'theirs' : 'mine'}${e.kind === 'crit' ? ' crit' : ''}${e.kind === 'aoe' ? ' aoe' : ''}`}>
+              {e.kind === 'aoe' && <Icon name="snowflake" />}
+              {eventLine(e, names, raid)}
+            </li>
           ))}
         </ul>
       )}
@@ -342,7 +367,7 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
 
 function eventLine(e: RaidEvent, names: string[], raid: RaidDef): string {
   const boss = raid.boss.name.split(',')[0];
-  if (e.kind === 'aoe') return `${boss} breathes ${raid.aoe.name}!${e.saved?.length ? ` (Second Wind: ${e.saved.map(i => names[i]).join(', ')})` : ''}`;
+  if (e.kind === 'aoe') return `${boss} unleashes ${raid.aoe.name} on the whole party!${e.saved?.length ? ` (Second Wind: ${e.saved.map(i => names[i]).join(', ')})` : ''}`;
   if (e.by < 0) {
     if (e.kind === 'dodge') return `${names[e.target]} dodges ${boss}`;
     return `${boss} hits ${names[e.target]} for ${fmt(e.damage)}${e.saved?.length ? ' (Second Wind!)' : ''}`;

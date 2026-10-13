@@ -132,7 +132,7 @@ export const startRaid = spacetimedb.reducer(ctx => {
 
 /**
  * A fight is over: every player in it gets a log row, and on a win, unless they have
- * used up today's clears (`clearsPerDay`), an Epic or better item (outside the bag limit), raid tokens,
+ * used up today's clears (`clearsPerDay`), `itemsPerClear` Epic or better items (outside the bag limit), raid tokens,
  * gold and XP. Members who went offline during the fight leave the party.
  */
 export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer: raidTimer.rowType }, (ctx, { timer }) => {
@@ -150,11 +150,14 @@ export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer
     const ch = ctx.db.character.id.find(f.characterId);
     if (!ch) continue;
     const rewarded = fight.won && clearsToday(ctx.db.raidLog.characterId.filter(ch.id), raid.id, now) < raid.clearsPerDay;
-    let itemId = 0n;
+    const itemIds: bigint[] = [];
     if (rewarded) {
-      const item = rollRaidItem(raidLootRng(party.id, start, ch.id), raid);
-      itemId = ctx.db.item.insert({ ...item, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id;
-      discover(ctx, ch.id, item.tier, [{ baseId: item.baseId, uniqueId: item.uniqueId }]);
+      const rng = raidLootRng(party.id, start, ch.id);
+      for (let i = 0; i < raid.itemsPerClear; i++) {
+        const item = rollRaidItem(rng, raid);
+        itemIds.push(ctx.db.item.insert({ ...item, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id);
+        discover(ctx, ch.id, item.tier, [{ baseId: item.baseId, uniqueId: item.uniqueId }]);
+      }
       const { level, xp } = addXp(ch.level, ch.xp, BigInt(raid.boss.xp));
       ctx.db.character.id.update({ ...ch, level, xp, gold: ch.gold + BigInt(raid.boss.gold), raidTokens: ch.raidTokens + BigInt(raid.tokens) });
     }
@@ -166,7 +169,8 @@ export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer
       startedAt: fight.startedAt,
       won: fight.won,
       rewarded,
-      itemId,
+      itemId: 0n,
+      itemIds,
       tokens: rewarded ? BigInt(raid.tokens) : 0n,
       gold: rewarded ? BigInt(raid.boss.gold) : 0n,
       xp: rewarded && ch.level < MAX_LEVEL ? BigInt(raid.boss.xp) : 0n,

@@ -44,6 +44,8 @@ export interface RaidDef {
   enrageSeconds: number;
   /** Rewarded kills (clears) per character per day (raid.ts `lockoutStart`); losses don't count. */
   clearsPerDay: number;
+  /** Items per rewarded kill, each rolled on its own (`RAID_RARITY_ODDS`). */
+  itemsPerClear: number;
   /** Raid tokens per rewarded kill. */
   tokens: number;
   /** Gold per hired NPC seat, paid by the leader at the start. */
@@ -81,6 +83,7 @@ export const RAIDS: RaidDef[] = [
     aoe: { every: 12, damage: 45, damageType: 'Magic', name: 'Frost Breath' },
     enrageSeconds: 240,
     clearsPerDay: 3,
+    itemsPerClear: 3,
     tokens: 10,
     hireCost: 2000,
     // The average of level-38 characters with random T3 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).

@@ -69,10 +69,11 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
             <DmgTag magic={boss.damageType === 'Magic'} />
             <DefTag defense={boss.defense} />
           </div>
-          <ul className="raid-facts muted">
-            <li>HP {fmt(boss.hp)} · DPS {fmt(boss.dps)}</li>
-            <li>Enrages after {clock(raid.enrageSeconds)}: the party wipes</li>
-          </ul>
+          <div className="raid-stats">
+            <div><span>HP</span><strong>{boss.hp.toLocaleString()}</strong></div>
+            <div><span>DPS</span><strong>{fmt(boss.dps)}</strong></div>
+            <div title="The party wipes when the timer runs out"><span>Enrage</span><strong className="c-bad">{clock(raid.enrageSeconds)}</strong></div>
+          </div>
           <div className="raid-special">
             <Icon name="snowflake" className="raid-special-icon" />
             <div>
@@ -88,7 +89,7 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
           <h3>Rewards <span className="muted">each player, for {raid.clearsPerDay} wins a day (losses don't count; resets 00:00 UTC)</span></h3>
           <ul>
             <li>
-              One T{raid.tier} item, <span className="c-epic">Epic</span> or better: <span className="c-legendary">Legendary</span> {pct(RAID_RARITY_ODDS.Legendary)},{' '}
+              {raid.itemsPerClear} T{raid.tier} items, each <span className="c-epic">Epic</span> or better: <span className="c-legendary">Legendary</span> {pct(RAID_RARITY_ODDS.Legendary)},{' '}
               <span className="c-unique">Unique</span> {pct(RAID_RARITY_ODDS.Unique)} from its own pool:{' '}
               {raidUniques(raid.id).map((u, i) => (
                 <span key={u.id}>{i > 0 && ', '}<span className={uniqueFound(s, u) ? 'c-unique' : 'muted'}>{uniqueFound(s, u) ? u.name : UNKNOWN}</span></span>
@@ -220,7 +221,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           <div key={`npc${i}`} className="raid-seat npc">
             <div className="raid-seat-name">
               <strong>Hireling {i + 1}</strong>
-              <span className="muted">NPC, {NPC_POWER}× an average player</span>
+              <span className="tag" title={`A hired NPC: ${NPC_POWER}× the stats of an average player ready for this raid`}>NPC {NPC_POWER}×</span>
               {leading && !fighting && (
                 <button className="btn icon ghost small" title="Dismiss" onClick={() => call(conn.reducers.setRaidHires({ count: party.hired - 1 }))}>
                   <Icon name="x" />
@@ -295,7 +296,7 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
   const nextAoe = Math.ceil((t + 1e-9) / raid.aoe.every) * raid.aoe.every;
   const charge = 1 - (nextAoe - t) / raid.aoe.every;
   const log = [...s.conn.db.myRaidLog.iter()].find(l => l.partyId === party.id && l.startedAt.microsSinceUnixEpoch === start);
-  const loot = log && log.itemId !== 0n ? s.items.get(log.itemId) : undefined;
+  const loot = (log?.itemIds ?? []).flatMap(id => s.items.get(id) ?? []);
 
   return (
     <div className={`raid-fight${breath ? ' breath' : ''}`}>
@@ -324,7 +325,10 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
       <div className="duel-status">
         {live ? (
           <div className="raid-status">
-            <span className="muted">{clock(t)} · enrage at {clock(raid.enrageSeconds)}</span>
+            <span className="raid-clock">
+              <strong>{clock(t)}</strong>
+              <span className={raid.enrageSeconds - t < 30 ? 'c-bad' : 'muted'}>enrage in {clock(Math.max(0, raid.enrageSeconds - t))}</span>
+            </span>
             <span className={`raid-breath-timer${breath ? ' now' : nextAoe - t < 3 ? ' soon' : ''}`} title={`${raid.aoe.name} hits the whole party every ${raid.aoe.every} s`}>
               <Icon name="snowflake" />
               {breath ? `${raid.aoe.name}!` : `${raid.aoe.name} in ${Math.ceil(nextAoe - t)} s`}
@@ -352,7 +356,9 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
           log.rewarded ? (
             <div className="raid-loot">
               <span>Your reward: {fmt(Number(log.tokens))} tokens · {fmtBig(log.gold)} gold · {fmtBig(log.xp)} XP</span>
-              {loot && <ItemCard it={loot} compact />}
+              <div className="raid-loot-items">
+                {loot.map(it => <ItemCard key={String(it.id)} it={it} compact />)}
+              </div>
             </div>
           ) : (
             <p className="muted">No clears left today: nothing this time.</p>

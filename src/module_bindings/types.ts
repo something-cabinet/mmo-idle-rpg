@@ -310,6 +310,7 @@ export const RaidLog = __t.object("RaidLog", {
   gold: __t.u64(),
   xp: __t.u64(),
   hireCost: __t.u64(),
+  itemIds: __t.array(__t.u64()),
 });
 export type RaidLog = __Infer<typeof RaidLog>;
 

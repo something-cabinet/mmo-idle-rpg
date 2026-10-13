@@ -445,13 +445,15 @@ export const raidLog = table(
     won: t.bool(),
     /** A win that granted rewards: a clear (false: lost, or no clears left today). */
     rewarded: t.bool(),
-    /** The item granted; 0 if none. */
+    /** Deprecated: replaced by `itemIds` (always 0 now). Drop on the next wipe. */
     itemId: t.u64(),
     tokens: t.u64(),
     gold: t.u64(),
     xp: t.u64(),
     /** Gold this character paid for hired NPCs (the leader). */
     hireCost: t.u64(),
+    /** The items granted (`itemsPerClear` on a rewarded win); empty otherwise. */
+    itemIds: t.array(t.u64()).default([]),
   }
 );
 

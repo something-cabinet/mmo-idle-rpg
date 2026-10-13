@@ -89,10 +89,10 @@ live fights (combat.md). The server's outcome is final.
 
 On a win, each player gets, for up to **3 clears per raid per day** (`clearsPerDay`; a clear is a rewarded win, losses don't count; resets 00:00 UTC):
 
-- **One T3 item, Epic or better**: Epic 75%, Legendary 22%, Unique 3%. Epic and Legendary
+- **Three T3 items, each Epic or better** (`itemsPerClear`), each rolled on its own: Epic 75%, Legendary 22%, Unique 3%. Epic and Legendary
   are any base; a Unique comes from the raid's **own pool**, which drops nowhere else
-  (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). The item
-  ignores the bag limit, like a first-kill reward.
+  (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). The items
+  ignore the bag limit, like a first-kill reward.
 - **10 raid tokens** (`character.raidTokens`), 3,000 gold, 4,000 XP.
 
 A player with no clears left today can still join and fight to help others; they get

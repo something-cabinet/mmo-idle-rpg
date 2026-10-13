@@ -2665,9 +2665,9 @@ fieldset.affix-pick legend {
 .raid-special {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 4px;
-  padding: 10px 12px;
+  padding: 7px 10px;
   border-radius: 10px;
   border: 1px solid color-mix(in srgb, var(--frost) 45%, transparent);
   background: linear-gradient(100deg, color-mix(in srgb, var(--frost) 18%, transparent), color-mix(in srgb, var(--frost) 4%, transparent));
@@ -2675,21 +2675,21 @@ fieldset.affix-pick legend {
 }
 .raid-special .raid-special-icon {
   flex: none;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   color: var(--frost);
   filter: drop-shadow(0 0 6px color-mix(in srgb, var(--frost) 60%, transparent));
   animation: frost-spin 12s linear infinite;
 }
 .raid-special-label {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--frost);
 }
 .raid-special-name {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
 }
 .raid-special-text {
@@ -2796,4 +2796,117 @@ fieldset.affix-pick legend {
   .raid-frost {
     animation: none;
   }
+}
+
+/* Raids: larger, clearer text and numbers. */
+.raid-boss .foe-name {
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+}
+.raid-boss .tag {
+  font-size: 13px;
+}
+.raid-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.raid-stats > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--surface-3);
+}
+.raid-stats span {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.raid-stats strong {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.raid-rewards h3 {
+  font-size: 16px;
+}
+.raid-rewards h3 .muted {
+  font-size: 13px;
+}
+.raid-rewards ul,
+.raid-rewards p {
+  font-size: 14px;
+}
+.raid-rewards p {
+  font-weight: 600;
+}
+.raid-parties li {
+  font-size: 14px;
+}
+.raid-seat-name {
+  font-size: 15px;
+}
+.raid-seat-stats {
+  font-size: 13px;
+  color: var(--text);
+}
+.raid-fight .duelist-name {
+  font-size: 14px;
+}
+.raid-boss-bar .duelist-name {
+  font-size: 16px;
+}
+.raid-boss-bar .hpbar {
+  height: 24px;
+}
+.raid-party-bars .hpbar {
+  height: 20px;
+}
+.raid-fight .hp-text {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.raid-clock {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+}
+.raid-clock strong {
+  font-size: 20px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.raid-breath-timer {
+  font-size: 14px;
+}
+.raid-fight .duel-status {
+  font-size: 15px;
+}
+.raid-fight .duel-log {
+  font-size: 14px;
+  min-height: 140px;
+}
+.raid-loot {
+  font-size: 14px;
+}
+@media (max-width: 700px) {
+  .raid-stats strong {
+    font-size: 17px;
+  }
+}
+
+.raid-loot-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+/* HP numbers in theme text with a halo, readable on a full or an empty bar. */
+.raid-fight .hp-text {
+  color: var(--text);
+  text-shadow: 0 0 2px var(--surface), 0 0 3px var(--surface), 0 0 5px var(--surface);
 }

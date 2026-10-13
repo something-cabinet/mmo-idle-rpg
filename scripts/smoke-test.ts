@@ -285,7 +285,7 @@ check('stop inspecting clears the views', b.conn.db.inspectedCharacter.count() =
   const logB = [...b.conn.db.myRaidLog.iter()].find(l => l.partyId === party.id);
   check('the fight is settled when it ends: starter gear wipes', done.finished && !done.won);
   check('the clients replay the very fight the server played', simulateRaid(decodeSetup(done.setup), RAIDS_BY_ID.get(1)!, raidRng(party.id, done.startedAt.microsSinceUnixEpoch)).won === done.won);
-  check('each player gets a raid log; a loss rewards nothing', !!logA && !!logB && !logA.rewarded && !logB.rewarded && logA.itemId === 0n &&
+  check('each player gets a raid log; a loss rewards nothing', !!logA && !!logB && !logA.rewarded && !logB.rewarded && logA.itemIds.length === 0 &&
     logA.hireCost === 4000n && logB.hireCost === 0n);
   await a.conn.reducers.leaveRaid({});
   await sleep(200);

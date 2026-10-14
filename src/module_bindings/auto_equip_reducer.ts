@@ -12,4 +12,6 @@ import {
 
 export default {
   loadout: __t.u8(),
+  profile: __t.string(),
+  weights: __t.array(__t.f64()),
 };

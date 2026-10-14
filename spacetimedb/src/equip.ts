@@ -3,6 +3,7 @@
 import { SLOTS, base } from './data/bases';
 import { combatStats, matchup, type CombatStats, type GearItem, type GearWeapon } from './combat';
 import type { DamageType } from './data/bases';
+import { MAX_TIER, STATS, Stat, affixRef, curve, fromStored, type StatId } from './data/stats';
 import type { EnemyDef } from './data/zones';
 
 /** An owned item: what equipping and scoring need from an `item` row. */
@@ -13,18 +14,32 @@ export interface OwnedItem extends GearItem {
 }
 
 /**
- * Auto-equip profiles, in menu order (equipment.md), by their stored name in
- * `loadout.profile`: Damage and Survival are the physical ones.
+ * Auto-equip profiles, in menu order (equipment.md). Damage and Survival are the physical
+ * ones (their stored name in `loadout.profile`); DamageAll and SurvivalAll count both
+ * damage types and are only picked client-side (passed to the autoEquip reducer).
  */
-export const PROFILES = ['Damage', 'DamageMagic', 'Healing', 'Survival', 'SurvivalMagic'] as const;
+export const PROFILES = [
+  'DamageAll', 'Damage', 'DamageMagic', 'Healing', 'SurvivalAll', 'Survival', 'SurvivalMagic',
+  'Custom1', 'Custom2', 'Custom3',
+] as const;
 export type Profile = (typeof PROFILES)[number];
+export const isProfile = (s: string): s is Profile => (PROFILES as readonly string[]).includes(s);
 export const PROFILE_LABEL: Record<Profile, string> = {
+  DamageAll: 'Damage',
+  SurvivalAll: 'Survival',
   Damage: 'Damage (phys)',
   DamageMagic: 'Damage (magic)',
   Healing: 'Healing',
   Survival: 'Survival (phys)',
   SurvivalMagic: 'Survival (magic)',
+  Custom1: 'Custom 1',
+  Custom2: 'Custom 2',
+  Custom3: 'Custom 3',
 };
+/** Profiles the player sets up in Settings: a weight per `CUSTOM_OUTCOMES` and `CUSTOM_GEAR_STATS` value. */
+export const CUSTOM_PROFILES = ['Custom1', 'Custom2', 'Custom3'] as const satisfies readonly Profile[];
+export type CustomProfile = (typeof CUSTOM_PROFILES)[number];
+export const isCustomProfile = (p: Profile): p is CustomProfile => (CUSTOM_PROFILES as readonly Profile[]).includes(p);
 /** A stored profile tag as a profile: the retired Loot profile auto-equips as Damage. */
 export const asProfile = (tag: Profile | 'Loot'): Profile => (tag === 'Loot' ? 'Damage' : tag);
 
@@ -92,6 +107,123 @@ export interface LoadoutScore {
   /** … if all its damage were physical / magic. */
   timeToDiePhysical: number;
   timeToDieMagic: number;
+  /** Bonus fractions (0.2 = +20%). */
+  itemFind: number;
+  goldFind: number;
+  xpGain: number;
+  /** `gearStatRolls`, for the custom profiles. */
+  gearStats: number[];
+}
+
+/** Combat outcomes a custom profile weighs, in gauge order (their weights come first). */
+export const CUSTOM_OUTCOMES = [
+  { key: 'dps', label: 'Damage' },
+  { key: 'physicalDps', label: 'Damage (phys)' },
+  { key: 'magicDps', label: 'Damage (magic)' },
+  { key: 'hps', label: 'Healing' },
+  { key: 'timeToDie', label: 'Survival' },
+  { key: 'timeToDiePhysical', label: 'Survival (phys)' },
+  { key: 'timeToDieMagic', label: 'Survival (magic)' },
+  { key: 'itemFind', label: 'Item find' },
+  { key: 'goldFind', label: 'Gold find' },
+  { key: 'xpGain', label: 'XP gain' },
+] as const satisfies readonly { key: keyof LoadoutScore; label: string }[];
+
+export type GearStatGroup = 'Weapon' | 'Offense' | 'Defense' | 'Primary' | 'Utility';
+/**
+ * Gear stats a custom profile weighs, in gauge order (their weights follow the outcomes').
+ * `stat` = summed from implicits, affixes and legendary stats; without one, a value of the
+ * main-hand weapon's base (which no stat sees): its damage or heal per second, or its crit.
+ */
+export const CUSTOM_GEAR_STATS: readonly { key: string; label: string; group: GearStatGroup; stat?: StatId }[] = [
+  { key: 'weaponDamage', label: 'Weapon damage / sec', group: 'Weapon' },
+  { key: 'weaponHeal', label: 'Weapon heal / sec', group: 'Weapon' },
+  { key: 'weaponCrit', label: 'Weapon crit chance', group: 'Weapon' },
+  ...(
+    [
+      ['Offense', [Stat.PhysDamage, Stat.PhysDamagePct, Stat.MagicDamage, Stat.MagicDamagePct, Stat.AttackSpeedPct, Stat.BaseCritChance,
+        Stat.CritChancePct, Stat.CritDamage, Stat.ArmorPenPct, Stat.MagicPenPct]],
+      ['Defense', [Stat.MaxHp, Stat.MaxHpPct, Stat.Armor, Stat.ArmorPct, Stat.Resistance, Stat.ResistancePct, Stat.EvasionRating,
+        Stat.EvasionRatingPct, Stat.HpRegen, Stat.LifestealPct]],
+      ['Primary', [Stat.Might, Stat.Finesse, Stat.Mind, Stat.Vitality]],
+      ['Utility', [Stat.Heal, Stat.HealPct, Stat.ThreatPct, Stat.ItemFindPct, Stat.GoldFindPct, Stat.XpGainPct]],
+    ] as const
+  ).flatMap(([group, ids]) =>
+    ids.map(id => ({ key: `stat${id}`, label: STATS[id].name + (STATS[id].percent ? ' %' : ''), group, stat: id }))
+  ),
+];
+
+export const MAX_CUSTOM_WEIGHT = 10;
+/** Gear stats can also count against: down to −MAX. */
+export const MIN_GEAR_STAT_WEIGHT = -MAX_CUSTOM_WEIGHT;
+export const CUSTOM_WEIGHT_COUNT = CUSTOM_OUTCOMES.length + CUSTOM_GEAR_STATS.length;
+/** A fresh custom profile: Damage and Survival weighed equally, no gear stats. */
+export const DEFAULT_CUSTOM_WEIGHTS: readonly number[] = [
+  ...CUSTOM_OUTCOMES.map(c => (c.key === 'dps' || c.key === 'timeToDie' ? 5 : 0)),
+  ...CUSTOM_GEAR_STATS.map(() => 0),
+];
+
+/** Whether `w` is a usable set of custom weights: one per value, in range, not all zero. */
+export const validCustomWeights = (w: readonly number[]) =>
+  w.length === CUSTOM_WEIGHT_COUNT &&
+  w.every((x, i) => Number.isFinite(x) && x >= (i < CUSTOM_OUTCOMES.length ? 0 : MIN_GEAR_STAT_WEIGHT) && x <= MAX_CUSTOM_WEIGHT) &&
+  w.some(x => x !== 0);
+
+/** Time to die counts as at most an hour: past that you're as good as immortal. */
+const TTD_CAP = 3600;
+/** Scales gear-stat terms so one top roll at weight w is worth about +10% of an outcome at weight w. */
+const GEAR_STAT_SCALE = 0.15;
+
+/** The tier whose items a character of `level` wears (zones: tier T ≈ level 10 × T), unrounded. */
+const gearTier = (level: number) => Math.min(MAX_TIER, Math.max(1, level / 10));
+
+/**
+ * Each `CUSTOM_GEAR_STATS` value of `gear` in top rolls at the character's tier (a stat's
+ * best affix roll; a T-tier Sword for the weapon values), so every stat has the same unit.
+ */
+export function gearStatRolls(level: number, gear: readonly (GearItem | undefined)[]): number[] {
+  const sum = new Map<number, number>();
+  const add = (g: { stat: number; value: bigint }) => sum.set(g.stat, (sum.get(g.stat) ?? 0) + fromStored(g.value));
+  for (const it of gear) {
+    if (!it) continue;
+    it.implicits.forEach(add);
+    it.affixes.forEach(add);
+    if (it.legendary) add(it.legendary);
+  }
+  const tier = gearTier(level);
+  const w = gear[MAIN]?.weapon;
+  const speed = (w?.speedMilli ?? 0) / 1000;
+  return CUSTOM_GEAR_STATS.map(({ key, stat }) => {
+    if (stat !== undefined) return (sum.get(stat) ?? 0) / affixRef(stat, tier);
+    if (!w) return 0;
+    // The reference weapon: a Sword (10 hit, 1/s, 5% crit at T1) and a Scepter's 10 heal.
+    if (key === 'weaponDamage') return (fromStored(w.hit) * speed) / (10 * curve('offense', tier));
+    if (key === 'weaponHeal') return (fromStored(w.heal) * speed) / (10 * curve('heal', tier));
+    return w.baseCritBp / 500;
+  });
+}
+
+/** ln(1 + |x|) with x's sign: grows like a log both ways, and a negative total stays finite. */
+const signedLog = (x: number) => Math.sign(x) * Math.log1p(Math.abs(x));
+
+/**
+ * A custom profile's score. Outcomes: Σ weight × ln(1 + value). Logs make the weights
+ * scale-free: with equal weights, +10% DPS counts as much as +10% time to die (the find
+ * and XP bonuses are fractions, so ln(1 + bonus) is the log of their multiplier). Gear
+ * stats: Σ weight × 0.15 × signedLog(top rolls), so stacking one stat pays less and less.
+ */
+export function customScore(s: LoadoutScore, weights: readonly number[]): number {
+  let total = 0;
+  CUSTOM_OUTCOMES.forEach(({ key }, i) => {
+    const w = weights[i] ?? 0;
+    const v = key.startsWith('timeToDie') ? Math.min(s[key], TTD_CAP) : s[key];
+    if (w > 0) total += w * Math.log1p(Math.max(0, v));
+  });
+  s.gearStats.forEach((rolls, i) => {
+    const w = weights[CUSTOM_OUTCOMES.length + i] ?? 0;
+    if (w !== 0) total += w * GEAR_STAT_SCALE * signedLog(rolls);
+  });
+  return total;
 }
 
 /** `s` with its attacks dealing only `type` damage (a magic-only build keeps its heals, for Zealot's Oath). */
@@ -123,12 +255,24 @@ export function scoreGear(level: number, gear: readonly (GearItem | undefined)[]
     timeToDie: ttd(net),
     timeToDiePhysical: phys.timeToDie,
     timeToDieMagic: magic.timeToDie,
+    itemFind: s.itemFind,
+    goldFind: s.goldFind,
+    xpGain: s.xpGain,
+    gearStats: gearStatRolls(level, gear),
   };
 }
 
-/** Values compared in order: the profile's goal, then tie-breakers. */
-export function ranking(p: Profile, s: LoadoutScore): number[] {
+/** Values compared in order: the profile's goal, then tie-breakers. `weights` are for the custom profiles. */
+export function ranking(p: Profile, s: LoadoutScore, weights: readonly number[] = DEFAULT_CUSTOM_WEIGHTS): number[] {
   switch (p) {
+    case 'Custom1':
+    case 'Custom2':
+    case 'Custom3':
+      return [customScore(s, weights)];
+    case 'DamageAll':
+      return [s.dps, s.timeToDie];
+    case 'SurvivalAll':
+      return [s.timeToDie, s.dps];
     case 'Damage':
       return [s.physicalDps, s.timeToDie];
     case 'DamageMagic':
@@ -181,11 +325,12 @@ export function autoEquip(
   items: readonly OwnedItem[],
   slots: readonly bigint[],
   profile: Profile,
-  lockedSlots = 0
+  lockedSlots = 0,
+  weights: readonly number[] = DEFAULT_CUSTOM_WEIGHTS
 ): bigint[] {
   const byId = new Map(items.map(i => [i.id, i]));
   const gearOf = (ids: readonly bigint[]) => ids.map(id => byId.get(id));
-  const rank = (ids: readonly bigint[]) => ranking(profile, scoreGear(level, gearOf(ids)));
+  const rank = (ids: readonly bigint[]) => ranking(profile, scoreGear(level, gearOf(ids)), weights);
   const locked = (slot: number) => slotLocked(lockedSlots, slot);
   const start = slots.map(id => (byId.has(id) ? id : 0n));
   const held = new Set(start.filter((id, slot) => id !== 0n && locked(slot)));

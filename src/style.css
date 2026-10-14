@@ -3319,3 +3319,38 @@ fieldset.affix-pick legend {
   }
   .raid-sparks { display: none; }
 }
+
+/* Settings › Auto-equip profiles */
+.weight-list {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+.weight-row {
+  display: grid;
+  grid-template-columns: minmax(0, 11em) minmax(0, 1fr) 3ch;
+  align-items: center;
+  gap: 10px;
+}
+.weight-row input[type='range'] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+.weight-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.weight-value.neg {
+  color: var(--bad);
+}
+.weight-head {
+  font-size: 13px;
+  margin: 12px 0 2px;
+}
+.weight-stats {
+  margin-bottom: 12px;
+}
+.weight-stats > summary {
+  cursor: pointer;
+  font-weight: 600;
+}

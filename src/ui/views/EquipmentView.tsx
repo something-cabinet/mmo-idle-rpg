@@ -1,9 +1,10 @@
 import { memo, useState } from "react";
 import type { Item } from "../../module_bindings/types";
 import { combatStats } from "../../../spacetimedb/src/combat";
-import { PROFILES, PROFILE_LABEL, asProfile, fitsSlot, placeItem, scoreGear, slotLocked } from "../../../spacetimedb/src/equip";
+import { PROFILES, PROFILE_LABEL, asProfile, fitsSlot, isCustomProfile, isProfile, placeItem, scoreGear, slotLocked, type Profile } from "../../../spacetimedb/src/equip";
 import { rarityRank } from "../../../spacetimedb/src/loot";
 import { call, useSticky } from "../../store";
+import { getCustomWeights } from "../customProfiles";
 import { fmt } from "../format";
 import { Icon } from "../Icon";
 import { EmptyCard, ItemCard, ItemTile, itemName, rarityCls, rarityLabel } from "../items";
@@ -25,6 +26,29 @@ import {
 import { gearFor, type Snapshot } from "../snapshot";
 import { statSheet } from "../statSheet";
 import { touchFirst } from "../TapTip";
+
+/**
+ * The loadout's auto-equip profile, kept in this browser (per character and loadout);
+ * falls back to the one stored on the loadout.
+ */
+function useLoadoutProfile(s: Snapshot, lo: Loadout): [Profile, (p: Profile) => void] {
+  const key = `equipProfile:${s.row.id}:${lo.index}`;
+  const [, rerender] = useState(0);
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(key);
+  } catch {}
+  const profile = saved && isProfile(saved) ? saved : asProfile(lo.profile.tag);
+  return [
+    profile,
+    (p) => {
+      try {
+        localStorage.setItem(key, p);
+      } catch {}
+      rerender((n) => n + 1);
+    },
+  ];
+}
 
 interface Candidate {
   it: Item;
@@ -330,6 +354,7 @@ export const EquipmentView = memo(function EquipmentView({
   const stats = combatStats(s.level, gear);
   const sheet = statSheet(s.level, gear, stats);
   const isActive = lo.index === s.row.activeLoadout;
+  const [profile, setProfile] = useLoadoutProfile(s, lo);
 
   return (
     <>
@@ -362,6 +387,18 @@ export const EquipmentView = memo(function EquipmentView({
             Use this loadout
           </button>
         )}
+        {!isActive && (
+          <button
+            className="btn small ghost"
+            title="Replace this loadout's gear with the gear you're wearing now"
+            onClick={() => {
+              if (confirm(`Copy your current gear into "${lo.name}"? Its slots will be replaced.`))
+                call(r.copyLoadout({ loadout: lo.index }));
+            }}
+          >
+            Copy current gear here
+          </button>
+        )}
         <button
           className="btn small ghost"
           onClick={() => {
@@ -375,15 +412,8 @@ export const EquipmentView = memo(function EquipmentView({
         <span className="spacer" />
         <span className="toolbar-label">Profile</span>
         <select
-          value={asProfile(lo.profile.tag)}
-          onChange={(e) =>
-            call(
-              r.setProfile({
-                loadout: lo.index,
-                profile: { tag: e.target.value as (typeof PROFILES)[number] },
-              }),
-            )
-          }
+          value={profile}
+          onChange={(e) => setProfile(e.target.value as Profile)}
         >
           {PROFILES.map((p) => (
             <option key={p} value={p}>
@@ -398,7 +428,7 @@ export const EquipmentView = memo(function EquipmentView({
             setOpenSlot(undefined);
             call(
               r
-                .autoEquip({ loadout: lo.index })
+                .autoEquip({ loadout: lo.index, profile, weights: isCustomProfile(profile) ? getCustomWeights(profile) : [] })
                 .then(() => setSummary({ loadout: lo.index, before })),
             );
           }}

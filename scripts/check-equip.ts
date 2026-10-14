@@ -3,7 +3,7 @@
 import { SLOTS } from '../spacetimedb/src/data/bases';
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
 import { mitigation } from '../spacetimedb/src/combat';
-import { PROFILES, autoEquip, fitsSlot, placeItem, ranking, referenceDummy, scoreGear, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
+import { CUSTOM_GEAR_STATS, CUSTOM_OUTCOMES, CUSTOM_WEIGHT_COUNT, PROFILES, autoEquip, validCustomWeights, fitsSlot, placeItem, ranking, referenceDummy, scoreGear, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
 
 let failed = 0;
@@ -132,6 +132,27 @@ for (const profile of PROFILES) {
   const offLocked = autoEquip(20, pool, empty().map((id, slot) => (slot === S('OffHand') ? pool[5].id : id)), 'Damage', bit(S('OffHand')));
   check('a locked off-hand rules out two-handers', offLocked[S('OffHand')] === pool[5].id &&
     !pool.find(i => i.id === offLocked[S('MainHand')])?.weapon?.twoHanded);
+  // Custom profiles: weights per outcome, then per gear stat.
+  const weights = (set: Record<string, number>) => [
+    ...CUSTOM_OUTCOMES.map(c => set[c.key] ?? 0),
+    ...CUSTOM_GEAR_STATS.map(c => set[c.key] ?? 0),
+  ];
+  const custom = (set: Record<string, number>) =>
+    autoEquip(20, pool, empty(), 'Custom1', 0, weights(set)).map(id => pool.find(i => i.id === id));
+  const weaponDps = (gear: ReturnType<typeof custom>) => {
+    const w = gear[S('MainHand')]?.weapon;
+    return w ? (Number(w.hit) / 100) * (w.speedMilli / 1000) : 0;
+  };
+  const bestWeaponDps = Math.max(...pool.filter(i => i.weapon).map(i => (Number(i.weapon!.hit) / 100) * (i.weapon!.speedMilli / 1000)));
+  check('Custom with Weapon damage only takes the highest base-DPS weapon', weaponDps(custom({ weaponDamage: 10 })) === bestWeaponDps);
+  const finder = custom({ [`stat${Stat.ItemFindPct}`]: 10 });
+  check('Custom with Item find % only wears the item-find ring', finder.some(i => i?.id === pool[pool.length - 2].id));
+  const noFind = custom({ dps: 5, [`stat${Stat.ItemFindPct}`]: -10 });
+  check('a negative weight avoids the stat', !noFind.some(i => i?.id === pool[pool.length - 2].id));
+  check('custom weights: length, range and all-zero checked',
+    validCustomWeights(weights({ dps: 1 })) && !validCustomWeights(weights({})) && !validCustomWeights(weights({ dps: -1 })) &&
+    validCustomWeights(weights({ weaponCrit: -10 })) && !validCustomWeights(weights({ weaponCrit: 11 })) &&
+    !validCustomWeights(Array(CUSTOM_WEIGHT_COUNT - 1).fill(1)));
   check('nothing to equip leaves the loadout empty', autoEquip(1, [], empty(), 'Damage').every(id => id === 0n));
   check('unknown item IDs are dropped', autoEquip(1, [], [999n, ...empty().slice(1)], 'Damage').every(id => id === 0n));
 }

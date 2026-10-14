@@ -2,7 +2,7 @@ import { SenderError, t } from 'spacetimedb/server';
 import { EquipProfile, spacetimedb } from '../schema';
 import { LOADOUT_COUNT } from '../game';
 import { SLOT_COUNT } from '../data/bases';
-import { asProfile, autoEquip as bestSlots, placeItem } from '../equip';
+import { autoEquip as bestSlots, isCustomProfile, isProfile, placeItem, validCustomWeights } from '../equip';
 import { salvageValue } from '../loot';
 import { requireActive, requireItem, settle, type Character, type Ctx } from '../helpers';
 
@@ -51,7 +51,16 @@ export const switchLoadout = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { lo
   ctx.db.character.id.update({ ...settle(ctx, ch), activeLoadout: loadout });
 });
 
-export const renameLoadout = spacetimedb.reducer({ loadout: t.u8(), name: t.string() }, (ctx, { loadout, name }) => {
+/** Copies the gear of the loadout in use into another loadout (items can sit in several loadouts). */
+export const copyLoadout = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout }) => {
+  const { ch } = requireActive(ctx);
+  const lo = requireLoadout(ctx, ch, loadout);
+  if (ch.activeLoadout === loadout) throw new SenderError('That loadout is already in use');
+  const from = requireLoadout(ctx, ch, ch.activeLoadout);
+  ctx.db.loadout.id.update({ ...lo, slots: [...from.slots] });
+});
+
+export const renameLoadout =spacetimedb.reducer({ loadout: t.u8(), name: t.string() }, (ctx, { loadout, name }) => {
   const { ch } = requireActive(ctx);
   const lo = requireLoadout(ctx, ch, loadout);
   const trimmed = name.trim();
@@ -73,16 +82,21 @@ export const lockSlot = spacetimedb.reducer({ loadout: t.u8(), slot: t.u8(), loc
   ctx.db.loadout.id.update({ ...lo, lockedSlots: locked ? lo.lockedSlots | bit : lo.lockedSlots & ~bit });
 });
 
-/** Equips the best owned items for the loadout's profile, scored against the reference dummy; locked slots stay. */
-export const autoEquip = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout }) => {
-  const { ch } = requireActive(ctx);
-  const lo = requireLoadout(ctx, ch, loadout);
-  settleIfActive(ctx, ch, loadout); // may level up, which changes the scores
-  const level = ctx.db.character.id.find(ch.id)!.level;
-  const items = [...ctx.db.item.characterId.filter(ch.id)];
-  const slots = bestSlots(level, items, lo.slots, asProfile(lo.profile.tag), lo.lockedSlots);
-  if (slots.join() !== lo.slots.join()) ctx.db.loadout.id.update({ ...lo, slots });
-});
+/** Equips the best owned items for `profile` (the client keeps each loadout's pick, and the custom profiles' `weights`), scored against the reference dummy; locked slots stay. */
+export const autoEquip = spacetimedb.reducer(
+  { loadout: t.u8(), profile: t.string(), weights: t.array(t.f64()) },
+  (ctx, { loadout, profile, weights }) => {
+    const { ch } = requireActive(ctx);
+    const lo = requireLoadout(ctx, ch, loadout);
+    if (!isProfile(profile)) throw new SenderError('No such profile');
+    if (isCustomProfile(profile) && !validCustomWeights(weights)) throw new SenderError('Invalid profile weights');
+    settleIfActive(ctx, ch, loadout); // may level up, which changes the scores
+    const level = ctx.db.character.id.find(ch.id)!.level;
+    const items = [...ctx.db.item.characterId.filter(ch.id)];
+    const slots = bestSlots(level, items, lo.slots, profile, lo.lockedSlots, weights);
+    if (slots.join() !== lo.slots.join()) ctx.db.loadout.id.update({ ...lo, slots });
+  }
+);
 
 /** Locked items can't be salvaged. */
 export const lockItem = spacetimedb.reducer({ itemId: t.u64(), locked: t.bool() }, (ctx, { itemId, locked }) => {

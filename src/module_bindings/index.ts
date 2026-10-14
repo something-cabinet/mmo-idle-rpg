@@ -37,6 +37,7 @@ import {
 import AcceptLinkReducer from "./accept_link_reducer";
 import AddFriendReducer from "./add_friend_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
+import CopyLoadoutReducer from "./copy_loadout_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import CreateRaidPartyReducer from "./create_raid_party_reducer";
 import DevGiveItemReducer from "./dev_give_item_reducer";
@@ -323,6 +324,7 @@ const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
   __reducerSchema("add_friend", AddFriendReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
+  __reducerSchema("copy_loadout", CopyLoadoutReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("create_raid_party", CreateRaidPartyReducer),
   __reducerSchema("dev_give_item", DevGiveItemReducer),

@@ -216,12 +216,24 @@ and the player shouldn't have to review them.
 The button equips the best items from the bag for the loadout's **profile**. It never
 looks at the current zone or target enemy, so its result only depends on the items.
 
-- **Profiles** (picked next to the button, saved per loadout):
+- **Profiles** (picked next to the button, saved per loadout in the browser's local
+  storage; the reducer takes the profile as an argument):
+  - **Damage:** maximize DPS of both damage types, with time to die as the tie-breaker.
+  - **Survival:** maximize time to die against the 50/50 dummy, with DPS as the tie-breaker.
   - **Damage (phys) / Damage (magic):** maximize the DPS from that damage type only, with
     time to die as the tie-breaker.
   - **Healing:** maximize heals per second, then time to die, then DPS.
   - **Survival (phys) / Survival (magic):** maximize time to die against a dummy dealing
     only that damage type, with DPS as the tie-breaker.
+  - **Custom 1 / 2 / 3:** set up in Settings with a 0–10 weight per value (damage, phys /
+    magic damage, healing, survival, phys / magic survival, item find, gold find, XP gain;
+    kept in local storage, sent with the auto-equip call). Score = Σ weight × ln(1 + value),
+    so equal weights trade evenly in percent; time to die counts up to an hour.
+    **Fine-tune stats** adds a −10..10 weight per gear stat (all 30) and per main-hand
+    weapon base value (damage / sec, heal / sec, crit chance), which no stat sees. Each is
+    measured in top rolls at the character's tier (level / 10; a Sword for the weapon) and
+    adds weight × 0.15 × ±ln(1 + |rolls|): one top roll ≈ +10% of an outcome at the same
+    weight. Stat terms are added up, so they miss how stats multiply each other.
   - (The Loot profile is retired; a loadout still set to it auto-equips as Damage (phys).)
 - **Slot locks.** Each slot of a loadout has a lock (next to its label). Auto-equip leaves
   a locked slot as it is, full or empty, and never moves its item to another slot; a

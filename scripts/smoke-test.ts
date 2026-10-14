@@ -209,7 +209,7 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
   await a.conn.reducers.renameLoadout({ loadout: 1, name: '  Raid  ' });
   await a.conn.reducers.setProfile({ loadout: 1, profile: { tag: 'Survival' } });
   await expectError('empty loadout name rejected', a.conn.reducers.renameLoadout({ loadout: 1, name: ' ' }), 'Name must be');
-  await a.conn.reducers.autoEquip({ loadout: 1 });
+  await a.conn.reducers.autoEquip({ loadout: 1, profile: 'Survival', weights: [] });
   await sleep(200);
   check('rename and profile saved', lo(1).name === 'Raid' && lo(1).profile.tag === 'Survival');
   check('auto-equip fills an empty loadout from owned items', lo(1).slots.filter(id => id !== 0n).length === 3, lo(1).slots.join());

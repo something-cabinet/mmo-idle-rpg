@@ -28,3 +28,20 @@ Drop these deprecated columns, which stay only so the schema migrates without a 
 - `character.essence` and `settle_log.essence`: replaced by `dust` (the settle folds any
   leftover `character.essence` into `dust`).
 - `presence.lastChatAt`: replaced by the private `chat_cooldown` table.
+
+## Life skills (life-skills.md)
+
+Phase 1 (gathering, Smithing, Alchemy, elixirs) is built. Left:
+
+- **Raids use the active elixir** (design: "Boss challenges and raids use the active
+  buffs"). `reducers/raid.ts` builds raid stats without buffs today; decide whether a raid
+  fight uses charges.
+- **Zones preview with and without the elixir** ("viable with Elixir of Wrath"). The
+  matchups already include the active elixir; there's no side-by-side yet.
+- **Away report: when the elixir slot ran empty**, not only that it did.
+- **Balance pass** on recipe costs, times and the elixir numbers once there's play data.
+- **Phase 2:** Enchanting (Essences: forced-stat rerolls), Construction and the Hideout
+  (stations, Bedroom offline hours), milestone combat bonuses at 25/50/75/99, total skill
+  level on inspect and the friends list, the level-99 title.
+- **Phase 3:** Fishing (Fish, material kind 8, Rod tool) and Cooking (meals: a second buff
+  slot with its own charges and auto-renew).

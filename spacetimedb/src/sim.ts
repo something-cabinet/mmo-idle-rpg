@@ -6,7 +6,7 @@
 import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from './combat';
 import { Effect, effectAmount } from './data/legendary';
 import type { EnemyDef } from './data/zones';
-import { xpToNext, type Activity, type Progress, type Settled } from './game';
+import { ElixirTracker, xpToNext, type Activity, type Progress, type Settled } from './game';
 import { seededRng, type Rng } from './loot';
 
 /** A fight not over after this long is a stalemate: time passes with no effect. */
@@ -125,7 +125,8 @@ export interface Simulated extends Settled {
  * level, like `project`); stats are recomputed per fight, so a level-up applies from
  * the next one. Only finished fights are settled: the one in progress stays open and
  * replays identically from its start next time. A defeat or a stalemate settles up
- * to now; a defeat also returns `defeatedAt`.
+ * to now; a defeat also returns `defeatedAt`. An elixir active when a fight starts
+ * applies to the whole fight; each kill uses one charge.
  */
 export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterId: bigint): Simulated {
   let { level, xp, gold } = p;
@@ -135,6 +136,7 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
   // Kills at the current level not yet turned into XP and gold.
   let batch = 0;
   let m: Matchup | undefined;
+  const elixir = new ElixirTracker(a.elixir);
   const commit = () => {
     if (!m || batch === 0) return;
     if (level < MAX_LEVEL) {
@@ -152,14 +154,15 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
   };
   const result = (settledMicros: bigint, extra: Partial<Simulated> = {}): Simulated => {
     commit();
-    return { level, xp, gold, settledMicros, kills: total, xpGained, ...extra };
+    return { level, xp, gold, settledMicros, kills: total, xpGained, elixir: elixir.left, ...extra };
   };
 
   if (!a.enemy || nowMicros <= start) return result(nowMicros > start ? nowMicros : start);
   for (;;) {
-    const stats = combatStats(level, a.gear);
+    const stats = combatStats(level, a.gear, elixir.buffs);
     const fm = matchup(stats, a.enemy);
-    if (m && fm.xpPerKill !== m.xpPerKill) commit(); // rewards changed: close the batch at the old rate
+    // Rewards changed (a level-up, an elixir running out): close the batch at the old rate.
+    if (m && (fm.xpPerKill !== m.xpPerKill || fm.goldPerKill !== m.goldPerKill)) commit();
     m = fm;
     const fight = simulateFight(stats, fm, a.enemy, fightRng(characterId, start));
     const end = start + BigInt(Math.ceil(fight.end * 1e6));
@@ -169,6 +172,7 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
     if (fight.outcome === 'stalemate') return result(nowMicros, { current });
     total += 1;
     batch += 1;
+    elixir.use(1);
     // Level up as soon as this kill's XP gets there: the next fight uses the new stats.
     if (level < MAX_LEVEL && xp + BigInt(Math.floor(batch * fm.xpPerKill)) >= xpToNext(level)) commit();
     start = end;

@@ -7,8 +7,10 @@ import { BASE_LIST } from '../data/bases';
 import { MAX_TIER } from '../data/stats';
 import { UNIQUES, UNIQUES_BY_ID } from '../data/uniques';
 import { ZONES } from '../data/zones';
+import { MATERIALS } from '../data/materials';
+import { SUPPLIES } from '../data/supplies';
 import { DEV_RARITIES, makeItem, makeUnique, seededRng, type RarityName } from '../loot';
-import { discover, requireActive, type Character, type Ctx } from '../helpers';
+import { addMaterials, addSupply, discover, requireActive, type Character, type Ctx } from '../helpers';
 
 function requireCheats(ctx: Ctx) {
   if (ctx.env.DEV_CHEATS !== '1') throw new SenderError('Cheats are off');
@@ -48,6 +50,18 @@ export const devUnlockZones = spacetimedb.reducer(ctx => {
 export const devGrant = spacetimedb.reducer({ gold: t.u64(), dust: t.u64() }, (ctx, { gold, dust }) => {
   const { ch } = requireCheats(ctx);
   ctx.db.character.id.update({ ...ch, gold: ch.gold + gold, dust: ch.dust + dust });
+});
+
+/** Adds `count` of every material, every tier. */
+export const devGrantMaterials = spacetimedb.reducer({ count: t.u32() }, (ctx, { count }) => {
+  const { ch } = requireCheats(ctx);
+  addMaterials(ctx, ch.id, MATERIALS.map(m => ({ materialId: m.id, count })));
+});
+
+/** Adds `count` of every supply (elixirs). */
+export const devGrantSupplies = spacetimedb.reducer({ count: t.u32() }, (ctx, { count }) => {
+  const { ch } = requireCheats(ctx);
+  for (const s of SUPPLIES) addSupply(ctx, ch.id, s.id, count);
 });
 
 function giveItem(ctx: Ctx, ch: Character, item: ReturnType<typeof makeItem>) {

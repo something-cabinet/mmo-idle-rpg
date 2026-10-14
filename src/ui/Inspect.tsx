@@ -63,7 +63,7 @@ export function InspectPopup({ conn, characterId, version, me, tab: initialTab =
         <p className="muted">Loading…</p>
       ) : (
         <>
-          <p className="muted">{skill ? `Gathering: ${skill.name}` : target ? `Fighting ${target.zone.name} › ${target.enemy.name}` : 'Idle'}</p>
+          <p className="muted">{skill ? `Skilling: ${skill.name}` : target ? `Fighting ${target.zone.name} › ${target.enemy.name}` : 'Idle'}</p>
           {friend && (
             <div className="seg">
               <button className={`seg-btn${tab === 'gear' ? ' active' : ''}`} onClick={() => setTab('gear')}>Gear</button>

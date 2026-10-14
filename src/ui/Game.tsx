@@ -6,6 +6,7 @@ import type { Presence } from '../module_bindings/types';
 import { xpToNext } from '../../spacetimedb/src/game';
 import { call, toast, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
+import { elixirText } from './lifeSkills';
 import { nowMicros, syncClock } from './clock';
 import { DefeatReport } from './DefeatReport';
 import { revealedAreas, rumouredAreas } from './discovery';
@@ -25,10 +26,10 @@ import { FilterView } from './views/FilterView';
 import { ItemIndexView } from './views/ItemIndexView';
 import { RaidsView } from './views/RaidsView';
 import { SettingsView } from './views/SettingsView';
-import { SkillView } from './views/SkillView';
+import { SkillView, activityText } from './views/SkillView';
+import { ProductionView } from './views/ProductionView';
 import { SkillsView } from './views/SkillsView';
 import { SKILLS } from '../../spacetimedb/src/data/skills';
-import { materialOf } from '../../spacetimedb/src/data/materials';
 import { ZonesView } from './views/ZonesView';
 
 const NAV: [string, [View, string, string][]][] = [
@@ -42,7 +43,8 @@ const NAV: [string, [View, string, string][]][] = [
 function TopStats({ s }: { s: Snapshot }) {
   const need = xpToNext(s.level);
   const m = s.fight;
-  const g = s.gathering;
+  const sk = s.skilling;
+  const e = s.elixir;
   return (
     <div className="top-stats">
       <div className="top-char">
@@ -57,17 +59,26 @@ function TopStats({ s }: { s: Snapshot }) {
       <span className="chip stat" title="Gold"><Icon name="coins" className="c-gold" /><strong>{fmtBig(s.gold)}</strong></span>
       <span className="chip stat" title="Dust"><Icon name="gem" className="c-dust" /><strong>{fmtBig(s.row.dust)}</strong></span>
       <span className="divider" />
-      {g ? (
-        <button className="chip activity" title="Current activity" onClick={() => (location.hash = `#${g.skill.slug}`)}>
+      {sk ? (
+        <button className="chip activity" title="Current activity" onClick={() => (location.hash = `#${sk.slug}`)}>
           <span className="dot ok" />
-          <span>{g.skill.name} › {materialOf(g.tier, g.skill.makes).name}</span>
-          <span className="activity-rate">Lv {s.skills.get(g.skill.id)?.level}</span>
+          <span>{activityText(s).replace(': ', ' › ')}</span>
+          <span className="activity-rate">
+            {s.production ? `${s.production.projected.countLeft} left` : `Lv ${s.skills.get(sk.id)?.level}`}
+          </span>
         </button>
       ) : (
         <button className="chip activity" title="Current activity" onClick={() => (location.hash = '#combat')}>
           <span className={`dot ${!m ? '' : m.viable ? 'ok' : 'bad'}`} />
           <span>{s.target ? `${s.target.zone.name} › ${s.target.enemy.name}` : 'Idle'}</span>
           <span className="activity-rate">{m?.viable ? `${fmt(perHour(m))} kills/h` : ''}</span>
+        </button>
+      )}
+      {e && (
+        <button className="chip activity" title={`${e.supply.name} T${e.supply.tier}: ${elixirText(e.supply)}. Kills left · in stock.`} onClick={() => (location.hash = '#alchemy')}>
+          <Icon name="flask" className="c-material" />
+          <span>{e.supply.elixir.name} {e.killsLeft}</span>
+          <span className="activity-rate">×{s.supplies.get(e.supply.id) ?? 0}</span>
         </button>
       )}
     </div>
@@ -253,7 +264,9 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
     case 'settings': return <SettingsView s={s} />;
     default: {
       const skill = SKILLS.find(sk => sk.slug === view);
-      return skill ? <SkillView key={skill.id} s={s} skill={skill} /> : null;
+      if (skill?.kind === 'Gathering') return <SkillView key={skill.id} s={s} skill={skill} />;
+      if (skill?.kind === 'Production') return <ProductionView key={skill.id} s={s} skill={skill} />;
+      return null;
     }
   }
 }

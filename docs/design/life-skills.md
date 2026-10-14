@@ -250,20 +250,39 @@ All of this stays in closed form (README pillar 1):
 
 | Where | What |
 |-|-|
-| `character` columns | `activity` (Combat or Skill), `activitySkill`, `activityRecipe`, `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `mealId`, `mealKillsLeft`, auto-renew flags |
-| `skill` table | (characterId, skillId, xp) |
-| `tool` table | (characterId, kind, tier) |
-| `station` table | (characterId, stationId, level) |
-| `supply` table | (characterId, supplyId, count): elixirs, meals, essences, parts |
+| `character` columns | `activitySkill` (0 = combat), `activityRecipe` (gathering: the tier; production: the recipe ID), `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `elixirAutoRenew`; later `mealId`, `mealKillsLeft`, `mealAutoRenew` |
+| `skill` table | (characterId, skillId, level, xp) |
+| `tool` table | (characterId, skillId, tier) |
+| `station` table | (characterId, stationId, level) (phase 2) |
+| `supply` table | (characterId, supplyId, count): elixirs; later meals, essences, parts |
 | `material` | Fish is new material kind 8 |
-| `data/skills.ts` | Skills, recipes, permanent IDs |
+| `data/skills.ts` | Skills, levels, speeds, permanent skill IDs |
+| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, tool = 1000 + skill × 10 + tier, elixir = its supply ID |
+| `data/supplies.ts` | Elixirs and their buffs. Permanent supply IDs: elixirs 100 + kind × 10 + tier |
+| `gather.ts`, `produce.ts` | Closed-form settlement, shared with the client |
 
 ## Rollout
 
-1. **Phase 1:** activity switch, `skill` table, Foraging + Alchemy (fastest combat
+1. **Phase 1 (built):** activity switch, `skill` table, Foraging + Alchemy (fastest combat
    value), Mining + Smithing (forge bases, tools), Woodcutting (tools need Wood).
 2. **Phase 2:** Enchanting, Construction and Hideout, milestone bonuses.
 3. **Phase 3:** Fishing + Cooking (Fish material).
+
+What is left, phase 1 leftovers included, is tracked in [TODO.md](../../TODO.md) under
+"Life skills".
+
+### How phase 1 is built
+
+- **Production** settles action by action (a few per hour), so each action uses the skill
+  level it starts at. Keep-inputs rolls are seeded by the action's end time, so one settle
+  and many settles give the same result.
+- **Character XP**: production gives as much character XP as skill XP, like gathering.
+- **Tool upgrades** go one tier at a time (tier T needs a tier T−1 tool), with a queue of one.
+- **Bag**: forging stops when the bag is full, the same as running out of inputs.
+- **Fortune** counts only for the kills made with it: drops use the item find averaged over
+  the settle's buffed and unbuffed kills (drops scale linearly with item find).
+- **Away report**: when a queue ends while offline, the login logs two settles (the queue,
+  then combat) and the report shows both.
 
 ## Open
 

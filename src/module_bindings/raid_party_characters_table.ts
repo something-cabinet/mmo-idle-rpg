@@ -29,4 +29,8 @@ export default __t.row({
   raidTokens: __t.u64().name("raid_tokens"),
   activitySkill: __t.u8().name("activity_skill"),
   activityRecipe: __t.u16().name("activity_recipe"),
+  activityCountLeft: __t.u32().name("activity_count_left"),
+  elixirId: __t.u16().name("elixir_id"),
+  elixirKillsLeft: __t.u32().name("elixir_kills_left"),
+  elixirAutoRenew: __t.bool().name("elixir_auto_renew"),
 });

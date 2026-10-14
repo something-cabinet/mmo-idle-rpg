@@ -1,4 +1,4 @@
-// One life skill's page (life-skills.md): its level and tool, what it can gather, and its log.
+// One gathering skill's page (life-skills.md): its level and tool, what it can gather, and its log.
 // Gathering takes the place of fighting: one activity at a time.
 
 import { memo } from 'react';
@@ -16,7 +16,7 @@ import {
   skillXpToNext,
   tierRequirement,
   toolSpeedBonus,
-  type SkillDef,
+  type GatheringSkillDef,
 } from '../../../spacetimedb/src/data/skills';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
 import { materialOf } from '../../../spacetimedb/src/data/materials';
@@ -27,6 +27,7 @@ import { Icon } from '../Icon';
 import { materialIconName, materialsText } from '../items';
 import { CardHead, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
+import { recipeLabel } from '../lifeSkills';
 
 const TIERS = [...new Set(ZONES.map(z => z.tier))].sort((a, b) => a - b);
 
@@ -74,19 +75,26 @@ function GatheringCard({ s }: { s: Snapshot }) {
   );
 }
 
-/** What the character does instead, when it isn't working this skill: gathering here stops it. */
-function ElsewhereCard({ s }: { s: Snapshot }) {
+/** What the character is doing: a life skill, fighting, or idle. */
+export function activityText(s: Snapshot): string {
   const g = s.gathering;
-  const now = g ? `${g.skill.name}: ${materialOf(g.tier, g.skill.makes).name}` : s.target ? `Fighting ${s.target.enemy.name}` : 'Idle';
+  const p = s.production;
+  if (g) return `${g.skill.name}: ${materialOf(g.tier, g.skill.makes).name}`;
+  if (p) return `${p.skill.name}: ${recipeLabel(p.recipe)}`;
+  return s.target ? `Fighting ${s.target.enemy.name}` : 'Idle';
+}
+
+/** What the character does instead, when it isn't working this skill: `verb` here stops it. */
+export function ElsewhereCard({ s, verb = 'Gathering' }: { s: Snapshot; verb?: string }) {
   return (
     <div className="card">
-      <p>Now: <strong>{now}</strong></p>
-      {(g || s.target) && <p className="muted">Gathering here stops it.</p>}
+      <p>Now: <strong>{activityText(s)}</strong></p>
+      {(s.skilling || s.target) && <p className="muted">{verb} here stops it.</p>}
     </div>
   );
 }
 
-function TierRow({ s, skill, tier }: { s: Snapshot; skill: SkillDef; tier: number }) {
+function TierRow({ s, skill, tier }: { s: Snapshot; skill: GatheringSkillDef; tier: number }) {
   const { level } = s.skills.get(skill.id)!;
   const toolTier = s.tools.get(skill.id) ?? 1;
   const zoneOpen = ZONES.some(z => z.tier === tier && zoneUnlocked(s, z));
@@ -117,7 +125,7 @@ function TierRow({ s, skill, tier }: { s: Snapshot; skill: SkillDef; tier: numbe
   );
 }
 
-export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; skill: SkillDef }) {
+export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; skill: GatheringSkillDef }) {
   const at = s.skills.get(skill.id)!;
   const toolTier = s.tools.get(skill.id) ?? 1;
   const double = doubleYieldChance(at.level);

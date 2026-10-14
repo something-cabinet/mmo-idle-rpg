@@ -80,6 +80,7 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
       tables.raidPartyItems,
       tables.mySkills,
       tables.myTools,
+      tables.mySupplies,
     ]);
 }
 
@@ -87,15 +88,15 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
 export function watchAll(conn: DbConnection, onChange: () => void) {
   const { myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog } = conn.db;
   const { inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters } = conn.db;
-  const { raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools } = conn.db;
+  const { raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies } = conn.db;
   for (const table of [myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog,
-    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools]) {
+    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies]) {
     table.onInsert(onChange);
     table.onDelete(onChange);
   }
   // Rows with a primary key (views included) change in place.
   for (const table of [character, presence, myItems, myMaterials, myLoadouts, myLootFilter, myEnemyKills, inspectedCharacter, inspectedLoadout, inspectedItems,
-    myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools])
+    myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies])
     table.onUpdate(onChange);
 }
 

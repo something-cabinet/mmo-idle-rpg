@@ -65,8 +65,16 @@ export const character = table(
      * (life-skills.md: one activity at a time). The target is kept while skilling.
      */
     activitySkill: t.u8().default(0),
-    /** What the skill works on: the material tier for gathering. */
+    /** What the skill works on: the material tier for gathering, the recipe (data/recipes.ts) for production. */
     activityRecipe: t.u16().default(0),
+    /** Production actions still queued; when the queue runs out the character goes back to `targetEnemyId`. */
+    activityCountLeft: t.u32().default(0),
+    /** The active elixir (data/supplies.ts supply ID), or 0 for none. */
+    elixirId: t.u16().default(0),
+    /** Kills the active elixir has left (life-skills.md, "Buff rules"). */
+    elixirKillsLeft: t.u32().default(0),
+    /** When the elixir runs out, take another of the same from stock. */
+    elixirAutoRenew: t.bool().default(true),
   }
 );
 
@@ -325,11 +333,23 @@ export const settleLog = table(
     encounters: t.array(Encounter).default([]),
     /** The life skill worked in this settle (data/skills.ts), or 0 for combat (then `enemyId` is 0). */
     skillId: t.u8().default(0),
-    /** Gathering actions done. */
+    /** Gathering or production actions done. */
     actions: t.u32().default(0),
     skillXp: t.u64().default(0n),
     skillLevelFrom: t.u8().default(0),
     skillLevelTo: t.u8().default(0),
+    /** The production recipe worked (data/recipes.ts), or 0. Forged items are in `keptItemIds`. */
+    recipe: t.u16().default(0),
+    /** Production inputs used up. */
+    used: t.array(MaterialCount).default([]),
+    /** The elixir active at the start of the settle (data/supplies.ts), or 0. */
+    elixirId: t.u16().default(0),
+    /** Kills made with an elixir active. */
+    elixirKills: t.u32().default(0),
+    /** Elixirs auto-renew took from stock. */
+    elixirsUsed: t.u32().default(0),
+    /** The elixir ran out with no stock left: the slot is empty now. */
+    elixirEmpty: t.bool().default(false),
   }
 );
 
@@ -343,6 +363,17 @@ export const skill = table(
     level: t.u8(),
     /** XP toward the next level. */
     xp: t.u64(),
+  }
+);
+
+/** A character's stock of one supply (data/supplies.ts): elixirs. Private; owners read theirs via `my_supplies`. */
+export const supply = table(
+  { name: 'supply' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    supplyId: t.u16(),
+    count: t.u64(),
   }
 );
 
@@ -545,6 +576,7 @@ export const spacetimedb = schema({
   raidTimer,
   skill,
   tool,
+  supply,
 }, {
   // Set only when publishing locally (package.json `spacetime:publish:local`); never on
   // Maincloud, so the dev cheats (reducers/dev.ts) refuse there.

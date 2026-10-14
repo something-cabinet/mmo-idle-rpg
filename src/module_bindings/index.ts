@@ -43,8 +43,11 @@ import CreateRaidPartyReducer from "./create_raid_party_reducer";
 import DevGiveItemReducer from "./dev_give_item_reducer";
 import DevGiveUniqueReducer from "./dev_give_unique_reducer";
 import DevGrantReducer from "./dev_grant_reducer";
+import DevGrantMaterialsReducer from "./dev_grant_materials_reducer";
+import DevGrantSuppliesReducer from "./dev_grant_supplies_reducer";
 import DevRevealAllReducer from "./dev_reveal_all_reducer";
 import DevUnlockZonesReducer from "./dev_unlock_zones_reducer";
+import DrinkElixirReducer from "./drink_elixir_reducer";
 import EquipReducer from "./equip_reducer";
 import ExpandBagReducer from "./expand_bag_reducer";
 import FleeReducer from "./flee_reducer";
@@ -62,12 +65,14 @@ import RerollAffixReducer from "./reroll_affix_reducer";
 import SalvageReducer from "./salvage_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
+import SetElixirAutoRenewReducer from "./set_elixir_auto_renew_reducer";
 import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetProfileReducer from "./set_profile_reducer";
 import SetRaidHiresReducer from "./set_raid_hires_reducer";
 import SetTargetReducer from "./set_target_reducer";
 import SettleNowReducer from "./settle_now_reducer";
 import StartGatheringReducer from "./start_gathering_reducer";
+import StartProductionReducer from "./start_production_reducer";
 import StartRaidReducer from "./start_raid_reducer";
 import StopSkillReducer from "./stop_skill_reducer";
 import SwitchLoadoutReducer from "./switch_loadout_reducer";
@@ -95,6 +100,7 @@ import MyMaterialsRow from "./my_materials_table";
 import MyRaidLogRow from "./my_raid_log_table";
 import MySettleLogRow from "./my_settle_log_table";
 import MySkillsRow from "./my_skills_table";
+import MySuppliesRow from "./my_supplies_table";
 import MyToolsRow from "./my_tools_table";
 import PresenceRow from "./presence_table";
 import RaidMemberRow from "./raid_member_table";
@@ -289,6 +295,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MySkillsRow),
+  mySupplies: __table({
+    name: 'my_supplies',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MySuppliesRow),
   myTools: __table({
     name: 'my_tools',
     indexes: [
@@ -330,8 +343,11 @@ const reducersSchema = __reducers(
   __reducerSchema("dev_give_item", DevGiveItemReducer),
   __reducerSchema("dev_give_unique", DevGiveUniqueReducer),
   __reducerSchema("dev_grant", DevGrantReducer),
+  __reducerSchema("dev_grant_materials", DevGrantMaterialsReducer),
+  __reducerSchema("dev_grant_supplies", DevGrantSuppliesReducer),
   __reducerSchema("dev_reveal_all", DevRevealAllReducer),
   __reducerSchema("dev_unlock_zones", DevUnlockZonesReducer),
+  __reducerSchema("drink_elixir", DrinkElixirReducer),
   __reducerSchema("equip", EquipReducer),
   __reducerSchema("expand_bag", ExpandBagReducer),
   __reducerSchema("flee", FleeReducer),
@@ -349,12 +365,14 @@ const reducersSchema = __reducers(
   __reducerSchema("salvage", SalvageReducer),
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
+  __reducerSchema("set_elixir_auto_renew", SetElixirAutoRenewReducer),
   __reducerSchema("set_loot_filter", SetLootFilterReducer),
   __reducerSchema("set_profile", SetProfileReducer),
   __reducerSchema("set_raid_hires", SetRaidHiresReducer),
   __reducerSchema("set_target", SetTargetReducer),
   __reducerSchema("settle_now", SettleNowReducer),
   __reducerSchema("start_gathering", StartGatheringReducer),
+  __reducerSchema("start_production", StartProductionReducer),
   __reducerSchema("start_raid", StartRaidReducer),
   __reducerSchema("stop_skill", StopSkillReducer),
   __reducerSchema("switch_loadout", SwitchLoadoutReducer),
@@ -400,6 +418,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_settle_log": Omit<typeof tablesSchema.schemaType.tables["mySettleLog"], "accessorName"> & { readonly accessorName: "my_settle_log" };
     /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
     readonly "my_skills": Omit<typeof tablesSchema.schemaType.tables["mySkills"], "accessorName"> & { readonly accessorName: "my_skills" };
+    /** @deprecated Use `mySupplies` instead. This alias will be removed in the next major version. */
+    readonly "my_supplies": Omit<typeof tablesSchema.schemaType.tables["mySupplies"], "accessorName"> & { readonly accessorName: "my_supplies" };
     /** @deprecated Use `myTools` instead. This alias will be removed in the next major version. */
     readonly "my_tools": Omit<typeof tablesSchema.schemaType.tables["myTools"], "accessorName"> & { readonly accessorName: "my_tools" };
     /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
@@ -442,6 +462,7 @@ const tableAccessorAliases = {
   "my_raid_log": "myRaidLog",
   "my_settle_log": "mySettleLog",
   "my_skills": "mySkills",
+  "my_supplies": "mySupplies",
   "my_tools": "myTools",
   "raid_party_characters": "raidPartyCharacters",
   "raid_party_items": "raidPartyItems",
@@ -498,6 +519,8 @@ export type DbView = __DbViewBase & {
   readonly "my_settle_log": __DbViewBase["mySettleLog"];
   /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
   readonly "my_skills": __DbViewBase["mySkills"];
+  /** @deprecated Use `mySupplies` instead. This alias will be removed in the next major version. */
+  readonly "my_supplies": __DbViewBase["mySupplies"];
   /** @deprecated Use `myTools` instead. This alias will be removed in the next major version. */
   readonly "my_tools": __DbViewBase["myTools"];
   /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
@@ -542,6 +565,8 @@ export type Tables = __TablesBase & {
   readonly "my_settle_log": __TablesBase["mySettleLog"];
   /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
   readonly "my_skills": __TablesBase["mySkills"];
+  /** @deprecated Use `mySupplies` instead. This alias will be removed in the next major version. */
+  readonly "my_supplies": __TablesBase["mySupplies"];
   /** @deprecated Use `myTools` instead. This alias will be removed in the next major version. */
   readonly "my_tools": __TablesBase["myTools"];
   /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */

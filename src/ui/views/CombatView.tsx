@@ -17,6 +17,7 @@ import { Icon } from '../Icon';
 import { itemName, materialsText, rarityCls, rarityLabel } from '../items';
 import { CardHead, openCraft, perHour, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
+import { activityText } from './SkillView';
 
 function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?: number }) {
   const lines: React.ReactNode[] = [];
@@ -179,15 +180,23 @@ const FightScene = memo(
 );
 
 export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
-  if (s.gathering) {
+  const sk = s.skilling;
+  if (sk) {
+    const queue = sk.kind === 'Production';
     return (
       <>
         <ViewHeader title="Combat" icon="swords" />
         <div className="card">
-          <p>You're {s.gathering.skill.name.toLowerCase()}: no combat while skilling.</p>
-          <p className="muted">One activity at a time. Stop gathering on the {s.gathering.skill.name} page{s.row.targetEnemyId ? ' to go back to your target' : ''}, or pick an enemy on the Zones screen.</p>
+          <p>Now: <strong>{activityText(s)}</strong>. No combat while skilling.</p>
+          <p className="muted">
+            One activity at a time.{' '}
+            {queue
+              ? `When the queue ends you go back to ${s.row.targetEnemyId ? 'your target' : 'idle'}; stop it early on the ${sk.name} page`
+              : `Stop on the ${sk.name} page${s.row.targetEnemyId ? ' to go back to your target' : ''}`}
+            , or pick an enemy on the Zones screen.
+          </p>
           <div className="row">
-            <a className="btn small" href={`#${s.gathering.skill.slug}`}><Icon name={s.gathering.skill.icon} />{s.gathering.skill.name}</a>
+            <a className="btn small" href={`#${sk.slug}`}><Icon name={sk.icon} />{sk.name}</a>
             <a className="btn small ghost" href="#zones"><Icon name="map" />Zones</a>
           </div>
         </div>

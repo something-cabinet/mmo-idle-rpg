@@ -160,7 +160,7 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
 // Life skills: gathering takes the place of combat; the target is kept for afterwards.
 {
   const tools = [...a.conn.db.myTools.iter()];
-  check('a new character has its skills and T1 tools', [...a.conn.db.mySkills.iter()].length === 3 && tools.length === 3 && tools.every(t => t.tier === 1));
+  check('a new character has its skills and T1 tools', [...a.conn.db.mySkills.iter()].length === 5 && tools.length === 3 && tools.every(t => t.tier === 1));
   await expectError('unknown skill rejected', a.conn.reducers.startGathering({ skillId: 99, tier: 1 }), 'No such skill');
   await expectError('gathering a locked tier rejected', a.conn.reducers.startGathering({ skillId: 1, tier: 2 }), 'Unlock the tier 2 zone');
   await a.conn.reducers.startGathering({ skillId: 1, tier: 1 });
@@ -187,6 +187,50 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
   await a.conn.reducers.setTarget({ enemyId: 101 });
   await sleep(200);
   check('picking a target stops the skill', charOf(a)!.activitySkill === 0);
+}
+
+// Production: Smithing and Alchemy run a queue instead of fighting, then go back to the target.
+{
+  const r = a.conn.reducers;
+  await expectError('production without materials rejected', r.startProduction({ skillId: 12, recipe: 111, count: 1 }), 'Not enough materials');
+  await expectError('a gathering skill has no recipes', r.startProduction({ skillId: 1, recipe: 111, count: 1 }), 'No such skill');
+  await expectError('unknown recipe rejected', r.startProduction({ skillId: 12, recipe: 999, count: 1 }), 'No such recipe');
+  await r.devGrantMaterials({ count: 1000 });
+  await expectError('a locked tier rejected', r.startProduction({ skillId: 12, recipe: 112, count: 1 }), 'Unlock the tier 2 zone');
+  await expectError('a tool upgrade needs its zone', r.startProduction({ skillId: 11, recipe: 1012, count: 1 }), 'Unlock the tier 2 zone');
+  await expectError('a tool upgrade is one at a time', r.startProduction({ skillId: 11, recipe: 1012, count: 2 }), 'one at a time');
+  await r.startProduction({ skillId: 12, recipe: 111, count: 3 });
+  await sleep(200);
+  let ch = charOf(a)!;
+  check('a queue starts and keeps the target', ch.activitySkill === 12 && ch.activityRecipe === 111 && ch.activityCountLeft === 3 && ch.targetEnemyId === 101);
+  await r.startProduction({ skillId: 11, recipe: 11, count: 2 }); // forge 2 T1 Rusted Swords
+  await sleep(200);
+  ch = charOf(a)!;
+  check('another queue replaces it', ch.activitySkill === 11 && ch.activityRecipe === 11 && ch.activityCountLeft === 2);
+  await r.stopSkill({});
+  await sleep(200);
+  check('stopping a queue goes back to the target', charOf(a)!.activitySkill === 0 && charOf(a)!.targetEnemyId === 101);
+
+  // Elixirs: drink one, kills use its charges.
+  await expectError('drinking with none in stock rejected', r.drinkElixir({ supplyId: 111 }), 'None in stock');
+  await r.devGrantSupplies({ count: 2 });
+  await r.drinkElixir({ supplyId: 111 });
+  await sleep(200);
+  ch = charOf(a)!;
+  const stock = () => Number([...a.conn.db.mySupplies.iter()].find(x => x.supplyId === 111)?.count ?? 0n);
+  check('drinking sets the elixir and takes one from stock', ch.elixirId === 111 && ch.elixirKillsLeft === 240 && stock() === 1, `${ch.elixirId} ${ch.elixirKillsLeft} ${stock()}`);
+  console.log('… waiting 8 s for kills with the elixir');
+  await sleep(8_000);
+  await r.settleNow({});
+  await sleep(300);
+  ch = charOf(a)!;
+  const log = [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
+  check('kills use its charges and are logged', log.kills > 0 && log.elixirId === 111 && log.elixirKills === log.kills && ch.elixirKillsLeft === 240 - log.kills,
+    `kills=${log.kills} elixirKills=${log.elixirKills} left=${ch.elixirKillsLeft}`);
+  await r.setElixirAutoRenew({ on: false });
+  await sleep(200);
+  check('auto-renew can be turned off', charOf(a)!.elixirAutoRenew === false);
+  await r.setElixirAutoRenew({ on: true });
 }
 
 // Equipment: slots, loadouts, auto-equip, lock and salvage.

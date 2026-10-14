@@ -7,7 +7,7 @@ import { Icon } from '../Icon';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
 import { ViewHeader } from '../shared';
 import { UNKNOWN, areaRevealed, areaSecret, enemyKnown, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
-import type { Snapshot } from '../snapshot';
+import { statsIn, type Snapshot } from '../snapshot';
 
 const levels = (es: EnemyDef[]) => {
   const lo = Math.min(...es.map(e => e.level));
@@ -179,8 +179,8 @@ function AreaPanel({ panelRef, s, z, a, known, here, unlocked, open, setOpen }: 
 }
 
 function Foe({ s, z, e, open, toggle }: { s: Snapshot; z: ZoneDef; e: EnemyDef; open: boolean; toggle: () => void }) {
-  const m = matchup(s.stats, e);
-  const active = !s.gathering && s.row.targetEnemyId === e.id;
+  const m = matchup(statsIn(s, z.tier), e);
+  const active = !s.skilling && s.row.targetEnemyId === e.id;
   const challenge = e.boss && !s.killedZones.has(z.id);
   const known = enemyKnown(s, e);
   const look = threat(m);

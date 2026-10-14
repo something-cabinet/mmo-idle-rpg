@@ -66,6 +66,10 @@ export const Character = __t.object("Character", {
   raidTokens: __t.u64(),
   activitySkill: __t.u8(),
   activityRecipe: __t.u16(),
+  activityCountLeft: __t.u32(),
+  elixirId: __t.u16(),
+  elixirKillsLeft: __t.u32(),
+  elixirAutoRenew: __t.bool(),
 });
 export type Character = __Infer<typeof Character>;
 
@@ -287,6 +291,9 @@ export type MySettleLog = __Infer<typeof MySettleLog>;
 export const MySkills = __t.object("MySkills", {});
 export type MySkills = __Infer<typeof MySkills>;
 
+export const MySupplies = __t.object("MySupplies", {});
+export type MySupplies = __Infer<typeof MySupplies>;
+
 export const MyTools = __t.object("MyTools", {});
 export type MyTools = __Infer<typeof MyTools>;
 
@@ -419,6 +426,14 @@ export const SettleLog = __t.object("SettleLog", {
   skillXp: __t.u64(),
   skillLevelFrom: __t.u8(),
   skillLevelTo: __t.u8(),
+  recipe: __t.u16(),
+  get used() {
+    return __t.array(MaterialCount);
+  },
+  elixirId: __t.u16(),
+  elixirKills: __t.u32(),
+  elixirsUsed: __t.u32(),
+  elixirEmpty: __t.bool(),
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 
@@ -442,6 +457,14 @@ export const StatValue = __t.object("StatValue", {
   value: __t.i64(),
 });
 export type StatValue = __Infer<typeof StatValue>;
+
+export const Supply = __t.object("Supply", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  supplyId: __t.u16(),
+  count: __t.u64(),
+});
+export type Supply = __Infer<typeof Supply>;
 
 export const Tool = __t.object("Tool", {
   id: __t.u64(),

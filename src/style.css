@@ -503,6 +503,22 @@ select:focus,
   color: var(--muted);
   transform: rotate(-90deg);
 }
+.queue-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.queue-count input {
+  width: 72px;
+  padding: 4px 8px;
+}
+.forge-pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 6px;
+}
 .skill-fill {
   height: 100%;
   background: var(--material);

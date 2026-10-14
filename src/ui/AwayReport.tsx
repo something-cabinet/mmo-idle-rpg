@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import type { Presence, SettleLog } from '../module_bindings/types';
 import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
 import { SKILLS_BY_ID } from '../../spacetimedb/src/data/skills';
+import { recipeOf } from '../../spacetimedb/src/data/recipes';
+import { SUPPLIES_BY_ID } from '../../spacetimedb/src/data/supplies';
 import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
@@ -13,27 +15,51 @@ import { foundName } from './discovery';
 import { encounterText } from './encounters';
 import { CardHead, Modal } from './shared';
 import type { Snapshot } from './snapshot';
+import { recipeLabel } from './lifeSkills';
 
 /** Shorter absences (a reload) don't get a report. */
 const MIN_AWAY_MICROS = 60_000_000n;
 let shownFor: bigint | undefined;
 
+/** A life skill's line: gathering actions, or what a production queue made, and the inputs it used. */
+function SkillLine({ l }: { l: SettleLog }) {
+  const skill = SKILLS_BY_ID.get(l.skillId);
+  const r = recipeOf(l.skillId, l.recipe);
+  return (
+    <>
+      <p>
+        <strong>{skill?.name}</strong> × {l.actions.toLocaleString()} {r ? recipeLabel(r) : 'actions'} · +{fmtBig(l.skillXp)} XP
+        {l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelFrom} → ${l.skillLevelTo}` : ''}
+      </p>
+      {l.used.length > 0 && <p className="muted">Used: {materialsText(l.used)}</p>}
+    </>
+  );
+}
+
 export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
-  const [log, setLog] = useState<SettleLog>();
+  // Newest first: a production queue that ran out logs its part, then combat logs the rest.
+  const [logs, setLogs] = useState<SettleLog[]>();
   useEffect(() => {
     if (shownFor === pres.since.microsSinceUnixEpoch) return;
     // The login settle runs in the same transaction that inserts our presence row.
-    const l = s.logs.find(l => l.offline && l.at.microsSinceUnixEpoch === pres.since.microsSinceUnixEpoch);
-    if (!l) return;
+    const ls = s.logs.filter(l => l.offline && l.at.microsSinceUnixEpoch === pres.since.microsSinceUnixEpoch);
+    if (!ls.length) return;
     shownFor = pres.since.microsSinceUnixEpoch;
-    if (l.elapsedMicros >= MIN_AWAY_MICROS) setLog(l);
+    if (ls.reduce((sum, l) => sum + l.elapsedMicros, 0n) >= MIN_AWAY_MICROS) setLogs(ls);
   }, [s, pres]);
-  if (!log) return null;
+  if (!logs) return null;
 
-  const close = () => setLog(undefined);
+  const close = () => setLogs(undefined);
+  const log = logs[0];
+  const queues = logs.slice(1).reverse();
+  const elapsed = logs.reduce((sum, l) => sum + l.elapsedMicros, 0n);
+  const xp = logs.reduce((sum, l) => sum + l.xp, 0n);
+  const levelFrom = logs[logs.length - 1].levelFrom;
   const enemy = ENEMIES_BY_ID.get(log.enemyId)?.enemy;
   const skill = SKILLS_BY_ID.get(log.skillId);
-  const kept = log.keptItemIds.map(id => s.items.get(id)).filter(it => it !== undefined);
+  const elixir = SUPPLIES_BY_ID.get(log.elixirId);
+  const discovered = logs.flatMap(l => l.discovered);
+  const kept = logs.flatMap(l => l.keptItemIds).map(id => s.items.get(id)).filter(it => it !== undefined);
   // Counts per rarity, highest first, so a big haul stays one line.
   const keptByRarity = [...RARITIES].reverse()
     .map(r => [r, kept.filter(it => it.rarity.tag === r).length] as const)
@@ -47,13 +73,12 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
   const salvaged = RARITIES.map((r, i) => [r, log.salvaged[i] ?? 0] as const).filter(([, n]) => n > 0);
   return (
     <Modal onClose={close}>
-      <CardHead title={`While you were away (${duration(log.elapsedMicros)})`} />
+      <CardHead title={`While you were away (${duration(elapsed)})`} />
       {log.capped && <p className="muted">Offline progress is capped at {duration(offlineCapMicros(s.stats))}.</p>}
+      {queues.map(q => <SkillLine key={String(q.id)} l={q} />)}
+      {queues.length > 0 && <p className="muted">The queue ran out, then:</p>}
       {skill ? (
-        <p>
-          <strong>{skill.name}</strong> × {log.actions.toLocaleString()} actions · +{fmtBig(log.skillXp)} XP
-          {log.skillLevelTo > log.skillLevelFrom ? ` · Level ${log.skillLevelFrom} → ${log.skillLevelTo}` : ''}
-        </p>
+        <SkillLine l={log} />
       ) : !enemy ? (
         <p>You were idle: no target. Pick an enemy on the Zones screen.</p>
       ) : log.kills > 0 ? (
@@ -66,8 +91,16 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
           <strong>{enemy.name}</strong> killed you. You spent the last {duration(log.idleMicros)} idle: plan your fights before you leave.
         </p>
       )}
-      {log.xp > 0n && (
-        <p>+{fmtBig(log.xp)} XP{log.levelTo > log.levelFrom ? ` · Level ${log.levelFrom} → ${log.levelTo}` : ''}</p>
+      {elixir && (
+        <p>
+          <Icon name="flask" className="c-material" />
+          {elixir.name} T{elixir.tier}: {log.elixirKills.toLocaleString()} kills
+          {log.elixirsUsed > 0 && `, ${log.elixirsUsed} more taken from stock`}
+          {log.elixirEmpty && <span className="c-bad"> · ran out: the slot is empty</span>}
+        </p>
+      )}
+      {xp > 0n && (
+        <p>+{fmtBig(xp)} XP{log.levelTo > levelFrom ? ` · Level ${levelFrom} → ${log.levelTo}` : ''}</p>
       )}
       {(log.gold > 0n || log.dust > 0n) && (
         <p>
@@ -84,8 +117,8 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
           </ul>
         </div>
       )}
-      {log.discovered.length > 0 && (
-        <p className="discovery"><Icon name="sparkles" />New discoveries: {log.discovered.map(foundName).join(', ')}</p>
+      {discovered.length > 0 && (
+        <p className="discovery"><Icon name="sparkles" />New discoveries: {discovered.map(foundName).join(', ')}</p>
       )}
       {log.materials.length > 0 && <p>Materials: <span className="c-material">{materialsText(log.materials)}</span></p>}
       {kept.length > 0 && (

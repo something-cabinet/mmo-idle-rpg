@@ -7,12 +7,18 @@ import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project 
 import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
-import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID } from './data/skills';
+import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, type ProductionSkillDef } from './data/skills';
+import { recipeOf, type MaterialCost } from './data/recipes';
+import { elixirBuffs } from './data/supplies';
 import { gatherCharacterXp, projectGathering, rollGathering } from './gather';
+import { forgeItem, productionCharacterXp, projectProduction } from './produce';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
 import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, salvageValue, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
 import { simulate } from './sim';
+
+/** Character columns for "no life skill": fighting the target (or idle). */
+export const NO_SKILL = { activitySkill: 0, activityRecipe: 0, activityCountLeft: 0 } as const;
 
 /** Settle log rows kept per character. */
 export const SETTLE_LOG_KEEP = 30;
@@ -87,7 +93,10 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const gear = gearOf(ctx, ch);
   const target = ENEMIES_BY_ID.get(ch.targetEnemyId);
   const progress = { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch };
-  const activity = { gear, enemy: target?.enemy };
+  // The elixir's charges run out (and auto-renew from stock) inside the settle.
+  const buffs = target && ch.elixirKillsLeft > 0 ? elixirBuffs(ch.elixirId, target.zone.tier) : undefined;
+  const elixir = buffs && { buffs, killsLeft: ch.elixirKillsLeft, stock: ch.elixirAutoRenew ? supplyCount(ctx, ch.id, ch.elixirId) : 0 };
+  const activity = { gear, enemy: target?.enemy, elixir };
   const now = ctx.timestamp.microsSinceUnixEpoch;
   const p = capMicros === undefined ? simulate(progress, activity, now, ch.id) : project(progress, activity, now, capMicros);
 
@@ -99,16 +108,19 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const discovered: Found[] = [];
   let materials: MaterialDrop[] = [];
   let salvageGold = 0n;
+  const buffedKills = p.elixir?.buffedKills ?? 0;
   if (target && p.kills > 0) {
     const filter = ctx.db.lootFilter.characterId.find(ch.id);
     const stats = combatStats(ch.level, gear);
+    // Fortune counts for the kills made with it: drops scale with (1 + item find) per kill.
+    const itemFind = (stats.itemFind * (p.kills - buffedKills) + combatStats(ch.level, gear, buffs).itemFind * buffedKills) / p.kills;
     // Seeded by (character, settle start), so the result is reproducible.
     drops = rollDrops(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch), {
       kills: p.kills,
       enemy: target.enemy,
       tier: target.zone.tier,
       rewardScale: rewardScale(target.zone, target.enemy),
-      itemFind: stats.itemFind,
+      itemFind,
       filter: {
         minRarity: filter?.minRarity.tag ?? 'Magic',
         keepAffixes: filter?.keepAffixes ?? [],
@@ -154,7 +166,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       kills: p.kills,
       zone: target.zone,
       enemy: target.enemy,
-      stats: combatStats(p.level, gear),
+      stats: combatStats(p.level, gear, p.elixir && p.elixir.killsLeft > 0 ? buffs : undefined),
     });
     let bagFree = rolls.some(r => r.item) ? ch.bagSize - bagCount(ctx, ch.id) : 0;
     for (const r of rolls) {
@@ -183,6 +195,10 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     }
   }
 
+  const renewed = p.elixir?.renewed ?? 0;
+  if (renewed > 0) takeSupply(ctx, ch.id, ch.elixirId, renewed);
+  const elixirEmpty = !!p.elixir && p.elixir.killsLeft <= 0;
+
   const offline = capMicros !== undefined;
   if (p.kills > 0 || offline || p.defeatedAt !== undefined) {
     const elapsed = ctx.timestamp.microsSinceUnixEpoch - ch.lastSettledAt.microsSinceUnixEpoch;
@@ -191,7 +207,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       offline,
       elapsedMicros: elapsed > 0n ? elapsed : 0n,
       capped: offline && elapsed > capMicros,
-      viable: !!target && matchup(combatStats(ch.level, gear), target.enemy).viable,
+      viable: !!target && matchup(combatStats(ch.level, gear, buffs), target.enemy).viable,
       kills: p.kills,
       levelTo: level,
       xp: xpGained,
@@ -205,6 +221,10 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       encounters,
       defeated: p.defeatedAt !== undefined,
       idleMicros: idle > 0n ? idle : 0n,
+      elixirId: elixir ? ch.elixirId : 0,
+      elixirKills: buffedKills,
+      elixirsUsed: renewed,
+      elixirEmpty,
     });
   }
 
@@ -217,6 +237,8 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     essence: 0n,
     lastSettledAt: new Timestamp(p.settledMicros),
     targetEnemyId: p.defeatedAt === undefined ? ch.targetEnemyId : 0,
+    elixirId: elixirEmpty ? 0 : ch.elixirId,
+    elixirKillsLeft: p.elixir ? Math.max(0, p.elixir.killsLeft) : ch.elixirKillsLeft,
   };
 }
 
@@ -228,6 +250,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
  */
 function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const def = SKILLS_BY_ID.get(ch.activitySkill);
+  if (def?.kind === 'Production') return settleProduction(ctx, ch, def, capMicros);
   const now = ctx.timestamp.microsSinceUnixEpoch;
   const start = ch.lastSettledAt.microsSinceUnixEpoch;
   const base = { ...ch, dust: ch.dust + ch.essence, essence: 0n };
@@ -263,6 +286,107 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     });
   }
   return { ...base, level, xp, lastSettledAt: new Timestamp(g.settledMicros) };
+}
+
+/**
+ * `settle` while the character works a production queue (produce.ts `projectProduction`):
+ * inputs are used up, items go to the bag, elixirs to the supply stock, a tool upgrade to
+ * the `tool` row. When the queue runs out (count, inputs or bag), the rest of the time
+ * settles as combat against the kept target, so an empty queue never wastes offline time.
+ */
+function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capMicros?: bigint): Character {
+  const start = ch.lastSettledAt.microsSinceUnixEpoch;
+  const backToCombat = (c: Character, cap?: bigint) => settle(ctx, { ...c, ...NO_SKILL }, cap);
+  const r = recipeOf(def.id, ch.activityRecipe);
+  if (!r) return backToCombat(ch, capMicros);
+  const row = skillRow(ctx, ch.id, def.id);
+  const held = materialCounts(ctx, ch.id);
+  const queue = { countLeft: ch.activityCountLeft, have: (id: number) => held.get(id) ?? 0, bagFree: ch.bagSize - bagCount(ctx, ch.id) };
+  const pr = projectProduction({ ...row, settledMicros: start }, r, queue, ch.id, ctx.timestamp.microsSinceUnixEpoch, capMicros);
+  takeMaterials(ctx, ch.id, pr.used);
+
+  const keptItemIds: bigint[] = [];
+  const discovered: Found[] = [];
+  const out = r.output;
+  if (out.kind === 'item') {
+    for (const m of pr.made) {
+      const it = forgeItem(seededRng(ch.id, m.at, FORGE_SALT), out.baseId, r.tier, m.level);
+      keptItemIds.push(ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id);
+      discovered.push(...discover(ctx, ch.id, r.tier, [{ baseId: out.baseId }]));
+    }
+  } else if (out.kind === 'supply') {
+    addSupply(ctx, ch.id, out.supplyId, pr.actions);
+  } else if (pr.actions > 0) {
+    const tool = [...ctx.db.tool.characterId.filter(ch.id)].find(t => t.skillId === out.skillId);
+    if (!tool) ctx.db.tool.insert({ id: 0n, characterId: ch.id, skillId: out.skillId, tier: r.tier });
+    else if (tool.tier < r.tier) ctx.db.tool.id.update({ ...tool, tier: r.tier });
+  }
+  ctx.db.skill.id.update({ ...row, level: pr.level, xp: pr.xp });
+  // Skilling also levels the character (no gold or drops).
+  const charXp = productionCharacterXp(pr.actions, r);
+  const { level, xp } = addXp(ch.level, ch.xp, charXp);
+
+  const offline = capMicros !== undefined;
+  if (pr.actions > 0 || offline) {
+    const elapsed = (pr.endedAt ?? ctx.timestamp.microsSinceUnixEpoch) - start;
+    logSettle(ctx, ch, {
+      offline,
+      elapsedMicros: elapsed > 0n ? elapsed : 0n,
+      capped: offline && pr.endedAt === undefined && elapsed > capMicros,
+      enemyId: 0,
+      skillId: def.id,
+      recipe: r.id,
+      actions: pr.actions,
+      levelTo: level,
+      xp: ch.level < MAX_LEVEL ? charXp : 0n,
+      skillXp: pr.xpGained,
+      skillLevelFrom: row.level,
+      skillLevelTo: pr.level,
+      used: pr.used,
+      keptItemIds,
+      discovered,
+    });
+  }
+  const next = { ...ch, dust: ch.dust + ch.essence, essence: 0n, level, xp, activityCountLeft: pr.countLeft, lastSettledAt: new Timestamp(pr.settledMicros) };
+  if (pr.endedAt === undefined) return next;
+  // The queue is done: the rest of the time (and of the offline cap) goes to combat.
+  return backToCombat(next, capMicros === undefined ? undefined : capMicros - (pr.endedAt - start));
+}
+
+/** Material ID → count the character holds. */
+export function materialCounts(ctx: Ctx, characterId: bigint): Map<number, number> {
+  return new Map([...ctx.db.material.characterId.filter(characterId)].map(m => [m.materialId, Number(m.count)]));
+}
+
+/** Takes `costs` from the character's materials (callers check there are enough). */
+export function takeMaterials(ctx: Ctx, characterId: bigint, costs: readonly MaterialCost[]) {
+  if (!costs.length) return;
+  const rows = [...ctx.db.material.characterId.filter(characterId)];
+  for (const c of costs) {
+    const row = rows.find(r => r.materialId === c.materialId);
+    if (!row || row.count < BigInt(c.count)) throw new SenderError('Not enough materials');
+    ctx.db.material.id.update({ ...row, count: row.count - BigInt(c.count) });
+  }
+}
+
+/** How many of supply `supplyId` the character has in stock. */
+export function supplyCount(ctx: Ctx, characterId: bigint, supplyId: number): number {
+  return Number([...ctx.db.supply.characterId.filter(characterId)].find(r => r.supplyId === supplyId)?.count ?? 0n);
+}
+
+/** Adds `n` of supply `supplyId` to the character's stock. */
+export function addSupply(ctx: Ctx, characterId: bigint, supplyId: number, n: number) {
+  if (n <= 0) return;
+  const row = [...ctx.db.supply.characterId.filter(characterId)].find(r => r.supplyId === supplyId);
+  if (row) ctx.db.supply.id.update({ ...row, count: row.count + BigInt(n) });
+  else ctx.db.supply.insert({ id: 0n, characterId, supplyId, count: BigInt(n) });
+}
+
+/** Takes `n` of supply `supplyId` from the character's stock (callers check there are enough). */
+export function takeSupply(ctx: Ctx, characterId: bigint, supplyId: number, n: number) {
+  const row = [...ctx.db.supply.characterId.filter(characterId)].find(r => r.supplyId === supplyId);
+  if (!row || row.count < BigInt(n)) throw new SenderError('None in stock');
+  ctx.db.supply.id.update({ ...row, count: row.count - BigInt(n) });
 }
 
 /** The character's row for skill `skillId` (made at level 1 if missing). */
@@ -312,6 +436,12 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     skillXp: 0n,
     skillLevelFrom: 0,
     skillLevelTo: 0,
+    recipe: 0,
+    used: [],
+    elixirId: 0,
+    elixirKills: 0,
+    elixirsUsed: 0,
+    elixirEmpty: false,
     ...row,
   });
   pruneSettleLog(ctx, ch.id);
@@ -423,6 +553,7 @@ const MATERIAL_SALT = 0x6d6174n; // "mat"
 const DISCOVER_SALT = 0x6469736376n; // "discv"
 const ENCOUNTER_SALT = 0x656e636fn; // "enco"
 const GATHER_SALT = 0x676174686572n; // "gather"
+const FORGE_SALT = 0x666f726765n; // "forge"
 
 /** `a` plus `b`, one entry per material. */
 function mergeMaterials(a: readonly MaterialDrop[], b: readonly MaterialDrop[]): MaterialDrop[] {
@@ -502,6 +633,7 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.material.characterId.delete(characterId);
   ctx.db.skill.characterId.delete(characterId);
   ctx.db.tool.characterId.delete(characterId);
+  ctx.db.supply.characterId.delete(characterId);
   ctx.db.settleLog.characterId.delete(characterId);
   ctx.db.discovery.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);

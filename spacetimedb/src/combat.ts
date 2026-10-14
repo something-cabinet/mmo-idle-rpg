@@ -10,6 +10,7 @@ import { Effect, effectAmount, type EffectCounts } from './data/legendary';
 import { CAPS, Stat, fromStored } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType } from './data/bases';
+import type { Buffs } from './data/supplies';
 
 export const MAX_LEVEL = 100;
 /** Offline progress cap before Seasoned, hours. */
@@ -93,8 +94,11 @@ export function effectDamageMult(effects: EffectCounts): number {
   return (effects.has(Effect.GlassCannon) ? 2 : 1) * (effects.has(Effect.Voidtouched) ? 0.75 : 1);
 }
 
-/** Final combat stats of a character at `level` wearing `gear`. */
-export function combatStats(level: number, gear: Gear): CombatStats {
+/**
+ * Final combat stats of a character at `level` wearing `gear`, with `buffs` (an active
+ * elixir, data/supplies.ts) as separate "more" multipliers after everything else.
+ */
+export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatStats {
   const sum = new Map<number, number>();
   const effects = new Map<number, number>();
   const add = (s: GearStat) => sum.set(s.stat, (sum.get(s.stat) ?? 0) + fromStored(s.value));
@@ -148,7 +152,7 @@ export function combatStats(level: number, gear: Gear): CombatStats {
       const base = w.damageType.tag === from ? fromStored(w.hit) : 0;
       // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
       // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
-      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult);
+      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * (buffs?.damage ?? 1));
     }
     const baseHeal = fromStored(w.heal);
     const heal = baseHeal > 0 ? Math.max(0, (baseHeal + flat(Stat.Heal)) * (1 + healPct)) : 0;
@@ -160,7 +164,7 @@ export function combatStats(level: number, gear: Gear): CombatStats {
       heal,
       healAll: w.healTarget?.tag === 'All',
       // Ambush: × 0.7 after the floor, so it always costs speed.
-      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1),
+      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (buffs?.attackSpeed ?? 1),
       critChance,
       // Frostbite: crits deal no extra damage (they chill instead, see `chill`).
       critMult: has(Effect.Frostbite) ? 1 : 1 + Math.min(1, critChance) * (critDmg - 1),
@@ -193,16 +197,19 @@ export function combatStats(level: number, gear: Gear): CombatStats {
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse),
     lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100, pct(Stat.LifestealPct))),
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
-    // At worst −100%: nothing found, never negative gold or XP.
-    itemFind: Math.max(-1, pct(Stat.ItemFindPct)),
-    goldFind: Math.max(-1, pct(Stat.GoldFindPct)),
-    xpGain: Math.max(-1, pct(Stat.XpGainPct)),
+    // At worst −100%: nothing found, never negative gold or XP. A buff multiplies the total.
+    itemFind: more(Math.max(-1, pct(Stat.ItemFindPct)), buffs?.itemFind),
+    goldFind: more(Math.max(-1, pct(Stat.GoldFindPct)), buffs?.gold),
+    xpGain: more(Math.max(-1, pct(Stat.XpGainPct)), buffs?.xp),
     walkTime: WALK_SECONDS * (1 - amount(Effect.SwiftHunter)),
     offlineHours: BASE_OFFLINE_HOURS + amount(Effect.Seasoned),
     chill: has(Effect.Frostbite) ? 0.5 * Math.min(1, sources[0]?.critChance ?? 0) : 0,
     effects,
   };
 }
+
+/** Bonus `x` (0.5 = +50%) times a "more" multiplier `mult`, as a bonus again. */
+const more = (x: number, mult = 1) => (1 + x) * mult - 1;
 
 /** Damage reduction from armor or resistance `def` (after penetration) at `level`. */
 export function mitigation(def: number, pen: number, level: number): number {

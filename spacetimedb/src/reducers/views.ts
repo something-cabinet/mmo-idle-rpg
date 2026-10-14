@@ -1,6 +1,6 @@
 // Per-player views over private tables: each client sees only its own rows.
 import { t } from 'spacetimedb/server';
-import { bossKill, character, discovery, enemyKill, friend, item, loadout, lootFilter, material, raidLog, settleLog, skill, spacetimedb, tool } from '../schema';
+import { bossKill, character, discovery, enemyKill, friend, item, loadout, lootFilter, material, raidLog, settleLog, skill, spacetimedb, supply, tool } from '../schema';
 
 export const my_items = spacetimedb.view({ name: 'my_items', public: true }, t.array(item.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
@@ -54,6 +54,11 @@ export const my_skills = spacetimedb.view({ name: 'my_skills', public: true }, t
 export const my_tools = spacetimedb.view({ name: 'my_tools', public: true }, t.array(tool.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
   return ch ? [...ctx.db.tool.characterId.filter(ch.id)] : [];
+});
+
+export const my_supplies = spacetimedb.view({ name: 'my_supplies', public: true }, t.array(supply.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.supply.characterId.filter(ch.id)] : [];
 });
 
 export const my_friends = spacetimedb.view({ name: 'my_friends', public: true }, t.array(friend.rowType), ctx => {

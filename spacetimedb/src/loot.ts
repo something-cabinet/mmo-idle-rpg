@@ -128,10 +128,13 @@ function pickAffixStat(rng: Rng): StatDef {
   return AFFIX_POOL.find(d => (r -= d.weight ?? 100) < 0) ?? AFFIX_POOL[AFFIX_POOL.length - 1];
 }
 
-/** A regular affix on a tier-`tier` item: weighted free pool, affix tier 1..N, value uniform in that tier's range (then rounded). */
-export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
+/**
+ * A regular affix on a tier-`tier` item: weighted free pool, affix tier `minTier`..N (1..N
+ * unless forged as a masterwork), value uniform in that tier's range (then rounded).
+ */
+export function rollAffix(rng: Rng, tier: number, minTier = 1): NewItem['affixes'][number] {
   const def = pickAffixStat(rng);
-  const k = 1 + Math.floor(rng() * tier);
+  const k = minTier + Math.floor(rng() * (tier - minTier + 1));
   const [lo, hi] = affixRange(def.id, k);
   const value = lo + (hi - lo) * rng();
   return { stat: def.id, tier: k, value: toStored(roundStat(def.id, value)) };
@@ -146,8 +149,8 @@ export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullab
   return { effect: def.id, stat: def.bonusStat, value: toStored(roundStat(def.bonusStat, value)) };
 }
 
-/** An item of `baseId` at `tier`: base values computed and stored literally, affixes rolled. */
-export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityName): NewItem {
+/** An item of `baseId` at `tier`: base values computed and stored literally, affixes rolled (of affix tier `minAffixTier` or higher). */
+export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityName, minAffixTier = 1): NewItem {
   if (rarity === 'Anomaly') return makeAnomaly(rng, baseId, tier);
   const b = base(baseId);
   const w = b.weapon && weaponValues(b.weapon, tier);
@@ -156,7 +159,7 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
     tier,
     rarity: { tag: rarity },
     implicits: b.implicits.map(i => ({ stat: i.stat, value: toStored(implicitValue(i, tier)) })),
-    affixes: Array.from({ length: REGULAR_AFFIXES[rarity] }, () => rollAffix(rng, tier)),
+    affixes: Array.from({ length: REGULAR_AFFIXES[rarity] }, () => rollAffix(rng, tier, minAffixTier)),
     legendary: rarity === 'Legendary' ? rollLegendary(rng, baseId, tier) : undefined,
     uniqueId: undefined,
     effects: [],

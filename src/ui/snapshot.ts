@@ -5,8 +5,11 @@ import type { Character, Item, Loadout, LootFilter, SettleLog } from '../module_
 import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from '../../spacetimedb/src/combat';
 import { ENEMIES_BY_ID, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { simulate, type Simulated } from '../../spacetimedb/src/sim';
-import { SKILLS, SKILLS_BY_ID, type SkillDef } from '../../spacetimedb/src/data/skills';
+import { SKILLS, SKILLS_BY_ID, type GatheringSkillDef, type ProductionSkillDef, type SkillDef } from '../../spacetimedb/src/data/skills';
+import { recipeOf, type Recipe } from '../../spacetimedb/src/data/recipes';
+import { SUPPLIES_BY_ID, elixirBuffs, type Buffs, type SupplyDef } from '../../spacetimedb/src/data/supplies';
 import { gatherCharacterXp, projectGathering, type Gathered } from '../../spacetimedb/src/gather';
+import { productionCharacterXp, projectProduction, type Produced } from '../../spacetimedb/src/produce';
 import { addXp } from '../../spacetimedb/src/game';
 import { foundKey } from './discovery';
 
@@ -46,8 +49,11 @@ export interface Snapshot {
   defeated: boolean;
   /** The projection shows a boss's first kill, which the server grants on its next settle. */
   firstBossKill: boolean;
+  /** From level and gear, without the elixir (it depends on the zone: `statsIn`). */
   stats: CombatStats;
-  /** Against the target; undefined without one. */
+  /** The active elixir's buffs in the target's zone; undefined without either. */
+  buffs: Buffs | undefined;
+  /** Against the target, with the elixir; undefined without a target. */
   fight: Matchup | undefined;
   /** The latest live fight (sim.ts `simulate`), which the fight scene animates; undefined when idle. */
   current: Simulated['current'];
@@ -55,9 +61,24 @@ export interface Snapshot {
   skills: Map<number, { level: number; xp: bigint }>;
   /** Gathering skill ID → tool tier. */
   tools: Map<number, number>;
-  /** The gathering in progress (then `target` is undefined); its projection holds the actions since the last settle. */
-  gathering: { skill: SkillDef; tier: number; toolTier: number; projected: Gathered } | undefined;
+  /** The life skill being worked (then `target` is undefined): one of `gathering` and `production`. */
+  skilling: SkillDef | undefined;
+  /** The gathering in progress; its projection holds the actions since the last settle. */
+  gathering: { skill: GatheringSkillDef; tier: number; toolTier: number; projected: Gathered } | undefined;
+  /**
+   * The production queue in progress; its projection holds the actions since the last
+   * settle (`projected.endedAt`: done, the server goes back to combat on its next settle).
+   */
+  production: { skill: ProductionSkillDef; recipe: Recipe; projected: Produced } | undefined;
+  /** Supply ID → count in stock (after auto-renew so far). */
+  supplies: Map<number, number>;
+  /** The active elixir, projected to now; undefined when the slot is empty. */
+  elixir: { supply: SupplyDef; killsLeft: number } | undefined;
 }
+
+/** Combat stats in a zone of `zoneTier`, with the active elixir (full effect up to its tier, half above). */
+export const statsIn = (s: Snapshot, zoneTier: number): CombatStats =>
+  s.elixir ? combatStats(s.level, s.gear, elixirBuffs(s.elixir.supply.id, zoneTier)) : s.stats;
 
 export const gearFor = (slots: readonly bigint[], items: Map<bigint, Item>): (Item | undefined)[] => slots.map(id => items.get(id));
 
@@ -69,14 +90,39 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const skilling = SKILLS_BY_ID.get(row.activitySkill);
   // The target is kept while skilling, but not fought.
   const fighting = skilling ? undefined : ENEMIES_BY_ID.get(row.targetEnemyId);
+  const supplies = new Map([...conn.db.mySupplies.iter()].map(r => [r.supplyId, Number(r.count)]));
+  const elixirSupply = row.elixirKillsLeft > 0 ? SUPPLIES_BY_ID.get(row.elixirId) : undefined;
+  const buffsNow = fighting && elixirSupply && elixirBuffs(elixirSupply.id, fighting.zone.tier);
+  const elixirRun = buffsNow && { buffs: buffsNow, killsLeft: row.elixirKillsLeft, stock: row.elixirAutoRenew ? supplies.get(row.elixirId) ?? 0 : 0 };
+  const settledMicros = row.lastSettledAt.microsSinceUnixEpoch;
   // We're online: progress is the live fights the server will settle (sim.ts), not the offline formulas.
-  let p = simulate({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy: fighting?.enemy }, nowMicros, row.id);
+  let p = simulate({ ...row, settledMicros }, { gear, enemy: fighting?.enemy, elixir: elixirRun }, nowMicros, row.id);
   const defeated = p.defeatedAt !== undefined;
+  // The elixir after the kills so far: auto-renew takes from stock, an empty slot stays empty.
+  let elixir: Snapshot['elixir'] = elixirSupply && { supply: elixirSupply, killsLeft: row.elixirKillsLeft };
+  if (elixirSupply && p.elixir) {
+    supplies.set(elixirSupply.id, (supplies.get(elixirSupply.id) ?? 0) - p.elixir.renewed);
+    elixir = p.elixir.killsLeft > 0 ? { supply: elixirSupply, killsLeft: p.elixir.killsLeft } : undefined;
+  }
   const skills = new Map<number, { level: number; xp: bigint }>(SKILLS.map(sk => [sk.id, { level: 1, xp: 0n }]));
   for (const r of conn.db.mySkills.iter()) skills.set(r.skillId, { level: r.level, xp: r.xp });
   const tools = new Map([...conn.db.myTools.iter()].map(r => [r.skillId, r.tier]));
+  const materials = new Map([...conn.db.myMaterials.iter()].map(m => [m.materialId, m.count]));
+  const inLoadouts = new Map<bigint, number[]>();
+  for (const lo of loadouts) for (const id of lo.slots) if (id !== 0n) inLoadouts.set(id, [...(inLoadouts.get(id) ?? []), lo.index]);
+  const bag = [...items.values()].filter(i => !inLoadouts.has(i.id));
   let gathering: Snapshot['gathering'];
-  if (skilling) {
+  let production: Snapshot['production'];
+  const recipe = skilling?.kind === 'Production' ? recipeOf(skilling.id, row.activityRecipe) : undefined;
+  if (skilling?.kind === 'Production' && recipe) {
+    const at = skills.get(skilling.id)!;
+    const queue = { countLeft: row.activityCountLeft, have: (id: number) => Number(materials.get(id) ?? 0n), bagFree: row.bagSize - bag.length };
+    const projected = projectProduction({ ...at, settledMicros }, recipe, queue, row.id, nowMicros);
+    skills.set(skilling.id, { level: projected.level, xp: projected.xp });
+    production = { skill: skilling, recipe, projected };
+    const gained = productionCharacterXp(projected.actions, recipe);
+    p = { ...p, ...addXp(p.level, p.xp, gained), xpGained: p.level >= MAX_LEVEL ? 0n : gained };
+  } else if (skilling?.kind === 'Gathering') {
     const at = skills.get(skilling.id)!;
     const toolTier = tools.get(skilling.id) ?? 1;
     const tier = row.activityRecipe;
@@ -88,10 +134,8 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     p = { ...p, ...addXp(p.level, p.xp, gained), xpGained: p.level >= MAX_LEVEL ? 0n : gained };
   }
   const target = defeated ? undefined : fighting;
-
-  const inLoadouts = new Map<bigint, number[]>();
-  for (const lo of loadouts) for (const id of lo.slots) if (id !== 0n) inLoadouts.set(id, [...(inLoadouts.get(id) ?? []), lo.index]);
   const stats = combatStats(p.level, gear);
+  const buffs = target && elixir && elixirBuffs(elixir.supply.id, target.zone.tier);
   const killedZones = new Set([...conn.db.myBossKills.iter()].map(k => k.zoneId));
   const kills = new Map([...conn.db.myEnemyKills.iter()].map(k => [k.enemyId, Number(k.kills)]));
   if (target && p.kills > 0) kills.set(target.enemy.id, (kills.get(target.enemy.id) ?? 0) + p.kills);
@@ -104,12 +148,12 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     gold: p.gold,
     pending: { kills: p.kills, xp: p.xpGained, gold: p.gold - row.gold },
     items,
-    materials: new Map([...conn.db.myMaterials.iter()].map(m => [m.materialId, m.count])),
+    materials,
     loadouts,
     active,
     gear,
     inLoadouts,
-    bag: [...items.values()].filter(i => !inLoadouts.has(i.id)),
+    bag,
     filter: [...conn.db.myLootFilter.iter()][0],
     killedZones,
     kills,
@@ -119,10 +163,15 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     defeated,
     firstBossKill: !!target?.enemy.boss && p.kills > 0 && !killedZones.has(target.zone.id),
     stats,
-    fight: target && matchup(stats, target.enemy),
+    buffs,
+    fight: target && matchup(buffs ? combatStats(p.level, gear, buffs) : stats, target.enemy),
     current: p.current,
     skills,
     tools,
+    skilling,
     gathering,
+    production,
+    supplies,
+    elixir,
   };
 }

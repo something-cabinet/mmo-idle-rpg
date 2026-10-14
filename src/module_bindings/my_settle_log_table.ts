@@ -51,4 +51,12 @@ export default __t.row({
   skillXp: __t.u64().name("skill_xp"),
   skillLevelFrom: __t.u8().name("skill_level_from"),
   skillLevelTo: __t.u8().name("skill_level_to"),
+  recipe: __t.u16(),
+  get used() {
+    return __t.array(MaterialCount);
+  },
+  elixirId: __t.u16().name("elixir_id"),
+  elixirKills: __t.u32().name("elixir_kills"),
+  elixirsUsed: __t.u32().name("elixirs_used"),
+  elixirEmpty: __t.bool().name("elixir_empty"),
 });

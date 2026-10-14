@@ -10,7 +10,7 @@ import {
   gatherCharacterXpPerAction,
   gatherXpPerAction,
   skillXpToNext,
-  type SkillDef,
+  type GatheringSkillDef,
 } from './data/skills';
 import { materialOf } from './data/materials';
 import { samplePoisson, type MaterialDrop, type Rng } from './loot';
@@ -85,7 +85,7 @@ export function projectGathering(p: SkillProgress, g: { tier: number; toolTier: 
 export const gatherCharacterXp = (actions: number, tier: number): bigint => BigInt(Math.floor(actions * gatherCharacterXpPerAction(tier)));
 
 /** The materials `g`'s actions of `skill` at `tier` yield: one each, plus double yields and Mining's Gems (Poisson draws). */
-export function rollGathering(rng: Rng, skill: SkillDef, tier: number, g: Pick<Gathered, 'actions' | 'doubleMean'>): MaterialDrop[] {
+export function rollGathering(rng: Rng, skill: GatheringSkillDef, tier: number, g: Pick<Gathered, 'actions' | 'doubleMean'>): MaterialDrop[] {
   if (g.actions <= 0) return [];
   const out: MaterialDrop[] = [{ materialId: materialOf(tier, skill.makes).id, count: g.actions + samplePoisson(rng, g.doubleMean) }];
   if (skill.id === SkillId.Mining) {

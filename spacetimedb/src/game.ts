@@ -3,6 +3,7 @@
 
 import { BASE_OFFLINE_HOURS, MAX_LEVEL, combatStats, matchup, type CombatStats, type Gear } from './combat';
 import type { EnemyDef } from './data/zones';
+import { ELIXIR_KILLS, type Buffs } from './data/supplies';
 
 /** Offline progress is capped so a player can't come back to infinite loot. */
 export const MAX_OFFLINE_MICROS = BigInt(BASE_OFFLINE_HOURS) * 60n * 60n * 1_000_000n;
@@ -68,12 +69,65 @@ export interface Settled extends Progress {
    * and the caller must clear the target. Undefined if still alive.
    */
   defeatedAt?: bigint;
+  /** The elixir after this time; set when the activity had one. */
+  elixir?: ElixirLeft;
 }
 
-/** What the character is doing: fighting `enemy` with `gear` (undefined = idle). */
+/**
+ * An active elixir (life-skills.md, "Buff rules"): its buffs in the target's zone, the
+ * kills it has left, and how many more of it auto-renew can take from stock.
+ */
+export interface ElixirRun {
+  buffs: Buffs;
+  killsLeft: number;
+  stock: number;
+}
+
+export interface ElixirLeft {
+  killsLeft: number;
+  /** Elixirs taken from stock by auto-renew. */
+  renewed: number;
+  /** Kills made with the elixir active. */
+  buffedKills: number;
+}
+
+/** What the character is doing: fighting `enemy` with `gear` (undefined = idle), with an elixir or not. */
 export interface Activity {
   gear: Gear;
   enemy: EnemyDef | undefined;
+  elixir?: ElixirRun;
+}
+
+/** Tracks an elixir's charges through a settle: one per kill, renewed from stock when spent. */
+export class ElixirTracker {
+  killsLeft: number;
+  stock: number;
+  renewed = 0;
+  buffedKills = 0;
+  private run: ElixirRun | undefined;
+  constructor(run: ElixirRun | undefined) {
+    this.run = run;
+    this.killsLeft = run?.killsLeft ?? 0;
+    this.stock = run?.stock ?? 0;
+  }
+  /** The buffs now, or undefined once spent. */
+  get buffs(): Buffs | undefined {
+    return this.killsLeft > 0 ? this.run?.buffs : undefined;
+  }
+  /** Uses `kills` charges (at most `killsLeft`). */
+  use(kills: number) {
+    if (!this.buffs) return;
+    this.buffedKills += kills;
+    this.killsLeft -= kills;
+    if (this.killsLeft <= 0 && this.stock > 0) {
+      this.stock -= 1;
+      this.renewed += 1;
+      this.killsLeft = ELIXIR_KILLS;
+    }
+  }
+  get left(): ElixirLeft | undefined {
+    return this.run && { killsLeft: this.killsLeft, renewed: this.renewed, buffedKills: this.buffedKills };
+  }
 }
 
 /**
@@ -89,10 +143,14 @@ export interface Activity {
  * A losing fight (not viable) kills the character `timeToDie` after it started
  * (`defeatedAt`); until then nothing is settled, so the fight's clock keeps running
  * across settles. If neither side can ever win, time passes with no effect.
+ *
+ * An elixir's charges cap kills like a level-up does: the matchup is recomputed when it
+ * runs out (renewed from stock, or none).
  */
 export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?: bigint): Settled {
   let elapsed = nowMicros - p.settledMicros;
-  if (elapsed <= 0n) return { ...p, kills: 0, xpGained: 0n };
+  const elixir = new ElixirTracker(a.elixir);
+  if (elapsed <= 0n) return { ...p, kills: 0, xpGained: 0n, elixir: elixir.left };
   const start = p.settledMicros;
   const capped = capMicros !== undefined && elapsed > capMicros;
   if (capped) elapsed = capMicros!;
@@ -103,7 +161,8 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
   let defeatedAt: bigint | undefined;
   let left = elapsed;
   while (left > 0n) {
-    const m = a.enemy ? matchup(combatStats(level, a.gear), a.enemy) : undefined;
+    const buffs = elixir.buffs;
+    const m = a.enemy ? matchup(combatStats(level, a.gear, buffs), a.enemy) : undefined;
     if (!m || (!m.viable && !Number.isFinite(m.timeToDie))) {
       left = 0n; // idle, or a stalemate
       break;
@@ -126,6 +185,9 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
     if (!maxed && m.xpPerKill > 0) {
       kills = Math.min(kills, Math.ceil(Number(xpToNext(level) - xp) / m.xpPerKill));
     }
+    // And at the elixir's last charge: the buffs change there.
+    if (buffs) kills = Math.min(kills, elixir.killsLeft);
+    elixir.use(kills);
     total += kills;
     if (!maxed) {
       const gained = BigInt(Math.floor(kills * m.xpPerKill));
@@ -144,5 +206,5 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
   }
 
   const settledMicros = capped ? nowMicros : start + elapsed - left;
-  return { level, xp, gold, settledMicros, kills: total, xpGained, defeatedAt };
+  return { level, xp, gold, settledMicros, kills: total, xpGained, defeatedAt, elixir: elixir.left };
 }

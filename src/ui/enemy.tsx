@@ -10,7 +10,7 @@ import { fmt, pct } from './format';
 import { Icon } from './Icon';
 import { itemIconName, materialIconName, materialName, rarityCls } from './items';
 import { StatRows } from './shared';
-import type { Snapshot } from './snapshot';
+import { statsIn, type Snapshot } from './snapshot';
 import { UNKNOWN, baseFound, uniqueFound } from './discovery';
 
 export const DmgTag = ({ magic }: { magic: boolean }) => (
@@ -86,7 +86,8 @@ function EnemyStats({ e, m }: { e: EnemyDef; m: Matchup }) {
 
 /** An enemy's rewards and drop chances for the player in `s`. */
 function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m: Matchup }) {
-  const scale = rewardScale(z, e) * (1 + s.stats.itemFind);
+  const itemFind = statsIn(s, z.tier).itemFind;
+  const scale = rewardScale(z, e) * (1 + itemFind);
   // Uniques drop from any enemy (every unique of the zone's tier and below, or the enemy's own); with none yet, their chance rolls Legendary.
   const uniques = hasUniques(z.tier, e.id);
   const pool = uniquePool(z.tier, e.id).map(x => x.u);
@@ -156,7 +157,7 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
           {rarities.map(({ r, mean }) => (
             <span key={r} className={`c-${rarityCls(r)}`}>{r} {chanceText(mean / anyItem)}</span>
           ))}
-          {s.stats.itemFind > 0 && <span className="c-ok">+{pct(s.stats.itemFind)} item find</span>}
+          {itemFind > 0 && <span className="c-ok">+{pct(itemFind)} item find</span>}
         </div>
       </div>
     </>

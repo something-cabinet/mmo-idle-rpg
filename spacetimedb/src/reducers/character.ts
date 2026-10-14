@@ -8,6 +8,7 @@ import {
   ensureCharacterRows,
   enterWorld,
   grantStarterKit,
+  NO_SKILL,
   requireAccount,
   requireActive,
   settle,
@@ -45,8 +46,10 @@ export const createCharacter = spacetimedb.reducer({ name: t.string(), starterWe
     activeLoadout: 0,
     zoneId: STARTING_ZONE,
     targetEnemyId: STARTING_TARGET,
-    activitySkill: 0,
-    activityRecipe: 0,
+    ...NO_SKILL,
+    elixirId: 0,
+    elixirKillsLeft: 0,
+    elixirAutoRenew: true,
   });
   ensureCharacterRows(ctx, ch.id);
   grantStarterKit(ctx, ch.id, starterWeapon);
@@ -75,13 +78,13 @@ export const setTarget = spacetimedb.reducer({ enemyId: t.u16() }, (ctx, { enemy
   // Settle first, so kills up to now count toward finding a secret area.
   const settled = settle(ctx, ch);
   if (!areaFound(ctx, ch.id, zone, enemy.id)) throw new SenderError('No such enemy');
-  ctx.db.character.id.update({ ...settled, zoneId: zone.id, targetEnemyId: enemy.id, activitySkill: 0, activityRecipe: 0 });
+  ctx.db.character.id.update({ ...settled, zoneId: zone.id, targetEnemyId: enemy.id, ...NO_SKILL });
 });
 
 /** Stops fighting (or a life skill): settles, then goes idle (no target, no gains). */
 export const flee = spacetimedb.reducer(ctx => {
   const { ch } = requireActive(ctx);
-  ctx.db.character.id.update({ ...settle(ctx, ch), targetEnemyId: 0, activitySkill: 0, activityRecipe: 0 });
+  ctx.db.character.id.update({ ...settle(ctx, ch), targetEnemyId: 0, ...NO_SKILL });
 });
 
 /**

@@ -40,6 +40,9 @@ Phase 1 (gathering, Smithing, Alchemy, elixirs) is built. Left:
   matchups already include the active elixir; there's no side-by-side yet.
 - **Away report: when the elixir slot ran empty**, not only that it did.
 - **Balance pass** on recipe costs, times and the elixir numbers once there's play data.
+- **Smithing: tempering and smelting** (designed, not built): `item.temper`, the `scrap`
+  table, a Scrap option in the loot filter and forge keep rule; Ore (kind 9) from Mining
+  in place of Metal, and the Ore → Metal smelt recipe.
 - **Phase 2:** Enchanting (Essences: forced-stat rerolls), Construction and the Hideout
   (stations, Bedroom offline hours), milestone combat bonuses at 25/50/75/99, total skill
   level on inspect and the friends list, the level-99 title.

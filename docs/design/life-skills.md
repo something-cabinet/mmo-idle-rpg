@@ -33,11 +33,11 @@ pushing a target or boss into viability.
 
 | ID | Skill | Type | Makes | Inputs |
 |-|-|-|-|-|
-| 1 | Mining | Gathering | Metal, chance of Gem | — |
+| 1 | Mining | Gathering | Ore, chance of Gem | — |
 | 2 | Woodcutting | Gathering | Wood | — |
 | 3 | Foraging | Gathering | Reagent | — |
 | 4 | Fishing | Gathering | Fish (new material kind) | — |
-| 11 | Smithing | Production | Gear bases of your choice, tool upgrades | Metal, Wood, Hide, Cloth, Gem |
+| 11 | Smithing | Production | Gear bases of your choice, tool upgrades, tempering, smelting | Ore, Metal, Wood, Hide, Cloth, Gem, scrap |
 | 12 | Alchemy | Production | Elixirs | Reagent, Core |
 | 13 | Cooking | Production | Meals | Fish, Reagent |
 | 14 | Enchanting | Production | Essences | Core, Gem, Dust |
@@ -48,8 +48,11 @@ pushing a target or boss into viability.
   into Tailoring and Leatherworking later.
 - **Hide, Cloth and Core stay combat-only**, so the choice of target still matters for
   crafters and the two activities feed each other.
-- **Fish** is material kind 8 (8th in `MATERIAL_KINDS`, IDs 18, 28, 38):
-  T1 Pond Perch, T2 Bog Eel, T3 Icefin Trout.
+- **Fish** is material kind 8 (IDs 801, 802, 803; material IDs are `kind × 100 + tier`,
+  data/materials.ts): T1 Pond Perch, T2 Bog Eel, T3 Icefin Trout.
+- **Ore** is material kind 9 (IDs 901, 902, 903 …): T1 Copper Ore, T2 Bog Iron Ore, T3
+  Dwarven Steel Ore. Only Mining gives it, and only Smithing uses it (smelted into Metal,
+  below). Combat still drops Metal (bars) directly.
 
 ## Levels and gating
 
@@ -98,6 +101,7 @@ Reaching 99 gives a title.
   combat is spread out.
 - Mining also rolls **5% per action for a Gem** (~15 per hour, close to the ~12 per hour
   from gem-dropping enemies).
+- Mining gives **only Ore**, never Metal. Ore has to be smelted (Smithing) before use.
 - Counts go into the existing `material` counters.
 
 ## Tools
@@ -196,6 +200,103 @@ target**, so an empty queue never wastes offline time.
   and gold like filtered drops and take no bag slot, so a big queue can fish for one roll.
   No rule keeps everything.
 
+### Smithing: temper an item
+
+Forging alone gives Smithing nothing useful to do once the player has the bases they
+want. Tempering is the steady goal: it makes gear the player already owns better.
+
+- **Each temper level adds +2% to the item's base stats and implicits** (weapon hit,
+  armor, evasion rating, resistance, the base's trait). Affixes, legendary affixes and
+  unique effects are not changed.
+- The bonus is a multiplier on the base part, `× (1 + 0.02 × temper)`, applied when stats
+  are computed and rounded once like any other stat (attributes.md). The item stores only
+  its `temper` level (0–10), so the original values stay intact.
+- **10 temper levels. The max depends on Smithing level:** +1 per 10 levels (+1 at 10 …
+  +9 at 90) and +10 at 99 (+20%). Tempering a tier-T item also needs the tier rule
+  (level `10·(T−1) + 1`).
+- **Each step is one production action** (a queue of one, like tool upgrades) on a bag or
+  equipped item. Going from `k−1` to `k` costs:
+
+| | Cost for step k on a tier-T item |
+|-|-|
+| Main material of the base family (table above), tier T | `10 × k` |
+| Gold | `0.05 × k` hours of farming (`craftCost`) |
+| Time | `3 × k` min |
+
+- Full +0 → +10 on one item: 550 material, ~2.75 h of farming gold, 2.75 h of Smithing.
+  Ten slots per tier is ~27 h of Smithing, which is the long-term XP source. Early
+  steps are cheap, so every item is worth a few levels; the last ones are the goal.
+- The item is locked while it is being tempered (it can't be salvaged, traded or used
+  as a crafting input). It stays equipped and counts at its old temper until the action
+  ends.
+- The name shows the level (`+3 Iron Longsword`) and the tooltip marks the tempered
+  stats. Salvaging a tempered item gives nothing extra: the temper is lost.
+- Balance note: +20% weapon hit is close to +20% attack DPS, like a permanent Wrath
+  elixir. If it turns out too strong, lower the per-level value or the cap, not the
+  cost.
+
+### Smithing: smelting
+
+Smelting is Smithing's steady XP recipe: nothing it makes is thrown away. It has two
+inputs, Ore from Mining and scrap from combat.
+
+#### Ore into bars
+
+- **1 Ore → 1 Metal of the same tier, 12 s per action** (300 per hour at base speed,
+  the same pace as Mining). Tier T needs Smithing level `10·(T−1) + 1`, like any recipe.
+- Normal skill XP for tier T, and as much character XP. The usual perks apply (speed
+  per level, keep inputs from level 50).
+- Mining and Smithing level together: an hour of Mining feeds an hour of smelting. 300
+  Metal from Ore takes 2 h in total (Mining, then smelting): 150 per hour, still about
+  twice combat's ~70, and the second hour is Smithing XP, not waste.
+- Forging stays the way to pick a base; smelting is the cheap XP. A player leveling
+  Smithing mines, smelts, then spends the bars on tools, forging and tempering.
+
+#### Scrap into materials
+
+Scrap turns unwanted drops into materials and Smithing XP instead of Dust and gold.
+
+- **Scrap instead of salvage.** The loot filter (and the forge keep rule) gets a choice
+  for items it rejects: **Salvage** (Dust and gold, as now) or **Scrap**. Scrapped items
+  take no bag slot; they go into scrap counters and **give no Dust or gold**. Bag items
+  can be scrapped by hand too.
+- An item's scrap kind is its base family's main material (table above), except rings
+  and amulets, which give Metal (Gems stay scarce).
+- **Smelting scrap** is a production recipe per (kind, tier): 1 scrap → materials of that kind
+  and tier, **30 s** per action, with the normal skill XP for tier T.
+
+| Item rarity | Materials per smelt |
+|-|-|
+| Common | 2 |
+| Magic | 3 |
+| Rare | 5 |
+| Epic | 15 |
+| Legendary | 40 |
+
+- Rarity is kept in the scrap counter (kind, tier, rarity), so higher-rarity scrap
+  smelts first.
+- At 2–3 per 30 s, scrap smelting yields about what gathering does (300 per hour), but
+  across every kind, Hide and Cloth included. Those still come only from combat drops,
+  so the "Hide, Cloth and Core stay combat-only" rule holds.
+- Supply: an 8 h session drops ~218 items and a keep-Rare+ filter rejects ~190 of them
+  (zones.md), which is ~1.6 h of smelting. Smelting can't replace gathering or
+  outpace combat.
+- Trade-off: the player gives up Dust and gold (the crafting currencies) for materials
+  and Smithing XP. Players saving for rerolls keep salvaging; players leveling Smithing
+  or short on Hide or Cloth scrap.
+
+### Smithing: level rewards
+
+Smithing level improves the work in five ways:
+
+| Level effect | What it does |
+|-|-|
+| Speed | +1% action speed per level above the recipe's requirement, cap +20% |
+| Forge rarity | 20% Magic + 0.5% per level above the requirement, 2% Rare |
+| Masterwork | A forged item's affixes roll tier `1 + floor((level − requirement) / 20)` or higher (capped at the item tier), so high-level forges never roll the weakest affix tiers |
+| Keep inputs | 5% from level 50, 10% at 99: an action uses no inputs (production's version of double yield) |
+| Temper cap | +1 per 10 levels, +10 at 99 (above) |
+
 ### Enchanting: Essences
 
 - **Essence of <stat>**, tier T: 2 Core + 1 Gem of tier T + Dust worth 0.25 h of
@@ -260,14 +361,16 @@ All of this stays in closed form (README pillar 1):
 
 | Where | What |
 |-|-|
+| `item` column | `temper` (0–10) |
+| `scrap` table | (characterId, kind, tier, rarity, count): items scrapped for smelting |
 | `character` columns | `activitySkill` (0 = combat), `activityRecipe` (gathering: the tier; production: the recipe ID), `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `elixirAutoRenew`; later `mealId`, `mealKillsLeft`, `mealAutoRenew` |
 | `skill` table | (characterId, skillId, level, xp) |
 | `tool` table | (characterId, skillId, tier) |
 | `station` table | (characterId, stationId, level) (phase 2) |
 | `supply` table | (characterId, supplyId, count): elixirs; later meals, essences, parts |
-| `material` | Fish is new material kind 8 |
+| `material` | Fish is new material kind 8, Ore kind 9 |
 | `data/skills.ts` | Skills, levels, speeds, permanent skill IDs |
-| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, tool = 1000 + skill × 10 + tier, elixir = its supply ID |
+| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, tool = 1000 + skill × 10 + tier, elixir = its supply ID; temper and smelt are proposed, IDs TBD |
 | `data/supplies.ts` | Elixirs and their buffs. Permanent supply IDs: elixirs 100 + kind × 10 + tier |
 | `gather.ts`, `produce.ts` | Closed-form settlement, shared with the client |
 
@@ -296,6 +399,9 @@ What is left, phase 1 leftovers included, is tracked in [TODO.md](../../TODO.md)
 
 ## Open
 
+- Whether uniques can be tempered (only their base part would change; uniques can't be
+  crafted today).
+- Whether temper should carry over when an item is replaced (e.g. transfer at a cost).
 - Whether item find (or a new "gathering find" stat) should raise gathering yield.
 - Whether forged bases should be marked as forged (inspect flair, or excluded from
   future leaderboards).

@@ -268,8 +268,8 @@ each per tier, and an enemy drops only its zone's tier:
   added by hand where wanted.
 - Names per tier and the per-enemy lists are in zone-content.md
   (data/materials.ts, data/zones.ts).
-- Used by life skills (life-skills.md), which also add Fish (kind 8) and gather Metal,
-  Wood, Reagent and Gem directly.
+- Used by life skills (life-skills.md), which also add Fish (kind 8) and Ore (kind 9,
+  smelted into Metal), and gather Wood, Reagent and Gem directly.
 
 ## Open
 

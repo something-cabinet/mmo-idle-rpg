@@ -72,7 +72,8 @@ export const toolRecipeId = (skillId: number, tier: number) => 1000 + skillId * 
 export const RECIPES: Recipe[] = [
   // Forge any base that drops in zones (raid variants only drop).
   ...SUPPLY_TIERS.flatMap(tier => ZONE_BASES.map(b => forgeRecipe(b, tier))),
-  // Every character starts with tier 1 tools.
+  // Every character starts with tier 1 tools. Tier T is made from tier T−1 materials,
+  // since gathering tier T needs the tool.
   ...SUPPLY_TIERS.filter(t => t > 1).flatMap(tier =>
     GATHERING_SKILLS.map(sk => ({
       id: toolRecipeId(sk.id, tier),
@@ -81,8 +82,8 @@ export const RECIPES: Recipe[] = [
       name: `Tier ${tier} ${sk.tool}`,
       seconds: TOOL_SECONDS,
       inputs: [
-        { materialId: materialOf(tier, 'Metal').id, count: 100 },
-        { materialId: materialOf(tier, 'Wood').id, count: 50 },
+        { materialId: materialOf(tier - 1, 'Metal').id, count: 100 },
+        { materialId: materialOf(tier - 1, 'Wood').id, count: 50 },
       ],
       output: { kind: 'tool' as const, skillId: sk.id },
       max: 1,

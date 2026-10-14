@@ -110,8 +110,8 @@ One tool per gathering skill: **Pickaxe** (Mining), **Hatchet** (Woodcutting),
 - **Gathering tier T needs a tool of tier ≥ T.** This makes Smithing part of the
   gathering chain, like a pickaxe gating ore in OSRS.
 - **+5% gathering speed per tool tier above the material tier**, cap +20%.
-- Upgrading a tool to tier T is a Smithing recipe: 100 Metal + 50 Wood of tier T,
-  30 min.
+- Upgrading a tool to tier T is a Smithing recipe: 100 Metal + 50 Wood of tier T−1
+  (tier T materials need the tool), 30 min.
 - A tool only counts while its skill is active. It has no effect in combat.
 
 ## Production

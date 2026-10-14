@@ -116,7 +116,7 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   check('rings: 5 Gem + 10 Metal', cost(forgeRecipeOf(50, 3)) === '5 37 + 10 31');
   check('raid variants are not forged', RECIPES.every(r => r.output.kind !== 'item' || r.output.baseId < 1000));
   const pick = recipeOf(SkillId.Smithing, toolRecipeId(SkillId.Mining, 2))!;
-  check('pickaxe T2: 100 Metal + 50 Wood, one at a time', cost(pick) === '100 21 + 50 25' && pick.max === 1 && pick.seconds === 1800);
+  check('pickaxe T2: 100 T1 Metal + 50 T1 Wood, one at a time', cost(pick) === '100 11 + 50 15' && pick.max === 1 && pick.seconds === 1800);
   check('no T1 tool recipe', !recipeOf(SkillId.Smithing, toolRecipeId(SkillId.Mining, 1)));
   const wrath = recipeOf(SkillId.Alchemy, elixirSupplyId(1, 1))!;
   check('elixir: 10 Reagent + 1 Core, 7.5 min', cost(wrath) === '10 16 + 1 13' && wrath.seconds === 450);

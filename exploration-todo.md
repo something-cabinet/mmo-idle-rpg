@@ -54,3 +54,7 @@ toward the Bog").
   fine: target changes are rare.
 - Check [TODO.md](TODO.md) first: if `presence` has been made private by then, add a
   small public per-zone count table instead, updated on enter, leave and zone change.
+
+
+## Area that only open during certain day / hour
+- Less secret, just need to be on right time

@@ -200,19 +200,25 @@ target**, so an empty queue never wastes offline time.
 
 - **Essence of <stat>**, tier T: 2 Core + 1 Gem of tier T + Dust worth 0.25 h of
   farming (`0.25 × 15 × 2.9^(T−1)`). Takes **15 min**.
-- Using an Essence is a reroll (crafting.md) where the new affix is **forced to that
-  stat**. It still pays the normal reroll gold and Dust. It works on items of tier ≤ T.
-- The forced affix rolls its tier in `[floor, N]`, with `floor = 1 + floor(level / 20)`
-  capped at N.
-- Which stats are unlocked depends on Enchanting level (rollable affix stats only):
-
-| Level | Stats |
-|-|-|
-| 1 | Primaries (Might, Finesse, Mind, Vitality) |
-| 20 | Life and defense (flat and % life, armor, resistance, evasion, regen) |
-| 40 | Flat damage and heal, threat |
-| 60 | % damage and heal, attack speed, crit chance, crit damage |
-| 80 | Penetration, lifesteal, item find, gold find, XP gain |
+- **Enchanting level gates the Essence tier, not the stat.** Making *or using* a tier-T
+  Essence needs level `10·(T−1) + 1` (the general tier rule). Using it is gated too
+  because Essences can also drop from enemies (below), so a high-tier drop still needs the
+  skill to apply.
+- **Craftable stats:** every craftable stat is available from level 1. The rare stats
+  **lifesteal, item find and gold find** have no Essence recipe; their Essences only drop.
+- Using an Essence is a normal reroll (crafting.md) that **guarantees the stat**. It
+  still pays the normal reroll gold and Dust.
+- **Level raises the affix tier floor.** The forced affix rolls its tier in `[floor, N]`
+  (N = item tier), with `floor = 1 + floor(level / 20)` capped at N: tier 1 below level
+  20, up to tier 5 from level 80. **A tier-T Essence works on items of tier ≤ T**, so
+  higher-tier gear needs a higher Enchanting level.
+- **Essence drops (planned):** enemies rarely drop Essences of their zone's tier, for any
+  stat including the rare ones. They are stored with crafted ones and follow the same
+  rules for use.
+- **Rare Essences (planned, drop-only):** stronger variants with an extra effect on top
+  of the guaranteed stat. One example: a higher affix tier floor such as "tier 8 or
+  higher" (the higher of this and the level floor applies). Other effects and the exact
+  list are still to be designed.
 
 - Core is combat-only and scarce (~24 per hour from magical enemies), which limits
   Essences. That is intended: they are the strongest crafting tool.

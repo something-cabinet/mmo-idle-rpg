@@ -3,6 +3,7 @@ import { account, spacetimedb } from '../schema';
 import { ADMIN_SUBJECTS, OIDC_CLIENT_IDS, SPACETIMEAUTH_ISSUER } from '../config';
 import { LINK_OFFER_TTL_MICROS } from '../game';
 import { deleteCharacter, enterWorld, leaveWorld, requireAccount, requireAdmin, type Account } from '../helpers';
+import { runMigrations } from '../migrate';
 
 /**
  * Every connection is either a guest (any token not issued by our
@@ -11,6 +12,7 @@ import { deleteCharacter, enterWorld, leaveWorld, requireAccount, requireAdmin, 
  * account with a character enters the world right away.
  */
 export const onConnect = spacetimedb.clientConnected(ctx => {
+  runMigrations(ctx);
   const jwt = ctx.senderAuth.jwt;
   let kind: Account['kind'] = { tag: 'Guest' };
   let role: Account['role'] = { tag: 'Player' };

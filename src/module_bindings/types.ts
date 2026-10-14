@@ -262,6 +262,12 @@ export const MaterialCount = __t.object("MaterialCount", {
 });
 export type MaterialCount = __Infer<typeof MaterialCount>;
 
+export const Migration = __t.object("Migration", {
+  name: __t.string(),
+  ranAt: __t.timestamp(),
+});
+export type Migration = __Infer<typeof Migration>;
+
 export const MyAccount = __t.object("MyAccount", {});
 export type MyAccount = __Infer<typeof MyAccount>;
 

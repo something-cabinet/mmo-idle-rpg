@@ -174,7 +174,7 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
   await sleep(300);
   const log = [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
   check('a gathering settle is logged', log.skillId === 1 && log.enemyId === 0 && log.kills === 0 && log.actions >= 1 &&
-    log.skillXp === BigInt(log.actions * 2) && log.materials.some(m => m.materialId === 11 && m.count >= log.actions),
+    log.skillXp === BigInt(log.actions * 2) && log.materials.some(m => m.materialId === 101 && m.count >= log.actions),
     `actions=${log.actions} xp=${log.skillXp}`);
   check('… with as much character XP as skill XP', log.xp === log.skillXp && log.gold === 0n, `xp=${log.xp}`);
   const mining = [...a.conn.db.mySkills.iter()].find(r => r.skillId === 1)!;

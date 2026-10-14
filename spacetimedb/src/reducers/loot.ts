@@ -4,6 +4,7 @@ import { ONLINE_SETTLE_MICROS } from '../game';
 import { TYPES } from '../data/bases';
 import { MAX_TIER, STATS } from '../data/stats';
 import { requireActive, settle } from '../helpers';
+import { runMigrations } from '../migrate';
 
 export const init = spacetimedb.init(ctx => {
   ctx.db.settleTimer.insert({ scheduledId: 0n, scheduledAt: ScheduleAt.interval(ONLINE_SETTLE_MICROS) });
@@ -12,6 +13,7 @@ export const init = spacetimedb.init(ctx => {
 /** Settles every character in the world, so drops arrive while playing, not only on logout. */
 export const settleOnline = spacetimedb.reducer({ onSchedule: settleTimer }, { timer: settleTimer.rowType }, ctx => {
   if (!ctx.sender.isEqual(ctx.identity)) throw new SenderError('Runs on a schedule only');
+  runMigrations(ctx);
   for (const pres of ctx.db.presence.iter()) {
     const ch = ctx.db.character.id.find(pres.characterId);
     if (ch) ctx.db.character.id.update(settle(ctx, ch));

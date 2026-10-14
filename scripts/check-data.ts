@@ -7,7 +7,7 @@ import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { RAIDS, RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
 import { ENEMIES_BY_ID, WALL_FACTOR, ZONES, isWallTier } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
-import { MATERIALS, MATERIAL_KINDS, materialOf } from '../spacetimedb/src/data/materials';
+import { MATERIALS, MATERIAL_KINDS, MATERIAL_KIND_IDS, materialOf, migrateMaterialId } from '../spacetimedb/src/data/materials';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -44,8 +44,10 @@ check('uniques: base exists, tier 1–9, effects exist and are distinct, stats c
 check('enemy-bound uniques: a secret enemy of their own tier', UNIQUES.every(u => u.enemyId === undefined ||
   (ENEMIES_BY_ID.get(u.enemyId)?.enemy.secret === true && ENEMIES_BY_ID.get(u.enemyId)!.zone.tier === u.tier)));
 check('every unique-only effect is on some unique', UNIQUE_EFFECTS.every(e => UNIQUES.some(u => u.effects.includes(e.id))));
-check('material IDs unique and tier × 10 + kind', unique(MATERIALS.map(m => m.id)) &&
-  MATERIALS.every(m => m.id === m.tier * 10 + MATERIAL_KINDS.indexOf(m.kind) + 1));
+check('material IDs unique and kind × 100 + tier', unique(MATERIALS.map(m => m.id)) && unique(Object.values(MATERIAL_KIND_IDS)) &&
+  MATERIALS.every(m => m.id === MATERIAL_KIND_IDS[m.kind] * 100 + m.tier));
+check('old material IDs migrate: Copper Ingot 11 → 101, Flawless Gem 37 → 703, new ones stay',
+  migrateMaterialId(11) === 101 && migrateMaterialId(37) === 703 && migrateMaterialId(26) === 602 && migrateMaterialId(703) === 703);
 for (const zone of ZONES) {
   check(`${zone.name}: one material of each kind at tier ${zone.tier}`, MATERIAL_KINDS.every(k => materialOf(zone.tier, k)?.tier === zone.tier));
   check(`${zone.name}: every enemy drops 1–3 distinct material kinds`, zone.enemies.every(e =>

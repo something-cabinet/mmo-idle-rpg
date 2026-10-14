@@ -109,18 +109,18 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
 {
   check('recipe keys are unique', new Set(RECIPES.map(r => `${r.skillId}:${r.id}`)).size === RECIPES.length);
   const cost = (r: ReturnType<typeof recipeOf>) => r!.inputs.map(i => `${i.count} ${i.materialId}`).join(' + ');
-  check('sword: 30 Metal + 10 Wood', cost(forgeRecipeOf(1, 2)) === '30 21 + 10 25', cost(forgeRecipeOf(1, 2)));
-  check('bow: 30 Wood + 10 Metal', cost(forgeRecipeOf(8, 1)) === '30 15 + 10 11', cost(forgeRecipeOf(8, 1)));
-  check('leather: 30 Hide + 10 Cloth', cost(forgeRecipeOf(35, 1)) === '30 12 + 10 14');
-  check('cloth and tomes: 30 Cloth + 10 Hide', cost(forgeRecipeOf(31, 1)) === '30 14 + 10 12' && cost(forgeRecipeOf(21, 1)) === '30 14 + 10 12');
-  check('rings: 5 Gem + 10 Metal', cost(forgeRecipeOf(50, 3)) === '5 37 + 10 31');
+  check('sword: 30 Metal + 10 Wood', cost(forgeRecipeOf(1, 2)) === '30 102 + 10 502', cost(forgeRecipeOf(1, 2)));
+  check('bow: 30 Wood + 10 Metal', cost(forgeRecipeOf(8, 1)) === '30 501 + 10 101', cost(forgeRecipeOf(8, 1)));
+  check('leather: 30 Hide + 10 Cloth', cost(forgeRecipeOf(35, 1)) === '30 201 + 10 401');
+  check('cloth and tomes: 30 Cloth + 10 Hide', cost(forgeRecipeOf(31, 1)) === '30 401 + 10 201' && cost(forgeRecipeOf(21, 1)) === '30 401 + 10 201');
+  check('rings: 5 Gem + 10 Metal', cost(forgeRecipeOf(50, 3)) === '5 703 + 10 103');
   check('raid variants are not forged', RECIPES.every(r => r.output.kind !== 'item' || r.output.baseId < 1000));
   const pick = recipeOf(SkillId.Smithing, toolRecipeId(SkillId.Mining, 2))!;
-  check('pickaxe T2: 100 T1 Metal + 50 T1 Wood, one at a time', cost(pick) === '100 11 + 50 15' && pick.max === 1 && pick.seconds === 1800);
+  check('pickaxe T2: 100 T1 Metal + 50 T1 Wood, one at a time', cost(pick) === '100 101 + 50 501' && pick.max === 1 && pick.seconds === 1800);
   check('no T1 tool recipe', !recipeOf(SkillId.Smithing, toolRecipeId(SkillId.Mining, 1)));
   const wrath = recipeOf(SkillId.Alchemy, elixirSupplyId(1, 1))!;
-  check('elixir: 10 Reagent + 1 Core, 7.5 min', cost(wrath) === '10 16 + 1 13' && wrath.seconds === 450);
-  check('affordable counts whole actions', affordable(wrath, id => (id === 16 ? 95 : 4)) === 4 && affordable(wrath, () => 9) === 0);
+  check('elixir: 10 Reagent + 1 Core, 7.5 min', cost(wrath) === '10 601 + 1 301' && wrath.seconds === 450);
+  check('affordable counts whole actions', affordable(wrath, id => (id === 601 ? 95 : 4)) === 4 && affordable(wrath, () => 9) === 0);
 }
 
 // ---------------------------------------------------------------- production
@@ -131,10 +131,10 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   const pr = projectProduction(fresh, wrath, plenty, 1n, HOUR);
   check('8 elixirs an hour at level 1 (bag room not needed)', pr.actions === 8 && pr.endedAt === undefined, `${pr.actions}`);
   check('75 XP each at T1', pr.xpGained === 600n && productionCharacterXp(8, wrath) === 600n, `${pr.xpGained}`);
-  check('inputs used', pr.used.map(u => `${u.count} ${u.materialId}`).join() === '80 16,8 13');
+  check('inputs used', pr.used.map(u => `${u.count} ${u.materialId}`).join() === '80 601,8 301');
   check('a running queue settles at its last action', pr.settledMicros === pr.made[7].at && HOUR - pr.settledMicros < 450_000_000n);
 
-  const short = projectProduction(fresh, wrath, { countLeft: 1000, have: id => (id === 16 ? 25 : 10), bagFree: 0 }, 1n, HOUR);
+  const short = projectProduction(fresh, wrath, { countLeft: 1000, have: id => (id === 601 ? 25 : 10), bagFree: 0 }, 1n, HOUR);
   check('runs out of inputs: ends after the last action', short.actions === 2 && short.endedAt === 900_000_000n && short.settledMicros === 900_000_000n,
     `${short.actions} ${short.endedAt}`);
   const counted = projectProduction(fresh, wrath, { ...plenty, countLeft: 3 }, 1n, HOUR);
@@ -165,12 +165,12 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   for (let t = 60_000_000n; t <= 8n * HOUR; t += 60_000_000n) {
     const step = projectProduction(p, wrath, { ...plenty, countLeft: left }, 7n, t);
     actions += step.actions;
-    used += step.used.find(u => u.materialId === 16)?.count ?? 0;
+    used += step.used.find(u => u.materialId === 601)?.count ?? 0;
     left = step.countLeft;
     p = step;
   }
   const once = projectProduction(lv60, wrath, plenty, 7n, 8n * HOUR);
-  const onceUsed = once.used.find(u => u.materialId === 16)?.count ?? 0;
+  const onceUsed = once.used.find(u => u.materialId === 601)?.count ?? 0;
   check('per-minute settles match one settle', actions === once.actions && used === onceUsed && p.level === once.level,
     `${actions}/${once.actions} used ${used}/${onceUsed}`);
   check('level 60 is faster and sometimes keeps its inputs', once.actions > 64 && onceUsed < once.actions * 10, `${once.actions}, ${onceUsed}`);

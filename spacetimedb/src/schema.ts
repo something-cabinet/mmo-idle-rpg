@@ -445,6 +445,15 @@ export const chatCooldown = table(
   }
 );
 
+/** One-off data migrations already run (migrate.ts), by name. Private. */
+export const migration = table(
+  { name: 'migration' },
+  {
+    name: t.string().primaryKey(),
+    ranAt: t.timestamp(),
+  }
+);
+
 /** The character a player is inspecting (online list); read through the `inspected_*` views. */
 export const inspect = table(
   { name: 'inspect' },
@@ -595,6 +604,7 @@ export const spacetimedb = schema({
   tool,
   supply,
   forgeFilter,
+  migration,
 }, {
   // Set only when publishing locally (package.json `spacetime:publish:local`); never on
   // Maincloud, so the dev cheats (reducers/dev.ts) refuse there.

@@ -144,7 +144,7 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
 
   const sword = forgeRecipeOf(1, 1)!;
   const bag = projectProduction(fresh, sword, { countLeft: 100, have: () => 1e6, bagFree: 2 }, 1n, HOUR);
-  check('forging stops when the bag is full', bag.actions === 2 && bag.endedAt === 600_000_000n);
+  check('forging stops when the bag is full', bag.actions === 2 && bag.endedAt === bag.made[1].at);
 
   // Per-minute settles give the same as one (keep-inputs rolls are seeded per action).
   const lv60 = { level: 60, xp: 0n, settledMicros: 0n };

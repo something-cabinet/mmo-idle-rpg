@@ -175,7 +175,7 @@ target**, so an empty queue never wastes offline time.
 ### Smithing: forge a base
 
 - Pick any base of tier T (zone T unlocked). It costs **30 of the base's main material
-  + 10 of its secondary**, takes **5 min**, and gives the item in the bag.
+  + 10 of its secondary**, takes **1 min**, and gives the item in the bag.
 
 | Base family | Main | Secondary |
 |-|-|-|

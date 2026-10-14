@@ -61,12 +61,12 @@ function GatheringCard({ s }: { s: Snapshot }) {
   return (
     <div className="card">
       <CardHead title={`Gathering ${material.name}`}>
-        <button className="btn small" onClick={() => call(s.conn.reducers.stopSkill({}))}>
+        <button className="btn" onClick={() => call(s.conn.reducers.stopSkill({}))}>
           {target ? <><Icon name="swords" />Back to combat</> : 'Stop'}
         </button>
       </CardHead>
       <div className="stat-row"><span>Per hour</span><strong>{fmt(r.actions)} {material.name}</strong></div>
-      <div className="stat-row"><span>XP per hour</span><strong>{fmt(r.xp)} {g.skill.name} · {fmt(r.charXp)} character</strong></div>
+      <div className="stat-row"><span>XP per hour</span><strong>{fmt(r.xp)} {g.skill.name} XP · {fmt(r.charXp)} Character XP</strong></div>
       <div className="stat-row"><span>Next {g.skill.name} level</span><strong>{toNext}</strong></div>
       <div className="stat-row"><span>Since the last update</span><strong>{fmt(g.projected.actions)} actions</strong></div>
       <p className="muted">No gold or drops while gathering. Materials arrive every minute.</p>
@@ -74,16 +74,14 @@ function GatheringCard({ s }: { s: Snapshot }) {
   );
 }
 
-/** What the character does instead, when it isn't working this skill. */
-function ElsewhereCard({ s, skill }: { s: Snapshot; skill: SkillDef }) {
-  const now = s.gathering ? `gathering (${s.gathering.skill.name})` : s.target ? `fighting ${s.target.enemy.name}` : 'idle';
+/** What the character does instead, when it isn't working this skill: gathering here stops it. */
+function ElsewhereCard({ s }: { s: Snapshot }) {
+  const g = s.gathering;
+  const now = g ? `${g.skill.name}: ${materialOf(g.tier, g.skill.makes).name}` : s.target ? `Fighting ${s.target.enemy.name}` : 'Idle';
   return (
     <div className="card">
-      <p>You're {now}. Gathering here takes its place: one activity at a time, online and offline.</p>
-      <p className="muted">
-        One action every 12 s: ~300 {skill.makes} per hour, against ~70 of one kind from combat. Gives {skill.name} XP and as much
-        character XP, but no gold or drops.
-      </p>
+      <p>Now: <strong>{now}</strong></p>
+      {(g || s.target) && <p className="muted">Gathering here stops it.</p>}
     </div>
   );
 }
@@ -129,16 +127,15 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
   const logs = s.logs.filter(l => l.skillId === skill.id && !l.offline).slice(0, 10);
   return (
     <>
-      <ViewHeader title={skill.name} icon={skill.icon}>
-        <a className="btn small ghost" href="#skills"><Icon name="back" />Skills</a>
-      </ViewHeader>
+      <a className="btn back-link" href="#skills"><Icon name="back" />All skills</a>
+      <ViewHeader title={skill.name} icon={skill.icon} />
       <div className="card">
         <CardHead title={`Level ${at.level}`}><span className="muted">{skill.tool} T{toolTier}</span></CardHead>
         <SkillBar {...at} />
         <div className="stat-row"><span>Speed at T{tier}</span><strong>+{Math.round((levelSpeedBonus(at.level, tier) + toolSpeedBonus(toolTier, tier)) * 100)}%</strong></div>
         <div className="stat-row"><span>Double yield</span><strong>{double > 0 ? `${Math.round(double * 100)}%` : 'From level 50'}</strong></div>
       </div>
-      {here ? <GatheringCard s={s} /> : <ElsewhereCard s={s} skill={skill} />}
+      {here ? <GatheringCard s={s} /> : <ElsewhereCard s={s} />}
       <div className="card">
         <CardHead title="Gather"><span className="muted">Each tier needs its skill level, its zone and a tool of its tier</span></CardHead>
         <ul className="foes">

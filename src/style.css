@@ -454,6 +454,9 @@ select:focus,
   background: var(--surface-3);
   overflow: hidden;
 }
+.back-link {
+  width: fit-content;
+}
 .skill-xp {
   display: flex;
   align-items: center;

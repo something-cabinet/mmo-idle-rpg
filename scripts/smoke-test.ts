@@ -88,17 +88,17 @@ const b = await connect();
 await expectError('name taken (case-insensitive)', b.conn.reducers.createCharacter({ name: `alice_${suffix}`, starterWeapon: 1 }), 'taken');
 await expectError('chat without character rejected', b.conn.reducers.sendChat({ text: 'hi' }), 'Not in the world');
 
-await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6], keepBases: [1, 1, 8], minAffixTier: 3 });
+await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6], keepTypes: [1, 1, 8], minAffixTier: 3 });
 await sleep(200);
 {
   const filter = [...a.conn.db.myLootFilter.iter()][0];
   check('loot filter saved (deduplicated)',
-    filter?.minRarity.tag === 'Rare' && filter.keepAffixes.join() === '22,6' && filter.keepBases.join() === '1,8' && filter.minAffixTier === 3,
-    `${filter?.keepAffixes.join()} / ${filter?.keepBases.join()} / ${filter?.minAffixTier}`);
+    filter?.minRarity.tag === 'Rare' && filter.keepAffixes.join() === '22,6' && filter.keepTypes.join() === '1,8' && filter.minAffixTier === 3,
+    `${filter?.keepAffixes.join()} / ${filter?.keepTypes.join()} / ${filter?.minAffixTier}`);
 }
-const badFilter = { minRarity: { tag: 'Rare' as const }, keepAffixes: [], keepBases: [], minAffixTier: 1 };
+const badFilter = { minRarity: { tag: 'Rare' as const }, keepAffixes: [], keepTypes: [], minAffixTier: 1 };
 await expectError('unknown affix in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, keepAffixes: [999] }), 'Unknown affix');
-await expectError('unknown base in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, keepBases: [999] }), 'Unknown base');
+await expectError('unknown item type in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, keepTypes: [999] }), 'Unknown item type');
 await expectError('affix tier 0 in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, minAffixTier: 0 }), 'Bad affix tier');
 
 await sleep(1100);
@@ -156,6 +156,38 @@ await a.conn.reducers.flee({});
 await sleep(200);
 check('flee goes idle', charOf(a)!.targetEnemyId === 0);
 await a.conn.reducers.setTarget({ enemyId: 101 });
+
+// Life skills: gathering takes the place of combat; the target is kept for afterwards.
+{
+  const tools = [...a.conn.db.myTools.iter()];
+  check('a new character has its skills and T1 tools', [...a.conn.db.mySkills.iter()].length === 3 && tools.length === 3 && tools.every(t => t.tier === 1));
+  await expectError('unknown skill rejected', a.conn.reducers.startGathering({ skillId: 99, tier: 1 }), 'No such skill');
+  await expectError('gathering a locked tier rejected', a.conn.reducers.startGathering({ skillId: 1, tier: 2 }), 'Unlock the tier 2 zone');
+  await a.conn.reducers.startGathering({ skillId: 1, tier: 1 });
+  await sleep(200);
+  let ch = charOf(a)!;
+  check('start gathering keeps the target', ch.activitySkill === 1 && ch.activityRecipe === 1 && ch.targetEnemyId === 101);
+  // One action every 12 s.
+  console.log('… waiting 13 s for a mining action');
+  await sleep(13_000);
+  await a.conn.reducers.settleNow({});
+  await sleep(300);
+  const log = [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
+  check('a gathering settle is logged', log.skillId === 1 && log.enemyId === 0 && log.kills === 0 && log.actions >= 1 &&
+    log.skillXp === BigInt(log.actions * 2) && log.materials.some(m => m.materialId === 11 && m.count >= log.actions),
+    `actions=${log.actions} xp=${log.skillXp}`);
+  check('… with as much character XP as skill XP', log.xp === log.skillXp && log.gold === 0n, `xp=${log.xp}`);
+  const mining = [...a.conn.db.mySkills.iter()].find(r => r.skillId === 1)!;
+  check('… and its XP goes to the skill', mining.level === 1 && mining.xp >= 2n, `xp=${mining.xp}`);
+  await a.conn.reducers.stopSkill({});
+  await sleep(200);
+  ch = charOf(a)!;
+  check('stopping a skill goes back to the target', ch.activitySkill === 0 && ch.targetEnemyId === 101);
+  await a.conn.reducers.startGathering({ skillId: 3, tier: 1 });
+  await a.conn.reducers.setTarget({ enemyId: 101 });
+  await sleep(200);
+  check('picking a target stops the skill', charOf(a)!.activitySkill === 0);
+}
 
 // Equipment: slots, loadouts, auto-equip, lock and salvage.
 {

@@ -1,6 +1,6 @@
 // Per-player views over private tables: each client sees only its own rows.
 import { t } from 'spacetimedb/server';
-import { bossKill, character, discovery, enemyKill, friend, item, loadout, lootFilter, material, raidLog, settleLog, spacetimedb } from '../schema';
+import { bossKill, character, discovery, enemyKill, friend, item, loadout, lootFilter, material, raidLog, settleLog, skill, spacetimedb, tool } from '../schema';
 
 export const my_items = spacetimedb.view({ name: 'my_items', public: true }, t.array(item.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
@@ -44,6 +44,16 @@ export const my_discoveries = spacetimedb.view({ name: 'my_discoveries', public:
 export const my_settle_log = spacetimedb.view({ name: 'my_settle_log', public: true }, t.array(settleLog.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
   return ch ? [...ctx.db.settleLog.characterId.filter(ch.id)] : [];
+});
+
+export const my_skills = spacetimedb.view({ name: 'my_skills', public: true }, t.array(skill.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.skill.characterId.filter(ch.id)] : [];
+});
+
+export const my_tools = spacetimedb.view({ name: 'my_tools', public: true }, t.array(tool.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.tool.characterId.filter(ch.id)] : [];
 });
 
 export const my_friends = spacetimedb.view({ name: 'my_friends', public: true }, t.array(friend.rowType), ctx => {

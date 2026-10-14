@@ -10,7 +10,8 @@ Construction). Numbers are *illustrative* until balanced.
   `Skill(skill, recipe)`. Like most MMOs, never both.
 - Switching is an online action (like `setTarget`) and settles first. The chosen
   activity runs online and offline, under the same offline cap.
-- Skilling gives no character XP, gold or item drops. Combat gives no skill XP.
+- Skilling gives skill XP and as much character XP (per action, the same amount; about a
+  fifth of farming's XP per hour), but no gold or item drops. Combat gives no skill XP.
 - Every hour spent skilling is an hour of combat lost, so each skill must pay for itself
   with something combat **can't** give, or gives too slowly (see "Why skill").
 
@@ -22,7 +23,6 @@ Construction). Numbers are *illustrative* until balanced.
 | Beat RNG | Smithing, Enchanting | Pick the base you want; force the stat you want on a reroll |
 | Focused materials | Gathering | ~4× combat's rate for one kind, and Fish only comes from Fishing |
 | Permanent progress | Construction, milestones | Longer offline cap, faster skilling, small permanent combat bonuses |
-| Softer cost | Rested XP | Half of the combat XP lost while skilling comes back as a later bonus |
 
 **Buff break-even.** Spending a share *f* of play time making a buff worth *+b* pays
 off when `b > f / (1 − f)`. At the rates below, a full chain (forage, then brew) is
@@ -231,17 +231,6 @@ Construction level `10·(L−1) + 1`.
   5, + gold worth `2 × L` hours of farming (`craftCost`).
 - Upgrading a station is instant. Making the parts is what takes time and gives XP.
 
-## Rested XP
-
-Softens the cost of skilling without turning it into a combat replacement.
-
-- Each hour spent skilling banks **120 rested kills** (half an hour of reference
-  farming), capped at **960** (~4 h).
-- In combat, each kill while rested kills are left gives **double XP** and uses one.
-  Gold and drops are unchanged. Counted in kills for the same reason as buffs.
-- Net effect: skilling loses only half its combat XP. Gold and loot are still fully lost.
-- Shown as a bar under the XP bar.
-
 ## Settlement
 
 All of this stays in closed form (README pillar 1):
@@ -251,9 +240,8 @@ All of this stays in closed form (README pillar 1):
   double yields are Poisson draws, seeded like drops.
 - **Production**: `min(time / actionTime, inputs available, count left)`. When the queue
   ends, the remaining time settles as combat against the last target.
-- **Combat with buffs and rested kills**: each step of `project()` already caps kills at
-  the next level-up; it also caps them at the charges left on each buff and the rested
-  kills left. At that point the matchup is recomputed (next buff from stock, or none),
+- **Combat with buffs**: each step of `project()` already caps kills at the next
+  level-up; it also caps them at the charges left on each buff. At that point the matchup is recomputed (next buff from stock, or none),
   the same as at a level-up. `simulate()` checks buffs at the start of each fight and
   takes a charge on each kill.
 - The away report and the settle log show skill XP, levels and items made.
@@ -262,7 +250,7 @@ All of this stays in closed form (README pillar 1):
 
 | Where | What |
 |-|-|
-| `character` columns | `activity` (Combat or Skill), `activitySkill`, `activityRecipe`, `activityCountLeft`, `restedKills`, `elixirId`, `elixirKillsLeft`, `mealId`, `mealKillsLeft`, auto-renew flags |
+| `character` columns | `activity` (Combat or Skill), `activitySkill`, `activityRecipe`, `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `mealId`, `mealKillsLeft`, auto-renew flags |
 | `skill` table | (characterId, skillId, xp) |
 | `tool` table | (characterId, kind, tier) |
 | `station` table | (characterId, stationId, level) |
@@ -274,7 +262,7 @@ All of this stays in closed form (README pillar 1):
 
 1. **Phase 1:** activity switch, `skill` table, Foraging + Alchemy (fastest combat
    value), Mining + Smithing (forge bases, tools), Woodcutting (tools need Wood).
-2. **Phase 2:** Enchanting, Construction and Hideout, rested XP, milestone bonuses.
+2. **Phase 2:** Enchanting, Construction and Hideout, milestone bonuses.
 3. **Phase 3:** Fishing + Cooking (Fish material).
 
 ## Open

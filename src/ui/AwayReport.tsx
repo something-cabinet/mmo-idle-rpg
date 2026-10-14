@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Presence, SettleLog } from '../module_bindings/types';
 import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
+import { SKILLS_BY_ID } from '../../spacetimedb/src/data/skills';
 import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
@@ -31,6 +32,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
 
   const close = () => setLog(undefined);
   const enemy = ENEMIES_BY_ID.get(log.enemyId)?.enemy;
+  const skill = SKILLS_BY_ID.get(log.skillId);
   const kept = log.keptItemIds.map(id => s.items.get(id)).filter(it => it !== undefined);
   // Counts per rarity, highest first, so a big haul stays one line.
   const keptByRarity = [...RARITIES].reverse()
@@ -47,7 +49,12 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
     <Modal onClose={close}>
       <CardHead title={`While you were away (${duration(log.elapsedMicros)})`} />
       {log.capped && <p className="muted">Offline progress is capped at {duration(offlineCapMicros(s.stats))}.</p>}
-      {!enemy ? (
+      {skill ? (
+        <p>
+          <strong>{skill.name}</strong> × {log.actions.toLocaleString()} actions · +{fmtBig(log.skillXp)} XP
+          {log.skillLevelTo > log.skillLevelFrom ? ` · Level ${log.skillLevelFrom} → ${log.skillLevelTo}` : ''}
+        </p>
+      ) : !enemy ? (
         <p>You were idle: no target. Pick an enemy on the Zones screen.</p>
       ) : log.kills > 0 ? (
         <p><strong>{enemy.name}</strong> × {log.kills.toLocaleString()} kills</p>

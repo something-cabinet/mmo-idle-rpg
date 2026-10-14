@@ -64,6 +64,8 @@ export const Character = __t.object("Character", {
   targetEnemyId: __t.u16(),
   dust: __t.u64(),
   raidTokens: __t.u64(),
+  activitySkill: __t.u8(),
+  activityRecipe: __t.u16(),
 });
 export type Character = __Infer<typeof Character>;
 
@@ -282,6 +284,12 @@ export type MyRaidLog = __Infer<typeof MyRaidLog>;
 export const MySettleLog = __t.object("MySettleLog", {});
 export type MySettleLog = __Infer<typeof MySettleLog>;
 
+export const MySkills = __t.object("MySkills", {});
+export type MySkills = __Infer<typeof MySkills>;
+
+export const MyTools = __t.object("MyTools", {});
+export type MyTools = __Infer<typeof MyTools>;
+
 export const Presence = __t.object("Presence", {
   identity: __t.identity(),
   connectionId: __t.connectionId(),
@@ -406,6 +414,11 @@ export const SettleLog = __t.object("SettleLog", {
   get encounters() {
     return __t.array(Encounter);
   },
+  skillId: __t.u8(),
+  actions: __t.u32(),
+  skillXp: __t.u64(),
+  skillLevelFrom: __t.u8(),
+  skillLevelTo: __t.u8(),
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 
@@ -415,11 +428,28 @@ export const SettleTimer = __t.object("SettleTimer", {
 });
 export type SettleTimer = __Infer<typeof SettleTimer>;
 
+export const Skill = __t.object("Skill", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  skillId: __t.u8(),
+  level: __t.u8(),
+  xp: __t.u64(),
+});
+export type Skill = __Infer<typeof Skill>;
+
 export const StatValue = __t.object("StatValue", {
   stat: __t.u16(),
   value: __t.i64(),
 });
 export type StatValue = __Infer<typeof StatValue>;
+
+export const Tool = __t.object("Tool", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  skillId: __t.u8(),
+  tier: __t.u8(),
+});
+export type Tool = __Infer<typeof Tool>;
 
 export const WeaponStats = __t.object("WeaponStats", {
   get damageType() {

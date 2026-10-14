@@ -11,7 +11,7 @@ not decisions.
 | [equipment.md](equipment.md) | Slots, hands, weapon/armor bases, storage, loadouts |
 | [bases.md](bases.md) | Base templates and names per tier |
 | [crafting.md](crafting.md) | Dust, salvage, affix reroll, rarity upgrade, bag expansion |
-| [life-skills.md](life-skills.md) | Gathering and production skills, tools, buffs, Essences, Hideout, rested XP |
+| [life-skills.md](life-skills.md) | Gathering and production skills, tools, buffs, Essences, Hideout |
 | [zones.md](zones.md) | Zones, enemy levels, enemy stats, rewards, loot tables |
 | [duels.md](duels.md) | Friendly duels against a friend's character (client-only, no rewards) |
 | [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass: enemies, bosses, drops, starter kit |
@@ -33,6 +33,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-14 | Skilling gives character XP (life-skills.md): per gathering action, as much as its skill XP (about a fifth of farming's XP per hour), still no gold or drops. Rested XP is dropped: skilling's own XP already softens its cost. Each life skill has its own page in the client. |
 | 2026-10-13 | Salvage also gives gold (Common 10, Magic 20, Rare 50, Epic 200, Legendary 600 × 2.9^(T−1), ~150 gold/h when keeping Rare+), and Dust is cut ~20% in exchange (Common 0.8, Magic 1.6, Rare 4, Epic 16, Legendary 50). |
 | 2026-10-13 | Raids (raids.md): party of 4, online only, a Raids page under Adventure. First raid Wyrm Hollow (T3, opens after Hrimvald): one fight per start, played by the server and replayed by the clients; each boss attack picks a fighter weighted by threat (e^(5 × threat): more threat, more attacks, anyone can be hit), plus a party-wide breath; heals land on allies. Empty seats can be filled with hired NPCs (2,000 gold each, paid by the leader) at 0.5× a fixed reference player per raid (not scaled to the party), a last resort that encourages grouping; they don't heal. A win gives each player, for up to 3 clears a day (losses don't count; 00:00 UTC), 3 T3 Epic+ items (each Epic 75 / Legendary 22 / Unique 3% from a raid-only pool), 10 raid tokens, gold and XP. Token shop and a precious raid material are planned, not built. *Illustrative numbers.* |
 | 2026-10-13 | Friendly duels (duels.md): fight a friend's character (current level and active loadout) for fun, no rewards. Client-only simulation, player against player with the combat formulas, 90 s limit then points; replayed hit by hit at real speed (2× toggle), with win odds over 500 duels. |

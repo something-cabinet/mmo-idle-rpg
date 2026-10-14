@@ -179,6 +179,21 @@ const FightScene = memo(
 );
 
 export const CombatView = memo(function CombatView({ s }: { s: Snapshot }) {
+  if (s.gathering) {
+    return (
+      <>
+        <ViewHeader title="Combat" icon="swords" />
+        <div className="card">
+          <p>You're {s.gathering.skill.name.toLowerCase()}: no combat while skilling.</p>
+          <p className="muted">One activity at a time. Stop gathering on the {s.gathering.skill.name} page{s.row.targetEnemyId ? ' to go back to your target' : ''}, or pick an enemy on the Zones screen.</p>
+          <div className="row">
+            <a className="btn small" href={`#${s.gathering.skill.slug}`}><Icon name={s.gathering.skill.icon} />{s.gathering.skill.name}</a>
+            <a className="btn small ghost" href="#zones"><Icon name="map" />Zones</a>
+          </div>
+        </div>
+      </>
+    );
+  }
   if (!s.target || !s.fight) {
     return (
       <>

@@ -60,6 +60,13 @@ export const character = table(
     dust: t.u64().default(0n),
     /** Currency from raid kills (raids.md), to trade for things later. */
     raidTokens: t.u64().default(0n),
+    /**
+     * The life skill being worked (data/skills.ts ID), or 0 for combat against `targetEnemyId`
+     * (life-skills.md: one activity at a time). The target is kept while skilling.
+     */
+    activitySkill: t.u8().default(0),
+    /** What the skill works on: the material tier for gathering. */
+    activityRecipe: t.u16().default(0),
   }
 );
 
@@ -316,6 +323,41 @@ export const settleLog = table(
     discovered: t.array(Found).default([]),
     /** Rare encounters met (encounters.ts); their gains are in the totals above. */
     encounters: t.array(Encounter).default([]),
+    /** The life skill worked in this settle (data/skills.ts), or 0 for combat (then `enemyId` is 0). */
+    skillId: t.u8().default(0),
+    /** Gathering actions done. */
+    actions: t.u32().default(0),
+    skillXp: t.u64().default(0n),
+    skillLevelFrom: t.u8().default(0),
+    skillLevelTo: t.u8().default(0),
+  }
+);
+
+/** A character's level in one life skill (data/skills.ts). Private; owners read theirs via `my_skills`. */
+export const skill = table(
+  { name: 'skill' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    skillId: t.u8(),
+    level: t.u8(),
+    /** XP toward the next level. */
+    xp: t.u64(),
+  }
+);
+
+/**
+ * A character's gathering tool for one skill, as a tier (life-skills.md, "Tools"): not a bag
+ * item. Every character starts with tier 1. Private; owners read theirs via `my_tools`.
+ */
+export const tool = table(
+  { name: 'tool' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    /** The gathering skill it serves (data/skills.ts `tool`). */
+    skillId: t.u8(),
+    tier: t.u8(),
   }
 );
 
@@ -501,6 +543,8 @@ export const spacetimedb = schema({
   raidMember,
   raidLog,
   raidTimer,
+  skill,
+  tool,
 }, {
   // Set only when publishing locally (package.json `spacetime:publish:local`); never on
   // Maincloud, so the dev cheats (reducers/dev.ts) refuse there.

@@ -2,11 +2,13 @@
 // may only export reducers/views.
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
-import { Encounter as EncounterType, Found as FoundType, account, character, item, presence, settleLog, spacetimedb } from './schema';
+import { Encounter as EncounterType, Found as FoundType, account, character, item, presence, settleLog, skill, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project } from './game';
 import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
-import { ENEMIES_BY_ID, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
+import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
+import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID } from './data/skills';
+import { gatherCharacterXp, projectGathering, rollGathering } from './gather';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
 import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, salvageValue, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
@@ -23,6 +25,7 @@ export type Item = Infer<typeof item.rowType>;
 export type SettleLog = Infer<typeof settleLog.rowType>;
 export type Found = Infer<typeof FoundType>;
 export type Encounter = Infer<typeof EncounterType>;
+export type SkillRow = Infer<typeof skill.rowType>;
 
 /** The caller's account; throws if missing or banned. */
 export function requireAccount(ctx: Ctx): Account {
@@ -80,6 +83,7 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
  * away and is always logged.
  */
 export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
+  if (ch.activitySkill !== 0) return settleSkill(ctx, ch, capMicros);
   const gear = gearOf(ctx, ch);
   const target = ENEMIES_BY_ID.get(ch.targetEnemyId);
   const progress = { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch };
@@ -216,6 +220,67 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   };
 }
 
+/**
+ * `settle` while the character works a life skill: gathering's actions since
+ * `lastSettledAt`, the same online and offline (gather.ts `projectGathering`). The
+ * materials go into the `material` counters, the skill's XP into its `skill` row, and
+ * as much character XP to the character.
+ */
+function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
+  const def = SKILLS_BY_ID.get(ch.activitySkill);
+  const now = ctx.timestamp.microsSinceUnixEpoch;
+  const start = ch.lastSettledAt.microsSinceUnixEpoch;
+  const base = { ...ch, dust: ch.dust + ch.essence, essence: 0n };
+  // An unknown skill (none today) passes the time idle.
+  if (!def) return { ...base, lastSettledAt: ctx.timestamp };
+  const row = skillRow(ctx, ch.id, def.id);
+  const tier = ch.activityRecipe;
+  const g = projectGathering({ ...row, settledMicros: start }, { tier, toolTier: toolTier(ctx, ch.id, def.id) }, now, capMicros);
+  // Own seed, like the combat material rolls.
+  const materials = rollGathering(seededRng(ch.id, start, GATHER_SALT), def, tier, g);
+  addMaterials(ctx, ch.id, materials);
+  ctx.db.skill.id.update({ ...row, level: g.level, xp: g.xp });
+  // Skilling also levels the character (no gold or drops).
+  const charXp = gatherCharacterXp(g.actions, tier);
+  const { level, xp } = addXp(ch.level, ch.xp, charXp);
+
+  const offline = capMicros !== undefined;
+  if (g.actions > 0 || offline) {
+    const elapsed = now - start;
+    logSettle(ctx, ch, {
+      offline,
+      elapsedMicros: elapsed > 0n ? elapsed : 0n,
+      capped: offline && elapsed > capMicros,
+      enemyId: 0,
+      skillId: def.id,
+      actions: g.actions,
+      levelTo: level,
+      xp: ch.level < MAX_LEVEL ? charXp : 0n,
+      skillXp: g.xpGained,
+      skillLevelFrom: row.level,
+      skillLevelTo: g.level,
+      materials,
+    });
+  }
+  return { ...base, level, xp, lastSettledAt: new Timestamp(g.settledMicros) };
+}
+
+/** The character's row for skill `skillId` (made at level 1 if missing). */
+export function skillRow(ctx: Ctx, characterId: bigint, skillId: number): SkillRow {
+  const row = [...ctx.db.skill.characterId.filter(characterId)].find(r => r.skillId === skillId);
+  return row ?? ctx.db.skill.insert({ id: 0n, characterId, skillId, level: 1, xp: 0n });
+}
+
+/** The tier of the character's tool for gathering skill `skillId` (1 if it has none). */
+export function toolTier(ctx: Ctx, characterId: bigint, skillId: number): number {
+  return [...ctx.db.tool.characterId.filter(characterId)].find(r => r.skillId === skillId)?.tier ?? 1;
+}
+
+/** Whether a zone of tier `tier` is unlocked: life skills can't run ahead of combat. */
+export function tierUnlocked(ctx: Ctx, characterId: bigint, tier: number): boolean {
+  return ZONES.some(z => z.tier === tier && zoneUnlocked(ctx, characterId, z));
+}
+
 /** Logs a settle of `ch`, by default against its target and with no gains. */
 function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 'characterId' | 'at'>>) {
   ctx.db.settleLog.insert({
@@ -242,6 +307,11 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     materials: [],
     discovered: [],
     encounters: [],
+    skillId: 0,
+    actions: 0,
+    skillXp: 0n,
+    skillLevelFrom: 0,
+    skillLevelTo: 0,
     ...row,
   });
   pruneSettleLog(ctx, ch.id);
@@ -301,6 +371,11 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
       keepTypes: [],
     });
   }
+  // Life skills start at level 1, gathering tools at tier 1.
+  const skills = new Set([...ctx.db.skill.characterId.filter(characterId)].map(r => r.skillId));
+  for (const sk of SKILLS) if (!skills.has(sk.id)) ctx.db.skill.insert({ id: 0n, characterId, skillId: sk.id, level: 1, xp: 0n });
+  const tools = new Set([...ctx.db.tool.characterId.filter(characterId)].map(r => r.skillId));
+  for (const sk of GATHERING_SKILLS) if (!tools.has(sk.id)) ctx.db.tool.insert({ id: 0n, characterId, skillId: sk.id, tier: 1 });
   // Characters from before discovery: what they own counts as found.
   if (ctx.db.discovery.characterId.filter(characterId).next().done) {
     const byTier = new Map<number, Seen[]>();
@@ -347,6 +422,7 @@ export const MAX_FRIENDS = 100;
 const MATERIAL_SALT = 0x6d6174n; // "mat"
 const DISCOVER_SALT = 0x6469736376n; // "discv"
 const ENCOUNTER_SALT = 0x656e636fn; // "enco"
+const GATHER_SALT = 0x676174686572n; // "gather"
 
 /** `a` plus `b`, one entry per material. */
 function mergeMaterials(a: readonly MaterialDrop[], b: readonly MaterialDrop[]): MaterialDrop[] {
@@ -424,6 +500,8 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.bossKill.characterId.delete(characterId);
   ctx.db.enemyKill.characterId.delete(characterId);
   ctx.db.material.characterId.delete(characterId);
+  ctx.db.skill.characterId.delete(characterId);
+  ctx.db.tool.characterId.delete(characterId);
   ctx.db.settleLog.characterId.delete(characterId);
   ctx.db.discovery.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);

@@ -29,7 +29,7 @@ export function trackSettles(conn: DbConnection) {
   });
   // We only subscribe to our own character row.
   conn.db.character.onUpdate((_ctx, old, row) => {
-    if (old.targetEnemyId !== row.targetEnemyId) targetChangedAt = row.lastSettledAt.microsSinceUnixEpoch;
+    if (old.targetEnemyId !== row.targetEnemyId || old.activitySkill !== row.activitySkill) targetChangedAt = row.lastSettledAt.microsSinceUnixEpoch;
   });
 }
 

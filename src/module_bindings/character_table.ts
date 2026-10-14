@@ -27,4 +27,6 @@ export default __t.row({
   targetEnemyId: __t.u16().name("target_enemy_id"),
   dust: __t.u64(),
   raidTokens: __t.u64().name("raid_tokens"),
+  activitySkill: __t.u8().name("activity_skill"),
+  activityRecipe: __t.u16().name("activity_recipe"),
 });

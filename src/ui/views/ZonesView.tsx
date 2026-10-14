@@ -180,7 +180,7 @@ function AreaPanel({ panelRef, s, z, a, known, here, unlocked, open, setOpen }: 
 
 function Foe({ s, z, e, open, toggle }: { s: Snapshot; z: ZoneDef; e: EnemyDef; open: boolean; toggle: () => void }) {
   const m = matchup(s.stats, e);
-  const active = s.row.targetEnemyId === e.id;
+  const active = !s.gathering && s.row.targetEnemyId === e.id;
   const challenge = e.boss && !s.killedZones.has(z.id);
   const known = enemyKnown(s, e);
   const look = threat(m);

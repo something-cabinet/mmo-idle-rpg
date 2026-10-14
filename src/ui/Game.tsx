@@ -25,10 +25,14 @@ import { FilterView } from './views/FilterView';
 import { ItemIndexView } from './views/ItemIndexView';
 import { RaidsView } from './views/RaidsView';
 import { SettingsView } from './views/SettingsView';
+import { SkillView } from './views/SkillView';
+import { SkillsView } from './views/SkillsView';
+import { SKILLS } from '../../spacetimedb/src/data/skills';
+import { materialOf } from '../../spacetimedb/src/data/materials';
 import { ZonesView } from './views/ZonesView';
 
 const NAV: [string, [View, string, string][]][] = [
-  ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones'], ['raids', 'crown', 'Raids']]],
+  ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones'], ['raids', 'crown', 'Raids'], ['skills', 'pickaxe', 'Skills']]],
   ['Character', [['character', 'user', 'Character'], ['equipment', 'shield', 'Equipment'], ['bag', 'bag', 'Bag']]],
   ['Workshop', [['crafting', 'hammer', 'Crafting'], ['filter', 'filter', 'Loot filter']]],
   ['Codex', [['index', 'book', 'Item index']]],
@@ -38,6 +42,7 @@ const NAV: [string, [View, string, string][]][] = [
 function TopStats({ s }: { s: Snapshot }) {
   const need = xpToNext(s.level);
   const m = s.fight;
+  const g = s.gathering;
   return (
     <div className="top-stats">
       <div className="top-char">
@@ -52,18 +57,28 @@ function TopStats({ s }: { s: Snapshot }) {
       <span className="chip stat" title="Gold"><Icon name="coins" className="c-gold" /><strong>{fmtBig(s.gold)}</strong></span>
       <span className="chip stat" title="Dust"><Icon name="gem" className="c-dust" /><strong>{fmtBig(s.row.dust)}</strong></span>
       <span className="divider" />
-      <button className="chip activity" title="Current activity" onClick={() => (location.hash = '#combat')}>
-        <span className={`dot ${!m ? '' : m.viable ? 'ok' : 'bad'}`} />
-        <span>{s.target ? `${s.target.zone.name} › ${s.target.enemy.name}` : 'Idle'}</span>
-        <span className="activity-rate">{m?.viable ? `${fmt(perHour(m))} kills/h` : ''}</span>
-      </button>
+      {g ? (
+        <button className="chip activity" title="Current activity" onClick={() => (location.hash = `#${g.skill.slug}`)}>
+          <span className="dot ok" />
+          <span>{g.skill.name} › {materialOf(g.tier, g.skill.makes).name}</span>
+          <span className="activity-rate">Lv {s.skills.get(g.skill.id)?.level}</span>
+        </button>
+      ) : (
+        <button className="chip activity" title="Current activity" onClick={() => (location.hash = '#combat')}>
+          <span className={`dot ${!m ? '' : m.viable ? 'ok' : 'bad'}`} />
+          <span>{s.target ? `${s.target.zone.name} › ${s.target.enemy.name}` : 'Idle'}</span>
+          <span className="activity-rate">{m?.viable ? `${fmt(perHour(m))} kills/h` : ''}</span>
+        </button>
+      )}
     </div>
   );
 }
 
 /** Views that get their own tab on the mobile bottom bar; the rest go under "More". */
-const TAB_BAR: View[] = ['combat', 'zones', 'equipment', 'bag'];
+const TAB_BAR: View[] = ['combat', 'zones', 'skills', 'equipment', 'bag'];
 const NAV_LINKS = NAV.flatMap(([, links]) => links);
+/** The nav entry a view belongs to: a skill's page is under Skills. */
+const navOf = (view: View): View => (SKILLS.some(sk => sk.slug === view) ? 'skills' : view);
 
 /** The sidebar's footer, and the bottom of the phone "More" sheet. */
 function AccountFoot({ conn }: { conn: DbConnection }) {
@@ -83,7 +98,7 @@ function NavLinks({ view, exclude = [] }: { view: View; exclude?: View[] }) {
       <div key={group} style={{ display: 'contents' }}>
         <div className="nav-group">{group}</div>
         {shown.map(([v, icon, label]) => (
-          <a key={v} href={`#${v}`} className={v === view ? 'active' : ''} title={label}>
+          <a key={v} href={`#${v}`} className={v === navOf(view) ? 'active' : ''} title={label}>
             <Icon name={icon} />
             <span className="nav-label">{label}</span>
           </a>
@@ -111,13 +126,13 @@ function BottomNav({ conn, view, onNavigate }: { conn: DbConnection; view: View;
         {TAB_BAR.map(v => {
           const [, icon, label] = NAV_LINKS.find(([x]) => x === v)!;
           return (
-            <a key={v} href={`#${v}`} className={v === view ? 'active' : ''}>
+            <a key={v} href={`#${v}`} className={v === navOf(view) ? 'active' : ''}>
               <Icon name={icon} />
               <span>{label}</span>
             </a>
           );
         })}
-        <button className={!TAB_BAR.includes(view) ? 'active' : ''} onClick={() => setMore(true)}>
+        <button className={!TAB_BAR.includes(navOf(view)) ? 'active' : ''} onClick={() => setMore(true)}>
           <Icon name="menu" />
           <span>More</span>
         </button>
@@ -228,6 +243,7 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
     case 'combat': return <CombatView s={s} />;
     case 'zones': return <ZonesView s={s} />;
     case 'raids': return <RaidsView s={s} />;
+    case 'skills': return <SkillsView s={s} />;
     case 'character': return <CharacterView s={s} />;
     case 'equipment': return <EquipmentView s={s} />;
     case 'bag': return <BagView s={s} />;
@@ -235,6 +251,10 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
     case 'filter': return <FilterView s={s} />;
     case 'index': return <ItemIndexView s={s} />;
     case 'settings': return <SettingsView s={s} />;
+    default: {
+      const skill = SKILLS.find(sk => sk.slug === view);
+      return skill ? <SkillView key={skill.id} s={s} skill={skill} /> : null;
+    }
   }
 }
 

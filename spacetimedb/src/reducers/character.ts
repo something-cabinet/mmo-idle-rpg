@@ -45,6 +45,8 @@ export const createCharacter = spacetimedb.reducer({ name: t.string(), starterWe
     activeLoadout: 0,
     zoneId: STARTING_ZONE,
     targetEnemyId: STARTING_TARGET,
+    activitySkill: 0,
+    activityRecipe: 0,
   });
   ensureCharacterRows(ctx, ch.id);
   grantStarterKit(ctx, ch.id, starterWeapon);
@@ -62,7 +64,7 @@ export const playHere = spacetimedb.reducer(ctx => {
  * Chooses the enemy to fight. Its zone must be unlocked, and a secret area's enemy
  * found (it is "No such enemy" until then, so the secret doesn't leak). Any enemy can be picked,
  * bosses included (a challenge until the first kill); a losing fight ends in a
- * defeat. Settles at the old target first.
+ * defeat. Settles at the old target first; stops any life skill (one activity at a time).
  */
 export const setTarget = spacetimedb.reducer({ enemyId: t.u16() }, (ctx, { enemyId }) => {
   const { ch } = requireActive(ctx);
@@ -73,13 +75,13 @@ export const setTarget = spacetimedb.reducer({ enemyId: t.u16() }, (ctx, { enemy
   // Settle first, so kills up to now count toward finding a secret area.
   const settled = settle(ctx, ch);
   if (!areaFound(ctx, ch.id, zone, enemy.id)) throw new SenderError('No such enemy');
-  ctx.db.character.id.update({ ...settled, zoneId: zone.id, targetEnemyId: enemy.id });
+  ctx.db.character.id.update({ ...settled, zoneId: zone.id, targetEnemyId: enemy.id, activitySkill: 0, activityRecipe: 0 });
 });
 
-/** Stops fighting: settles, then goes idle (no target, no gains). */
+/** Stops fighting (or a life skill): settles, then goes idle (no target, no gains). */
 export const flee = spacetimedb.reducer(ctx => {
   const { ch } = requireActive(ctx);
-  ctx.db.character.id.update({ ...settle(ctx, ch), targetEnemyId: 0 });
+  ctx.db.character.id.update({ ...settle(ctx, ch), targetEnemyId: 0, activitySkill: 0, activityRecipe: 0 });
 });
 
 /**

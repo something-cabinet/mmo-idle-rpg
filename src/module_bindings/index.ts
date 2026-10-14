@@ -66,7 +66,9 @@ import SetProfileReducer from "./set_profile_reducer";
 import SetRaidHiresReducer from "./set_raid_hires_reducer";
 import SetTargetReducer from "./set_target_reducer";
 import SettleNowReducer from "./settle_now_reducer";
+import StartGatheringReducer from "./start_gathering_reducer";
 import StartRaidReducer from "./start_raid_reducer";
+import StopSkillReducer from "./stop_skill_reducer";
 import SwitchLoadoutReducer from "./switch_loadout_reducer";
 import UnequipReducer from "./unequip_reducer";
 import UpgradeRarityReducer from "./upgrade_rarity_reducer";
@@ -91,6 +93,8 @@ import MyLootFilterRow from "./my_loot_filter_table";
 import MyMaterialsRow from "./my_materials_table";
 import MyRaidLogRow from "./my_raid_log_table";
 import MySettleLogRow from "./my_settle_log_table";
+import MySkillsRow from "./my_skills_table";
+import MyToolsRow from "./my_tools_table";
 import PresenceRow from "./presence_table";
 import RaidMemberRow from "./raid_member_table";
 import RaidPartyRow from "./raid_party_table";
@@ -277,6 +281,20 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MySettleLogRow),
+  mySkills: __table({
+    name: 'my_skills',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MySkillsRow),
+  myTools: __table({
+    name: 'my_tools',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyToolsRow),
   raidPartyCharacters: __table({
     name: 'raid_party_characters',
     indexes: [
@@ -334,7 +352,9 @@ const reducersSchema = __reducers(
   __reducerSchema("set_raid_hires", SetRaidHiresReducer),
   __reducerSchema("set_target", SetTargetReducer),
   __reducerSchema("settle_now", SettleNowReducer),
+  __reducerSchema("start_gathering", StartGatheringReducer),
   __reducerSchema("start_raid", StartRaidReducer),
+  __reducerSchema("stop_skill", StopSkillReducer),
   __reducerSchema("switch_loadout", SwitchLoadoutReducer),
   __reducerSchema("unequip", UnequipReducer),
   __reducerSchema("upgrade_rarity", UpgradeRarityReducer),
@@ -376,6 +396,10 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_raid_log": Omit<typeof tablesSchema.schemaType.tables["myRaidLog"], "accessorName"> & { readonly accessorName: "my_raid_log" };
     /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
     readonly "my_settle_log": Omit<typeof tablesSchema.schemaType.tables["mySettleLog"], "accessorName"> & { readonly accessorName: "my_settle_log" };
+    /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
+    readonly "my_skills": Omit<typeof tablesSchema.schemaType.tables["mySkills"], "accessorName"> & { readonly accessorName: "my_skills" };
+    /** @deprecated Use `myTools` instead. This alias will be removed in the next major version. */
+    readonly "my_tools": Omit<typeof tablesSchema.schemaType.tables["myTools"], "accessorName"> & { readonly accessorName: "my_tools" };
     /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
     readonly "raid_party_characters": Omit<typeof tablesSchema.schemaType.tables["raidPartyCharacters"], "accessorName"> & { readonly accessorName: "raid_party_characters" };
     /** @deprecated Use `raidPartyItems` instead. This alias will be removed in the next major version. */
@@ -415,6 +439,8 @@ const tableAccessorAliases = {
   "my_materials": "myMaterials",
   "my_raid_log": "myRaidLog",
   "my_settle_log": "mySettleLog",
+  "my_skills": "mySkills",
+  "my_tools": "myTools",
   "raid_party_characters": "raidPartyCharacters",
   "raid_party_items": "raidPartyItems",
   "raid_party_loadouts": "raidPartyLoadouts",
@@ -468,6 +494,10 @@ export type DbView = __DbViewBase & {
   readonly "my_raid_log": __DbViewBase["myRaidLog"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __DbViewBase["mySettleLog"];
+  /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
+  readonly "my_skills": __DbViewBase["mySkills"];
+  /** @deprecated Use `myTools` instead. This alias will be removed in the next major version. */
+  readonly "my_tools": __DbViewBase["myTools"];
   /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
   readonly "raid_party_characters": __DbViewBase["raidPartyCharacters"];
   /** @deprecated Use `raidPartyItems` instead. This alias will be removed in the next major version. */
@@ -508,6 +538,10 @@ export type Tables = __TablesBase & {
   readonly "my_raid_log": __TablesBase["myRaidLog"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __TablesBase["mySettleLog"];
+  /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
+  readonly "my_skills": __TablesBase["mySkills"];
+  /** @deprecated Use `myTools` instead. This alias will be removed in the next major version. */
+  readonly "my_tools": __TablesBase["myTools"];
   /** @deprecated Use `raidPartyCharacters` instead. This alias will be removed in the next major version. */
   readonly "raid_party_characters": __TablesBase["raidPartyCharacters"];
   /** @deprecated Use `raidPartyItems` instead. This alias will be removed in the next major version. */

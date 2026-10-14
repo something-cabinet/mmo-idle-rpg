@@ -2,9 +2,12 @@
 
 import type { DbConnection } from '../module_bindings';
 import type { Character, Item, Loadout, LootFilter, SettleLog } from '../module_bindings/types';
-import { combatStats, matchup, type CombatStats, type Matchup } from '../../spacetimedb/src/combat';
+import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from '../../spacetimedb/src/combat';
 import { ENEMIES_BY_ID, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { simulate, type Simulated } from '../../spacetimedb/src/sim';
+import { SKILLS, SKILLS_BY_ID, type SkillDef } from '../../spacetimedb/src/data/skills';
+import { gatherCharacterXp, projectGathering, type Gathered } from '../../spacetimedb/src/gather';
+import { addXp } from '../../spacetimedb/src/game';
 import { foundKey } from './discovery';
 
 export interface Snapshot {
@@ -48,6 +51,12 @@ export interface Snapshot {
   fight: Matchup | undefined;
   /** The latest live fight (sim.ts `simulate`), which the fight scene animates; undefined when idle. */
   current: Simulated['current'];
+  /** Skill ID → level and XP, projected to now. */
+  skills: Map<number, { level: number; xp: bigint }>;
+  /** Gathering skill ID → tool tier. */
+  tools: Map<number, number>;
+  /** The gathering in progress (then `target` is undefined); its projection holds the actions since the last settle. */
+  gathering: { skill: SkillDef; tier: number; toolTier: number; projected: Gathered } | undefined;
 }
 
 export const gearFor = (slots: readonly bigint[], items: Map<bigint, Item>): (Item | undefined)[] => slots.map(id => items.get(id));
@@ -57,10 +66,27 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const loadouts = [...conn.db.myLoadouts.iter()].sort((a, b) => a.index - b.index);
   const active = loadouts.find(l => l.index === row.activeLoadout) ?? loadouts[0];
   const gear = gearFor(active?.slots ?? [], items);
-  const fighting = ENEMIES_BY_ID.get(row.targetEnemyId);
+  const skilling = SKILLS_BY_ID.get(row.activitySkill);
+  // The target is kept while skilling, but not fought.
+  const fighting = skilling ? undefined : ENEMIES_BY_ID.get(row.targetEnemyId);
   // We're online: progress is the live fights the server will settle (sim.ts), not the offline formulas.
-  const p = simulate({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy: fighting?.enemy }, nowMicros, row.id);
+  let p = simulate({ ...row, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { gear, enemy: fighting?.enemy }, nowMicros, row.id);
   const defeated = p.defeatedAt !== undefined;
+  const skills = new Map<number, { level: number; xp: bigint }>(SKILLS.map(sk => [sk.id, { level: 1, xp: 0n }]));
+  for (const r of conn.db.mySkills.iter()) skills.set(r.skillId, { level: r.level, xp: r.xp });
+  const tools = new Map([...conn.db.myTools.iter()].map(r => [r.skillId, r.tier]));
+  let gathering: Snapshot['gathering'];
+  if (skilling) {
+    const at = skills.get(skilling.id)!;
+    const toolTier = tools.get(skilling.id) ?? 1;
+    const tier = row.activityRecipe;
+    const projected = projectGathering({ ...at, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { tier, toolTier }, nowMicros);
+    skills.set(skilling.id, { level: projected.level, xp: projected.xp });
+    gathering = { skill: skilling, tier, toolTier, projected };
+    // Skilling's character XP (sim.ts saw no target, so `p` holds the settled values).
+    const gained = gatherCharacterXp(projected.actions, tier);
+    p = { ...p, ...addXp(p.level, p.xp, gained), xpGained: p.level >= MAX_LEVEL ? 0n : gained };
+  }
   const target = defeated ? undefined : fighting;
 
   const inLoadouts = new Map<bigint, number[]>();
@@ -95,5 +121,8 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     stats,
     fight: target && matchup(stats, target.enemy),
     current: p.current,
+    skills,
+    tools,
+    gathering,
   };
 }

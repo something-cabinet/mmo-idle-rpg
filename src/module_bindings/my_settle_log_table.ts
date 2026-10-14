@@ -46,4 +46,9 @@ export default __t.row({
   get encounters() {
     return __t.array(Encounter);
   },
+  skillId: __t.u8().name("skill_id"),
+  actions: __t.u32(),
+  skillXp: __t.u64().name("skill_xp"),
+  skillLevelFrom: __t.u8().name("skill_level_from"),
+  skillLevelTo: __t.u8().name("skill_level_to"),
 });

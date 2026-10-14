@@ -5,7 +5,6 @@ import type { SupplyDef } from '../../spacetimedb/src/data/supplies';
 import { MAX_SKILL_LEVEL, SkillId, doubleYieldChance, tierRequirement, type SkillDef } from '../../spacetimedb/src/data/skills';
 import { materialOf } from '../../spacetimedb/src/data/materials';
 import { ZONES } from '../../spacetimedb/src/data/zones';
-import { masterworkTier } from '../../spacetimedb/src/produce';
 import { pct } from './format';
 
 /** A recipe's name for lists and logs: elixirs carry their tier, bases and tools have it in their name. */
@@ -36,14 +35,6 @@ export function skillMilestones(skill: SkillDef): { level: number; perks: string
   const perks: [number, string][] = [];
   for (const tier of TIERS) perks.push([tierRequirement(tier), tierText(skill, tier)]);
   for (const tier of TIERS) perks.push([tierRequirement(tier) + SPEED_LEVELS, `Max speed at T${tier} (+20%)`]);
-  if (skill.id === SkillId.Smithing) {
-    for (const tier of TIERS) {
-      for (let lv = tierRequirement(tier); lv <= MAX_SKILL_LEVEL; lv++) {
-        const floor = masterworkTier(lv, tier);
-        if (floor > masterworkTier(lv - 1, tier)) perks.push([lv, `Masterwork: T${tier} forges roll ${floor === tier ? `only tier ${floor}` : `tier ${floor}+`} affixes`]);
-      }
-    }
-  }
   const extra = skill.kind === 'Gathering' ? 'double yield' : 'chance to keep the inputs';
   for (const lv of [50, MAX_SKILL_LEVEL]) perks.push([lv, `${pct(doubleYieldChance(lv))} ${extra}`]);
   perks.push([MAX_SKILL_LEVEL, 'Max level']);

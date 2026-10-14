@@ -18,7 +18,7 @@ import { seededRng } from '../spacetimedb/src/loot';
 import { addSkillXp, gatherCharacterXp, projectGathering, rollGathering } from '../spacetimedb/src/gather';
 import { RECIPES, affordable, forgeRecipeOf, recipeOf, toolRecipeId } from '../spacetimedb/src/data/recipes';
 import { ELIXIR_KILLS, elixirBuffs, elixirSupplyId } from '../spacetimedb/src/data/supplies';
-import { forgeItem, forged, masterworkTier, productionCharacterXp, projectProduction } from '../spacetimedb/src/produce';
+import { forgeItem, forged, productionCharacterXp, projectProduction } from '../spacetimedb/src/produce';
 import { SLOTS } from '../spacetimedb/src/data/bases';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 import { combatStats, matchup } from '../spacetimedb/src/combat';
@@ -189,11 +189,9 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
     if (it.rarity.tag === 'Rare') rare++;
   }
   check('forged: ~20% Magic, ~2% Rare, never higher', magic > 700 && magic < 900 && rare > 50 && rare < 110, `${magic} ${rare}`);
-  check('masterwork floor: +1 per 20 levels above, capped at the tier',
-    masterworkTier(21, 3) === 1 && masterworkTier(41, 3) === 2 && masterworkTier(99, 3) === 3 && masterworkTier(99, 1) === 1);
   let minTier = 9;
   for (let i = 0; i < 300; i++) for (const a of forgeItem(seededRng(BigInt(i)), 1, 3, 99).affixes) minTier = Math.min(minTier, a.tier);
-  check('masterwork affixes roll at the floor or higher', minTier === 3, `${minTier}`);
+  check('forged affixes roll from tier 1 at any level, like drops', minTier === 1, `${minTier}`);
 }
 
 // ---------------------------------------------------------------- elixirs in combat

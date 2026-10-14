@@ -129,12 +129,12 @@ function pickAffixStat(rng: Rng): StatDef {
 }
 
 /**
- * A regular affix on a tier-`tier` item: weighted free pool, affix tier `minTier`..N (1..N
- * unless forged as a masterwork), value uniform in that tier's range (then rounded).
+ * A regular affix on a tier-`tier` item: weighted free pool, affix tier 1..N, value uniform
+ * in that tier's range (then rounded).
  */
-export function rollAffix(rng: Rng, tier: number, minTier = 1): NewItem['affixes'][number] {
+export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
   const def = pickAffixStat(rng);
-  const k = minTier + Math.floor(rng() * (tier - minTier + 1));
+  const k = 1 + Math.floor(rng() * tier);
   const [lo, hi] = affixRange(def.id, k);
   const value = lo + (hi - lo) * rng();
   return { stat: def.id, tier: k, value: toStored(roundStat(def.id, value)) };
@@ -150,7 +150,7 @@ export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullab
 }
 
 /** An item of `baseId` at `tier`: base values computed and stored literally, affixes rolled (of affix tier `minAffixTier` or higher). */
-export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityName, minAffixTier = 1): NewItem {
+export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityName): NewItem {
   if (rarity === 'Anomaly') return makeAnomaly(rng, baseId, tier);
   const b = base(baseId);
   const w = b.weapon && weaponValues(b.weapon, tier);
@@ -159,7 +159,7 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
     tier,
     rarity: { tag: rarity },
     implicits: b.implicits.map(i => ({ stat: i.stat, value: toStored(implicitValue(i, tier)) })),
-    affixes: Array.from({ length: REGULAR_AFFIXES[rarity] }, () => rollAffix(rng, tier, minAffixTier)),
+    affixes: Array.from({ length: REGULAR_AFFIXES[rarity] }, () => rollAffix(rng, tier)),
     legendary: rarity === 'Legendary' ? rollLegendary(rng, baseId, tier) : undefined,
     uniqueId: undefined,
     effects: [],

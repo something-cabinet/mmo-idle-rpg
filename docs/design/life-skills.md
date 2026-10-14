@@ -200,8 +200,6 @@ target**, so an empty queue never wastes offline time.
 - Rarity: Common, with **20% Magic + 0.5% per level above the requirement** and a
   **2% Rare** chance. Never higher: the value is the base you choose, not the rolls.
   Players finish the item with the usual gold and Dust crafting (crafting.md).
-- **Masterwork**: rolled affixes on a forged item have a minimum tier of
-  `1 + floor((level − requirement) / 20)` (capped at the item tier).
 - Forged items follow the normal bag limit. A full bag refuses the queue to start.
 - **Keep rule** (separate from the loot filter): a minimum rarity (Common, Magic or Rare),
   a minimum affix tier and an affix list. Forged bases that fail it are salvaged into Dust
@@ -295,13 +293,12 @@ Scrap turns unwanted drops into materials and Smithing XP instead of Dust and go
 
 ### Smithing: level rewards
 
-Smithing level improves the work in five ways:
+Smithing level improves the work in four ways:
 
 | Level effect | What it does |
 |-|-|
 | Speed | +1% action speed per level above the recipe's requirement, cap +20% |
 | Forge rarity | 20% Magic + 0.5% per level above the requirement, 2% Rare |
-| Masterwork | A forged item's affixes roll tier `1 + floor((level − requirement) / 20)` or higher (capped at the item tier), so high-level forges never roll the weakest affix tiers |
 | Keep inputs | 5% from level 50, 10% at 99: an action uses no inputs (production's version of double yield) |
 | Temper cap | +1 per 10 levels, +10 at 99 (above) |
 

@@ -33,6 +33,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-15 | Masterwork removed: forged items roll affix tiers 1..N like drops, at any Smithing level (was a floor of 1 + floor((level − requirement) / 20)). Smithing level still raises the forge's Magic chance and speed. |
 | 2026-10-15 | Material IDs renumbered from `tier × 10 + kind` (room for 9 kinds) to `kind × 100 + tier` with explicit permanent kind IDs (`MATERIAL_KIND_IDS`): ~650 kinds and 99 tiers in the same `u16` column. No schema change and no wipe: migrate.ts rewrites `material` rows and settle-log material lists once after the publish (recorded in a private `migration` table), run from the online settle timer and on connect. |
 | 2026-10-15 | Mining gives only **Ore** (material kind 9, gathering-only), no more Metal; Smithing smelts 1 Ore → 1 Metal in 12 s, so Mining and Smithing level together and Smithing has a steady XP recipe. Combat still drops Metal. 300 Metal from Ore takes 2 h (Mining, then smelting), where Mining alone took 1 h. |
 | 2026-10-15 | Smithing gets two recipes beyond forging (life-skills.md). **Tempering**: +2% base stats and implicits per level on an owned item, 10 levels (+20%), max +1 per 10 Smithing levels and +10 at 99; step k costs 10k main material, 0.05k h of gold, 3k min. **Smelting**: the loot filter can send rejected items to scrap instead of salvage (no Dust or gold); 1 scrap smelts into 2–40 materials of its kind by rarity in 30 s, with Smithing XP. |

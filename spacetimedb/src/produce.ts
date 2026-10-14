@@ -100,9 +100,6 @@ export const FORGE_RARE_CHANCE = 0.02;
 /** Chance a forged base is Magic: 20%, +0.5% per Smithing level above the tier's requirement. */
 export const forgeMagicChance = (level: number, tier: number) => 0.2 + 0.005 * Math.max(0, level - tierRequirement(tier));
 
-/** Masterwork: the lowest affix tier a base forged at `level` rolls, +1 per 20 levels above the requirement (capped at the item tier). */
-export const masterworkTier = (level: number, tier: number) => Math.min(tier, 1 + Math.floor(Math.max(0, level - tierRequirement(tier)) / 20));
-
 export function forgeRarity(rng: Rng, level: number, tier: number): RarityName {
   const r = rng();
   return r < FORGE_RARE_CHANCE ? 'Rare' : r < FORGE_RARE_CHANCE + forgeMagicChance(level, tier) ? 'Magic' : 'Common';
@@ -110,7 +107,7 @@ export function forgeRarity(rng: Rng, level: number, tier: number): RarityName {
 
 /** A base forged at Smithing `level` (life-skills.md, "Smithing: forge a base"). */
 export function forgeItem(rng: Rng, baseId: number, tier: number, level: number): NewItem {
-  return makeItem(rng, baseId, tier, forgeRarity(rng, level, tier), masterworkTier(level, tier));
+  return makeItem(rng, baseId, tier, forgeRarity(rng, level, tier));
 }
 
 /**

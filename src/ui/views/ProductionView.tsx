@@ -9,7 +9,7 @@ import { GATHERING_SKILLS, MAX_SKILL_LEVEL, SkillId, doubleYieldChance, levelSpe
 import { affordable, forgeRecipeOf, recipeOf, toolRecipeId, type Recipe } from '../../../spacetimedb/src/data/recipes';
 import { ELIXIRS, ELIXIR_KILLS, SUPPLIES, SUPPLY_TIERS, elixirSupplyId } from '../../../spacetimedb/src/data/supplies';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
-import { FORGE_RARE_CHANCE, forgeMagicChance, masterworkTier, type ForgeFilter } from '../../../spacetimedb/src/produce';
+import { FORGE_RARE_CHANCE, forgeMagicChance, type ForgeFilter } from '../../../spacetimedb/src/produce';
 import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
 import { restrictsAffixes } from '../../../spacetimedb/src/loot';
 import { nowMicros } from '../clock';
@@ -264,7 +264,6 @@ function ForgeCard({ s }: { s: Snapshot }) {
           <div className="foe-meta"><Cost s={s} r={r} /> · {duration(BigInt(r.seconds) * 1_000_000n)}</div>
           <div className="foe-meta muted">
             <span className="c-magic">Magic {pct(forgeMagicChance(level, tier), 1)}</span> · <span className="c-rare">Rare {pct(FORGE_RARE_CHANCE)}</span> · otherwise Common
-            {masterworkTier(level, tier) > 1 && ` · Masterwork: affixes T${masterworkTier(level, tier)}+`}
           </div>
         </div>
         <QueueButton s={s} r={r} count={count} label="Forge" />

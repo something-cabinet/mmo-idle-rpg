@@ -27,6 +27,26 @@ const fightingNow = (p: RaidParty) => !!p.fight && !p.fight.finished;
 /** Seconds the frost flash and damage numbers stay up after the special attack. */
 const BREATH_FLASH = 1.4;
 
+const CLOSED_KEY = 'raidFightsClosed';
+/** "partyId:startMicros" of a fight. */
+const fightKey = (p: RaidParty) => `${p.id}:${p.fight!.startedAt.microsSinceUnixEpoch}`;
+/** Finished fights whose result screen this browser closed; the latest few. */
+function closedFights(): string[] {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(CLOSED_KEY) ?? '[]');
+    return Array.isArray(saved) ? saved.filter((k): k is string => typeof k === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+function closeFight(key: string) {
+  try {
+    localStorage.setItem(CLOSED_KEY, JSON.stringify([...closedFights().filter(k => k !== key), key].slice(-20)));
+  } catch {
+    // storage blocked: the result comes back on the next visit
+  }
+}
+
 export const RaidsView = memo(function RaidsView({ s }: { s: Snapshot }) {
   return (
     <>
@@ -100,7 +120,7 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
             </li>
             {ownBases.length > 0 && (
               <li>
-                Raid boss exclusive bases:{' '}
+                Raid boss exclusive equipment bases:{' '}
                 {ownBases.map((b, i) => {
                   const found = baseFound(s, b.id, raid.tier);
                   return (
@@ -187,11 +207,14 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   const empty = RAID_PARTY_SIZE - members.length - party.hired;
   const startBlock = fighting ? 'The fight is on'
     : offline.length ? `${offline.map(m => m.name).join(', ')} offline`
-    : s.gold < cost ? `Need ${fmtBig(cost - s.gold)} more gold to hire` : undefined;
+      : s.gold < cost ? `Need ${fmtBig(cost - s.gold)} more gold to hire` : undefined;
   const leader = members.find(m => m.characterId === party.leaderId);
   const clearsLeft = Math.max(0, raid.clearsPerDay - clearsToday(conn.db.myRaidLog.iter(), raid.id, nowMicros()));
   const [confirming, setConfirming] = useState(false);
   const again = !!party.fight?.finished;
+  const [closed, setClosed] = useState(closedFights);
+  // A finished fight stays on screen until you close it; one you weren't in doesn't show.
+  const showFight = !!party.fight && (fighting || (!closed.includes(fightKey(party)) && decodeSetup(party.fight.setup).fighters.some(f => f.characterId === me)));
 
   const seat = (stats: CombatStats | undefined, i: number) => {
     if (!stats) return undefined;
@@ -267,7 +290,18 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
         ))}
       </div>
 
-      {party.fight && <RaidFight key={String(party.fight.startedAt.microsSinceUnixEpoch)} s={s} raid={raid} party={party} />}
+      {showFight && (
+        <RaidFight
+          key={String(party.fight!.startedAt.microsSinceUnixEpoch)}
+          s={s}
+          raid={raid}
+          party={party}
+          onClose={() => {
+            closeFight(fightKey(party));
+            setClosed(closedFights());
+          }}
+        />
+      )}
 
       {!fighting && (
         <div className={`raid-launch${leading ? ' leading' : ''}`}>
@@ -326,7 +360,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
 }
 
 /** The party's latest fight, replayed in step with the server's clock; then its result and your reward. */
-function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: RaidParty }) {
+function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; party: RaidParty; onClose: () => void }) {
   const fight = party.fight!;
   const start = fight.startedAt.microsSinceUnixEpoch;
   const setup = useMemo(() => decodeSetup(fight.setup), [fight.setup]);
@@ -418,6 +452,11 @@ function RaidFight({ s, raid, party }: { s: Snapshot; raid: RaidDef; party: Raid
             <div className="muted">Opening the hoard…</div>
           </div>
         ) : null
+      )}
+      {!live && fight.finished && (
+        <button className="btn raid-close" onClick={onClose}>
+          Continue
+        </button>
       )}
     </div>
   );

@@ -3328,6 +3328,10 @@ fieldset.affix-pick legend {
   font-weight: 600;
   color: var(--muted);
 }
+.raid-close {
+  justify-self: center;
+  min-width: 140px;
+}
 @media (max-width: 700px) {
   .raid-result-title { font-size: 34px; }
   .raid-confirm-list li { grid-template-columns: 1fr; gap: 0; }

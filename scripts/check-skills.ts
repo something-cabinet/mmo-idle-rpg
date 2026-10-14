@@ -18,7 +18,7 @@ import { seededRng } from '../spacetimedb/src/loot';
 import { addSkillXp, gatherCharacterXp, projectGathering, rollGathering } from '../spacetimedb/src/gather';
 import { RECIPES, affordable, forgeRecipeOf, recipeOf, toolRecipeId } from '../spacetimedb/src/data/recipes';
 import { ELIXIR_KILLS, elixirBuffs, elixirSupplyId } from '../spacetimedb/src/data/supplies';
-import { forgeItem, masterworkTier, productionCharacterXp, projectProduction } from '../spacetimedb/src/produce';
+import { forgeItem, forged, masterworkTier, productionCharacterXp, projectProduction } from '../spacetimedb/src/produce';
 import { SLOTS } from '../spacetimedb/src/data/bases';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 import { combatStats, matchup } from '../spacetimedb/src/combat';
@@ -145,6 +145,16 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   const sword = forgeRecipeOf(1, 1)!;
   const bag = projectProduction(fresh, sword, { countLeft: 100, have: () => 1e6, bagFree: 2 }, 1n, HOUR);
   check('forging stops when the bag is full', bag.actions === 2 && bag.endedAt === bag.made[1].at);
+
+  // The keep rule: salvaged bases take no bag slot.
+  const magicPlus = { minRarity: 'Magic' as const, keepAffixes: [], minAffixTier: 1 };
+  const keeps = (m: { at: bigint; level: number }) => forged(1n, sword, m, magicPlus).kept;
+  const ruled = projectProduction(fresh, sword, { countLeft: 30, have: () => 1e6, bagFree: 2, keeps }, 1n, HOUR);
+  const kept = ruled.made.filter(m => m.kept).length;
+  check('the keep rule spares bag slots: forging goes on past 2 until 2 are kept', kept === 2 && ruled.actions > 2 && ruled.made.at(-1)!.kept,
+    `${ruled.actions} made, ${kept} kept`);
+  check('kept means Magic or better', ruled.made.every(m => m.kept === (forged(1n, sword, m).item.rarity.tag !== 'Common')));
+  check('no rule keeps everything', forged(1n, sword, { at: 5n, level: 1 }).kept);
 
   // Per-minute settles give the same as one (keep-inputs rolls are seeded per action).
   const lv60 = { level: 60, xp: 0n, settledMicros: 0n };

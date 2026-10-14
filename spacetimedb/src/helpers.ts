@@ -11,7 +11,7 @@ import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, type ProductionSkillDef } from 
 import { recipeOf, type MaterialCost } from './data/recipes';
 import { elixirBuffs } from './data/supplies';
 import { gatherCharacterXp, projectGathering, rollGathering } from './gather';
-import { forgeItem, productionCharacterXp, projectProduction } from './produce';
+import { forged, productionCharacterXp, projectProduction, type ForgeFilter } from './produce';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
 import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, salvageValue, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
@@ -301,18 +301,35 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
   if (!r) return backToCombat(ch, capMicros);
   const row = skillRow(ctx, ch.id, def.id);
   const held = materialCounts(ctx, ch.id);
-  const queue = { countLeft: ch.activityCountLeft, have: (id: number) => held.get(id) ?? 0, bagFree: ch.bagSize - bagCount(ctx, ch.id) };
+  const filter = forgeFilterOf(ctx, ch.id);
+  const queue = {
+    countLeft: ch.activityCountLeft,
+    have: (id: number) => held.get(id) ?? 0,
+    bagFree: ch.bagSize - bagCount(ctx, ch.id),
+    keeps: (m: { at: bigint; level: number }) => forged(ch.id, r, m, filter).kept,
+  };
   const pr = projectProduction({ ...row, settledMicros: start }, r, queue, ch.id, ctx.timestamp.microsSinceUnixEpoch, capMicros);
   takeMaterials(ctx, ch.id, pr.used);
 
   const keptItemIds: bigint[] = [];
   const discovered: Found[] = [];
+  // Forged bases the keep rule turns down are salvaged, like drops the loot filter turns down.
+  const salvaged = RARITIES.map(() => 0);
+  let dust = 0n;
+  let gold = 0n;
   const out = r.output;
   if (out.kind === 'item') {
     for (const m of pr.made) {
-      const it = forgeItem(seededRng(ch.id, m.at, FORGE_SALT), out.baseId, r.tier, m.level);
-      keptItemIds.push(ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id);
+      const { item: it } = forged(ch.id, r, m, filter);
       discovered.push(...discover(ctx, ch.id, r.tier, [{ baseId: out.baseId }]));
+      if (m.kept) {
+        keptItemIds.push(ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id);
+      } else {
+        const v = salvageValue(it.rarity.tag, it.tier);
+        dust += v.dust;
+        gold += v.gold;
+        salvaged[RARITIES.indexOf(it.rarity.tag)]++;
+      }
     }
   } else if (out.kind === 'supply') {
     addSupply(ctx, ch.id, out.supplyId, pr.actions);
@@ -345,12 +362,30 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
       used: pr.used,
       keptItemIds,
       discovered,
+      salvaged,
+      dust,
+      gold,
     });
   }
-  const next = { ...ch, dust: ch.dust + ch.essence, essence: 0n, level, xp, activityCountLeft: pr.countLeft, lastSettledAt: new Timestamp(pr.settledMicros) };
+  const next = {
+    ...ch,
+    dust: ch.dust + ch.essence + dust,
+    essence: 0n,
+    gold: ch.gold + gold,
+    level,
+    xp,
+    activityCountLeft: pr.countLeft,
+    lastSettledAt: new Timestamp(pr.settledMicros),
+  };
   if (pr.endedAt === undefined) return next;
   // The queue is done: the rest of the time (and of the offline cap) goes to combat.
   return backToCombat(next, capMicros === undefined ? undefined : capMicros - (pr.endedAt - start));
+}
+
+/** The character's forge keep rule (undefined: keep everything). */
+export function forgeFilterOf(ctx: Ctx, characterId: bigint): ForgeFilter | undefined {
+  const f = ctx.db.forgeFilter.characterId.find(characterId);
+  return f ? { minRarity: f.minRarity.tag, keepAffixes: f.keepAffixes, minAffixTier: f.minAffixTier } : undefined;
 }
 
 /** Material ID → count the character holds. */
@@ -553,7 +588,6 @@ const MATERIAL_SALT = 0x6d6174n; // "mat"
 const DISCOVER_SALT = 0x6469736376n; // "discv"
 const ENCOUNTER_SALT = 0x656e636fn; // "enco"
 const GATHER_SALT = 0x676174686572n; // "gather"
-const FORGE_SALT = 0x666f726765n; // "forge"
 
 /** `a` plus `b`, one entry per material. */
 function mergeMaterials(a: readonly MaterialDrop[], b: readonly MaterialDrop[]): MaterialDrop[] {
@@ -634,6 +668,7 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.skill.characterId.delete(characterId);
   ctx.db.tool.characterId.delete(characterId);
   ctx.db.supply.characterId.delete(characterId);
+  ctx.db.forgeFilter.characterId.delete(characterId);
   ctx.db.settleLog.characterId.delete(characterId);
   ctx.db.discovery.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);

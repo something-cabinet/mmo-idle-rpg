@@ -9,7 +9,7 @@ import { SKILLS, SKILLS_BY_ID, type GatheringSkillDef, type ProductionSkillDef, 
 import { recipeOf, type Recipe } from '../../spacetimedb/src/data/recipes';
 import { SUPPLIES_BY_ID, elixirBuffs, type Buffs, type SupplyDef } from '../../spacetimedb/src/data/supplies';
 import { gatherCharacterXp, projectGathering, type Gathered } from '../../spacetimedb/src/gather';
-import { productionCharacterXp, projectProduction, type Produced } from '../../spacetimedb/src/produce';
+import { forged, productionCharacterXp, projectProduction, type ForgeFilter, type Produced } from '../../spacetimedb/src/produce';
 import { addXp } from '../../spacetimedb/src/game';
 import { foundKey } from './discovery';
 
@@ -72,6 +72,8 @@ export interface Snapshot {
   production: { skill: ProductionSkillDef; recipe: Recipe; projected: Produced } | undefined;
   /** Supply ID → count in stock (after auto-renew so far). */
   supplies: Map<number, number>;
+  /** The forge keep rule; undefined keeps every forged base. */
+  forgeFilter: ForgeFilter | undefined;
   /** The active elixir, projected to now; undefined when the slot is empty. */
   elixir: { supply: SupplyDef; killsLeft: number } | undefined;
 }
@@ -90,6 +92,8 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const skilling = SKILLS_BY_ID.get(row.activitySkill);
   // The target is kept while skilling, but not fought.
   const fighting = skilling ? undefined : ENEMIES_BY_ID.get(row.targetEnemyId);
+  const ff = [...conn.db.myForgeFilter.iter()][0];
+  const forgeFilter: ForgeFilter | undefined = ff && { minRarity: ff.minRarity.tag, keepAffixes: ff.keepAffixes, minAffixTier: ff.minAffixTier };
   const supplies = new Map([...conn.db.mySupplies.iter()].map(r => [r.supplyId, Number(r.count)]));
   const elixirSupply = row.elixirKillsLeft > 0 ? SUPPLIES_BY_ID.get(row.elixirId) : undefined;
   const buffsNow = fighting && elixirSupply && elixirBuffs(elixirSupply.id, fighting.zone.tier);
@@ -116,7 +120,12 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const recipe = skilling?.kind === 'Production' ? recipeOf(skilling.id, row.activityRecipe) : undefined;
   if (skilling?.kind === 'Production' && recipe) {
     const at = skills.get(skilling.id)!;
-    const queue = { countLeft: row.activityCountLeft, have: (id: number) => Number(materials.get(id) ?? 0n), bagFree: row.bagSize - bag.length };
+    const queue = {
+      countLeft: row.activityCountLeft,
+      have: (id: number) => Number(materials.get(id) ?? 0n),
+      bagFree: row.bagSize - bag.length,
+      keeps: (m: { at: bigint; level: number }) => forged(row.id, recipe, m, forgeFilter).kept,
+    };
     const projected = projectProduction({ ...at, settledMicros }, recipe, queue, row.id, nowMicros);
     skills.set(skilling.id, { level: projected.level, xp: projected.xp });
     production = { skill: skilling, recipe, projected };
@@ -172,6 +181,7 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     gathering,
     production,
     supplies,
+    forgeFilter,
     elixir,
   };
 }

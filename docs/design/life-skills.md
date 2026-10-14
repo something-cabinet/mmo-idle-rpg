@@ -191,6 +191,10 @@ target**, so an empty queue never wastes offline time.
 - **Masterwork**: rolled affixes on a forged item have a minimum tier of
   `1 + floor((level − requirement) / 20)` (capped at the item tier).
 - Forged items follow the normal bag limit. A full bag refuses the queue to start.
+- **Keep rule** (separate from the loot filter): a minimum rarity (Common, Magic or Rare),
+  a minimum affix tier and an affix list. Forged bases that fail it are salvaged into Dust
+  and gold like filtered drops and take no bag slot, so a big queue can fish for one roll.
+  No rule keeps everything.
 
 ### Enchanting: Essences
 

@@ -66,6 +66,7 @@ import SalvageReducer from "./salvage_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
 import SetElixirAutoRenewReducer from "./set_elixir_auto_renew_reducer";
+import SetForgeFilterReducer from "./set_forge_filter_reducer";
 import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetProfileReducer from "./set_profile_reducer";
 import SetRaidHiresReducer from "./set_raid_hires_reducer";
@@ -91,6 +92,7 @@ import MyAccountRow from "./my_account_table";
 import MyBossKillsRow from "./my_boss_kills_table";
 import MyDiscoveriesRow from "./my_discoveries_table";
 import MyEnemyKillsRow from "./my_enemy_kills_table";
+import MyForgeFilterRow from "./my_forge_filter_table";
 import MyFriendCharactersRow from "./my_friend_characters_table";
 import MyFriendsRow from "./my_friends_table";
 import MyItemsRow from "./my_items_table";
@@ -232,6 +234,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyEnemyKillsRow),
+  myForgeFilter: __table({
+    name: 'my_forge_filter',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyForgeFilterRow),
   myFriendCharacters: __table({
     name: 'my_friend_characters',
     indexes: [
@@ -366,6 +375,7 @@ const reducersSchema = __reducers(
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
   __reducerSchema("set_elixir_auto_renew", SetElixirAutoRenewReducer),
+  __reducerSchema("set_forge_filter", SetForgeFilterReducer),
   __reducerSchema("set_loot_filter", SetLootFilterReducer),
   __reducerSchema("set_profile", SetProfileReducer),
   __reducerSchema("set_raid_hires", SetRaidHiresReducer),
@@ -400,6 +410,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_discoveries": Omit<typeof tablesSchema.schemaType.tables["myDiscoveries"], "accessorName"> & { readonly accessorName: "my_discoveries" };
     /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
     readonly "my_enemy_kills": Omit<typeof tablesSchema.schemaType.tables["myEnemyKills"], "accessorName"> & { readonly accessorName: "my_enemy_kills" };
+    /** @deprecated Use `myForgeFilter` instead. This alias will be removed in the next major version. */
+    readonly "my_forge_filter": Omit<typeof tablesSchema.schemaType.tables["myForgeFilter"], "accessorName"> & { readonly accessorName: "my_forge_filter" };
     /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
     readonly "my_friend_characters": Omit<typeof tablesSchema.schemaType.tables["myFriendCharacters"], "accessorName"> & { readonly accessorName: "my_friend_characters" };
     /** @deprecated Use `myFriends` instead. This alias will be removed in the next major version. */
@@ -453,6 +465,7 @@ const tableAccessorAliases = {
   "my_boss_kills": "myBossKills",
   "my_discoveries": "myDiscoveries",
   "my_enemy_kills": "myEnemyKills",
+  "my_forge_filter": "myForgeFilter",
   "my_friend_characters": "myFriendCharacters",
   "my_friends": "myFriends",
   "my_items": "myItems",
@@ -501,6 +514,8 @@ export type DbView = __DbViewBase & {
   readonly "my_discoveries": __DbViewBase["myDiscoveries"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
   readonly "my_enemy_kills": __DbViewBase["myEnemyKills"];
+  /** @deprecated Use `myForgeFilter` instead. This alias will be removed in the next major version. */
+  readonly "my_forge_filter": __DbViewBase["myForgeFilter"];
   /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
   readonly "my_friend_characters": __DbViewBase["myFriendCharacters"];
   /** @deprecated Use `myFriends` instead. This alias will be removed in the next major version. */
@@ -547,6 +562,8 @@ export type Tables = __TablesBase & {
   readonly "my_discoveries": __TablesBase["myDiscoveries"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
   readonly "my_enemy_kills": __TablesBase["myEnemyKills"];
+  /** @deprecated Use `myForgeFilter` instead. This alias will be removed in the next major version. */
+  readonly "my_forge_filter": __TablesBase["myForgeFilter"];
   /** @deprecated Use `myFriendCharacters` instead. This alias will be removed in the next major version. */
   readonly "my_friend_characters": __TablesBase["myFriendCharacters"];
   /** @deprecated Use `myFriends` instead. This alias will be removed in the next major version. */

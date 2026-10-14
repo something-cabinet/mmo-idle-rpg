@@ -9,18 +9,24 @@ import { GATHERING_SKILLS, MAX_SKILL_LEVEL, SkillId, doubleYieldChance, levelSpe
 import { affordable, forgeRecipeOf, recipeOf, toolRecipeId, type Recipe } from '../../../spacetimedb/src/data/recipes';
 import { ELIXIRS, ELIXIR_KILLS, SUPPLIES, SUPPLY_TIERS, elixirSupplyId } from '../../../spacetimedb/src/data/supplies';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
-import { FORGE_RARE_CHANCE, forgeMagicChance, masterworkTier } from '../../../spacetimedb/src/produce';
+import { FORGE_RARE_CHANCE, forgeMagicChance, masterworkTier, type ForgeFilter } from '../../../spacetimedb/src/produce';
+import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
+import { restrictsAffixes } from '../../../spacetimedb/src/loot';
 import { nowMicros } from '../clock';
 import { zoneUnlocked } from '../discovery';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
-import { materialIconName, materialName } from '../items';
+import { materialIconName, materialName, rarityCls } from '../items';
 import { CardHead, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
 import { ElsewhereCard, SkillBar } from './SkillView';
+import { AFFIX_ENTRIES, KeepList } from './FilterView';
 import { elixirText, recipeLabel } from '../lifeSkills';
 
 const VERB: Record<number, string> = { [SkillId.Smithing]: 'Forging', [SkillId.Alchemy]: 'Brewing' };
+
+/** Forged bases a settle salvaged for the keep rule. */
+const salvagedOf = (l: { salvaged: number[] }) => l.salvaged.reduce((a, b) => a + b, 0);
 
 const held = (s: Snapshot, materialId: number) => Number(s.materials.get(materialId) ?? 0n);
 
@@ -269,6 +275,52 @@ function ForgeCard({ s }: { s: Snapshot }) {
   );
 }
 
+/** The forge keep rule: forged bases that fail it are salvaged, not put in the bag. */
+function ForgeKeepCard({ s }: { s: Snapshot }) {
+  const search = useSticky('forgeAffixSearch', '');
+  const f: ForgeFilter = s.forgeFilter ?? { minRarity: 'Common', keepAffixes: [], minAffixTier: 1 };
+  const set = (patch: Partial<ForgeFilter>) => {
+    const next = { ...f, ...patch };
+    call(s.conn.reducers.setForgeFilter({ minRarity: { tag: next.minRarity }, keepAffixes: [...next.keepAffixes], minAffixTier: next.minAffixTier }));
+  };
+  const keepsAll = f.minRarity === 'Common' && f.minAffixTier === 1 && !restrictsAffixes(f);
+  return (
+    <div className="card">
+      <CardHead title="Keep rule"><span className="muted">{keepsAll ? 'Keeps everything' : 'Salvages the rest'}</span></CardHead>
+      <p className="muted">
+        Forged bases that fail this rule are salvaged into Dust and gold right away and take no bag slot. Separate from the loot filter.
+      </p>
+      <div className="seg wrap">
+        {(['Common', 'Magic', 'Rare'] as const).map(r => (
+          <button key={r} className={`seg-btn c-${rarityCls(r)}${r === f.minRarity ? ' active' : ''}`} onClick={() => set({ minRarity: r })}>
+            {r === 'Rare' ? 'Rare' : `${r}+`}
+          </button>
+        ))}
+      </div>
+      <div className="seg wrap">
+        {Array.from({ length: MAX_TIER }, (_, i) => i + 1).map(t => (
+          <button key={t} className={`seg-btn${t === f.minAffixTier ? ' active' : ''}`} onClick={() => set({ minAffixTier: t })}>
+            {t === 1 ? 'Any affix tier' : `T${t}+`}
+          </button>
+        ))}
+      </div>
+      <details className="forge-affixes">
+        <summary>Affixes ({restrictsAffixes(f) ? `${f.keepAffixes.length} / ${AFFIX_ENTRIES.length}` : 'any'})</summary>
+        <KeepList
+          title="Only keep these affixes"
+          what="Forged bases"
+          one="affix"
+          many="affixes"
+          entries={AFFIX_ENTRIES}
+          keep={new Set(f.keepAffixes.length ? f.keepAffixes : AFFIX_ENTRIES.map(e => e.id))}
+          search={search}
+          onChange={keepAffixes => set({ keepAffixes })}
+        />
+      </details>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- page
 
 export const ProductionView = memo(function ProductionView({ s, skill }: { s: Snapshot; skill: ProductionSkillDef }) {
@@ -280,7 +332,7 @@ export const ProductionView = memo(function ProductionView({ s, skill }: { s: Sn
   const logs = s.logs.filter(l => l.skillId === skill.id && !l.offline).slice(0, 10);
   let body: ReactNode = null;
   if (skill.id === SkillId.Alchemy) body = <><ElixirCard s={s} /><BrewCard s={s} /></>;
-  if (skill.id === SkillId.Smithing) body = <><ToolsCard s={s} /><ForgeCard s={s} /></>;
+  if (skill.id === SkillId.Smithing) body = <><ToolsCard s={s} /><ForgeCard s={s} /><ForgeKeepCard s={s} /></>;
   return (
     <>
       <a className="btn back-link" href="#skills"><Icon name="back" />All skills</a>
@@ -302,7 +354,10 @@ export const ProductionView = memo(function ProductionView({ s, skill }: { s: Sn
               const r = recipeOf(skill.id, l.recipe);
               return (
                 <li key={String(l.id)}>
-                  <span className="c-material">{l.actions}× {r ? recipeLabel(r) : '?'}</span>
+                  <span className="c-material">
+                    {l.actions}× {r ? recipeLabel(r) : '?'}
+                    {salvagedOf(l) > 0 && <span className="muted"> · {salvagedOf(l)} salvaged (+{fmtBig(l.dust)} Dust, +{fmtBig(l.gold)} gold)</span>}
+                  </span>
                   <span className="muted">
                     +{fmtBig(l.skillXp)} {skill.name} XP · +{fmtBig(l.xp)} XP{l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelTo}!` : ''}
                   </span>

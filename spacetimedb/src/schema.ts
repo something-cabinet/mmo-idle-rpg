@@ -248,6 +248,23 @@ export const lootFilter = table(
   }
 );
 
+/**
+ * The forge keep rule (life-skills.md, "Smithing"): forged bases that fail it are
+ * salvaged instead of going to the bag. No row keeps everything. Private; owners read
+ * theirs via `my_forge_filter`.
+ */
+export const forgeFilter = table(
+  { name: 'forge_filter' },
+  {
+    characterId: t.u64().primaryKey(),
+    minRarity: Rarity,
+    /** Stat IDs: kept only with one of these affixes (empty or all = any). */
+    keepAffixes: t.array(t.u16()),
+    /** Kept only with an affix of at least this tier (1 = any). */
+    minAffixTier: t.u8(),
+  }
+);
+
 /** First kill of a zone boss; unlocks the next zone. */
 export const bossKill = table(
   { name: 'boss_kill' },
@@ -577,6 +594,7 @@ export const spacetimedb = schema({
   skill,
   tool,
   supply,
+  forgeFilter,
 }, {
   // Set only when publishing locally (package.json `spacetime:publish:local`); never on
   // Maincloud, so the dev cheats (reducers/dev.ts) refuse there.

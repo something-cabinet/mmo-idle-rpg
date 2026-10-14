@@ -22,7 +22,7 @@ const MIN_AWAY_MICROS = 60_000_000n;
 let shownFor: bigint | undefined;
 
 /** A life skill's line: gathering actions, or what a production queue made, and the inputs it used. */
-function SkillLine({ l }: { l: SettleLog }) {
+function SkillLine({ l, salvage }: { l: SettleLog; /** Show what the keep rule salvaged (the report's own lines cover the last settle). */ salvage?: boolean }) {
   const skill = SKILLS_BY_ID.get(l.skillId);
   const r = recipeOf(l.skillId, l.recipe);
   return (
@@ -32,6 +32,9 @@ function SkillLine({ l }: { l: SettleLog }) {
         {l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelFrom} → ${l.skillLevelTo}` : ''}
       </p>
       {l.used.length > 0 && <p className="muted">Used: {materialsText(l.used)}</p>}
+      {salvage && l.salvaged.some(n => n > 0) && (
+        <p className="muted">Salvaged by the keep rule: {l.salvaged.reduce((a, b) => a + b, 0)} (+{fmtBig(l.dust)} Dust, +{fmtBig(l.gold)} gold)</p>
+      )}
     </>
   );
 }
@@ -75,7 +78,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
     <Modal onClose={close}>
       <CardHead title={`While you were away (${duration(elapsed)})`} />
       {log.capped && <p className="muted">Offline progress is capped at {duration(offlineCapMicros(s.stats))}.</p>}
-      {queues.map(q => <SkillLine key={String(q.id)} l={q} />)}
+      {queues.map(q => <SkillLine key={String(q.id)} l={q} salvage />)}
       {queues.length > 0 && <p className="muted">The queue ran out, then:</p>}
       {skill ? (
         <SkillLine l={log} />

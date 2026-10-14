@@ -135,6 +135,16 @@ export const EquipProfile = __t.enum("EquipProfile", {
 });
 export type EquipProfile = __Infer<typeof EquipProfile>;
 
+export const ForgeFilter = __t.object("ForgeFilter", {
+  characterId: __t.u64(),
+  get minRarity() {
+    return Rarity;
+  },
+  keepAffixes: __t.array(__t.u16()),
+  minAffixTier: __t.u8(),
+});
+export type ForgeFilter = __Infer<typeof ForgeFilter>;
+
 export const Found = __t.object("Found", {
   baseId: __t.u16(),
   tier: __t.u8(),
@@ -263,6 +273,9 @@ export type MyDiscoveries = __Infer<typeof MyDiscoveries>;
 
 export const MyEnemyKills = __t.object("MyEnemyKills", {});
 export type MyEnemyKills = __Infer<typeof MyEnemyKills>;
+
+export const MyForgeFilter = __t.object("MyForgeFilter", {});
+export type MyForgeFilter = __Infer<typeof MyForgeFilter>;
 
 export const MyFriendCharacters = __t.object("MyFriendCharacters", {});
 export type MyFriendCharacters = __Infer<typeof MyFriendCharacters>;

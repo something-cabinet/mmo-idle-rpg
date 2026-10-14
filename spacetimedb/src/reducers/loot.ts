@@ -39,3 +39,24 @@ export const setLootFilter = spacetimedb.reducer(
     ctx.db.lootFilter.characterId.update({ characterId: ch.id, minRarity, keepAffixes: affixes, keepBases: [], minAffixTier, keepTypes: types });
   }
 );
+
+/**
+ * Sets the forge keep rule: forged bases below `minRarity` (Common to Rare, all a forge
+ * makes), without one of `keepAffixes` (empty or all = any) or without an affix of tier
+ * `minAffixTier` are salvaged into Dust and gold. Settles first, so earlier forges use
+ * the old rule.
+ */
+export const setForgeFilter = spacetimedb.reducer(
+  { minRarity: Rarity, keepAffixes: t.array(t.u16()), minAffixTier: t.u8() },
+  (ctx, { minRarity, keepAffixes, minAffixTier }) => {
+    const { ch } = requireActive(ctx);
+    if (!['Common', 'Magic', 'Rare'].includes(minRarity.tag)) throw new SenderError('Forging makes Common to Rare');
+    const affixes = [...new Set(keepAffixes)];
+    if (affixes.some(id => STATS[id as keyof typeof STATS]?.ref === undefined)) throw new SenderError('Unknown affix');
+    if (minAffixTier < 1 || minAffixTier > MAX_TIER) throw new SenderError('Bad affix tier');
+    ctx.db.character.id.update(settle(ctx, ch));
+    const row = { characterId: ch.id, minRarity, keepAffixes: affixes, minAffixTier };
+    if (ctx.db.forgeFilter.characterId.find(ch.id)) ctx.db.forgeFilter.characterId.update(row);
+    else ctx.db.forgeFilter.insert(row);
+  }
+);

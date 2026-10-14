@@ -513,6 +513,11 @@ select:focus,
   width: 72px;
   padding: 4px 8px;
 }
+.forge-affixes summary {
+  cursor: pointer;
+  margin: 4px 0 8px;
+  font-weight: 600;
+}
 .forge-pick {
   display: flex;
   align-items: center;

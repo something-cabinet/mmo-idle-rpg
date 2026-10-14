@@ -211,6 +211,15 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
   await sleep(200);
   check('stopping a queue goes back to the target', charOf(a)!.activitySkill === 0 && charOf(a)!.targetEnemyId === 101);
 
+  // The forge keep rule.
+  check('no forge keep rule at first', [...a.conn.db.myForgeFilter.iter()].length === 0);
+  await expectError('a forge rule above Rare rejected', r.setForgeFilter({ minRarity: { tag: 'Epic' }, keepAffixes: [], minAffixTier: 1 }), 'Common to Rare');
+  await r.setForgeFilter({ minRarity: { tag: 'Magic' }, keepAffixes: [], minAffixTier: 2 });
+  await sleep(200);
+  const ff = [...a.conn.db.myForgeFilter.iter()][0];
+  check('the forge keep rule is saved', ff?.minRarity.tag === 'Magic' && ff.minAffixTier === 2);
+  await r.setForgeFilter({ minRarity: { tag: 'Common' }, keepAffixes: [], minAffixTier: 1 });
+
   // Elixirs: drink one, kills use its charges.
   await expectError('drinking with none in stock rejected', r.drinkElixir({ supplyId: 111 }), 'None in stock');
   await r.devGrantSupplies({ count: 2 });

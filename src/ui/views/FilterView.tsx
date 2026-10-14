@@ -10,7 +10,7 @@ import type { Snapshot } from '../snapshot';
 
 type LootFilterArgs = Parameters<Snapshot['conn']['reducers']['setLootFilter']>[0];
 
-const AFFIX_ENTRIES = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) }));
+export const AFFIX_ENTRIES = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) }));
 const KIND_GROUP: Record<BaseKind, string> = { weapon: 'Weapons', offhand: 'Off-hands', armor: 'Armor', jewelry: 'Jewelry' };
 const TYPE_ENTRIES = (Object.keys(KIND_GROUP) as BaseKind[]).flatMap(kind =>
   TYPE_LIST.filter(t => t.kind === kind).map(t => ({ id: t.id, label: t.name, group: KIND_GROUP[kind] }))
@@ -36,8 +36,10 @@ function FilterSummary({ s }: { s: Snapshot }) {
 }
 
 /** A checklist that keeps only drops with a checked entry; none checked counts as all. */
-function KeepList({ title, one, many, entries, keep, search, onChange }: {
+export function KeepList({ title, what = 'Drops', one, many, entries, keep, search, onChange }: {
   title: string;
+  /** What is kept or salvaged, for the help text. */
+  what?: string;
   /** Singular and plural noun for the entries, e.g. "affix", "affixes". */
   one: string;
   many: string;
@@ -57,7 +59,7 @@ function KeepList({ title, one, many, entries, keep, search, onChange }: {
         </button>
       </CardHead>
       <p className="muted">
-        Drops that pass the other filters are kept only if they have a checked {one}; the rest are
+        {what} that pass the other filters are kept only if they have a checked {one}; the rest are
         salvaged. Keep everything checked to keep them all.
       </p>
       {keep.size === 0 && <p className="filter-warn">No {many} checked: treated as all checked, so nothing is salvaged for its {one}.</p>}

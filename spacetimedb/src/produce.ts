@@ -5,7 +5,7 @@
 import { MAX_SKILL_LEVEL, doubleYieldChance, productionActionMicros, productionXpPerAction, tierRequirement } from './data/skills';
 import type { MaterialCost, Recipe } from './data/recipes';
 import { addSkillXp, type SkillProgress } from './gather';
-import { makeItem, seededRng, type NewItem, type RarityName, type Rng } from './loot';
+import { makeItem, passesFilter, seededRng, type LootFilter, type NewItem, type RarityName, type Rng } from './loot';
 
 export interface Queue {
   /** Actions still queued. */
@@ -14,6 +14,8 @@ export interface Queue {
   have: (materialId: number) => number;
   /** Free bag slots, for recipes that make items. */
   bagFree: number;
+  /** Whether the item an action makes is kept (the forge keep rule); salvaged ones take no bag slot. Default: all kept. */
+  keeps?: (made: { at: bigint; level: number }) => boolean;
 }
 
 export interface Produced extends SkillProgress {
@@ -22,8 +24,8 @@ export interface Produced extends SkillProgress {
   countLeft: number;
   /** Inputs used up (an action that keeps its inputs uses none). */
   used: MaterialCost[];
-  /** Each action's end and the skill level it was made at, to seed and roll what it made. */
-  made: { at: bigint; level: number }[];
+  /** Each action's end and the skill level it was made at, to seed and roll what it made; `kept` by the forge keep rule. */
+  made: { at: bigint; level: number; kept: boolean }[];
   /** When the queue ran out (count, inputs or bag); undefined while it still runs. */
   endedAt?: bigint;
 }
@@ -61,9 +63,10 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
     const step = productionActionMicros(level, r.tier, r.seconds);
     if (t + step > end) break;
     t += step;
-    made.push({ at: t, level });
+    const kept = r.output.kind !== 'item' || (q.keeps?.({ at: t, level }) ?? true);
+    made.push({ at: t, level, kept });
     countLeft--;
-    bagFree--;
+    if (kept) bagFree--;
     if (seededRng(characterId, t, KEEP_SALT)() >= doubleYieldChance(level)) {
       for (const i of r.inputs) {
         stock.set(i.materialId, stock.get(i.materialId)! - i.count);
@@ -108,4 +111,20 @@ export function forgeRarity(rng: Rng, level: number, tier: number): RarityName {
 /** A base forged at Smithing `level` (life-skills.md, "Smithing: forge a base"). */
 export function forgeItem(rng: Rng, baseId: number, tier: number, level: number): NewItem {
   return makeItem(rng, baseId, tier, forgeRarity(rng, level, tier), masterworkTier(level, tier));
+}
+
+/**
+ * The forge keep rule: forged bases below `minRarity`, without one of `keepAffixes` or
+ * without an affix of `minAffixTier` are salvaged (like the loot filter, without types:
+ * the base is chosen). No rule keeps everything.
+ */
+export type ForgeFilter = Omit<LootFilter, 'keepTypes'>;
+
+const FORGE_SALT = 0x666f726765n; // "forge"
+
+/** What forge recipe `r` makes in the action ending at `at`, made at `level`, and whether `f` keeps it. */
+export function forged(characterId: bigint, r: Recipe, made: { at: bigint; level: number }, f?: ForgeFilter): { item: NewItem; kept: boolean } {
+  if (r.output.kind !== 'item') throw new Error('Not a forge recipe');
+  const item = forgeItem(seededRng(characterId, made.at, FORGE_SALT), r.output.baseId, r.tier, made.level);
+  return { item, kept: !f || passesFilter(item, { ...f, keepTypes: [] }) };
 }

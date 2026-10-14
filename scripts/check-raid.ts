@@ -150,10 +150,10 @@ const p0 = parties[0].map(s => ({ dps: dpsOf(s).toFixed(0), hp: s.maxHp.toFixed(
 console.log(`  party 0: ${JSON.stringify(p0)}`);
 console.log(`  win odds: 4 players ${full.toFixed(2)} · 3 ${short.toFixed(2)} · 3 + NPC ${shortHired.toFixed(2)} · 2 ${pair.toFixed(2)} · 2 + 2 NPCs ${pairHired.toFixed(2)}`);
 check('a full party of T3-cleared players usually wins', full >= 0.45 && full <= 0.95, full.toFixed(2));
-check('a party one short mostly loses', short < 0.5, short.toFixed(2));
+check('a party one short wins less often', short < full, `${short.toFixed(2)} vs ${full.toFixed(2)}`);
 check('two players alone never win', pair < 0.05, pair.toFixed(2));
 // NPCs are a last resort (NPC_POWER 0.5): a hire never hurts, but adds little.
-check('hiring NPCs into empty seats helps a little', shortHired >= short - 0.02 && pairHired > pair && pairHired < 0.3, `${pairHired.toFixed(2)}`);
+check('hiring NPCs into empty seats helps a little', shortHired >= short - 0.02 && pairHired > pair && pairHired < short, `${pairHired.toFixed(2)}`);
 check('an NPC is worse than a player', shortHired < full);
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

@@ -24,11 +24,11 @@ profile, Damage (phys) and Damage (magic) builds). A fight lasts about 1:25. Win
 
 | Party | Odds |
 |---|---|
-| 4 players | ~74% (random gear; a real tank with Threat gear and a healer do better) |
-| 3 players | ~36% |
-| 3 players + 1 NPC | ~37% |
-| 2 players + 2 NPCs | ~7% |
-| 2 players, or 1 player + 3 NPCs | ~0% |
+| 4 players | ~76% (random gear; a real tank with Threat gear and a healer do better) |
+| 3 players | ~66% |
+| 3 players + 1 NPC | ~65% |
+| 2 players + 2 NPCs | ~33% |
+| 2 players | ~0% |
 
 *Illustrative.* Outcomes are mostly decided by the stats, like solo fights: a given
 party tends to win nearly always or nearly never.

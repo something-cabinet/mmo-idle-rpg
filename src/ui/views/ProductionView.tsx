@@ -22,6 +22,7 @@ import { snapshot, type Snapshot } from '../snapshot';
 import { ElsewhereCard, SkillBar } from './SkillView';
 import { AFFIX_ENTRIES, KeepList } from './FilterView';
 import { elixirText, recipeLabel } from '../lifeSkills';
+import { MilestonesCard } from './MilestonesCard';
 
 const VERB: Record<number, string> = { [SkillId.Smithing]: 'Forging', [SkillId.Alchemy]: 'Brewing' };
 
@@ -346,6 +347,7 @@ export const ProductionView = memo(function ProductionView({ s, skill }: { s: Sn
       </div>
       {here ? <QueueCard s={s} /> : <ElsewhereCard s={s} verb={skill.id === SkillId.Alchemy ? 'Brewing' : 'Forging'} />}
       {body}
+      <MilestonesCard skill={skill} level={at.level} />
       {logs.length > 0 && (
         <div className="card">
           <CardHead title="Log" />

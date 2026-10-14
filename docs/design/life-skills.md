@@ -118,6 +118,14 @@ One tool per gathering skill: **Pickaxe** (Mining), **Hatchet** (Woodcutting),
   (tier T materials need the tool), 30 min.
 - A tool only counts while its skill is active. It has no effect in combat.
 
+**Planned change (not decided in detail, not built):** tools should only make gathering
+faster, not gate it. Gathering tier T would need only the skill level and the zone, and
+a better tool would raise speed. Still open: the speed per tool tier and its cap (a
+higher tool tier may need to count for more than +5% now that it's the only reason to
+upgrade), whether a tool below the material tier slows gathering, and the tool recipes
+(they use tier T−1 materials only because tier T materials need the tool). The
+Milestones card's "needs a T*n* tool" text and `gatherBlocker` would change with it.
+
 ## Production
 
 Production runs a **queue**: one recipe, repeated until a chosen count is reached or the

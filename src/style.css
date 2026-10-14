@@ -1404,6 +1404,12 @@ select:focus,
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+.table.milestones td {
+  white-space: normal;
+}
+.table.milestones tr.reached td {
+  color: var(--muted);
+}
 .table .actions {
   text-align: right;
 }

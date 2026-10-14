@@ -28,6 +28,7 @@ import { materialIconName, materialsText } from '../items';
 import { CardHead, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
 import { recipeLabel } from '../lifeSkills';
+import { MilestonesCard } from './MilestonesCard';
 
 const TIERS = [...new Set(ZONES.map(z => z.tier))].sort((a, b) => a - b);
 
@@ -150,6 +151,7 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
           {TIERS.map(t => <TierRow key={t} s={s} skill={skill} tier={t} />)}
         </ul>
       </div>
+      <MilestonesCard skill={skill} level={at.level} />
       {logs.length > 0 && (
         <div className="card">
           <CardHead title="Log" />

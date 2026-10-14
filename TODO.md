@@ -43,6 +43,8 @@ Phase 1 (gathering, Smithing, Alchemy, elixirs) is built. Left:
 - **Smithing: tempering and smelting** (designed, not built): `item.temper`, the `scrap`
   table, a Scrap option in the loot filter and forge keep rule; Ore (kind 9) from Mining
   in place of Metal, and the Ore → Metal smelt recipe.
+- **Tools: speed, not a gate** (planned, life-skills.md "Tools"): gathering tier T no longer
+  needs a tier-T tool; tools only add speed. Numbers still to decide.
 - **Phase 2:** Enchanting (Essences: forced-stat rerolls), Construction and the Hideout
   (stations, Bedroom offline hours), milestone combat bonuses at 25/50/75/99, total skill
   level on inspect and the friends list, the level-99 title.

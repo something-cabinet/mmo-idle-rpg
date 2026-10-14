@@ -37,7 +37,7 @@ export interface Recipe {
 /** Actions one queue can hold at most. */
 export const MAX_QUEUE = 1000;
 
-export const FORGE_SECONDS = 60;
+export const FORGE_SECONDS = 120;
 export const TOOL_SECONDS = 1800;
 export const ELIXIR_SECONDS = 450;
 

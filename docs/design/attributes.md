@@ -156,7 +156,7 @@ where damage grows far more than HP:
 
 | Curve | Per tier | T1 → T9 | Used by |
 |---|---|---|---|
-| **Offense** | ×2.1 | ×378 | Weapon damage, flat added damage, enemy HP |
+| **Offense** | ×2.1 to T3, then ×1.6 | ×74 | Weapon damage, flat added damage, enemy HP |
 | **Life** | ×1.6 | ×43 | Gear HP, HP regen |
 | **Heal** | ×1.33 | ×10 | Weapon heal, flat added heal |
 | **Linear** | ×T | ×9 | Armor, resistance, evasion rating (their formulas use level, which is linear) |

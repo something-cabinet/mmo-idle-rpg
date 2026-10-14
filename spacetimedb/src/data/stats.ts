@@ -48,7 +48,8 @@ export type Curve = 'offense' | 'life' | 'heal' | 'linear' | 'percent';
 export function curve(c: Curve, t: number): number {
   switch (c) {
     case 'offense':
-      return 2.1 ** (t - 1);
+      // ×2.1 to T3, then ×1.6 like gear HP, so last tier's weapon isn't half the new one.
+      return t <= 3 ? 2.1 ** (t - 1) : 2.1 ** 2 * 1.6 ** (t - 3);
     case 'life':
       return 1.6 ** (t - 1);
     case 'heal':

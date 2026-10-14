@@ -91,7 +91,8 @@ average Magic gear, see bases.md):
 ```
 m(T) = 1 + 0.15T                          // damage multiplier growth (level + gear %)
 
-playerDPS(T) = 10 × 2.1^(T−1) × m(T)     // before enemy mitigation
+playerDPS(T) = 10 × offense(T) × m(T)    // before enemy mitigation
+offense(T)   = 2.1^(T−1) to T3, then 44.1 × 1.6^(T−3)   // weapon damage curve
 playerHP(T)  = 250 × 1.42^(T−1)          // level HP + gear HP (×1.6) + HP %
 playerMitigation ≈ 30%, playerEvasion ≈ 10%
 ```
@@ -101,7 +102,7 @@ playerMitigation ≈ 30%, playerEvasion ≈ 10%
 For the zone's average enemy (o = 0):
 
 ```
-enemyHP(T)     = 70 × 2.1^(T−1) × m(T)   // ≈ 10 s vs 33% mitigation
+enemyHP(T)     = 70 × offense(T) × m(T)  // ≈ 10 s vs 33% mitigation
 enemyDPS(T)    = 16 × 1.42^(T−1)         // ≈ 25 s vs 30% mitigation and 10% evasion
 enemyArmor     = 2.5 × level × profile.armor
 enemyResist    = 2.5 × level × profile.resist
@@ -170,7 +171,7 @@ tiers sit on the curve. T1 is the tutorial and is never a wall.
 
 ```
 wall(T) = 1.1 if T ≥ 3 and T is odd, else 1
-enemyHP(T)  = 70 × 2.1^(T−1) × m(T) × wall(T)
+enemyHP(T)  = 70 × offense(T) × m(T) × wall(T)
 enemyDPS(T) = 16 × 1.42^(T−1)       × wall(T)
 ```
 

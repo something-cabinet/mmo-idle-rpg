@@ -85,11 +85,12 @@ the item dropped in. Base values follow the curves in attributes.md:
 
 - **Numbers start small**, in the spirit of Diablo 2 and Path of Exile 2: a level-1
   character has 100 HP, a T1 sword hits for 10, a T1 enemy has ~80 HP.
-- **Damage grows ×2.1 per tier, HP ×1.6** (gear) — damage outgrows HP, as in those games.
-  A sword hits 10 → 21 → 44 → 93 → 194 → 408 → 858 → 1,801 → 3,782 across the tiers.
-- **Endgame:** an average T9 damage build hits ~8.5k (crits ~13k); with Rare/Epic gear
-  hits reach ~10–20k. Players have ~4k HP at T9.
-- Each new tier is a clear jump (×2.1 damage), so upgrades feel meaningful.
+- **Damage grows ×2.1 per tier to T3, then ×1.6 like gear HP**, so a weapon one tier
+  behind still deals ~62% of the new one's damage instead of half.
+  A sword hits 10 → 21 → 44 → 71 → 113 → 181 → 289 → 462 → 740 across the tiers.
+- **Endgame:** an average T9 damage build hits ~1k (crits ~1.6k); with Rare/Epic gear
+  hits reach ~1.2–2.4k. Players have ~4k HP at T9.
+- Each new tier is still a clear jump (×1.6 damage), so upgrades feel meaningful.
 
 ## Storage (literal)
 

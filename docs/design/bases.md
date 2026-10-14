@@ -11,7 +11,7 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
   Sword). The name is data on the base, never computed from a formula, so any name can
   be changed or overridden per family.
 - **Scaling** uses the curves in attributes.md:
-  - damage: `template × 2.1^(T−1)`; HP: `× 1.6^(T−1)`; heal: `× 1.33^(T−1)`;
+  - damage: `template × 2.1^(T−1)` to T3, then `× 1.6` per tier (`44.1 × 1.6^(T−3)`); HP: `× 1.6^(T−1)`; heal: `× 1.33^(T−1)`;
   - armor, resistance, evasion rating: `template × T`;
   - percent values and primaries: `P × (T + 3) / 12` (P/3 at T1, P at T9);
   - attack speed, base crit and the plate and greatshield attack-speed penalties don't scale.
@@ -65,22 +65,22 @@ T9 Flawless Magmaheart Amulet.
 
 ## Weapons (*illustrative*)
 
-T1 values; damage ×2.1 per tier, heal ×1.33 per tier. 1H weapons deal ~10 DPS at T1;
+T1 values; damage ×2.1 per tier to T3, then ×1.6, heal ×1.33 per tier. 1H weapons deal ~10 DPS at T1;
 2H deal ~14 (×1.4), because a 1H build also gets an off-hand.
 
 | Family | Hands | Type | Hit (T1) | Speed | DPS (T1) | Hit (T9) | Base crit | Trait (implicit) |
 |---|---|---|---|---|---|---|---|---|
-| Sword | 1H | Phys | 10 | 1.0 | 10 | 3,782 | 5% | +60 Might (T1: 20) |
-| Dagger | 1H | Phys | 4.75 | 2.0 | 9.5 | 1,797 | 8% | +30% increased crit chance |
-| Mace | 1H | Phys | 11.75 | 0.8 | 9.4 | 4,444 | 5% | +15% armor penetration |
-| Scepter (holy mace) | 1H | Phys | 7.5 | 0.8 | 6 | 2,837 | 5% | Heal 10 per hit (T9: 98), single target |
-| Wand | 1H | Magic | 6.25 | 1.5 | 9.4 | 2,364 | 6% | +15% magic penetration |
-| Katana | 2H | Phys | 9.5 | 1.4 | 13.3 | 3,593 | 10% | +40 crit damage |
-| Greatsword | 2H | Phys | 23.75 | 0.55 | 13.1 | 8,983 | 5% | +25% armor penetration |
-| Bow | 2H | Phys | 13.25 | 1.0 | 13.25 | 5,012 | 6% | +1.5T evasion rating |
-| Crossbow | 2H | Phys | 18 | 0.7 | 12.6 | 6,808 | 12% | +40 crit damage |
-| Fire staff | 2H | Magic | 18.75 | 0.8 | 15 | 7,092 | 5% | — (pure damage) |
-| Healing staff | 2H | Magic | 5 | 1.0 | 5 | 1,891 | 5% | Heal 7.5 per hit (T9: 73), all allies |
+| Sword | 1H | Phys | 10 | 1.0 | 10 | 740 | 5% | +60 Might (T1: 20) |
+| Dagger | 1H | Phys | 4.75 | 2.0 | 9.5 | 351 | 8% | +30% increased crit chance |
+| Mace | 1H | Phys | 11.75 | 0.8 | 9.4 | 869 | 5% | +15% armor penetration |
+| Scepter (holy mace) | 1H | Phys | 7.5 | 0.8 | 6 | 555 | 5% | Heal 10 per hit (T9: 98), single target |
+| Wand | 1H | Magic | 6.25 | 1.5 | 9.4 | 462 | 6% | +15% magic penetration |
+| Katana | 2H | Phys | 9.5 | 1.4 | 13.3 | 703 | 10% | +40 crit damage |
+| Greatsword | 2H | Phys | 23.75 | 0.55 | 13.1 | 1,757 | 5% | +25% armor penetration |
+| Bow | 2H | Phys | 13.25 | 1.0 | 13.25 | 980 | 6% | +1.5T evasion rating |
+| Crossbow | 2H | Phys | 18 | 0.7 | 12.6 | 1,332 | 12% | +40 crit damage |
+| Fire staff | 2H | Magic | 18.75 | 0.8 | 15 | 1,387 | 5% | — (pure damage) |
+| Healing staff | 2H | Magic | 5 | 1.0 | 5 | 370 | 5% | Heal 7.5 per hit (T9: 73), all allies |
 
 - **Ranged** weapons (Bow, Crossbow, Wand, Fire staff, Healing staff) attack from a distance; the
   rest are melee. No mechanics hang off the tag yet.

@@ -333,7 +333,8 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
   check('anomaly affixes roll both signs on every stat', Object.values(STATS).filter(d => d.ref !== undefined).every(d =>
     affixes.some(a => a.stat === d.id && a.value < 0n) && affixes.some(a => a.stat === d.id && a.value > 0n)));
   const t1 = items.filter(it => it.tier === 1).flatMap(it => it.affixes).filter(a => a.stat === Stat.PhysDamage);
-  check('a T1 anomaly can roll far past T1 ranges', t1.some(a => Number(a.value) / 100 > 300) && t1.some(a => Number(a.value) / 100 < -300));
+  const half9 = affixRef(Stat.PhysDamage, 9) / 2; // 37× the best T1 roll
+  check('a T1 anomaly can roll far past T1 ranges', t1.some(a => Number(a.value) / 100 > half9) && t1.some(a => Number(a.value) / 100 < -half9));
   check('anomalies can repeat a stat', items.some(it => new Set(it.affixes.map(a => a.stat)).size < it.affixes.length));
   check('anomalies: rarity Anomaly, affix tier 0, no legendary, base values like a Common', items.every(it =>
     it.rarity.tag === 'Anomaly' && it.affixes.every(a => a.tier === 0) && !it.legendary && it.uniqueId === undefined) &&

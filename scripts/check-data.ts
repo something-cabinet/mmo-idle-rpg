@@ -2,7 +2,7 @@
 //   npm run test:data
 import { BASE_LIST, TYPES, TYPE_LIST, ZONE_BASES, TRACKS, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
-import { STATS, Stat, affixRef, roundStat } from '../spacetimedb/src/data/stats';
+import { STATS, Stat, affixRef, curve, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { RAIDS, RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
 import { ENEMIES_BY_ID, WALL_FACTOR, ZONES, isWallTier } from '../spacetimedb/src/data/zones';
@@ -94,7 +94,7 @@ for (const zone of ZONES) {
   const avg = zone.enemies.find(e => e.level === 10 * zone.tier);
   if (!avg || zone.tier === 1) continue;
   const wall = isWallTier(zone.tier) ? WALL_FACTOR : 1;
-  const hp = 70 * 2.1 ** (zone.tier - 1) * (1 + 0.15 * zone.tier) * wall;
+  const hp = 70 * curve('offense', zone.tier) * (1 + 0.15 * zone.tier) * wall;
   const dps = 16 * 1.42 ** (zone.tier - 1) * wall;
   check(`${zone.name}: average enemy on curve`, Math.abs(avg.hp / hp - 1) < 0.01 && Math.abs(avg.dps / dps - 1) < 0.01,
     `hp ${avg.hp} vs ${hp.toFixed(0)}, dps ${avg.dps} vs ${dps.toFixed(1)}`);
@@ -112,7 +112,7 @@ check('T2 leather chest name', base(35).name(2) === 'Boarhide Vest');
 }
 check('T4 ruby ring name', base(50).name(4) === 'Rough Bloodstone Ring');
 check('T9 amber amulet name', base(57).name(9) === 'Flawless Dawnheart Amulet');
-check('T9 sword hit ≈ 3,782', near(Math.round(weaponValues(base(1).weapon!, 9).hit), 3782));
+check('T9 sword hit ≈ 740', near(Math.round(weaponValues(base(1).weapon!, 9).hit), 740));
 check('T1 healing staff heal 7.5 → 8 (whole)', weaponValues(base(10).weapon!, 1).heal === 8);
 check('T1 dagger hit 4.75 → 5 (whole)', weaponValues(base(2).weapon!, 1).hit === 5);
 const breastplateT5 = base(39).implicits.map(i => [i.stat, implicitValue(i, 5)] as const);

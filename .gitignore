@@ -7,8 +7,7 @@ spacetime.local.json
 .env
 .env.development
 .env.production
-# Item art work files (sheets, cuts, masters): kept out of git, see scripts/item-art.ts.
-# The prompts and the item list are committed.
+# Item art work files (raw images, masters): kept out of git, see scripts/item-art.ts.
+# The item list is committed.
 art-src/*
 !art-src/item-art.csv
-!art-src/sheet-prompts.md

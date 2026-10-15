@@ -10,8 +10,8 @@ Desktop first, mostly text and icons, placeholder art. Only the fight view anima
   every screen.
 - **No upgrade scores on items** (equipment.md). Comparisons show both items and how the
   character's totals would change, never a single "better/worse" number.
-- **Item art:** one painted image per item name: a core base per tier, a variant, a
-  unique (src/ui/itemArt.tsx; generated as sheets, see scripts/item-art.ts). One 128 px image, shown in
+- **Item art:** one pixel art image per item name: a core base per tier, a variant, a
+  unique (src/ui/itemArt.tsx; generated one by one from a tier look plus a type look, see scripts/item-art.ts). One image on a 48 px pixel grid, shown in
   tiles and lists with a rim in the rarity color. Missing art, or Settings › Item art
   off, shows the line glyph (src/ui/Icon.tsx).
 - **Dark theme** by default.

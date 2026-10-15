@@ -86,13 +86,13 @@ export const TRACKS = {
 const tracked = (track: keyof typeof TRACKS, piece: string) => (t: number) => `${TRACKS[track][t - 1]} ${piece}`;
 
 /** A new gem every 3 tiers, with a quality prefix inside each band. */
-const GEMS = {
+export const GEMS = {
   Might: ['Ruby', 'Bloodstone', 'Magmaheart'],
   Finesse: ['Emerald', 'Windstone', 'Tempest Eye'],
   Mind: ['Sapphire', 'Moonstone', 'Astral Shard'],
   Vitality: ['Amber', 'Sunstone', 'Dawnheart'],
 } as const;
-const QUALITY = ['Rough', 'Cut', 'Flawless'] as const;
+export const QUALITY = ['Rough', 'Cut', 'Flawless'] as const;
 const gemName = (primary: keyof typeof GEMS, piece: string) => (t: number) =>
   `${QUALITY[(t - 1) % 3]} ${GEMS[primary][Math.floor((t - 1) / 3)]} ${piece}`;
 

@@ -1,328 +1,328 @@
-key,name,what,tier,sheet
-b-1-t1,Rusted Sword,Sword,1,sword
-b-1-t2,Bogiron Sword,Sword,2,sword
-b-1-t3,Dwarven Sword,Sword,3,sword
-b-1-t4,Elven Sword,Sword,4,sword
-b-1-t5,Mithril Sword,Sword,5,sword
-b-1-t6,Adamant Sword,Sword,6,sword
-b-1-t7,Runic Sword,Sword,7,sword
-b-1-t8,Dragonbone Sword,Sword,8,sword
-b-1-t9,Celestial Sword,Sword,9,sword
-b-2-t1,Rusted Dagger,Dagger,1,dagger
-b-2-t2,Bogiron Dagger,Dagger,2,dagger
-b-2-t3,Dwarven Dagger,Dagger,3,dagger
-b-2-t4,Elven Dagger,Dagger,4,dagger
-b-2-t5,Mithril Dagger,Dagger,5,dagger
-b-2-t6,Adamant Dagger,Dagger,6,dagger
-b-2-t7,Runic Dagger,Dagger,7,dagger
-b-2-t8,Dragonbone Dagger,Dagger,8,dagger
-b-2-t9,Celestial Dagger,Dagger,9,dagger
-b-3-t1,Rusted Mace,Mace,1,mace
-b-3-t2,Bogiron Mace,Mace,2,mace
-b-3-t3,Dwarven Mace,Mace,3,mace
-b-3-t4,Elven Mace,Mace,4,mace
-b-3-t5,Mithril Mace,Mace,5,mace
-b-3-t6,Adamant Mace,Mace,6,mace
-b-3-t7,Runic Mace,Mace,7,mace
-b-3-t8,Dragonbone Mace,Mace,8,mace
-b-3-t9,Celestial Mace,Mace,9,mace
-b-4-t1,Rusted Scepter,Scepter,1,scepter
-b-4-t2,Bogiron Scepter,Scepter,2,scepter
-b-4-t3,Dwarven Scepter,Scepter,3,scepter
-b-4-t4,Elven Scepter,Scepter,4,scepter
-b-4-t5,Mithril Scepter,Scepter,5,scepter
-b-4-t6,Adamant Scepter,Scepter,6,scepter
-b-4-t7,Runic Scepter,Scepter,7,scepter
-b-4-t8,Dragonbone Scepter,Scepter,8,scepter
-b-4-t9,Celestial Scepter,Scepter,9,scepter
-b-5-t1,Driftwood Wand,Wand,1,wand
-b-5-t2,Gnarled Wand,Wand,2,wand
-b-5-t3,Heartoak Wand,Wand,3,wand
-b-5-t4,Silverbark Wand,Wand,4,wand
-b-5-t5,Ironwood Wand,Wand,5,wand
-b-5-t6,Elderwood Wand,Wand,6,wand
-b-5-t7,Ghostwood Wand,Wand,7,wand
-b-5-t8,Dragonwood Wand,Wand,8,wand
-b-5-t9,Worldroot Wand,Wand,9,wand
-b-6-t1,Rusted Katana,Katana,1,katana
-b-6-t2,Bogiron Katana,Katana,2,katana
-b-6-t3,Dwarven Katana,Katana,3,katana
-b-6-t4,Elven Katana,Katana,4,katana
-b-6-t5,Mithril Katana,Katana,5,katana
-b-6-t6,Adamant Katana,Katana,6,katana
-b-6-t7,Runic Katana,Katana,7,katana
-b-6-t8,Dragonbone Katana,Katana,8,katana
-b-6-t9,Celestial Katana,Katana,9,katana
-b-7-t1,Rusted Greatsword,Greatsword,1,greatsword
-b-7-t2,Bogiron Greatsword,Greatsword,2,greatsword
-b-7-t3,Dwarven Greatsword,Greatsword,3,greatsword
-b-7-t4,Elven Greatsword,Greatsword,4,greatsword
-b-7-t5,Mithril Greatsword,Greatsword,5,greatsword
-b-7-t6,Adamant Greatsword,Greatsword,6,greatsword
-b-7-t7,Runic Greatsword,Greatsword,7,greatsword
-b-7-t8,Dragonbone Greatsword,Greatsword,8,greatsword
-b-7-t9,Celestial Greatsword,Greatsword,9,greatsword
-b-8-t1,Driftwood Bow,Bow,1,bow
-b-8-t2,Gnarled Bow,Bow,2,bow
-b-8-t3,Heartoak Bow,Bow,3,bow
-b-8-t4,Silverbark Bow,Bow,4,bow
-b-8-t5,Ironwood Bow,Bow,5,bow
-b-8-t6,Elderwood Bow,Bow,6,bow
-b-8-t7,Ghostwood Bow,Bow,7,bow
-b-8-t8,Dragonwood Bow,Bow,8,bow
-b-8-t9,Worldroot Bow,Bow,9,bow
-b-9-t1,Driftwood Fire Staff,Fire Staff,1,fire-staff
-b-9-t2,Gnarled Fire Staff,Fire Staff,2,fire-staff
-b-9-t3,Heartoak Fire Staff,Fire Staff,3,fire-staff
-b-9-t4,Silverbark Fire Staff,Fire Staff,4,fire-staff
-b-9-t5,Ironwood Fire Staff,Fire Staff,5,fire-staff
-b-9-t6,Elderwood Fire Staff,Fire Staff,6,fire-staff
-b-9-t7,Ghostwood Fire Staff,Fire Staff,7,fire-staff
-b-9-t8,Dragonwood Fire Staff,Fire Staff,8,fire-staff
-b-9-t9,Worldroot Fire Staff,Fire Staff,9,fire-staff
-b-10-t1,Driftwood Healing Staff,Healing Staff,1,healing-staff
-b-10-t2,Gnarled Healing Staff,Healing Staff,2,healing-staff
-b-10-t3,Heartoak Healing Staff,Healing Staff,3,healing-staff
-b-10-t4,Silverbark Healing Staff,Healing Staff,4,healing-staff
-b-10-t5,Ironwood Healing Staff,Healing Staff,5,healing-staff
-b-10-t6,Elderwood Healing Staff,Healing Staff,6,healing-staff
-b-10-t7,Ghostwood Healing Staff,Healing Staff,7,healing-staff
-b-10-t8,Dragonwood Healing Staff,Healing Staff,8,healing-staff
-b-10-t9,Worldroot Healing Staff,Healing Staff,9,healing-staff
-b-11-t1,Driftwood Crossbow,Crossbow,1,crossbow
-b-11-t2,Gnarled Crossbow,Crossbow,2,crossbow
-b-11-t3,Heartoak Crossbow,Crossbow,3,crossbow
-b-11-t4,Silverbark Crossbow,Crossbow,4,crossbow
-b-11-t5,Ironwood Crossbow,Crossbow,5,crossbow
-b-11-t6,Elderwood Crossbow,Crossbow,6,crossbow
-b-11-t7,Ghostwood Crossbow,Crossbow,7,crossbow
-b-11-t8,Dragonwood Crossbow,Crossbow,8,crossbow
-b-11-t9,Worldroot Crossbow,Crossbow,9,crossbow
-b-20-t1,Rusted Shield,Shield,1,shield
-b-20-t2,Bogiron Shield,Shield,2,shield
-b-20-t3,Dwarven Shield,Shield,3,shield
-b-20-t4,Elven Shield,Shield,4,shield
-b-20-t5,Mithril Shield,Shield,5,shield
-b-20-t6,Adamant Shield,Shield,6,shield
-b-20-t7,Runic Shield,Shield,7,shield
-b-20-t8,Dragonbone Shield,Shield,8,shield
-b-20-t9,Celestial Shield,Shield,9,shield
-b-22-t1,Rusted Greatshield,Greatshield,1,greatshield
-b-22-t2,Bogiron Greatshield,Greatshield,2,greatshield
-b-22-t3,Dwarven Greatshield,Greatshield,3,greatshield
-b-22-t4,Elven Greatshield,Greatshield,4,greatshield
-b-22-t5,Mithril Greatshield,Greatshield,5,greatshield
-b-22-t6,Adamant Greatshield,Greatshield,6,greatshield
-b-22-t7,Runic Greatshield,Greatshield,7,greatshield
-b-22-t8,Dragonbone Greatshield,Greatshield,8,greatshield
-b-22-t9,Celestial Greatshield,Greatshield,9,greatshield
-b-21-t1,Tattered Tome,Tome,1,tome
-b-21-t2,Dog-eared Tome,Tome,2,tome
-b-21-t3,Scholar's Tome,Tome,3,tome
-b-21-t4,Gilded Tome,Tome,4,tome
-b-21-t5,Arcanist's Tome,Tome,5,tome
-b-21-t6,Archmage's Tome,Tome,6,tome
-b-21-t7,Runebound Tome,Tome,7,tome
-b-21-t8,Astral Tome,Tome,8,tome
-b-21-t9,Celestial Tome,Tome,9,tome
-b-30-t1,Sackcloth Hood,Cloth · Head,1,cloth-head
-b-30-t2,Homespun Hood,Cloth · Head,2,cloth-head
-b-30-t3,Spidersilk Hood,Cloth · Head,3,cloth-head
-b-30-t4,Mageweave Hood,Cloth · Head,4,cloth-head
-b-30-t5,Runeweave Hood,Cloth · Head,5,cloth-head
-b-30-t6,Moonsilk Hood,Cloth · Head,6,cloth-head
-b-30-t7,Spellsilk Hood,Cloth · Head,7,cloth-head
-b-30-t8,Voidweave Hood,Cloth · Head,8,cloth-head
-b-30-t9,Starweave Hood,Cloth · Head,9,cloth-head
-b-31-t1,Sackcloth Robe,Cloth · Chest,1,cloth-chest
-b-31-t2,Homespun Robe,Cloth · Chest,2,cloth-chest
-b-31-t3,Spidersilk Robe,Cloth · Chest,3,cloth-chest
-b-31-t4,Mageweave Robe,Cloth · Chest,4,cloth-chest
-b-31-t5,Runeweave Robe,Cloth · Chest,5,cloth-chest
-b-31-t6,Moonsilk Robe,Cloth · Chest,6,cloth-chest
-b-31-t7,Spellsilk Robe,Cloth · Chest,7,cloth-chest
-b-31-t8,Voidweave Robe,Cloth · Chest,8,cloth-chest
-b-31-t9,Starweave Robe,Cloth · Chest,9,cloth-chest
-b-32-t1,Sackcloth Gloves,Cloth · Hands,1,cloth-hands
-b-32-t2,Homespun Gloves,Cloth · Hands,2,cloth-hands
-b-32-t3,Spidersilk Gloves,Cloth · Hands,3,cloth-hands
-b-32-t4,Mageweave Gloves,Cloth · Hands,4,cloth-hands
-b-32-t5,Runeweave Gloves,Cloth · Hands,5,cloth-hands
-b-32-t6,Moonsilk Gloves,Cloth · Hands,6,cloth-hands
-b-32-t7,Spellsilk Gloves,Cloth · Hands,7,cloth-hands
-b-32-t8,Voidweave Gloves,Cloth · Hands,8,cloth-hands
-b-32-t9,Starweave Gloves,Cloth · Hands,9,cloth-hands
-b-33-t1,Sackcloth Shoes,Cloth · Feet,1,cloth-feet
-b-33-t2,Homespun Shoes,Cloth · Feet,2,cloth-feet
-b-33-t3,Spidersilk Shoes,Cloth · Feet,3,cloth-feet
-b-33-t4,Mageweave Shoes,Cloth · Feet,4,cloth-feet
-b-33-t5,Runeweave Shoes,Cloth · Feet,5,cloth-feet
-b-33-t6,Moonsilk Shoes,Cloth · Feet,6,cloth-feet
-b-33-t7,Spellsilk Shoes,Cloth · Feet,7,cloth-feet
-b-33-t8,Voidweave Shoes,Cloth · Feet,8,cloth-feet
-b-33-t9,Starweave Shoes,Cloth · Feet,9,cloth-feet
-b-34-t1,Ratskin Cap,Leather · Head,1,leather-head
-b-34-t2,Boarhide Cap,Leather · Head,2,leather-head
-b-34-t3,Wolfhide Cap,Leather · Head,3,leather-head
-b-34-t4,Owlbear Cap,Leather · Head,4,leather-head
-b-34-t5,Drakehide Cap,Leather · Head,5,leather-head
-b-34-t6,Shadowhide Cap,Leather · Head,6,leather-head
-b-34-t7,Wyrmscale Cap,Leather · Head,7,leather-head
-b-34-t8,Phoenixhide Cap,Leather · Head,8,leather-head
-b-34-t9,Starhide Cap,Leather · Head,9,leather-head
-b-35-t1,Ratskin Vest,Leather · Chest,1,leather-chest
-b-35-t2,Boarhide Vest,Leather · Chest,2,leather-chest
-b-35-t3,Wolfhide Vest,Leather · Chest,3,leather-chest
-b-35-t4,Owlbear Vest,Leather · Chest,4,leather-chest
-b-35-t5,Drakehide Vest,Leather · Chest,5,leather-chest
-b-35-t6,Shadowhide Vest,Leather · Chest,6,leather-chest
-b-35-t7,Wyrmscale Vest,Leather · Chest,7,leather-chest
-b-35-t8,Phoenixhide Vest,Leather · Chest,8,leather-chest
-b-35-t9,Starhide Vest,Leather · Chest,9,leather-chest
-b-36-t1,Ratskin Bracers,Leather · Hands,1,leather-hands
-b-36-t2,Boarhide Bracers,Leather · Hands,2,leather-hands
-b-36-t3,Wolfhide Bracers,Leather · Hands,3,leather-hands
-b-36-t4,Owlbear Bracers,Leather · Hands,4,leather-hands
-b-36-t5,Drakehide Bracers,Leather · Hands,5,leather-hands
-b-36-t6,Shadowhide Bracers,Leather · Hands,6,leather-hands
-b-36-t7,Wyrmscale Bracers,Leather · Hands,7,leather-hands
-b-36-t8,Phoenixhide Bracers,Leather · Hands,8,leather-hands
-b-36-t9,Starhide Bracers,Leather · Hands,9,leather-hands
-b-37-t1,Ratskin Boots,Leather · Feet,1,leather-feet
-b-37-t2,Boarhide Boots,Leather · Feet,2,leather-feet
-b-37-t3,Wolfhide Boots,Leather · Feet,3,leather-feet
-b-37-t4,Owlbear Boots,Leather · Feet,4,leather-feet
-b-37-t5,Drakehide Boots,Leather · Feet,5,leather-feet
-b-37-t6,Shadowhide Boots,Leather · Feet,6,leather-feet
-b-37-t7,Wyrmscale Boots,Leather · Feet,7,leather-feet
-b-37-t8,Phoenixhide Boots,Leather · Feet,8,leather-feet
-b-37-t9,Starhide Boots,Leather · Feet,9,leather-feet
-b-38-t1,Rusted Helm,Plate · Head,1,plate-head
-b-38-t2,Bogiron Helm,Plate · Head,2,plate-head
-b-38-t3,Dwarven Helm,Plate · Head,3,plate-head
-b-38-t4,Elven Helm,Plate · Head,4,plate-head
-b-38-t5,Mithril Helm,Plate · Head,5,plate-head
-b-38-t6,Adamant Helm,Plate · Head,6,plate-head
-b-38-t7,Runic Helm,Plate · Head,7,plate-head
-b-38-t8,Dragonbone Helm,Plate · Head,8,plate-head
-b-38-t9,Celestial Helm,Plate · Head,9,plate-head
-b-39-t1,Rusted Breastplate,Plate · Chest,1,plate-chest
-b-39-t2,Bogiron Breastplate,Plate · Chest,2,plate-chest
-b-39-t3,Dwarven Breastplate,Plate · Chest,3,plate-chest
-b-39-t4,Elven Breastplate,Plate · Chest,4,plate-chest
-b-39-t5,Mithril Breastplate,Plate · Chest,5,plate-chest
-b-39-t6,Adamant Breastplate,Plate · Chest,6,plate-chest
-b-39-t7,Runic Breastplate,Plate · Chest,7,plate-chest
-b-39-t8,Dragonbone Breastplate,Plate · Chest,8,plate-chest
-b-39-t9,Celestial Breastplate,Plate · Chest,9,plate-chest
-b-40-t1,Rusted Gauntlets,Plate · Hands,1,plate-hands
-b-40-t2,Bogiron Gauntlets,Plate · Hands,2,plate-hands
-b-40-t3,Dwarven Gauntlets,Plate · Hands,3,plate-hands
-b-40-t4,Elven Gauntlets,Plate · Hands,4,plate-hands
-b-40-t5,Mithril Gauntlets,Plate · Hands,5,plate-hands
-b-40-t6,Adamant Gauntlets,Plate · Hands,6,plate-hands
-b-40-t7,Runic Gauntlets,Plate · Hands,7,plate-hands
-b-40-t8,Dragonbone Gauntlets,Plate · Hands,8,plate-hands
-b-40-t9,Celestial Gauntlets,Plate · Hands,9,plate-hands
-b-41-t1,Rusted Greaves,Plate · Feet,1,plate-feet
-b-41-t2,Bogiron Greaves,Plate · Feet,2,plate-feet
-b-41-t3,Dwarven Greaves,Plate · Feet,3,plate-feet
-b-41-t4,Elven Greaves,Plate · Feet,4,plate-feet
-b-41-t5,Mithril Greaves,Plate · Feet,5,plate-feet
-b-41-t6,Adamant Greaves,Plate · Feet,6,plate-feet
-b-41-t7,Runic Greaves,Plate · Feet,7,plate-feet
-b-41-t8,Dragonbone Greaves,Plate · Feet,8,plate-feet
-b-41-t9,Celestial Greaves,Plate · Feet,9,plate-feet
-b-50-t1,Rough Ruby Ring,Ring · Ruby,1,ring-ruby
-b-50-t2,Cut Ruby Ring,Ring · Ruby,2,ring-ruby
-b-50-t3,Flawless Ruby Ring,Ring · Ruby,3,ring-ruby
-b-50-t4,Rough Bloodstone Ring,Ring · Ruby,4,ring-ruby
-b-50-t5,Cut Bloodstone Ring,Ring · Ruby,5,ring-ruby
-b-50-t6,Flawless Bloodstone Ring,Ring · Ruby,6,ring-ruby
-b-50-t7,Rough Magmaheart Ring,Ring · Ruby,7,ring-ruby
-b-50-t8,Cut Magmaheart Ring,Ring · Ruby,8,ring-ruby
-b-50-t9,Flawless Magmaheart Ring,Ring · Ruby,9,ring-ruby
-b-54-t1,Rough Ruby Amulet,Amulet · Ruby,1,amulet-ruby
-b-54-t2,Cut Ruby Amulet,Amulet · Ruby,2,amulet-ruby
-b-54-t3,Flawless Ruby Amulet,Amulet · Ruby,3,amulet-ruby
-b-54-t4,Rough Bloodstone Amulet,Amulet · Ruby,4,amulet-ruby
-b-54-t5,Cut Bloodstone Amulet,Amulet · Ruby,5,amulet-ruby
-b-54-t6,Flawless Bloodstone Amulet,Amulet · Ruby,6,amulet-ruby
-b-54-t7,Rough Magmaheart Amulet,Amulet · Ruby,7,amulet-ruby
-b-54-t8,Cut Magmaheart Amulet,Amulet · Ruby,8,amulet-ruby
-b-54-t9,Flawless Magmaheart Amulet,Amulet · Ruby,9,amulet-ruby
-b-51-t1,Rough Emerald Ring,Ring · Emerald,1,ring-emerald
-b-51-t2,Cut Emerald Ring,Ring · Emerald,2,ring-emerald
-b-51-t3,Flawless Emerald Ring,Ring · Emerald,3,ring-emerald
-b-51-t4,Rough Windstone Ring,Ring · Emerald,4,ring-emerald
-b-51-t5,Cut Windstone Ring,Ring · Emerald,5,ring-emerald
-b-51-t6,Flawless Windstone Ring,Ring · Emerald,6,ring-emerald
-b-51-t7,Rough Tempest Eye Ring,Ring · Emerald,7,ring-emerald
-b-51-t8,Cut Tempest Eye Ring,Ring · Emerald,8,ring-emerald
-b-51-t9,Flawless Tempest Eye Ring,Ring · Emerald,9,ring-emerald
-b-55-t1,Rough Emerald Amulet,Amulet · Emerald,1,amulet-emerald
-b-55-t2,Cut Emerald Amulet,Amulet · Emerald,2,amulet-emerald
-b-55-t3,Flawless Emerald Amulet,Amulet · Emerald,3,amulet-emerald
-b-55-t4,Rough Windstone Amulet,Amulet · Emerald,4,amulet-emerald
-b-55-t5,Cut Windstone Amulet,Amulet · Emerald,5,amulet-emerald
-b-55-t6,Flawless Windstone Amulet,Amulet · Emerald,6,amulet-emerald
-b-55-t7,Rough Tempest Eye Amulet,Amulet · Emerald,7,amulet-emerald
-b-55-t8,Cut Tempest Eye Amulet,Amulet · Emerald,8,amulet-emerald
-b-55-t9,Flawless Tempest Eye Amulet,Amulet · Emerald,9,amulet-emerald
-b-52-t1,Rough Sapphire Ring,Ring · Sapphire,1,ring-sapphire
-b-52-t2,Cut Sapphire Ring,Ring · Sapphire,2,ring-sapphire
-b-52-t3,Flawless Sapphire Ring,Ring · Sapphire,3,ring-sapphire
-b-52-t4,Rough Moonstone Ring,Ring · Sapphire,4,ring-sapphire
-b-52-t5,Cut Moonstone Ring,Ring · Sapphire,5,ring-sapphire
-b-52-t6,Flawless Moonstone Ring,Ring · Sapphire,6,ring-sapphire
-b-52-t7,Rough Astral Shard Ring,Ring · Sapphire,7,ring-sapphire
-b-52-t8,Cut Astral Shard Ring,Ring · Sapphire,8,ring-sapphire
-b-52-t9,Flawless Astral Shard Ring,Ring · Sapphire,9,ring-sapphire
-b-56-t1,Rough Sapphire Amulet,Amulet · Sapphire,1,amulet-sapphire
-b-56-t2,Cut Sapphire Amulet,Amulet · Sapphire,2,amulet-sapphire
-b-56-t3,Flawless Sapphire Amulet,Amulet · Sapphire,3,amulet-sapphire
-b-56-t4,Rough Moonstone Amulet,Amulet · Sapphire,4,amulet-sapphire
-b-56-t5,Cut Moonstone Amulet,Amulet · Sapphire,5,amulet-sapphire
-b-56-t6,Flawless Moonstone Amulet,Amulet · Sapphire,6,amulet-sapphire
-b-56-t7,Rough Astral Shard Amulet,Amulet · Sapphire,7,amulet-sapphire
-b-56-t8,Cut Astral Shard Amulet,Amulet · Sapphire,8,amulet-sapphire
-b-56-t9,Flawless Astral Shard Amulet,Amulet · Sapphire,9,amulet-sapphire
-b-53-t1,Rough Amber Ring,Ring · Amber,1,ring-amber
-b-53-t2,Cut Amber Ring,Ring · Amber,2,ring-amber
-b-53-t3,Flawless Amber Ring,Ring · Amber,3,ring-amber
-b-53-t4,Rough Sunstone Ring,Ring · Amber,4,ring-amber
-b-53-t5,Cut Sunstone Ring,Ring · Amber,5,ring-amber
-b-53-t6,Flawless Sunstone Ring,Ring · Amber,6,ring-amber
-b-53-t7,Rough Dawnheart Ring,Ring · Amber,7,ring-amber
-b-53-t8,Cut Dawnheart Ring,Ring · Amber,8,ring-amber
-b-53-t9,Flawless Dawnheart Ring,Ring · Amber,9,ring-amber
-b-57-t1,Rough Amber Amulet,Amulet · Amber,1,amulet-amber
-b-57-t2,Cut Amber Amulet,Amulet · Amber,2,amulet-amber
-b-57-t3,Flawless Amber Amulet,Amulet · Amber,3,amulet-amber
-b-57-t4,Rough Sunstone Amulet,Amulet · Amber,4,amulet-amber
-b-57-t5,Cut Sunstone Amulet,Amulet · Amber,5,amulet-amber
-b-57-t6,Flawless Sunstone Amulet,Amulet · Amber,6,amulet-amber
-b-57-t7,Rough Dawnheart Amulet,Amulet · Amber,7,amulet-amber
-b-57-t8,Cut Dawnheart Amulet,Amulet · Amber,8,amulet-amber
-b-57-t9,Flawless Dawnheart Amulet,Amulet · Amber,9,amulet-amber
-b-1000,Rime Dagger,"Dagger variant, tier 3",3,variants-wyrm-hollow
-b-1001,Rime Greatsword,"Greatsword variant, tier 3",3,variants-wyrm-hollow
-b-1002,Rime Healing Staff,"Healing Staff variant, tier 3",3,variants-wyrm-hollow
-b-1003,Rime Bow,"Bow variant, tier 3",3,variants-wyrm-hollow
-b-1004,Rime Shield,"Shield variant, tier 3",3,variants-wyrm-hollow
-b-1005,Rime Ring,"Ring · Amber variant, tier 3",3,variants-wyrm-hollow
-b-1006,Rime Amulet,"Amulet · Sapphire variant, tier 3",3,variants-wyrm-hollow
-u-1,Grubnak's Cleaver,unique Rusted Greatsword,1,uniques-1
-u-2,Gilded Signet,unique Rough Emerald Ring,1,uniques-1
-u-3,Tutor's Pendant,unique Rough Sapphire Amulet,1,uniques-1
-u-11,The Drowned Hymnal,unique Tattered Tome,1,uniques-1
-u-4,Hexblade,unique Bogiron Sword,2,uniques-2
-u-5,Bulwark of the Hollow,unique Bogiron Breastplate,2,uniques-2
-u-6,Veil of Whispers,unique Homespun Robe,2,uniques-2
-u-7,Voidfang,unique Bogiron Dagger,2,uniques-2
-u-8,Rimewind Longbow,unique Heartoak Bow,3,uniques-3
-u-9,Glacier Heart,unique Flawless Amber Amulet,3,uniques-3
-u-10,Avalanche Staff,unique Heartoak Fire Staff,3,uniques-3
-u-12,Wyrmscale Aegis,unique Dwarven Shield,3,uniques-3
-u-13,Hoardkeeper's Censer,unique Heartoak Healing Staff,3,uniques-4
-u-14,Skaldrith's Fang,unique Dwarven Dagger,3,uniques-4
+key,name,group,tier
+b-1-t1,Rusted Sword,sword,1
+b-1-t2,Bogiron Sword,sword,2
+b-1-t3,Dwarven Sword,sword,3
+b-1-t4,Elven Sword,sword,4
+b-1-t5,Mithril Sword,sword,5
+b-1-t6,Adamant Sword,sword,6
+b-1-t7,Runic Sword,sword,7
+b-1-t8,Dragonbone Sword,sword,8
+b-1-t9,Celestial Sword,sword,9
+b-2-t1,Rusted Dagger,dagger,1
+b-2-t2,Bogiron Dagger,dagger,2
+b-2-t3,Dwarven Dagger,dagger,3
+b-2-t4,Elven Dagger,dagger,4
+b-2-t5,Mithril Dagger,dagger,5
+b-2-t6,Adamant Dagger,dagger,6
+b-2-t7,Runic Dagger,dagger,7
+b-2-t8,Dragonbone Dagger,dagger,8
+b-2-t9,Celestial Dagger,dagger,9
+b-3-t1,Rusted Mace,mace,1
+b-3-t2,Bogiron Mace,mace,2
+b-3-t3,Dwarven Mace,mace,3
+b-3-t4,Elven Mace,mace,4
+b-3-t5,Mithril Mace,mace,5
+b-3-t6,Adamant Mace,mace,6
+b-3-t7,Runic Mace,mace,7
+b-3-t8,Dragonbone Mace,mace,8
+b-3-t9,Celestial Mace,mace,9
+b-4-t1,Rusted Scepter,scepter,1
+b-4-t2,Bogiron Scepter,scepter,2
+b-4-t3,Dwarven Scepter,scepter,3
+b-4-t4,Elven Scepter,scepter,4
+b-4-t5,Mithril Scepter,scepter,5
+b-4-t6,Adamant Scepter,scepter,6
+b-4-t7,Runic Scepter,scepter,7
+b-4-t8,Dragonbone Scepter,scepter,8
+b-4-t9,Celestial Scepter,scepter,9
+b-5-t1,Driftwood Wand,wand,1
+b-5-t2,Gnarled Wand,wand,2
+b-5-t3,Heartoak Wand,wand,3
+b-5-t4,Silverbark Wand,wand,4
+b-5-t5,Ironwood Wand,wand,5
+b-5-t6,Elderwood Wand,wand,6
+b-5-t7,Ghostwood Wand,wand,7
+b-5-t8,Dragonwood Wand,wand,8
+b-5-t9,Worldroot Wand,wand,9
+b-6-t1,Rusted Katana,katana,1
+b-6-t2,Bogiron Katana,katana,2
+b-6-t3,Dwarven Katana,katana,3
+b-6-t4,Elven Katana,katana,4
+b-6-t5,Mithril Katana,katana,5
+b-6-t6,Adamant Katana,katana,6
+b-6-t7,Runic Katana,katana,7
+b-6-t8,Dragonbone Katana,katana,8
+b-6-t9,Celestial Katana,katana,9
+b-7-t1,Rusted Greatsword,greatsword,1
+b-7-t2,Bogiron Greatsword,greatsword,2
+b-7-t3,Dwarven Greatsword,greatsword,3
+b-7-t4,Elven Greatsword,greatsword,4
+b-7-t5,Mithril Greatsword,greatsword,5
+b-7-t6,Adamant Greatsword,greatsword,6
+b-7-t7,Runic Greatsword,greatsword,7
+b-7-t8,Dragonbone Greatsword,greatsword,8
+b-7-t9,Celestial Greatsword,greatsword,9
+b-8-t1,Driftwood Bow,bow,1
+b-8-t2,Gnarled Bow,bow,2
+b-8-t3,Heartoak Bow,bow,3
+b-8-t4,Silverbark Bow,bow,4
+b-8-t5,Ironwood Bow,bow,5
+b-8-t6,Elderwood Bow,bow,6
+b-8-t7,Ghostwood Bow,bow,7
+b-8-t8,Dragonwood Bow,bow,8
+b-8-t9,Worldroot Bow,bow,9
+b-9-t1,Driftwood Fire Staff,fire-staff,1
+b-9-t2,Gnarled Fire Staff,fire-staff,2
+b-9-t3,Heartoak Fire Staff,fire-staff,3
+b-9-t4,Silverbark Fire Staff,fire-staff,4
+b-9-t5,Ironwood Fire Staff,fire-staff,5
+b-9-t6,Elderwood Fire Staff,fire-staff,6
+b-9-t7,Ghostwood Fire Staff,fire-staff,7
+b-9-t8,Dragonwood Fire Staff,fire-staff,8
+b-9-t9,Worldroot Fire Staff,fire-staff,9
+b-10-t1,Driftwood Healing Staff,healing-staff,1
+b-10-t2,Gnarled Healing Staff,healing-staff,2
+b-10-t3,Heartoak Healing Staff,healing-staff,3
+b-10-t4,Silverbark Healing Staff,healing-staff,4
+b-10-t5,Ironwood Healing Staff,healing-staff,5
+b-10-t6,Elderwood Healing Staff,healing-staff,6
+b-10-t7,Ghostwood Healing Staff,healing-staff,7
+b-10-t8,Dragonwood Healing Staff,healing-staff,8
+b-10-t9,Worldroot Healing Staff,healing-staff,9
+b-11-t1,Driftwood Crossbow,crossbow,1
+b-11-t2,Gnarled Crossbow,crossbow,2
+b-11-t3,Heartoak Crossbow,crossbow,3
+b-11-t4,Silverbark Crossbow,crossbow,4
+b-11-t5,Ironwood Crossbow,crossbow,5
+b-11-t6,Elderwood Crossbow,crossbow,6
+b-11-t7,Ghostwood Crossbow,crossbow,7
+b-11-t8,Dragonwood Crossbow,crossbow,8
+b-11-t9,Worldroot Crossbow,crossbow,9
+b-20-t1,Rusted Shield,shield,1
+b-20-t2,Bogiron Shield,shield,2
+b-20-t3,Dwarven Shield,shield,3
+b-20-t4,Elven Shield,shield,4
+b-20-t5,Mithril Shield,shield,5
+b-20-t6,Adamant Shield,shield,6
+b-20-t7,Runic Shield,shield,7
+b-20-t8,Dragonbone Shield,shield,8
+b-20-t9,Celestial Shield,shield,9
+b-22-t1,Rusted Greatshield,greatshield,1
+b-22-t2,Bogiron Greatshield,greatshield,2
+b-22-t3,Dwarven Greatshield,greatshield,3
+b-22-t4,Elven Greatshield,greatshield,4
+b-22-t5,Mithril Greatshield,greatshield,5
+b-22-t6,Adamant Greatshield,greatshield,6
+b-22-t7,Runic Greatshield,greatshield,7
+b-22-t8,Dragonbone Greatshield,greatshield,8
+b-22-t9,Celestial Greatshield,greatshield,9
+b-21-t1,Tattered Tome,tome,1
+b-21-t2,Dog-eared Tome,tome,2
+b-21-t3,Scholar's Tome,tome,3
+b-21-t4,Gilded Tome,tome,4
+b-21-t5,Arcanist's Tome,tome,5
+b-21-t6,Archmage's Tome,tome,6
+b-21-t7,Runebound Tome,tome,7
+b-21-t8,Astral Tome,tome,8
+b-21-t9,Celestial Tome,tome,9
+b-30-t1,Sackcloth Hood,cloth-head,1
+b-30-t2,Homespun Hood,cloth-head,2
+b-30-t3,Spidersilk Hood,cloth-head,3
+b-30-t4,Mageweave Hood,cloth-head,4
+b-30-t5,Runeweave Hood,cloth-head,5
+b-30-t6,Moonsilk Hood,cloth-head,6
+b-30-t7,Spellsilk Hood,cloth-head,7
+b-30-t8,Voidweave Hood,cloth-head,8
+b-30-t9,Starweave Hood,cloth-head,9
+b-31-t1,Sackcloth Robe,cloth-chest,1
+b-31-t2,Homespun Robe,cloth-chest,2
+b-31-t3,Spidersilk Robe,cloth-chest,3
+b-31-t4,Mageweave Robe,cloth-chest,4
+b-31-t5,Runeweave Robe,cloth-chest,5
+b-31-t6,Moonsilk Robe,cloth-chest,6
+b-31-t7,Spellsilk Robe,cloth-chest,7
+b-31-t8,Voidweave Robe,cloth-chest,8
+b-31-t9,Starweave Robe,cloth-chest,9
+b-32-t1,Sackcloth Gloves,cloth-hands,1
+b-32-t2,Homespun Gloves,cloth-hands,2
+b-32-t3,Spidersilk Gloves,cloth-hands,3
+b-32-t4,Mageweave Gloves,cloth-hands,4
+b-32-t5,Runeweave Gloves,cloth-hands,5
+b-32-t6,Moonsilk Gloves,cloth-hands,6
+b-32-t7,Spellsilk Gloves,cloth-hands,7
+b-32-t8,Voidweave Gloves,cloth-hands,8
+b-32-t9,Starweave Gloves,cloth-hands,9
+b-33-t1,Sackcloth Shoes,cloth-feet,1
+b-33-t2,Homespun Shoes,cloth-feet,2
+b-33-t3,Spidersilk Shoes,cloth-feet,3
+b-33-t4,Mageweave Shoes,cloth-feet,4
+b-33-t5,Runeweave Shoes,cloth-feet,5
+b-33-t6,Moonsilk Shoes,cloth-feet,6
+b-33-t7,Spellsilk Shoes,cloth-feet,7
+b-33-t8,Voidweave Shoes,cloth-feet,8
+b-33-t9,Starweave Shoes,cloth-feet,9
+b-34-t1,Ratskin Cap,leather-head,1
+b-34-t2,Boarhide Cap,leather-head,2
+b-34-t3,Wolfhide Cap,leather-head,3
+b-34-t4,Owlbear Cap,leather-head,4
+b-34-t5,Drakehide Cap,leather-head,5
+b-34-t6,Shadowhide Cap,leather-head,6
+b-34-t7,Wyrmscale Cap,leather-head,7
+b-34-t8,Phoenixhide Cap,leather-head,8
+b-34-t9,Starhide Cap,leather-head,9
+b-35-t1,Ratskin Vest,leather-chest,1
+b-35-t2,Boarhide Vest,leather-chest,2
+b-35-t3,Wolfhide Vest,leather-chest,3
+b-35-t4,Owlbear Vest,leather-chest,4
+b-35-t5,Drakehide Vest,leather-chest,5
+b-35-t6,Shadowhide Vest,leather-chest,6
+b-35-t7,Wyrmscale Vest,leather-chest,7
+b-35-t8,Phoenixhide Vest,leather-chest,8
+b-35-t9,Starhide Vest,leather-chest,9
+b-36-t1,Ratskin Bracers,leather-hands,1
+b-36-t2,Boarhide Bracers,leather-hands,2
+b-36-t3,Wolfhide Bracers,leather-hands,3
+b-36-t4,Owlbear Bracers,leather-hands,4
+b-36-t5,Drakehide Bracers,leather-hands,5
+b-36-t6,Shadowhide Bracers,leather-hands,6
+b-36-t7,Wyrmscale Bracers,leather-hands,7
+b-36-t8,Phoenixhide Bracers,leather-hands,8
+b-36-t9,Starhide Bracers,leather-hands,9
+b-37-t1,Ratskin Boots,leather-feet,1
+b-37-t2,Boarhide Boots,leather-feet,2
+b-37-t3,Wolfhide Boots,leather-feet,3
+b-37-t4,Owlbear Boots,leather-feet,4
+b-37-t5,Drakehide Boots,leather-feet,5
+b-37-t6,Shadowhide Boots,leather-feet,6
+b-37-t7,Wyrmscale Boots,leather-feet,7
+b-37-t8,Phoenixhide Boots,leather-feet,8
+b-37-t9,Starhide Boots,leather-feet,9
+b-38-t1,Rusted Helm,plate-head,1
+b-38-t2,Bogiron Helm,plate-head,2
+b-38-t3,Dwarven Helm,plate-head,3
+b-38-t4,Elven Helm,plate-head,4
+b-38-t5,Mithril Helm,plate-head,5
+b-38-t6,Adamant Helm,plate-head,6
+b-38-t7,Runic Helm,plate-head,7
+b-38-t8,Dragonbone Helm,plate-head,8
+b-38-t9,Celestial Helm,plate-head,9
+b-39-t1,Rusted Breastplate,plate-chest,1
+b-39-t2,Bogiron Breastplate,plate-chest,2
+b-39-t3,Dwarven Breastplate,plate-chest,3
+b-39-t4,Elven Breastplate,plate-chest,4
+b-39-t5,Mithril Breastplate,plate-chest,5
+b-39-t6,Adamant Breastplate,plate-chest,6
+b-39-t7,Runic Breastplate,plate-chest,7
+b-39-t8,Dragonbone Breastplate,plate-chest,8
+b-39-t9,Celestial Breastplate,plate-chest,9
+b-40-t1,Rusted Gauntlets,plate-hands,1
+b-40-t2,Bogiron Gauntlets,plate-hands,2
+b-40-t3,Dwarven Gauntlets,plate-hands,3
+b-40-t4,Elven Gauntlets,plate-hands,4
+b-40-t5,Mithril Gauntlets,plate-hands,5
+b-40-t6,Adamant Gauntlets,plate-hands,6
+b-40-t7,Runic Gauntlets,plate-hands,7
+b-40-t8,Dragonbone Gauntlets,plate-hands,8
+b-40-t9,Celestial Gauntlets,plate-hands,9
+b-41-t1,Rusted Greaves,plate-feet,1
+b-41-t2,Bogiron Greaves,plate-feet,2
+b-41-t3,Dwarven Greaves,plate-feet,3
+b-41-t4,Elven Greaves,plate-feet,4
+b-41-t5,Mithril Greaves,plate-feet,5
+b-41-t6,Adamant Greaves,plate-feet,6
+b-41-t7,Runic Greaves,plate-feet,7
+b-41-t8,Dragonbone Greaves,plate-feet,8
+b-41-t9,Celestial Greaves,plate-feet,9
+b-50-t1,Rough Ruby Ring,ring-ruby,1
+b-50-t2,Cut Ruby Ring,ring-ruby,2
+b-50-t3,Flawless Ruby Ring,ring-ruby,3
+b-50-t4,Rough Bloodstone Ring,ring-ruby,4
+b-50-t5,Cut Bloodstone Ring,ring-ruby,5
+b-50-t6,Flawless Bloodstone Ring,ring-ruby,6
+b-50-t7,Rough Magmaheart Ring,ring-ruby,7
+b-50-t8,Cut Magmaheart Ring,ring-ruby,8
+b-50-t9,Flawless Magmaheart Ring,ring-ruby,9
+b-54-t1,Rough Ruby Amulet,amulet-ruby,1
+b-54-t2,Cut Ruby Amulet,amulet-ruby,2
+b-54-t3,Flawless Ruby Amulet,amulet-ruby,3
+b-54-t4,Rough Bloodstone Amulet,amulet-ruby,4
+b-54-t5,Cut Bloodstone Amulet,amulet-ruby,5
+b-54-t6,Flawless Bloodstone Amulet,amulet-ruby,6
+b-54-t7,Rough Magmaheart Amulet,amulet-ruby,7
+b-54-t8,Cut Magmaheart Amulet,amulet-ruby,8
+b-54-t9,Flawless Magmaheart Amulet,amulet-ruby,9
+b-51-t1,Rough Emerald Ring,ring-emerald,1
+b-51-t2,Cut Emerald Ring,ring-emerald,2
+b-51-t3,Flawless Emerald Ring,ring-emerald,3
+b-51-t4,Rough Windstone Ring,ring-emerald,4
+b-51-t5,Cut Windstone Ring,ring-emerald,5
+b-51-t6,Flawless Windstone Ring,ring-emerald,6
+b-51-t7,Rough Tempest Eye Ring,ring-emerald,7
+b-51-t8,Cut Tempest Eye Ring,ring-emerald,8
+b-51-t9,Flawless Tempest Eye Ring,ring-emerald,9
+b-55-t1,Rough Emerald Amulet,amulet-emerald,1
+b-55-t2,Cut Emerald Amulet,amulet-emerald,2
+b-55-t3,Flawless Emerald Amulet,amulet-emerald,3
+b-55-t4,Rough Windstone Amulet,amulet-emerald,4
+b-55-t5,Cut Windstone Amulet,amulet-emerald,5
+b-55-t6,Flawless Windstone Amulet,amulet-emerald,6
+b-55-t7,Rough Tempest Eye Amulet,amulet-emerald,7
+b-55-t8,Cut Tempest Eye Amulet,amulet-emerald,8
+b-55-t9,Flawless Tempest Eye Amulet,amulet-emerald,9
+b-52-t1,Rough Sapphire Ring,ring-sapphire,1
+b-52-t2,Cut Sapphire Ring,ring-sapphire,2
+b-52-t3,Flawless Sapphire Ring,ring-sapphire,3
+b-52-t4,Rough Moonstone Ring,ring-sapphire,4
+b-52-t5,Cut Moonstone Ring,ring-sapphire,5
+b-52-t6,Flawless Moonstone Ring,ring-sapphire,6
+b-52-t7,Rough Astral Shard Ring,ring-sapphire,7
+b-52-t8,Cut Astral Shard Ring,ring-sapphire,8
+b-52-t9,Flawless Astral Shard Ring,ring-sapphire,9
+b-56-t1,Rough Sapphire Amulet,amulet-sapphire,1
+b-56-t2,Cut Sapphire Amulet,amulet-sapphire,2
+b-56-t3,Flawless Sapphire Amulet,amulet-sapphire,3
+b-56-t4,Rough Moonstone Amulet,amulet-sapphire,4
+b-56-t5,Cut Moonstone Amulet,amulet-sapphire,5
+b-56-t6,Flawless Moonstone Amulet,amulet-sapphire,6
+b-56-t7,Rough Astral Shard Amulet,amulet-sapphire,7
+b-56-t8,Cut Astral Shard Amulet,amulet-sapphire,8
+b-56-t9,Flawless Astral Shard Amulet,amulet-sapphire,9
+b-53-t1,Rough Amber Ring,ring-amber,1
+b-53-t2,Cut Amber Ring,ring-amber,2
+b-53-t3,Flawless Amber Ring,ring-amber,3
+b-53-t4,Rough Sunstone Ring,ring-amber,4
+b-53-t5,Cut Sunstone Ring,ring-amber,5
+b-53-t6,Flawless Sunstone Ring,ring-amber,6
+b-53-t7,Rough Dawnheart Ring,ring-amber,7
+b-53-t8,Cut Dawnheart Ring,ring-amber,8
+b-53-t9,Flawless Dawnheart Ring,ring-amber,9
+b-57-t1,Rough Amber Amulet,amulet-amber,1
+b-57-t2,Cut Amber Amulet,amulet-amber,2
+b-57-t3,Flawless Amber Amulet,amulet-amber,3
+b-57-t4,Rough Sunstone Amulet,amulet-amber,4
+b-57-t5,Cut Sunstone Amulet,amulet-amber,5
+b-57-t6,Flawless Sunstone Amulet,amulet-amber,6
+b-57-t7,Rough Dawnheart Amulet,amulet-amber,7
+b-57-t8,Cut Dawnheart Amulet,amulet-amber,8
+b-57-t9,Flawless Dawnheart Amulet,amulet-amber,9
+b-1000,Rime Dagger,variants-wyrm-hollow,3
+b-1001,Rime Greatsword,variants-wyrm-hollow,3
+b-1002,Rime Healing Staff,variants-wyrm-hollow,3
+b-1003,Rime Bow,variants-wyrm-hollow,3
+b-1004,Rime Shield,variants-wyrm-hollow,3
+b-1005,Rime Ring,variants-wyrm-hollow,3
+b-1006,Rime Amulet,variants-wyrm-hollow,3
+u-1,Grubnak's Cleaver,uniques,1
+u-2,Gilded Signet,uniques,1
+u-3,Tutor's Pendant,uniques,1
+u-11,The Drowned Hymnal,uniques,1
+u-4,Hexblade,uniques,2
+u-5,Bulwark of the Hollow,uniques,2
+u-6,Veil of Whispers,uniques,2
+u-7,Voidfang,uniques,2
+u-8,Rimewind Longbow,uniques,3
+u-9,Glacier Heart,uniques,3
+u-10,Avalanche Staff,uniques,3
+u-12,Wyrmscale Aegis,uniques,3
+u-13,Hoardkeeper's Censer,uniques,3
+u-14,Skaldrith's Fang,uniques,3

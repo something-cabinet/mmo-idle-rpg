@@ -1,9 +1,9 @@
-// Item art (painted icons) over the line glyphs of Icon.tsx. One image per item name:
+// Item art (pixel art icons) over the line glyphs of Icon.tsx. One image per item name:
 //   core base: b-<baseId>-t<tier>   (its name changes every tier)
 //   variant:   b-<baseId>           (one fixed name)
 //   unique:    u-<uniqueId>
-// One 128 px file, <key>.webp, for tiles and lists alike. Made from
-// the 1024 px masters in art-src/ by `npm run art:build`; `npm run art:list` lists what
+// One 144 px file (a 48 px pixel grid), <key>.webp, for tiles and lists alike. Made from
+// the masters in art-src/ by `npm run art:build`; `npm run art:list` lists what
 // is missing. Missing art shows the glyph, so gaps stay visible.
 
 import { useState } from 'react';

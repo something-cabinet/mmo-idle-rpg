@@ -98,7 +98,7 @@ export function CollapsibleCard({ storageKey, title, summary, className = '', de
 }
 
 /** The collapsible Filters card. `extra` adds view-specific rows; `foot` sits right of the count (e.g. a sort select). */
-export function ItemFilterCard({ f, storageKey, rarities, shown, total, extra, extraActive = 0, onClear, foot }: {
+export function ItemFilterCard({ f, storageKey, rarities, shown, total, extra, extraActive = 0, onClear, foot, defaultCollapsed }: {
   f: ItemFilter;
   storageKey: string;
   /** Rarity buttons to offer. */
@@ -111,6 +111,8 @@ export function ItemFilterCard({ f, storageKey, rarities, shown, total, extra, e
   /** Also clears the `extra` filters. */
   onClear?: () => void;
   foot?: ReactNode;
+  /** Collapsed until the player opens it the first time. */
+  defaultCollapsed?: boolean;
 }) {
   const active = f.active + extraActive;
   return (
@@ -118,6 +120,7 @@ export function ItemFilterCard({ f, storageKey, rarities, shown, total, extra, e
       storageKey={storageKey}
       title="Filters"
       className="bag-filters-card"
+      defaultCollapsed={defaultCollapsed}
       summary={active ? `${active} active · showing ${shown} of ${total}` : undefined}
     >
       <div className="bag-filters">

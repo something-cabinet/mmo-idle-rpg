@@ -186,7 +186,7 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('temper allowed at level 10', temperBlocker(common, 10, true) === undefined);
   check('temper +10 needs level 99', temperBlocker({ ...common, temper: 9 }, 98, true) === '+10 needs level 99' && temperBlocker({ ...common, temper: 9 }, 99, true) === undefined);
   check('fully tempered at +10', temperBlocker({ ...common, temper: 10 }, 99, true) === 'Fully tempered');
-  check('tier rule applies', temperBlocker({ ...common, tier: 3 }, 20, true) === 'Needs level 21');
+  check('no tier level rule: a T3 item tempers at level 10', temperBlocker({ ...common, tier: 3 }, 10, true) === undefined);
   check("uniques and anomalies can't be tempered",
     temperBlocker({ ...common, rarity: { tag: 'Unique' } }, 99, true) !== undefined && temperBlocker({ ...common, rarity: { tag: 'Anomaly' } }, 99, true) !== undefined);
 

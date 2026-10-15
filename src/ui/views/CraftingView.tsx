@@ -59,6 +59,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
     <ItemFilterCard
       f={filter}
       storageKey="craft_filters_collapsed"
+      defaultCollapsed
       rarities={CRAFT_RARITIES}
       shown={items.length}
       total={craftable.length}

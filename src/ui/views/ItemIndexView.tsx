@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { BASE_LIST, implicitValue, weaponValues, type BaseDef, type BaseKind, type WeaponValues } from '../../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID, LEGENDARIES, LEGENDARIES_BY_ID, type LegendaryGroup } from '../../../spacetimedb/src/data/legendary';
-import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatId } from '../../../spacetimedb/src/data/stats';
+import { MAX_TIER, STATS, Stat, affixRange, affixRef, roundStat, toStored, type StatId } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS } from '../../../spacetimedb/src/loot';
 import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, type UniqueDef } from '../../../spacetimedb/src/data/uniques';
 import { RAIDS_BY_ID } from '../../../spacetimedb/src/data/raids';
@@ -93,6 +93,10 @@ function BaseTable({ bases, tier, found }: { bases: BaseDef[]; tier: number; fou
 const num = (v: number) => String(Number(v.toFixed(2)));
 const TIERS = Array.from({ length: MAX_TIER }, (_, i) => i + 1);
 const AFFIX_WEIGHT = AFFIX_STAT_IDS.reduce((sum, id) => sum + (STATS[id as StatId].weight ?? 100), 0);
+/** Stats added after their kin, listed right after it instead of by ID. */
+const AFFIX_AFTER: Partial<Record<number, number>> = { [Stat.BaseCritChance]: Stat.CritChancePct, [Stat.EvasionRatingPct]: Stat.EvasionRating };
+const affixRank = (id: number) => (AFFIX_AFTER[id] ?? id - 0.5) + 0.5;
+const AFFIX_ORDER = [...AFFIX_STAT_IDS].sort((a, b) => affixRank(a) - affixRank(b));
 
 /** Every regular affix: its chance to be picked and its value range per affix tier. */
 function AffixTable() {
@@ -107,7 +111,7 @@ function AffixTable() {
           </tr>
         </thead>
         <tbody>
-          {AFFIX_STAT_IDS.map(id => {
+          {AFFIX_ORDER.map(id => {
             const stat = id as StatId;
             return (
               <tr key={id}>

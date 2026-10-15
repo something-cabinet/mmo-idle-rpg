@@ -46,6 +46,8 @@ import DevGrantReducer from "./dev_grant_reducer";
 import DevGrantMaterialsReducer from "./dev_grant_materials_reducer";
 import DevGrantSuppliesReducer from "./dev_grant_supplies_reducer";
 import DevRevealAllReducer from "./dev_reveal_all_reducer";
+import DevSetLevelReducer from "./dev_set_level_reducer";
+import DevSetSkillLevelReducer from "./dev_set_skill_level_reducer";
 import DevUnlockZonesReducer from "./dev_unlock_zones_reducer";
 import DrinkElixirReducer from "./drink_elixir_reducer";
 import EquipReducer from "./equip_reducer";
@@ -366,6 +368,8 @@ const reducersSchema = __reducers(
   __reducerSchema("dev_grant_materials", DevGrantMaterialsReducer),
   __reducerSchema("dev_grant_supplies", DevGrantSuppliesReducer),
   __reducerSchema("dev_reveal_all", DevRevealAllReducer),
+  __reducerSchema("dev_set_level", DevSetLevelReducer),
+  __reducerSchema("dev_set_skill_level", DevSetSkillLevelReducer),
   __reducerSchema("dev_unlock_zones", DevUnlockZonesReducer),
   __reducerSchema("drink_elixir", DrinkElixirReducer),
   __reducerSchema("equip", EquipReducer),

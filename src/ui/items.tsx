@@ -6,6 +6,7 @@ import { EFFECTS_BY_ID, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/leg
 import { MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
+import { MAX_TEMPER } from '../../spacetimedb/src/data/recipes';
 import { TEMPER_STEP, tempered } from '../../spacetimedb/src/combat';
 import { fmt } from './format';
 import { Icon } from './Icon';
@@ -14,9 +15,9 @@ import { ItemArt, ItemIcon, itemArtUrl } from './itemArt';
 export const rarityCls = (tag: string) => tag.toLowerCase();
 /** A rarity's name in the game: an Anomaly is never named. */
 export const rarityLabel = (tag: string) => (tag === 'Anomaly' ? '???' : tag);
-/** "+3 Iron Longsword": the temper level, then the unique's or the base's name. */
+/** "Wolfhide Cap +3": the unique's or the base's name, then the temper level. */
 export const itemName = (it: { baseId: number; tier: number; uniqueId?: number; temper?: number }) =>
-  (it.temper ? `+${it.temper} ` : '') + ((it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier));
+  ((it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier)) + (it.temper ? ` +${it.temper}` : '');
 
 /** Bag glyph for an item: weapon/off-hand family, armor slot, or ring/amulet. */
 export const materialName = (id: number) => MATERIALS_BY_ID.get(id)?.name ?? `Material ${id}`;
@@ -152,6 +153,7 @@ export function ItemTile({ it, selected, badge, title, onClick }: { it: Item; se
     <button className={`item-tile r-${rarityCls(it.rarity.tag)}${selected ? ' selected' : ''}`} title={title ?? `${rarityLabel(it.rarity.tag)} ${itemName(it)}`} onClick={onClick}>
       <ItemIcon it={it} className="tile-ico" />
       <span className="tile-tier">T{it.tier}</span>
+      {it.temper > 0 && <span className={`tile-temper${it.temper >= MAX_TEMPER ? ' maxed' : ''}`}>+{it.temper}</span>}
       {it.locked && (
         <span className="tile-lock">
           <Icon name="lock" />

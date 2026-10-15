@@ -71,14 +71,19 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
     const v = Number(r.value) / 100;
     return (v >= lo - 0.5 || v === 1) && v <= Math.max(1, hi + 0.5);
   }));
-  check('Finesse T1 is 0–4.44 on any item (even slices of the T9 range)',
-    affixRange(Stat.Finesse, 1).every((x, i) => near(x, [0, 40 / 9][i], 1e-9)));
-  check('base crit T1 is 0.5–1, T9 is 4.5–5', near(affixRange(Stat.BaseCritChance, 1)[0], 0.5, 1e-9) && near(affixRange(Stat.BaseCritChance, 1)[1], 1, 1e-9) &&
-    near(affixRange(Stat.BaseCritChance, 9)[0], 4.5, 1e-9) && near(affixRange(Stat.BaseCritChance, 9)[1], 5, 1e-9));
-  check('Finesse T9 is 35.6–40', near(affixRange(Stat.Finesse, 9)[0], 320 / 9, 1e-9) && near(affixRange(Stat.Finesse, 9)[1], 40, 1e-9));
+  check('Finesse T1 is 1–14 on any item (a third of the way to T9: percent tiers are front-loaded)',
+    affixRange(Stat.Finesse, 1).every((x, i) => near(x, [1, 1 + 39 / 3][i], 1e-9)));
+  check('lifesteal T1 is 0.25–0.67, T9 ends at 1.5', near(affixRange(Stat.LifestealPct, 1)[0], 0.25, 1e-9) &&
+    near(affixRange(Stat.LifestealPct, 1)[1], 0.25 + 1.25 / 3, 1e-9) && near(affixRange(Stat.LifestealPct, 9)[1], 1.5, 1e-9));
+  check('base crit T1 is 0.5–2, T9 ends at 5', near(affixRange(Stat.BaseCritChance, 1)[0], 0.5, 1e-9) && near(affixRange(Stat.BaseCritChance, 1)[1], 2, 1e-9) &&
+    near(affixRange(Stat.BaseCritChance, 9)[1], 5, 1e-9));
+  check('Finesse T9 is 37.8–40', near(affixRange(Stat.Finesse, 9)[0], 1 + 39 * Math.sqrt(8 / 9), 1e-9) && near(affixRange(Stat.Finesse, 9)[1], 40, 1e-9));
+  check('percent tiers narrow as they rise', [1, 2, 3, 4, 5, 6, 7, 8].every(k =>
+    affixRange(Stat.PhysDamagePct, k + 1)[1] - affixRange(Stat.PhysDamagePct, k + 1)[0] < affixRange(Stat.PhysDamagePct, k)[1] - affixRange(Stat.PhysDamagePct, k)[0]));
+  check('armor (linear) keeps even slices: T1 is 1–5.9', near(affixRange(Stat.Armor, 1)[0], 1, 1e-9) && near(affixRange(Stat.Armor, 1)[1], 1 + 44 / 9, 1e-9));
   check('phys damage T3 follows the curve: ref(T2)–ref(T3)',
     near(affixRange(Stat.PhysDamage, 3)[0], affixRef(Stat.PhysDamage, 2), 1e-9) && near(affixRange(Stat.PhysDamage, 3)[1], affixRef(Stat.PhysDamage, 3), 1e-9));
-  check('phys damage T1 is 0–2', near(affixRange(Stat.PhysDamage, 1)[0], 0, 1e-9) && near(affixRange(Stat.PhysDamage, 1)[1], 2, 1e-9));
+  check('phys damage T1 is 1–2', near(affixRange(Stat.PhysDamage, 1)[0], 1, 1e-9) && near(affixRange(Stat.PhysDamage, 1)[1], 2, 1e-9));
   const t1 = Array.from({ length: 2000 }, () => rollAffix(rng, 1));
   check('a T1 item only rolls T1 affixes', t1.every(r => r.tier === 1));
   check('affix values are whole except lifesteal and HP regen', rolls.every(r =>

@@ -2,7 +2,9 @@
 // the database was published locally with DEV_CHEATS=1 (spacetimedb/src/reducers/dev.ts).
 
 import { useState } from 'react';
+import { MAX_LEVEL } from '../../spacetimedb/src/combat';
 import { BASE_LIST } from '../../spacetimedb/src/data/bases';
+import { MAX_SKILL_LEVEL, SKILLS } from '../../spacetimedb/src/data/skills';
 import { MAX_TIER } from '../../spacetimedb/src/data/stats';
 import { UNIQUES } from '../../spacetimedb/src/data/uniques';
 import { DEV_RARITIES } from '../../spacetimedb/src/loot';
@@ -25,6 +27,9 @@ export function DevPanel({ s }: { s: Snapshot }) {
   const [tier, setTier] = useSticky('devTier', 1);
   const [rarity, setRarity] = useSticky<string>('devRarity', 'Rare');
   const [uniqueId, setUniqueId] = useSticky('devUnique', UNIQUES[0].id);
+  const [level, setLevel] = useState('50');
+  const [skillId, setSkillId] = useSticky('devSkill', 0);
+  const [skillLevel, setSkillLevel] = useState('99');
   const grant = (g: bigint, d: bigint) => call(r.devGrant({ gold: g, dust: d }), `+${g} gold, +${d} Dust`);
   const amount = (v: string) => (/^\d+$/.test(v) ? BigInt(v) : 0n);
 
@@ -38,6 +43,25 @@ export function DevPanel({ s }: { s: Snapshot }) {
         <button className="btn small" onClick={() => call(r.devUnlockZones({}), 'Every zone unlocked')}>Unlock all zones</button>
         <button className="btn small" onClick={() => call(r.devGrantMaterials({ count: 1000 }), '+1,000 of every material')}>+1k every material</button>
         <button className="btn small" onClick={() => call(r.devGrantSupplies({ count: 10 }), '+10 of every elixir')}>+10 every elixir</button>
+      </div>
+
+      <h4 className="dev-h">Levels</h4>
+      <div className="dev-row">
+        <label>Character level <input inputMode="numeric" value={level} onChange={e => setLevel(e.target.value)} /></label>
+        <button className="btn small" onClick={() => call(r.devSetLevel({ level: Number(amount(level)) }), `Level ${level}`)}>Set (1–{MAX_LEVEL})</button>
+      </div>
+      <div className="dev-row">
+        <label>
+          Skill
+          <select value={skillId} onChange={e => setSkillId(Number(e.target.value))}>
+            <option value={0}>All skills</option>
+            {SKILLS.map(sk => <option key={sk.id} value={sk.id}>{sk.name}</option>)}
+          </select>
+        </label>
+        <label>Level <input inputMode="numeric" value={skillLevel} onChange={e => setSkillLevel(e.target.value)} /></label>
+        <button className="btn small" onClick={() => call(r.devSetSkillLevel({ skillId, level: Number(amount(skillLevel)) }), `${SKILLS.find(sk => sk.id === skillId)?.name ?? 'Every skill'} set to level ${skillLevel}`)}>
+          Set (1–{MAX_SKILL_LEVEL})
+        </button>
       </div>
 
       <h4 className="dev-h">Gold and Dust</h4>

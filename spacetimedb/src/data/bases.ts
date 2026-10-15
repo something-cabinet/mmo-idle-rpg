@@ -188,9 +188,9 @@ const CORE: CoreDef[] = [
   weapon(6, 'Katana', 'metal', { damageType: 'Physical', hit: 9.5, speed: 1.4, baseCrit: 10, twoHanded: true, ranged: false }, [pct(Stat.CritDamage, 40)]),
   weapon(7, 'Greatsword', 'metal', { damageType: 'Physical', hit: 23.75, speed: 0.55, baseCrit: 5, twoHanded: true, ranged: false }, [pct(Stat.ArmorPenPct, 25)]),
   weapon(8, 'Bow', 'wood', { damageType: 'Physical', hit: 13.25, speed: 1.0, baseCrit: 6, twoHanded: true, ranged: true }, [lin(Stat.EvasionRating, 1.5)]),
+  weapon(11, 'Crossbow', 'wood', { damageType: 'Physical', hit: 18, speed: 0.7, baseCrit: 12, twoHanded: true, ranged: true }, [pct(Stat.CritDamage, 40)]),
   weapon(9, 'Fire Staff', 'wood', { damageType: 'Magic', hit: 18.75, speed: 0.8, baseCrit: 5, twoHanded: true, ranged: true }),
   weapon(10, 'Healing Staff', 'wood', { damageType: 'Magic', hit: 5, speed: 1.0, baseCrit: 5, heal: 7.5, healTarget: 'All', twoHanded: true, ranged: true }),
-  weapon(11, 'Crossbow', 'wood', { damageType: 'Physical', hit: 18, speed: 0.7, baseCrit: 12, twoHanded: true, ranged: true }, [pct(Stat.CritDamage, 40)]),
   {
     id: 20,
     kind: 'offhand',

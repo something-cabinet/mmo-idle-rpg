@@ -91,8 +91,8 @@ export const RAIDS: RaidDef[] = [
     hireCost: 2000,
     // The average of level-38 characters with random T3 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
     reference: {
-      level: 38, maxHp: 620, regen: 0.8, armor: 55, resistance: 65, evasionRating: 22, threat: 0.18,
-      attacksPerSec: 1.25, physicalPerSec: 50, magicPerSec: 39, critChance: 0.09, critMult: 1.05, armorPen: 0.02, magicPen: 0.02,
+      level: 38, maxHp: 640, regen: 0.8, armor: 55, resistance: 65, evasionRating: 22, threat: 0.23,
+      attacksPerSec: 1.25, physicalPerSec: 54, magicPerSec: 42, critChance: 0.09, critMult: 1.05, armorPen: 0.02, magicPen: 0.02,
     },
   },
 ];

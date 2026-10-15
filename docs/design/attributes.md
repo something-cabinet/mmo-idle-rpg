@@ -123,7 +123,7 @@ and existing IDs are never reused, renumbered or redefined.
 | 15 | Resistance | % | | Survival vs magic |
 | 16 | Evasion rating | flat | final chance cap 60% | Survival |
 | 17 | HP regen | flat /s | | Survival |
-| 18 | Lifesteal | % | cap 3%, rare affix | Survival |
+| 18 | Lifesteal | % | cap 5%, rare affix | Survival |
 | 19 | Heal | flat | | Heal power |
 | 20 | Heal | % | | Heal power |
 | 21 | Threat | % | | Raid tanking |
@@ -141,8 +141,8 @@ and existing IDs are never reused, renumbered or redefined.
   adds half per hit and a 0.55/s greatsword adds ~1.8×.
 - **Heal (19, 20)** only scales heal effects on a weapon. A weapon without a heal
   effect gets nothing from it.
-- **Lifesteal** is deliberately tiny and rare: low affix values, low drop weight and a
-  3% cap, so it can't make every zone viable on its own.
+- **Lifesteal** is rare and capped: low drop weight and a 5% cap, so it can't make every
+  zone viable on its own, but even one T1 roll (0.25–0.67%) is noticeable.
 - **Penetration cap (75%)** is needed because percent affixes can stack across ~27
   affix slots.
 
@@ -160,9 +160,11 @@ where damage grows far more than HP:
 | **Life** | ×1.6 | ×43 | Gear HP, HP regen |
 | **Heal** | ×1.33 | ×10 | Weapon heal, flat added heal |
 | **Linear** | ×T | ×9 | Armor, resistance, evasion rating (their formulas use level, which is linear) |
-| **Percent** | `(N + 3) / 12` | ×3 | Percent stats and primaries |
+| **Percent** | `√(N / 9)` (of T9) | ×3 | Percent stats and primaries |
 
-- Percent stats grow slowly because they multiply flat values that already grow.
+- Percent stats grow slowly because they multiply flat values that already grow. The
+  curve is front-loaded (T1 is a third of T9, T3 already 58%) so low-tier % rolls still
+  matter on a low-level character with small flat values.
 - Heal grows slower than enemy damage because the heal multiplier (Mind, heal %) keeps
   growing with level and gear; the net keeps healers at ~70–85% coverage (bases.md).
 
@@ -176,16 +178,16 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 | Magic damage (added) | 2 | Offense | 756 | Same |
 | Max HP | 20 | Life | 860 | |
 | HP regen (/s) | 0.5 | Life | 21 | |
-| Heal (added) | 2 | Heal | 20 | Straight bonus per hit: worth more on fast weapons |
+| Heal (added) | 4 | Heal | 39 | Straight bonus per hit: worth more on fast weapons |
 | Armor | 5 | Linear | 45 | One best roll ≈ 9% mitigation vs a matching enemy |
 | Resistance | 5 | Linear | 45 | Same as armor |
 | Evasion rating | 5 | Linear | 45 | One best roll ≈ 5% evasion vs a matching enemy |
 
 **Item values are whole numbers.** Every rolled or computed value on an item (affixes,
 implicits, legendary bonuses, weapon hit and heal) is rounded to the nearest whole
-number, and never below 1 (a T1 flat damage roll is 1 or 2). Only the very small stats
-keep two decimals: **lifesteal** (best T1 roll ≈ 0.17%), **base crit chance** (affix tier 1 rolls 0.5–1%) and **HP regen** (best T1 roll
-0.5/s). Values are still stored in hundredths, so those fit the same column.
+number, and never below 1 (a T1 flat damage roll is 1 or 2); affix tier 1 rolls from 1,
+not 0. Only the very small stats keep two decimals, each with its own tier-1 floor:
+**lifesteal** (affix tier 1 rolls 0.25–0.67%), **base crit chance** (0.5–2%) and **HP regen** (0.1–0.5/s). Values are still stored in hundredths, so those fit the same column.
 
 ### Percent stats (*illustrative*)
 
@@ -198,13 +200,13 @@ output, after the bonus from level primaries.
 | Attack speed % | 10% | Scales damage and heals, so lower |
 | Increased crit chance % | 40% | 5% base → 7% |
 | Crit damage | +30 points | 150% → 180% |
-| Base crit chance | +5 points | Weight 25 (rare); affix tiers span 0.5% (worst T1) to 5% (best T9) instead of starting at 0; 5% base → 10%, then scaled by increased |
+| Base crit chance | +5 points | Weight 25 (rare); affix tiers span 0.5% (worst T1) to 5% (best T9) instead of starting at 0 (T1 0.5–2%); 5% base → 10%, then scaled by increased |
 | Armor / magic penetration % | 15% | Cap 75% |
 | Max HP % | 15% | |
 | Armor / resistance / evasion % | 25% | |
 | Heal % | 30% | |
 | Threat % | 30% | |
-| Lifesteal % | 0.5% | Weight 25 (rare), cap 3% |
+| Lifesteal % | 1.5% | Weight 25 (rare), cap 5%; affix tier 1 rolls 0.25–0.67% |
 | Item find % | 15% | |
 | Gold find % | 20% | |
 | XP gain % | 10% | |

@@ -2012,6 +2012,19 @@ select:focus,
   background: var(--rc);
   color: #12141a;
 }
+/* Temper level, just above the tier badge; gold when fully tempered (+10). */
+.tile-temper {
+  position: absolute;
+  bottom: 18px;
+  right: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  /* Fixed light text on a dark outline: readable over any art, in either theme. */
+  color: #fff;
+  text-shadow: 0 0 2px #000, 0 1px 2px #000;
+}
+.tile-temper.maxed { color: #f5c542; }
 .tile-lock,
 .tile-leg {
   position: absolute;

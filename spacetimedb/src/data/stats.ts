@@ -44,6 +44,8 @@ export type StatId = (typeof Stat)[keyof typeof Stat];
 /** How a value grows with tier. */
 export type Curve = 'offense' | 'life' | 'heal' | 'linear' | 'percent';
 
+export const MAX_TIER = 9;
+
 /** Multiplier of a tier-1 value at tier `t` (1..9). For 'percent', the T9 value is the reference. */
 export function curve(c: Curve, t: number): number {
   switch (c) {
@@ -57,11 +59,11 @@ export function curve(c: Curve, t: number): number {
     case 'linear':
       return t;
     case 'percent':
-      return (t + 3) / 12;
+      // Front-loaded: T1 is already a third of T9 (low-level players have small flat
+      // values to multiply), then each tier adds less. 0 at t = 0.
+      return Math.sqrt(t / MAX_TIER);
   }
 }
-
-export const MAX_TIER = 9;
 
 export interface StatDef {
   id: StatId;
@@ -78,7 +80,7 @@ export interface StatDef {
   weight?: number;
   /** Item values keep two decimals; every other stat is a whole number on items. */
   decimals?: boolean;
-  /** 'linear'/'percent' only: lowest roll of affix tier 1 (default 0), so even the worst roll counts. */
+  /** Lowest roll of affix tier 1, so even the worst roll counts (default 1, or 0 for `decimals` stats). */
   floor?: number;
 }
 
@@ -110,9 +112,9 @@ export const STATS: Record<StatId, StatDef> = {
   14: s(14, 'Resistance', false, 'linear', 5),
   15: s(15, 'Resistance', true, 'percent', 25),
   16: s(16, 'Evasion rating', false, 'linear', 5),
-  17: s(17, 'HP regen', false, 'life', 0.5, undefined, true),
-  18: s(18, 'Lifesteal', true, 'percent', 0.5, 25, true),
-  19: s(19, 'Heal', false, 'heal', 2),
+  17: s(17, 'HP regen', false, 'life', 0.5, undefined, true, 0.1),
+  18: s(18, 'Lifesteal', true, 'percent', 1.5, 25, true, 0.25),
+  19: s(19, 'Heal', false, 'heal', 4),
   20: s(20, 'Heal', true, 'percent', 30),
   21: s(21, 'Threat', true, 'percent', 30),
   22: s(22, 'Item find', true, 'percent', 15),
@@ -130,7 +132,7 @@ export const STATS: Record<StatId, StatDef> = {
 export const CAPS = {
   evasion: 60,
   penetration: 75,
-  lifesteal: 3,
+  lifesteal: 5,
 } as const;
 
 /**
@@ -161,16 +163,15 @@ export function affixRef(stat: StatId, tier: number): number {
 
 /**
  * Value range of affix tier `k` (1..MAX_TIER), the same on every item tier (equipment.md).
- * Evenly growing stats ('linear', 'percent') split the T9 range (from `floor`, default 0)
- * into MAX_TIER equal slices; fast-growing ones ('offense', 'life', 'heal') follow their curve: tier k rolls
- * from the best roll at tier k−1 (0 for k = 1) to the best roll at tier k.
+ * 'linear' stats split the T9 range (from `floor`) into MAX_TIER equal slices; every other
+ * curve is followed: tier k rolls from the best roll at tier k−1 (`floor` for k = 1) to the
+ * best roll at tier k. 'percent' tiers thus start wide and narrow.
  */
 export function affixRange(stat: StatId, k: number): [number, number] {
   const d = STATS[stat];
-  if (d.curve === 'linear' || d.curve === 'percent') {
-    const top = affixRef(stat, MAX_TIER);
-    const lo = d.floor ?? 0;
-    return [lo + ((top - lo) * (k - 1)) / MAX_TIER, lo + ((top - lo) * k) / MAX_TIER];
-  }
-  return [k === 1 ? 0 : affixRef(stat, k - 1), affixRef(stat, k)];
+  const top = affixRef(stat, MAX_TIER);
+  const lo = d.floor ?? (d.decimals ? 0 : 1);
+  if (d.curve === 'linear') return [lo + ((top - lo) * (k - 1)) / MAX_TIER, lo + ((top - lo) * k) / MAX_TIER];
+  if (d.curve === 'percent') return [lo + (top - lo) * curve('percent', k - 1), lo + (top - lo) * curve('percent', k)];
+  return [k === 1 ? lo : affixRef(stat, k - 1), affixRef(stat, k)];
 }

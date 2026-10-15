@@ -120,7 +120,7 @@ check('T1 dagger hit 4.75 → 5 (whole)', weaponValues(base(2).weapon!, 1).hit =
 const breastplateT5 = base(39).implicits.map(i => [i.stat, implicitValue(i, 5)] as const);
 const v = (s: number) => breastplateT5.find(([id]) => id === s)?.[1] ?? NaN;
 check('T5 breastplate armor 60', near(v(Stat.Armor), 60));
-check('T5 breastplate Vitality 10.67 → 11 (whole)', v(Stat.Vitality) === 11);
+check('T5 breastplate Vitality 11.93 → 12 (whole)', v(Stat.Vitality) === 12);
 check('T5 breastplate attack speed −3.2% → −3% (whole)', v(Stat.AttackSpeedPct) === -3);
 check('T1 cloth helm armor 1.2 → 1, never 0', implicitValue(base(30).implicits[0], 1) === 1);
 check('item values are whole except lifesteal and HP regen',

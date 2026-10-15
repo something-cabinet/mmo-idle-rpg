@@ -24,11 +24,11 @@ profile, Damage (phys) and Damage (magic) builds). A fight lasts about 1:25. Win
 
 | Party | Odds |
 |---|---|
-| 4 players | ~76% (random gear; a real tank with Threat gear and a healer do better) |
-| 3 players | ~66% |
-| 3 players + 1 NPC | ~65% |
-| 2 players + 2 NPCs | ~33% |
-| 2 players | ~0% |
+| 4 players | ~91% (random gear; a real tank with Threat gear and a healer do better) |
+| 3 players | ~77% |
+| 3 players + 1 NPC | ~85% |
+| 2 players + 2 NPCs | ~75% |
+| 2 players | ~19% |
 
 *Illustrative.* Outcomes are mostly decided by the stats, like solo fights: a given
 party tends to win nearly always or nearly never.
@@ -78,8 +78,8 @@ live fights (combat.md). The server's outcome is final.
 - The leader pays **2,000 gold per NPC** at the start, win or lose.
 - An NPC has **0.5×** the raid's **reference player** (`RaidDef.reference`), a fixed sheet
   of an average player ready for the raid, so NPCs never scale with the party. Wyrm Hollow's:
-  Lv 38, 620 HP, 55 armor, 65 resistance, 22 evasion, 0.8 regen, 18% threat, 1.25 attacks/s
-  for 50 physical + 39 magic per second (before mitigation), 9% crit. Its DPS, HP, regen,
+  Lv 38, 640 HP, 55 armor, 65 resistance, 22 evasion, 0.8 regen, 23% threat, 1.25 attacks/s
+  for 54 physical + 42 magic per second (before mitigation), 9% crit. Its DPS, HP, regen,
   defenses and threat are 0.5× that; speed, crits and penetration as listed. No effects.
 - `test:raid` checks the sheet stays within 10% of the measured average of level-38
   characters with random T3 gear; update it when gear or stats change.

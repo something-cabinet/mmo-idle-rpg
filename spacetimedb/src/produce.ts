@@ -6,7 +6,6 @@ import {
   MAX_SKILL_LEVEL,
   doubleYieldChance,
   productionActionMicros,
-  productionBlocker,
   productionXpPerAction,
   temperCap,
   temperRequirement,
@@ -170,8 +169,8 @@ export function forged(characterId: bigint, r: Recipe, made: { at: bigint; level
 export function temperBlocker(it: { baseId: number; rarity: { tag: RarityName }; tier: number; temper: number }, level: number, zoneOpen: boolean): string | undefined {
   if (rarityRank(it.rarity.tag) >= rarityRank('Unique')) return it.rarity.tag === 'Unique' ? "Uniques can't be tempered" : "This item can't be tempered";
   if (it.temper >= MAX_TEMPER) return 'Fully tempered';
-  const blocker = productionBlocker({ level, tier: it.tier, zoneOpen });
-  if (blocker) return blocker;
+  // No Smithing level for the item's tier: only the temper cap below.
+  if (!zoneOpen) return `Unlock the tier ${it.tier} zone first`;
   if (it.temper + 1 > temperCap(level)) return `+${it.temper + 1} needs level ${temperRequirement(it.temper + 1)}`;
   if (!temperCost(it)) return `No tier ${it.tier} materials yet`;
   return undefined;

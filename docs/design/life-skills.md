@@ -210,8 +210,8 @@ want. Tempering is the steady goal: it makes gear the player already owns better
   are computed and rounded once like any other stat (attributes.md). The item stores only
   its `temper` level (0–10), so the original values stay intact.
 - **10 temper levels. The max depends on Smithing level:** +1 per 10 levels (+1 at 10 …
-  +9 at 90) and +10 at 99 (+20%). Tempering a tier-T item also needs the tier rule
-  (level `10·(T−1) + 1`).
+  +9 at 90) and +10 at 99 (+20%). The item's tier needs no Smithing level, only an
+  unlocked zone of that tier.
 - **Each step is instant** on a bag or equipped item, from the Smithing page or the
   crafting workshop. It doesn't stop what the character is doing. Going from `k−1` to `k`
   costs:
@@ -225,7 +225,7 @@ want. Tempering is the steady goal: it makes gear the player already owns better
 - Full +0 → +10 on one item: 550 material, ~2.75 h of farming gold, the XP of 2.75 h of
   Smithing. Ten slots per tier is ~27 h worth of Smithing XP, a long-term XP source. Early
   steps are cheap, so every item is worth a few levels; the last ones are the goal.
-- The name shows the level (`+3 Iron Longsword`) and the tooltip marks the tempered
+- The name shows the level (`Wolfhide Cap +3`) and the tooltip marks the tempered
   stats. Salvaging a tempered item gives nothing extra: the temper is lost.
 - Balance note: +20% weapon hit is close to +20% attack DPS, like a permanent Wrath
   elixir. If it turns out too strong, lower the per-level value or the cap, not the

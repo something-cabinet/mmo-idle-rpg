@@ -122,7 +122,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${level}: rating / (rating + ${10 * level})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade")),
-    row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], 'Cap 3%', has(Effect.FrozenBlood) && 'Frozen Blood: no lifesteal')),
+    row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], `Cap ${CAPS.lifesteal}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no lifesteal')),
   ];
 
   const utility: StatRow[] = [

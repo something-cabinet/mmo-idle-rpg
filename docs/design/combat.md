@@ -80,7 +80,7 @@ HPS_self = Σ sources s   s.weapon.heal × healScale × attacksPerSec(s) × crit
 
 DPS_enemy   = enemyDamage × enemySpeed
               × (1 − mitigation(yourDef_{enemyType}, 0, yourLevel)) × (1 − evasion)
-netIncoming = DPS_enemy − hpRegen − lifesteal × DPS_you − HPS_self   // lifesteal cap 3%
+netIncoming = DPS_enemy − hpRegen − lifesteal × DPS_you − HPS_self   // lifesteal cap 5%
 
 timeToKill = enemyHP / DPS_you
 timeToDie  = netIncoming ≤ 0 ? ∞ : maxHP / netIncoming

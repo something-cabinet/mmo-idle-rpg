@@ -4,13 +4,15 @@
 import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
 import { BASE_LIST } from '../data/bases';
+import { MAX_LEVEL } from '../combat';
+import { MAX_SKILL_LEVEL, SKILLS } from '../data/skills';
 import { MAX_TIER } from '../data/stats';
 import { UNIQUES, UNIQUES_BY_ID } from '../data/uniques';
 import { ZONES } from '../data/zones';
 import { MATERIALS } from '../data/materials';
 import { SUPPLIES } from '../data/supplies';
 import { DEV_RARITIES, makeItem, makeUnique, seededRng, type RarityName } from '../loot';
-import { addMaterials, addSupply, discover, requireActive, type Character, type Ctx } from '../helpers';
+import { addMaterials, addSupply, discover, requireActive, settle, skillRow, type Character, type Ctx } from '../helpers';
 
 function requireCheats(ctx: Ctx) {
   if (ctx.env.DEV_CHEATS !== '1') throw new SenderError('Cheats are off');
@@ -62,6 +64,23 @@ export const devGrantMaterials = spacetimedb.reducer({ count: t.u32() }, (ctx, {
 export const devGrantSupplies = spacetimedb.reducer({ count: t.u32() }, (ctx, { count }) => {
   const { ch } = requireCheats(ctx);
   for (const s of SUPPLIES) addSupply(ctx, ch.id, s.id, count);
+});
+
+/** Sets the character's level (XP toward the next starts at 0), after settling what's pending at the old level. */
+export const devSetLevel = spacetimedb.reducer({ level: t.u32() }, (ctx, { level }) => {
+  const { ch } = requireCheats(ctx);
+  if (level < 1 || level > MAX_LEVEL) throw new SenderError(`Level must be 1–${MAX_LEVEL}`);
+  const settled = settle(ctx, ch);
+  ctx.db.character.id.update({ ...settled, level, xp: 0n });
+});
+
+/** Sets life skill `skillId` (0 = every skill) to `level`, XP toward the next at 0, after settling. */
+export const devSetSkillLevel = spacetimedb.reducer({ skillId: t.u8(), level: t.u8() }, (ctx, { skillId, level }) => {
+  const { ch } = requireCheats(ctx);
+  if (level < 1 || level > MAX_SKILL_LEVEL) throw new SenderError(`Level must be 1–${MAX_SKILL_LEVEL}`);
+  if (skillId !== 0 && !SKILLS.some(s => s.id === skillId)) throw new SenderError('No such skill');
+  settle(ctx, ch);
+  for (const s of SKILLS) if (skillId === 0 || s.id === skillId) ctx.db.skill.id.update({ ...skillRow(ctx, ch.id, s.id), level, xp: 0n });
 });
 
 function giveItem(ctx: Ctx, ch: Character, item: ReturnType<typeof makeItem>) {

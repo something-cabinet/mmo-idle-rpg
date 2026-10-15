@@ -141,6 +141,7 @@ not decisions.
 | 2026-10-11 | Online time is settled as live fights (seeded per character and fight start, replayed identically by the client); offline time keeps the expected-value formulas. |
 | 2026-10-10 | Two ring slots, 4 loadouts (items can be shared between loadouts), bag 200 expandable to 400 with gold. |
 | 2026-10-13 | Auto-equip profiles are Damage (phys), Damage (magic), Healing, Survival (phys) and Survival (magic); Loot is removed. Slots can be locked against auto-equip. |
+| 2026-10-15 | Lifesteal is rare but useful: best roll 1.5% (affix tier 1 rolls 0.25–0.67%), cap 5%. Affix tier 1 rolls from 1, not 0, for whole-number stats. |
 
 ## Open questions
 

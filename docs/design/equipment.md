@@ -150,14 +150,17 @@ affix rolls tier 1 to N (N = item tier, 1–9).
 - **Affix tiers match item tiers:** 1–9. A tier-N item rolls affix tiers 1..N.
 - **Tier pick:** uniform over 1 to N.
 - **Value:** affix tier k has the **same range on every item tier**, and rolls uniformly
-  in it (the exact value is saved). How the range is set depends on the stat's curve:
+  in it (the exact value is saved). Tier 1 starts at a **floor** `f`, not 0, so even the
+  worst roll counts: 1 for whole-number stats; the two-decimal stats set their own
+  (lifesteal 0.25%, base crit chance 0.5%, HP regen 0.1/s). How the range is set depends
+  on the stat's curve:
   - Evenly growing stats (`linear`: armor, resistance, evasion rating) split the T9
-    range `[0, ref(9)]` into 9 equal slices: tier k rolls in
-    `[ref(9) × (k−1)/9, ref(9) × k/9]`. Armor T1 is +1–5 on any item.
+    range `[f, ref(9)]` into 9 equal slices: tier k rolls in
+    `[f + (ref(9) − f) × (k−1)/9, f + (ref(9) − f) × k/9]`. Armor T1 is +1–6 on any item.
   - Every other curve is followed: tier k rolls in `[ref(k−1), ref(k)]`, with
-    `ref(0) = 0`. Flat physical damage T1 is +1–2, T3 is +4–9. `percent` (primaries,
-    %-stats) is front-loaded, `ref(k) = ref(9) × √(k/9)`: low tiers are wide and
-    worth having on a low-level character, high tiers narrow. Finesse T1 is +1–13.
+    `ref(0) = f`. Flat physical damage T1 is +1–2, T3 is +4–9. `percent` (primaries,
+    %-stats) is front-loaded, `ref(k) = f + (ref(9) − f) × √(k/9)`: low tiers are wide and
+    worth having on a low-level character, high tiers narrow. Finesse T1 is +1–14.
 - **Reference table:** every stat has a reference value `ref(stat, N)`, the best possible
   roll on a tier-N item, following that stat's curve (attributes.md). Affixes scale from
   this table, not from the item, so stats a base doesn't have still get a sensible
@@ -168,11 +171,11 @@ affix rolls tier 1 to N (N = item tier, 1–9).
 - Affix tier is global: "T3 Finesse" is the same range on a T3 and a T9 item. Fast-growing
   stats follow their curve so their low tiers stay sensible next to low-tier bases.
 
-  Example, max HP (life curve, `ref(k) = 20 × 1.6^(k−1)`): T1 rolls 0–20, T2 20–32,
+  Example, max HP (life curve, `ref(k) = 20 × 1.6^(k−1)`): T1 rolls 1–20, T2 20–32,
   T3 32–51, T4 51–82, T5 82–131. On a T5 item the average is ≈ 50.
-  Example, physical damage % (`ref(9) = 30%`): T1 0–10%, T2 10–14.1%, T3 14.1–17.3%,
-  T4 17.3–20%, T5 20–22.4%, T6 22.4–24.5%, T7 24.5–26.5%, T8 26.5–28.3%, T9 28.3–30%.
-  A T3 item rolls 0–17.3% (average ≈ 8.6%), a T9 item 0–30% (average ≈ 15.1%).
+  Example, physical damage % (`ref(9) = 30%`): T1 1–10.7%, T2 10.7–14.7%, T3 14.7–17.7%,
+  T4 17.7–20.3%, T5 20.3–22.6%, T6 22.6–24.7%, T7 24.7–26.6%, T8 26.6–28.3%, T9 28.3–30%.
+  A T3 item rolls 1–17.7% (average ≈ 11.6%), a T9 item 1–30% (average ≈ 20.1%).
 - Every affix needs a **stable ID**, under the same permanence rules as stat IDs, so
   saved loot-filter rules keep working.
 

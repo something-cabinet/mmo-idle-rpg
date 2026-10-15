@@ -8,6 +8,7 @@ import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
 import { fmt } from './format';
 import { Icon } from './Icon';
+import { ItemIcon } from './itemArt';
 
 export const rarityCls = (tag: string) => tag.toLowerCase();
 /** A rarity's name in the game: an Anomaly is never named. */
@@ -128,7 +129,7 @@ export const EmptyCard = ({ text = 'Empty' }: { text?: string }) => (
 export function ItemTile({ it, selected, badge, title, onClick }: { it: Item; selected?: boolean; badge?: React.ReactNode; title?: string; onClick: (ev: React.MouseEvent) => void }) {
   return (
     <button className={`item-tile r-${rarityCls(it.rarity.tag)}${selected ? ' selected' : ''}`} title={title ?? `${rarityLabel(it.rarity.tag)} ${itemName(it)}`} onClick={onClick}>
-      <Icon name={itemIconName(it)} className="tile-ico" />
+      <ItemIcon it={it} className="tile-ico" />
       <span className="tile-tier">T{it.tier}</span>
       {it.locked && (
         <span className="tile-lock">

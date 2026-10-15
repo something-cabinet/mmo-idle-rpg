@@ -26,7 +26,11 @@
     "test:encounters": "tsx scripts/check-encounters.ts",
     "test:duel": "tsx scripts/check-duel.ts",
     "test:raid": "tsx scripts/check-raid.ts",
-    "test:skills": "tsx scripts/check-skills.ts"
+    "test:skills": "tsx scripts/check-skills.ts",
+    "art:list": "tsx scripts/item-art.ts list",
+    "art:cut": "tsx scripts/item-art.ts cut",
+    "art:build": "tsx scripts/item-art.ts build",
+    "art:gen": "tsx scripts/item-art.ts gen"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",
@@ -38,6 +42,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
+    "sharp": "^0.35.5",
     "tsx": "^4.23.15",
     "typescript": "~5.9.3",
     "vite": "^8.3.4"

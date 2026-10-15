@@ -186,12 +186,12 @@ ul {
   63% { box-shadow: var(--shadow); transform: none; }
 }
 @keyframes anomaly-tear-ico {
-  0%, 100% { filter: none; transform: none; }
-  22% { filter: drop-shadow(-2px 0 #ff2a6d) drop-shadow(2px 0 #05d9e8); transform: translateX(2px); }
-  24% { filter: drop-shadow(2px 0 #ff2a6d) drop-shadow(-2px 0 #05d9e8); transform: translateX(-2px) skewX(10deg); }
-  26% { filter: none; transform: none; }
-  61% { filter: drop-shadow(3px 0 #05d9e8) drop-shadow(-3px 0 #ff2a6d); transform: translateY(-1px); }
-  63% { filter: none; transform: none; }
+  0%, 100% { filter: var(--rim, none); transform: none; }
+  22% { filter: drop-shadow(-2px 0 #ff2a6d) drop-shadow(2px 0 #05d9e8) var(--rim,); transform: translateX(2px); }
+  24% { filter: drop-shadow(2px 0 #ff2a6d) drop-shadow(-2px 0 #05d9e8) var(--rim,); transform: translateX(-2px) skewX(10deg); }
+  26% { filter: var(--rim, none); transform: none; }
+  61% { filter: drop-shadow(3px 0 #05d9e8) drop-shadow(-3px 0 #ff2a6d) var(--rim,); transform: translateY(-1px); }
+  63% { filter: var(--rim, none); transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .c-anomaly:not(button),
@@ -1962,6 +1962,23 @@ select:focus,
   width: 58%;
   height: 58%;
   stroke-width: 1.6;
+}
+/* Item art (itemArt.tsx): a rim in the rarity color around the painted shape. The
+   anomaly animation keeps it through --rim. */
+.item-art {
+  --rim: drop-shadow(0 0 1px var(--rc, transparent));
+  object-fit: contain;
+  filter: var(--rim);
+}
+.item-tile .item-art {
+  --rim: drop-shadow(0 0 1px var(--rc)) drop-shadow(0 0 3px color-mix(in srgb, var(--rc) 55%, transparent));
+  width: 80%;
+  height: 80%;
+}
+.item-tile.r-legendary .item-art,
+.item-tile.r-unique .item-art {
+  --rim: drop-shadow(0 0 1px var(--rc)) drop-shadow(0 0 6px color-mix(in srgb, var(--rc) 80%, transparent));
+  filter: var(--rim);
 }
 .tile-tier {
   position: absolute;

@@ -10,7 +10,8 @@ import { RAIDS_BY_ID } from '../../../spacetimedb/src/data/raids';
 import { useSticky } from '../../store';
 import { fmt } from '../format';
 import { Icon } from '../Icon';
-import { affixLabel, itemIconName, statText } from '../items';
+import { affixLabel, statText } from '../items';
+import { ItemIcon } from '../itemArt';
 import { CardHead, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
@@ -26,7 +27,7 @@ const implicitLines = (b: BaseDef, t: number) => b.implicits.map(imp => statText
 function BaseName({ b, tier, found }: { b: BaseDef; tier: number; found: boolean }) {
   return (
     <td className="name">
-      <Icon name={itemIconName({ baseId: b.id })} />
+      <ItemIcon it={{ baseId: b.id, tier }} />
       {found ? b.name(tier) : <span className="muted" title="Not found yet: see it drop to learn its name">{UNKNOWN}</span>}
     </td>
   );

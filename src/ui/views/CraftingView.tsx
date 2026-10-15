@@ -6,7 +6,8 @@ import { LISTED_RARITIES, RARITIES, rarityRank, type RarityName } from '../../..
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { ItemCard, itemIconName, itemName, rarityCls, statText } from '../items';
+import { ItemCard, itemName, rarityCls, statText } from '../items';
+import { ItemIcon } from '../itemArt';
 import { ItemFilterCard, useItemFilter } from '../itemFilter';
 import { CardHead, ViewHeader, cantAfford, costText, loadoutNote } from '../shared';
 import type { Snapshot } from '../snapshot';
@@ -169,7 +170,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
                 setRemoveIndex(0);
               }}
             >
-              <span className="list-item-name"><Icon name={itemIconName(it)} /><span className="item-name">{itemName(it)}</span></span>
+              <span className="list-item-name"><ItemIcon it={it} /><span className="item-name">{itemName(it)}</span></span>
               <span className="muted">T{it.tier} {it.rarity.tag}{s.inLoadouts.has(it.id) ? ' · equipped' : ''}</span>
             </button>
           ))}

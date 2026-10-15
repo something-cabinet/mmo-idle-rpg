@@ -8,7 +8,8 @@ import { uniquePool } from '../../spacetimedb/src/data/uniques';
 import { LISTED_RARITIES, dropChance, hasUniques, materialMeans } from '../../spacetimedb/src/loot';
 import { fmt, pct } from './format';
 import { Icon } from './Icon';
-import { itemIconName, materialIconName, materialName, rarityCls } from './items';
+import { materialIconName, materialName, rarityCls } from './items';
+import { ItemIcon } from './itemArt';
 import { StatRows } from './shared';
 import { statsIn, type Snapshot } from './snapshot';
 import { UNKNOWN, baseFound, uniqueFound } from './discovery';
@@ -133,7 +134,7 @@ function EnemyRewards({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyDef; m:
         <ul className="drop-list">
           {e.drops.map(d => (
             <li key={d}>
-              <Icon name={itemIconName({ baseId: d })} />
+              <ItemIcon it={{ baseId: d, tier: z.tier }} />
               {baseFound(s, d, z.tier) ? <span>{base(d).name(z.tier)}</span> : <span className="muted" title={`An undiscovered ${base(d).family.toLowerCase()}`}>{UNKNOWN}</span>}
               <span className="num muted">{chanceText(atLeastOne(baseItems / e.drops.length))}</span>
             </li>

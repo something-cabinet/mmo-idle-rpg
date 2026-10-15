@@ -5,6 +5,7 @@ import { setTheme, useTheme, type ThemePref } from '../theme';
 import { AccountControls, CardHead, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { floatsOn, setFloats } from '../fight';
+import { itemArtOn, setItemArt } from '../itemArt';
 import { DevPanel } from '../DevPanel';
 import {
   CUSTOM_GEAR_STATS,
@@ -105,6 +106,7 @@ export function SettingsView({ s }: { s: Snapshot }) {
   const { pref } = useTheme();
   const [floats, setFloatsState] = useState(floatsOn);
   const [numbers, setNumbers] = useState(getNumberFormat);
+  const [art, setArtState] = useState(itemArtOn);
   return (
     <>
       <ViewHeader title="Settings" icon="settings" />
@@ -128,6 +130,18 @@ export function SettingsView({ s }: { s: Snapshot }) {
               }}
             />
             Floating damage numbers
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={art}
+              onChange={e => {
+                setItemArt(e.target.checked);
+                setArtState(e.target.checked);
+                bumpVersion();
+              }}
+            />
+            Item art (off: simple icons)
           </label>
           <div className="card-head" style={{ marginTop: 12 }}><h2>Numbers</h2></div>
           <div className="seg">

@@ -50,7 +50,7 @@ export interface TypeDef {
   /** Display name, e.g. "Sword", "Plate · Chest". */
   name: string;
   slots: readonly Slot[];
-  /** Item glyph: src/ui/Icon.tsx `i-<icon>`. */
+  /** Item glyph: src/ui/Icon.tsx `i-<icon>`, shown when the item has no art (src/ui/itemArt.tsx). */
   icon: string;
   /** The legendary group its items roll from (legendary.md). */
   group: LegendaryGroup;

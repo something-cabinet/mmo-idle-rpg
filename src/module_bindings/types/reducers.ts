@@ -49,6 +49,7 @@ import StartProductionReducer from "../start_production_reducer";
 import StartRaidReducer from "../start_raid_reducer";
 import StopSkillReducer from "../stop_skill_reducer";
 import SwitchLoadoutReducer from "../switch_loadout_reducer";
+import TransferCharacterReducer from "../transfer_character_reducer";
 import UnequipReducer from "../unequip_reducer";
 import UpgradeRarityReducer from "../upgrade_rarity_reducer";
 
@@ -95,6 +96,7 @@ export type StartProductionParams = __Infer<typeof StartProductionReducer>;
 export type StartRaidParams = __Infer<typeof StartRaidReducer>;
 export type StopSkillParams = __Infer<typeof StopSkillReducer>;
 export type SwitchLoadoutParams = __Infer<typeof SwitchLoadoutReducer>;
+export type TransferCharacterParams = __Infer<typeof TransferCharacterReducer>;
 export type UnequipParams = __Infer<typeof UnequipReducer>;
 export type UpgradeRarityParams = __Infer<typeof UpgradeRarityReducer>;
 

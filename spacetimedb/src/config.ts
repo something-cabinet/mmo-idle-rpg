@@ -15,3 +15,12 @@ export const OIDC_CLIENT_IDS: readonly string[] = [
 
 /** SpacetimeAuth `sub` claims that get the Admin role on login. */
 export const ADMIN_SUBJECTS: readonly string[] = [];
+
+/**
+ * Identities (hex, no 0x) that get the Admin role on connect, whatever logged
+ * them in. For the `spacetime` CLI login (`spacetime login show`), so admin
+ * reducers can be run with `spacetime call`.
+ */
+export const ADMIN_IDENTITIES: readonly string[] = [
+    'c200de8e699af334af9084cbe40dc310a6ba1075c563af31c642be0214dfc93e',
+];

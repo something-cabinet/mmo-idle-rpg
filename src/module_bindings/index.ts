@@ -77,6 +77,7 @@ import StartProductionReducer from "./start_production_reducer";
 import StartRaidReducer from "./start_raid_reducer";
 import StopSkillReducer from "./stop_skill_reducer";
 import SwitchLoadoutReducer from "./switch_loadout_reducer";
+import TransferCharacterReducer from "./transfer_character_reducer";
 import UnequipReducer from "./unequip_reducer";
 import UpgradeRarityReducer from "./upgrade_rarity_reducer";
 
@@ -386,6 +387,7 @@ const reducersSchema = __reducers(
   __reducerSchema("start_raid", StartRaidReducer),
   __reducerSchema("stop_skill", StopSkillReducer),
   __reducerSchema("switch_loadout", SwitchLoadoutReducer),
+  __reducerSchema("transfer_character", TransferCharacterReducer),
   __reducerSchema("unequip", UnequipReducer),
   __reducerSchema("upgrade_rarity", UpgradeRarityReducer),
 );

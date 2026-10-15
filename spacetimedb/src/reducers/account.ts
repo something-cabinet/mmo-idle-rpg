@@ -1,6 +1,6 @@
 import { SenderError, t } from 'spacetimedb/server';
 import { account, spacetimedb } from '../schema';
-import { ADMIN_SUBJECTS, OIDC_CLIENT_IDS, SPACETIMEAUTH_ISSUER } from '../config';
+import { ADMIN_IDENTITIES, ADMIN_SUBJECTS, OIDC_CLIENT_IDS, SPACETIMEAUTH_ISSUER } from '../config';
 import { LINK_OFFER_TTL_MICROS } from '../game';
 import { deleteCharacter, enterWorld, leaveWorld, requireAccount, requireAdmin, type Account } from '../helpers';
 import { runMigrations } from '../migrate';
@@ -27,6 +27,7 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
     const claim = jwt.fullPayload['email'];
     if (typeof claim === 'string') email = claim;
   }
+  if (ADMIN_IDENTITIES.includes(ctx.sender.toHexString())) role = { tag: 'Admin' };
 
   const existing = ctx.db.account.identity.find(ctx.sender);
   if (existing) {
@@ -126,5 +127,32 @@ export const setBanned = spacetimedb.reducer(
     if (!acc) throw new SenderError('No such account');
     ctx.db.account.identity.update({ ...acc, banned });
     if (banned) leaveWorld(ctx, target);
+  }
+);
+
+/**
+ * Gives the character named `name` to the account `to`. If `to` already has a
+ * character, the two swap owners, so nothing is deleted and it can be undone.
+ * For when the login provider moves a player to a new identity.
+ */
+export const transferCharacter = spacetimedb.reducer(
+  { name: t.string(), to: t.identity() },
+  (ctx, { name, to }) => {
+    requireAdmin(ctx);
+    const found = ctx.db.character.nameKey.find(name.toLowerCase());
+    if (!found) throw new SenderError('No such character');
+    if (found.owner.isEqual(to)) return;
+    if (!ctx.db.account.identity.find(to)) throw new SenderError('No such account');
+
+    const from = found.owner;
+    // Leaving settles both characters, so read them after.
+    leaveWorld(ctx, from);
+    leaveWorld(ctx, to);
+    const ch = ctx.db.character.id.find(found.id)!;
+    const theirs = ctx.db.character.owner.find(to);
+    // `owner` is unique: park the target's character on the module identity first.
+    if (theirs) ctx.db.character.id.update({ ...theirs, owner: ctx.identity });
+    ctx.db.character.id.update({ ...ch, owner: to });
+    if (theirs) ctx.db.character.id.update({ ...theirs, owner: from });
   }
 );

@@ -159,18 +159,22 @@ function list() {
 
 // ------------------------------------------------------------------ cut
 
-/** Color distance from the background below which a pixel is background. */
-const BG_LO = 40;
-/** How far a channel may stray from the background's and still be background. */
-const BG_NOISE = 8;
-/** An edge pixel at least this much item is solid: the background's blend stops there. */
-const EDGE_SOLID = 0.95;
 /**
- * How deep into an item (per 1024 px of sheet) the background's blend may reach. Kept thin: a
- * light item color (silver, white) reads as magenta plus green, so taking "the magenta" out of
- * the whole blade would turn it green.
+ * Magenta-ness of a pixel, whatever its brightness: how far red and blue both rise over green,
+ * relative to the brightest channel. Pure magenta is 1, grey, silver and white are 0. Keyed on
+ * this, the background goes whole even where the model shaded or speckled it darker, and a light
+ * blade is never mistaken for background.
  */
-const EDGE_DEPTH = 3;
+const magenta = (r: number, g: number, b: number) => {
+  const max = Math.max(r, g, b);
+  return max < KEY_DARK ? 0 : Math.max(0, Math.min(r, b) - g) / max;
+};
+/** Below this magenta-ness a pixel is item. */
+const KEY_LO = 0.15;
+/** At this share of the background's own magenta-ness a pixel is background. */
+const KEY_HI = 0.8;
+/** Pixels darker than this are item (the outline), whatever their tint. */
+const KEY_DARK = 48;
 
 interface Box { x0: number; y0: number; x1: number; y1: number; labels: Set<number> }
 
@@ -183,42 +187,28 @@ async function cutSheet(s: Sheet, file: string, outDir = CUT): Promise<boolean> 
   const corners = [px(2, 2), px(W - 3, 2), px(2, H - 3), px(W - 3, H - 3)];
   const bg = [0, 1, 2].map(c => corners.map(i => data[i + c]).sort((a, b) => a - b)[1]);
 
-  // A pixel blending the item into the background is a·item + (1−a)·bg. Its least a that leaves an
-  // item color within 0-255 is how much of it is item: an outline pixel half into magenta (dark
-  // purple) comes out half transparent and black.
-  const amin = new Float32Array(W * H);
+  // How much of each pixel is item, from its magenta-ness: 0 at the background's, 1 below KEY_LO.
+  const hi = KEY_HI * magenta(bg[0], bg[1], bg[2]);
+  const key = new Float32Array(W * H);
   for (let p = 0; p < W * H; p++) {
     const i = p * 4;
-    let a = 0;
-    for (let c = 0; c < 3; c++) {
-      // Less the background's own noise, so 255 next to a background of 254 is not item.
-      const v = data[i + c], b = bg[c];
-      const room = v < b ? b : 255 - b;
-      a = Math.max(a, room > BG_NOISE ? Math.max(0, Math.abs(v - b) - BG_NOISE) / (room - BG_NOISE) : 0);
-    }
-    amin[p] = a;
+    key[p] = Math.max(0, Math.min(1, 1 - (magenta(data[i], data[i + 1], data[i + 2]) - KEY_LO) / (hi - KEY_LO)));
   }
-  // Only edges get that: background, and what joins it within a few pixels without crossing an
-  // opaque pixel (the outline). Inside, a color near the background's (a purple gem, a silver
-  // blade) stays solid. edge = 1 + steps from the background.
-  const depth = Math.max(1, Math.round((EDGE_DEPTH * Math.max(W, H)) / 1024));
+  // Only what joins the background without crossing an item pixel (the dark outline) is keyed:
+  // inside the outline a purple gem or cloth stays solid.
   const edge = new Uint8Array(W * H);
   const queue: number[] = [];
-  for (let p = 0; p < W * H; p++) {
-    const i = p * 4;
-    if (Math.hypot(data[i] - bg[0], data[i + 1] - bg[1], data[i + 2] - bg[2]) < BG_LO) (edge[p] = 1), queue.push(p);
-  }
+  for (let p = 0; p < W * H; p++) if (key[p] === 0) (edge[p] = 1), queue.push(p);
   for (let k = 0; k < queue.length; k++) {
     const q = queue[k];
-    if (edge[q] > depth) continue;
     const x = q % W, y = (q - x) / W;
     for (const n of [x > 0 ? q - 1 : -1, x < W - 1 ? q + 1 : -1, y > 0 ? q - W : -1, y < H - 1 ? q + W : -1]) {
-      if (n >= 0 && !edge[n] && amin[n] < EDGE_SOLID) (edge[n] = edge[q] + 1), queue.push(n);
+      if (n >= 0 && !edge[n] && key[n] < 1) (edge[n] = 1), queue.push(n);
     }
   }
   /** 0 = background, 1 = item. */
   const alpha = new Float32Array(W * H);
-  for (let p = 0; p < W * H; p++) alpha[p] = edge[p] ? amin[p] : 1;
+  for (let p = 0; p < W * H; p++) alpha[p] = edge[p] ? key[p] : 1;
 
   // Shapes: connected item pixels, then pieces close together merged into one item.
   const labels = new Int32Array(W * H);
@@ -306,9 +296,11 @@ async function cutSheet(s: Sheet, file: string, outDir = CUT): Promise<boolean> 
         const a = alpha[p];
         if (a <= 0) continue;
         const i = p * 4, o = ((oy + y) * side + ox + x) * 4;
-        for (let c = 0; c < 3; c++) {
-          out[o + c] = a >= 1 ? data[i + c] : Math.max(0, Math.min(255, Math.round((data[i + c] - (1 - a) * bg[c]) / a)));
-        }
+        // A keyed edge loses its magenta tint: red and blue down to green, at most.
+        const spill = edge[p] ? Math.max(0, Math.min(data[i], data[i + 2]) - data[i + 1]) : 0;
+        out[o] = data[i] - spill;
+        out[o + 1] = data[i + 1];
+        out[o + 2] = data[i + 2] - spill;
         out[o + 3] = Math.round(a * 255);
       }
     }

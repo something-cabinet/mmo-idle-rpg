@@ -66,9 +66,8 @@ pushing a target or boss into viability.
   (T9), ~40 h to 99. Maxing all 9 skills is ~360 h, against ~5 weeks for character
   level 90.
 
-### Speed and yield perks
+### Yield perks
 
-- **+1% action speed per level above the recipe's requirement**, cap +20%.
 - **Double yield** (gathering) or **keep inputs** (production): 5% at level 50, 10% at
   level 99.
 - Gathering also gets the tool bonus, and production gets its Hideout station bonus.
@@ -111,20 +110,13 @@ One tool per gathering skill: **Pickaxe** (Mining), **Hatchet** (Woodcutting),
 
 - Tools are a **tier per character per kind** (`tool` rows), not bag items. They're
   cheap to store and can't be dropped or salvaged. Every character starts with T1 tools.
-- **Gathering tier T needs a tool of tier ≥ T.** This makes Smithing part of the
-  gathering chain, like a pickaxe gating ore in OSRS.
-- **+5% gathering speed per tool tier above the material tier**, cap +20%.
-- Upgrading a tool to tier T is a Smithing recipe: 100 Metal + 50 Wood of tier T−1
-  (tier T materials need the tool), 30 min.
+- **Tools only speed gathering up; they never gate it.** Gathering tier T needs only the
+  skill level and the zone.
+- **+10% gathering speed per tool tier above T1** (T3: +20%), whatever tier is gathered.
+  An old tool never slows gathering.
+- Upgrading a tool to tier T is a Smithing recipe: 100 Metal + 50 Wood of tier T−1 (so it
+  can be made before farming tier T), 30 min.
 - A tool only counts while its skill is active. It has no effect in combat.
-
-**Planned change (not decided in detail, not built):** tools should only make gathering
-faster, not gate it. Gathering tier T would need only the skill level and the zone, and
-a better tool would raise speed. Still open: the speed per tool tier and its cap (a
-higher tool tier may need to count for more than +5% now that it's the only reason to
-upgrade), whether a tool below the material tier slows gathering, and the tool recipes
-(they use tier T−1 materials only because tier T materials need the tool). The
-Milestones card's "needs a T*n* tool" text and `gatherBlocker` would change with it.
 
 ## Production
 
@@ -220,21 +212,19 @@ want. Tempering is the steady goal: it makes gear the player already owns better
 - **10 temper levels. The max depends on Smithing level:** +1 per 10 levels (+1 at 10 …
   +9 at 90) and +10 at 99 (+20%). Tempering a tier-T item also needs the tier rule
   (level `10·(T−1) + 1`).
-- **Each step is one production action** (a queue of one, like tool upgrades) on a bag or
-  equipped item. Going from `k−1` to `k` costs:
+- **Each step is instant** on a bag or equipped item, from the Smithing page or the
+  crafting workshop. It doesn't stop what the character is doing. Going from `k−1` to `k`
+  costs:
 
 | | Cost for step k on a tier-T item |
 |-|-|
 | Main material of the base family (table above), tier T | `10 × k` |
 | Gold | `0.05 × k` hours of farming (`craftCost`) |
-| Time | `3 × k` min |
+| Smithing XP gained | that of `3 × k` min of work (and as much character XP) |
 
-- Full +0 → +10 on one item: 550 material, ~2.75 h of farming gold, 2.75 h of Smithing.
-  Ten slots per tier is ~27 h of Smithing, which is the long-term XP source. Early
+- Full +0 → +10 on one item: 550 material, ~2.75 h of farming gold, the XP of 2.75 h of
+  Smithing. Ten slots per tier is ~27 h worth of Smithing XP, a long-term XP source. Early
   steps are cheap, so every item is worth a few levels; the last ones are the goal.
-- The item is locked while it is being tempered (it can't be salvaged, traded or used
-  as a crafting input). It stays equipped and counts at its old temper until the action
-  ends.
 - The name shows the level (`+3 Iron Longsword`) and the tooltip marks the tempered
   stats. Salvaging a tempered item gives nothing extra: the temper is lost.
 - Balance note: +20% weapon hit is close to +20% attack DPS, like a permanent Wrath
@@ -293,11 +283,10 @@ Scrap turns unwanted drops into materials and Smithing XP instead of Dust and go
 
 ### Smithing: level rewards
 
-Smithing level improves the work in four ways:
+Smithing level improves the work in three ways:
 
 | Level effect | What it does |
 |-|-|
-| Speed | +1% action speed per level above the recipe's requirement, cap +20% |
 | Forge rarity | 20% Magic + 0.5% per level above the requirement, 2% Rare |
 | Keep inputs | 5% from level 50, 10% at 99: an action uses no inputs (production's version of double yield) |
 | Temper cap | +1 per 10 levels, +10 at 99 (above) |

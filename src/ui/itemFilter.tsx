@@ -52,12 +52,13 @@ export function useItemFilter(prefix: string) {
 export type ItemFilter = ReturnType<typeof useItemFilter>;
 
 /** Open/closed state of a collapsible card, remembered on this device. */
-function useCollapsed(key: string): [boolean, (v: boolean) => void] {
+function useCollapsed(key: string, initial = false): [boolean, (v: boolean) => void] {
   const [collapsed, setCollapsed] = useState(() => {
     try {
-      return localStorage.getItem(key) === '1';
+      const v = localStorage.getItem(key);
+      return v === null ? initial : v === '1';
     } catch {
-      return false;
+      return initial;
     }
   });
   return [
@@ -74,14 +75,16 @@ function useCollapsed(key: string): [boolean, (v: boolean) => void] {
 }
 
 /** A card whose header toggles its body; `summary` stays visible beside the title when collapsed. */
-export function CollapsibleCard({ storageKey, title, summary, className = '', children }: {
+export function CollapsibleCard({ storageKey, title, summary, className = '', defaultCollapsed = false, children }: {
   storageKey: string;
   title: string;
   summary?: ReactNode;
   className?: string;
+  /** Collapsed until the player opens it the first time. */
+  defaultCollapsed?: boolean;
   children: ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useCollapsed(storageKey);
+  const [collapsed, setCollapsed] = useCollapsed(storageKey, defaultCollapsed);
   return (
     <div className={`card collapsible${collapsed ? ' collapsed' : ''} ${className}`}>
       <button className="collapse-head" aria-expanded={!collapsed} onClick={() => setCollapsed(!collapsed)}>

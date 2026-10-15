@@ -6,6 +6,10 @@ import { MATERIALS } from '../../../spacetimedb/src/data/materials';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
 import { LISTED_RARITIES, rarityRank, salvageValue } from '../../../spacetimedb/src/loot';
+import { isScrapRarity, scrapMaterialId } from '../../../spacetimedb/src/data/recipes';
+
+/** Common to Legendary items of a tier with materials can be scrapped. */
+const scrappable = (it: Item) => isScrapRarity(it.rarity.tag) && scrapMaterialId(it.baseId, it.tier) !== undefined;
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
@@ -83,6 +87,14 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
         </button>
         <button className="btn" onClick={() => openCraft(it.id)}><Icon name="hammer" />Craft</button>
         <button
+          className="btn"
+          disabled={it.locked || !scrappable(it)}
+          title={it.locked ? "Locked items can't be scrapped" : 'Into scrap for Smithing to smelt into materials (no Dust or gold)'}
+          onClick={() => call(r.scrapItems({ itemIds: [it.id] }))}
+        >
+          Scrap
+        </button>
+        <button
           className="btn danger"
           disabled={it.locked}
           title={it.locked ? "Locked items can't be salvaged" : undefined}
@@ -110,6 +122,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   const selected = s.bag.filter(i => sel.has(i.id));
   const open = s.bag.find(i => i.id === openId);
   const anyLocked = selected.some(i => i.locked);
+  const allScrappable = selected.every(scrappable);
   const dust = selected.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).dust, 0n);
   const salvageGold = selected.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).gold, 0n);
   const cost = bagExpansionCost(s.row.bagSize);
@@ -199,6 +212,14 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
         </button>
         <button className="btn small" disabled={selected.length !== 1} onClick={() => openCraft(selected[0].id)}>
           <Icon name="hammer" />Craft
+        </button>
+        <button
+          className="btn small"
+          disabled={!selected.length || anyLocked || !allScrappable}
+          title={anyLocked ? "Locked items can't be scrapped" : !allScrappable ? 'Only Common to Legendary items, of tiers with materials, can be scrapped' : 'Into scrap for Smithing to smelt (no Dust or gold)'}
+          onClick={() => call(r.scrapItems({ itemIds: selected.map(i => i.id) }).then(() => setSel(new Set())))}
+        >
+          Scrap
         </button>
         <button
           className="btn small danger"

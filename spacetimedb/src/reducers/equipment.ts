@@ -3,8 +3,9 @@ import { EquipProfile, spacetimedb } from '../schema';
 import { LOADOUT_COUNT } from '../game';
 import { SLOT_COUNT } from '../data/bases';
 import { autoEquip as bestSlots, isCustomProfile, isProfile, placeItem, validCustomWeights } from '../equip';
-import { salvageValue } from '../loot';
-import { requireActive, requireItem, settle, type Character, type Ctx } from '../helpers';
+import { addScrap, salvageValue, type ScrapDrop } from '../loot';
+import { isScrapRarity } from '../data/recipes';
+import { addScrapRows, requireActive, requireItem, scrapMaterialIdOf, settle, type Character, type Ctx } from '../helpers';
 
 const MAX_LOADOUT_NAME = 20;
 
@@ -104,6 +105,14 @@ export const lockItem = spacetimedb.reducer({ itemId: t.u64(), locked: t.bool() 
   ctx.db.item.id.update({ ...requireItem(ctx, ch, itemId), locked });
 });
 
+/** A bag item that may be salvaged or scrapped: not locked and in no loadout. */
+function requireDisposable(ctx: Ctx, ch: Character, id: bigint, equipped: Set<bigint>) {
+  const it = requireItem(ctx, ch, id);
+  if (it.locked) throw new SenderError('Item is locked');
+  if (equipped.has(id)) throw new SenderError('Item is in a loadout');
+  return it;
+}
+
 /** Turns bag items into Dust and gold. Locked items and items in any loadout are refused. */
 export const salvage = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, { itemIds }) => {
   const { ch } = requireActive(ctx);
@@ -111,13 +120,31 @@ export const salvage = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, 
   let dust = 0n;
   let gold = 0n;
   for (const id of new Set(itemIds)) {
-    const it = requireItem(ctx, ch, id);
-    if (it.locked) throw new SenderError('Item is locked');
-    if (equipped.has(id)) throw new SenderError('Item is in a loadout');
+    const it = requireDisposable(ctx, ch, id, equipped);
     const v = salvageValue(it.rarity.tag, it.tier);
     dust += v.dust;
     gold += v.gold;
     ctx.db.item.id.delete(id);
   }
   ctx.db.character.id.update({ ...ch, dust: ch.dust + dust, gold: ch.gold + gold });
+});
+
+/**
+ * Scraps bag items (life-skills.md, "Scrap into materials"): into the scrap counters for
+ * smelting, with no Dust or gold. Common to Legendary only; refused like `salvage`.
+ */
+export const scrapItems = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, { itemIds }) => {
+  const { ch } = requireActive(ctx);
+  const equipped = new Set([...ctx.db.loadout.characterId.filter(ch.id)].flatMap(l => l.slots));
+  const scrapped: ScrapDrop[] = [];
+  for (const id of new Set(itemIds)) {
+    const it = requireDisposable(ctx, ch, id, equipped);
+    const rarity = it.rarity.tag;
+    if (!isScrapRarity(rarity)) throw new SenderError('Only Common to Legendary items can be scrapped');
+    const materialId = scrapMaterialIdOf(it);
+    if (materialId === undefined) throw new SenderError(`No tier ${it.tier} materials to scrap into yet`);
+    addScrap(scrapped, materialId, rarity);
+    ctx.db.item.id.delete(id);
+  }
+  addScrapRows(ctx, ch.id, scrapped);
 });

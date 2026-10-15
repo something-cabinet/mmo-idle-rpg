@@ -70,6 +70,7 @@ export const Character = __t.object("Character", {
   elixirId: __t.u16(),
   elixirKillsLeft: __t.u32(),
   elixirAutoRenew: __t.bool(),
+  activityItemId: __t.u64(),
 });
 export type Character = __Infer<typeof Character>;
 
@@ -142,6 +143,7 @@ export const ForgeFilter = __t.object("ForgeFilter", {
   },
   keepAffixes: __t.array(__t.u16()),
   minAffixTier: __t.u8(),
+  scrap: __t.bool(),
 });
 export type ForgeFilter = __Infer<typeof ForgeFilter>;
 
@@ -206,6 +208,7 @@ export const Item = __t.object("Item", {
   locked: __t.bool(),
   createdAt: __t.timestamp(),
   effects: __t.array(__t.u16()),
+  temper: __t.u8(),
 });
 export type Item = __Infer<typeof Item>;
 
@@ -245,6 +248,7 @@ export const LootFilter = __t.object("LootFilter", {
   keepBases: __t.array(__t.u16()),
   minAffixTier: __t.u8(),
   keepTypes: __t.array(__t.u16()),
+  scrap: __t.bool(),
 });
 export type LootFilter = __Infer<typeof LootFilter>;
 
@@ -303,6 +307,9 @@ export type MyMaterials = __Infer<typeof MyMaterials>;
 
 export const MyRaidLog = __t.object("MyRaidLog", {});
 export type MyRaidLog = __Infer<typeof MyRaidLog>;
+
+export const MyScrap = __t.object("MyScrap", {});
+export type MyScrap = __Infer<typeof MyScrap>;
 
 export const MySettleLog = __t.object("MySettleLog", {});
 export type MySettleLog = __Infer<typeof MySettleLog>;
@@ -410,6 +417,17 @@ export const Role = __t.enum("Role", {
 });
 export type Role = __Infer<typeof Role>;
 
+export const Scrap = __t.object("Scrap", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  materialId: __t.u16(),
+  get rarity() {
+    return Rarity;
+  },
+  count: __t.u64(),
+});
+export type Scrap = __Infer<typeof Scrap>;
+
 export const SettleLog = __t.object("SettleLog", {
   id: __t.u64(),
   characterId: __t.u64(),
@@ -453,6 +471,7 @@ export const SettleLog = __t.object("SettleLog", {
   elixirKills: __t.u32(),
   elixirsUsed: __t.u32(),
   elixirEmpty: __t.bool(),
+  scrapped: __t.array(__t.u32()),
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

@@ -63,6 +63,7 @@ import RemoveFriendReducer from "./remove_friend_reducer";
 import RenameLoadoutReducer from "./rename_loadout_reducer";
 import RerollAffixReducer from "./reroll_affix_reducer";
 import SalvageReducer from "./salvage_reducer";
+import ScrapItemsReducer from "./scrap_items_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
 import SetElixirAutoRenewReducer from "./set_elixir_auto_renew_reducer";
@@ -77,6 +78,7 @@ import StartProductionReducer from "./start_production_reducer";
 import StartRaidReducer from "./start_raid_reducer";
 import StopSkillReducer from "./stop_skill_reducer";
 import SwitchLoadoutReducer from "./switch_loadout_reducer";
+import TemperItemReducer from "./temper_item_reducer";
 import TransferCharacterReducer from "./transfer_character_reducer";
 import UnequipReducer from "./unequip_reducer";
 import UpgradeRarityReducer from "./upgrade_rarity_reducer";
@@ -101,6 +103,7 @@ import MyLoadoutsRow from "./my_loadouts_table";
 import MyLootFilterRow from "./my_loot_filter_table";
 import MyMaterialsRow from "./my_materials_table";
 import MyRaidLogRow from "./my_raid_log_table";
+import MyScrapRow from "./my_scrap_table";
 import MySettleLogRow from "./my_settle_log_table";
 import MySkillsRow from "./my_skills_table";
 import MySuppliesRow from "./my_supplies_table";
@@ -291,6 +294,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyRaidLogRow),
+  myScrap: __table({
+    name: 'my_scrap',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyScrapRow),
   mySettleLog: __table({
     name: 'my_settle_log',
     indexes: [
@@ -373,6 +383,7 @@ const reducersSchema = __reducers(
   __reducerSchema("rename_loadout", RenameLoadoutReducer),
   __reducerSchema("reroll_affix", RerollAffixReducer),
   __reducerSchema("salvage", SalvageReducer),
+  __reducerSchema("scrap_items", ScrapItemsReducer),
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
   __reducerSchema("set_elixir_auto_renew", SetElixirAutoRenewReducer),
@@ -387,6 +398,7 @@ const reducersSchema = __reducers(
   __reducerSchema("start_raid", StartRaidReducer),
   __reducerSchema("stop_skill", StopSkillReducer),
   __reducerSchema("switch_loadout", SwitchLoadoutReducer),
+  __reducerSchema("temper_item", TemperItemReducer),
   __reducerSchema("transfer_character", TransferCharacterReducer),
   __reducerSchema("unequip", UnequipReducer),
   __reducerSchema("upgrade_rarity", UpgradeRarityReducer),
@@ -428,6 +440,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_materials": Omit<typeof tablesSchema.schemaType.tables["myMaterials"], "accessorName"> & { readonly accessorName: "my_materials" };
     /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
     readonly "my_raid_log": Omit<typeof tablesSchema.schemaType.tables["myRaidLog"], "accessorName"> & { readonly accessorName: "my_raid_log" };
+    /** @deprecated Use `myScrap` instead. This alias will be removed in the next major version. */
+    readonly "my_scrap": Omit<typeof tablesSchema.schemaType.tables["myScrap"], "accessorName"> & { readonly accessorName: "my_scrap" };
     /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
     readonly "my_settle_log": Omit<typeof tablesSchema.schemaType.tables["mySettleLog"], "accessorName"> & { readonly accessorName: "my_settle_log" };
     /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
@@ -475,6 +489,7 @@ const tableAccessorAliases = {
   "my_loot_filter": "myLootFilter",
   "my_materials": "myMaterials",
   "my_raid_log": "myRaidLog",
+  "my_scrap": "myScrap",
   "my_settle_log": "mySettleLog",
   "my_skills": "mySkills",
   "my_supplies": "mySupplies",
@@ -532,6 +547,8 @@ export type DbView = __DbViewBase & {
   readonly "my_materials": __DbViewBase["myMaterials"];
   /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
   readonly "my_raid_log": __DbViewBase["myRaidLog"];
+  /** @deprecated Use `myScrap` instead. This alias will be removed in the next major version. */
+  readonly "my_scrap": __DbViewBase["myScrap"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __DbViewBase["mySettleLog"];
   /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */
@@ -580,6 +597,8 @@ export type Tables = __TablesBase & {
   readonly "my_materials": __TablesBase["myMaterials"];
   /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
   readonly "my_raid_log": __TablesBase["myRaidLog"];
+  /** @deprecated Use `myScrap` instead. This alias will be removed in the next major version. */
+  readonly "my_scrap": __TablesBase["myScrap"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
   readonly "my_settle_log": __TablesBase["mySettleLog"];
   /** @deprecated Use `mySkills` instead. This alias will be removed in the next major version. */

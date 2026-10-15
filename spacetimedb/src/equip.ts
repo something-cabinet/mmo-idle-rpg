@@ -1,7 +1,7 @@
 // Equipping rules and auto-equip (equipment.md). Pure: shared by server and client.
 
 import { SLOTS, base } from './data/bases';
-import { combatStats, matchup, type CombatStats, type GearItem, type GearWeapon } from './combat';
+import { combatStats, matchup, tempered, type CombatStats, type GearItem, type GearWeapon } from './combat';
 import type { DamageType } from './data/bases';
 import { MAX_TIER, STATS, Stat, affixRef, curve, fromStored, type StatId } from './data/stats';
 import type { EnemyDef } from './data/zones';
@@ -184,6 +184,7 @@ const gearTier = (level: number) => Math.min(MAX_TIER, Math.max(1, level / 10));
 export function gearStatRolls(level: number, gear: readonly (GearItem | undefined)[]): number[] {
   const sum = new Map<number, number>();
   const add = (g: { stat: number; value: bigint }) => sum.set(g.stat, (sum.get(g.stat) ?? 0) + fromStored(g.value));
+  gear = gear.map(it => it && tempered(it));
   for (const it of gear) {
     if (!it) continue;
     it.implicits.forEach(add);

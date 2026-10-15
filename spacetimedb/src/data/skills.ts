@@ -34,10 +34,10 @@ export interface ProductionSkillDef extends SkillCommon {
 export type SkillDef = GatheringSkillDef | ProductionSkillDef;
 
 export const SKILLS: SkillDef[] = [
-  { id: SkillId.Mining, name: 'Mining', slug: 'mining', kind: 'Gathering', makes: 'Metal', tool: 'Pickaxe', icon: 'm-metal' },
+  { id: SkillId.Mining, name: 'Mining', slug: 'mining', kind: 'Gathering', makes: 'Ore', tool: 'Pickaxe', icon: 'm-ore' },
   { id: SkillId.Woodcutting, name: 'Woodcutting', slug: 'woodcutting', kind: 'Gathering', makes: 'Wood', tool: 'Hatchet', icon: 'm-wood' },
   { id: SkillId.Foraging, name: 'Foraging', slug: 'foraging', kind: 'Gathering', makes: 'Reagent', tool: 'Sickle', icon: 'm-reagent' },
-  { id: SkillId.Smithing, name: 'Smithing', slug: 'smithing', kind: 'Production', makes: 'Gear bases and tools', icon: 'anvil' },
+  { id: SkillId.Smithing, name: 'Smithing', slug: 'smithing', kind: 'Production', makes: 'Gear bases, tools, tempering, smelting', icon: 'anvil' },
   { id: SkillId.Alchemy, name: 'Alchemy', slug: 'alchemy', kind: 'Production', makes: 'Elixirs', icon: 'flask' },
 ];
 
@@ -68,21 +68,20 @@ export const gatherXpPerAction = (tier: number) => (skillXpPerHour(tier) * GATHE
  */
 export const gatherCharacterXpPerAction = gatherXpPerAction;
 
-/** +1% action speed per level above the tier's requirement, capped at +20%. */
-export const levelSpeedBonus = (level: number, tier: number) => Math.min(0.2, 0.01 * Math.max(0, level - tierRequirement(tier)));
-/** +5% gathering speed per tool tier above the material tier, capped at +20%. */
-export const toolSpeedBonus = (toolTier: number, tier: number) => Math.min(0.2, 0.05 * Math.max(0, toolTier - tier));
+/** Gathering speed per tool tier above T1 (life-skills.md, "Tools"): tools only speed gathering up. */
+export const TOOL_SPEED_PER_TIER = 0.1;
+/** +10% gathering speed per tool tier above T1, whatever tier is gathered. */
+export const toolSpeedBonus = (toolTier: number) => TOOL_SPEED_PER_TIER * Math.max(0, toolTier - 1);
 
 /** Microseconds per gathering action. */
-export const gatherActionMicros = (level: number, tier: number, toolTier: number): bigint =>
-  BigInt(Math.round((GATHER_SECONDS * 1e6) / (1 + levelSpeedBonus(level, tier) + toolSpeedBonus(toolTier, tier))));
+export const gatherActionMicros = (toolTier: number): bigint =>
+  BigInt(Math.round((GATHER_SECONDS * 1e6) / (1 + toolSpeedBonus(toolTier))));
 
 /** Skill XP per production action of `seconds` at tier `tier` (whole points; as much character XP). */
 export const productionXpPerAction = (tier: number, seconds: number): bigint => BigInt(Math.floor((skillXpPerHour(tier) * seconds) / 3600));
 
-/** Microseconds per production action of `seconds` at base speed. */
-export const productionActionMicros = (level: number, tier: number, seconds: number): bigint =>
-  BigInt(Math.round((seconds * 1e6) / (1 + levelSpeedBonus(level, tier))));
+/** Microseconds per production action of `seconds` (skill level doesn't change it). */
+export const productionActionMicros = (seconds: number): bigint => BigInt(Math.round(seconds * 1e6));
 
 /**
  * Chance per gathering action of a second material, and per production action of keeping
@@ -90,11 +89,15 @@ export const productionActionMicros = (level: number, tier: number, seconds: num
  */
 export const doubleYieldChance = (level: number) => (level >= MAX_SKILL_LEVEL ? 0.1 : level >= 50 ? 0.05 : 0);
 
+/** Highest temper level Smithing `level` allows: +1 per 10 levels, +10 at 99 (life-skills.md, "Smithing: temper an item"). */
+export const temperCap = (level: number) => (level >= MAX_SKILL_LEVEL ? 10 : Math.floor(level / 10));
+/** Smithing level needed to temper to `temper`. */
+export const temperRequirement = (temper: number) => (temper >= 10 ? MAX_SKILL_LEVEL : 10 * temper);
+
 /** Why gathering tier `tier` isn't allowed, or undefined if it is. */
-export function gatherBlocker(g: { level: number; tier: number; toolTier: number; zoneOpen: boolean; tool: string }): string | undefined {
+export function gatherBlocker(g: { level: number; tier: number; zoneOpen: boolean }): string | undefined {
   if (!g.zoneOpen) return `Unlock the tier ${g.tier} zone first`;
   if (g.level < tierRequirement(g.tier)) return `Needs level ${tierRequirement(g.tier)}`;
-  if (g.toolTier < g.tier) return `Needs a tier ${g.tier} ${g.tool}`;
   return undefined;
 }
 

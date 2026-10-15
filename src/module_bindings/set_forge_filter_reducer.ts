@@ -20,4 +20,5 @@ export default {
   },
   keepAffixes: __t.array(__t.u16()),
   minAffixTier: __t.u8(),
+  scrap: __t.bool(),
 };

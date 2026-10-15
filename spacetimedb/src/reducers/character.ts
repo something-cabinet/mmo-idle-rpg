@@ -50,6 +50,7 @@ export const createCharacter = spacetimedb.reducer({ name: t.string(), starterWe
     elixirId: 0,
     elixirKillsLeft: 0,
     elixirAutoRenew: true,
+    activityItemId: 0n,
   });
   ensureCharacterRows(ctx, ch.id);
   grantStarterKit(ctx, ch.id, starterWeapon);

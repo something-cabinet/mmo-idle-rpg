@@ -1,13 +1,19 @@
 import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
-import { SKILLS_BY_ID, gatherBlocker, productionBlocker } from '../data/skills';
-import { affordable, recipeOf } from '../data/recipes';
+import { SKILLS_BY_ID, SkillId, gatherBlocker, productionBlocker } from '../data/skills';
+import { affordable, recipeOf, temperCost } from '../data/recipes';
+import { addSkillXp } from '../gather';
+import { addXp } from '../game';
 import { ELIXIR_KILLS, SUPPLIES_BY_ID } from '../data/supplies';
+import { temperBlocker } from '../produce';
 import {
   NO_SKILL,
   bagCount,
   materialCounts,
   requireActive,
+  requireItem,
+  scrapHeld,
+  takeMaterials,
   settle,
   skillRow,
   supplyCount,
@@ -18,7 +24,7 @@ import {
 
 /**
  * Starts gathering `skillId` at `tier` (life-skills.md): instead of fighting, online and
- * offline. Needs the skill level, a tool of that tier and the tier's zone unlocked.
+ * offline. Needs the skill level and the tier's zone unlocked; the tool only adds speed.
  * Settles the current activity first; the combat target is kept for `stopSkill`.
  */
 export const startGathering = spacetimedb.reducer({ skillId: t.u8(), tier: t.u8() }, (ctx, { skillId, tier }) => {
@@ -26,13 +32,7 @@ export const startGathering = spacetimedb.reducer({ skillId: t.u8(), tier: t.u8(
   const def = SKILLS_BY_ID.get(skillId);
   if (!def || def.kind !== 'Gathering') throw new SenderError('No such skill');
   const settled = settle(ctx, ch);
-  const blocker = gatherBlocker({
-    level: skillRow(ctx, ch.id, def.id).level,
-    tier,
-    toolTier: toolTier(ctx, ch.id, def.id),
-    zoneOpen: tierUnlocked(ctx, ch.id, tier),
-    tool: def.tool,
-  });
+  const blocker = gatherBlocker({ level: skillRow(ctx, ch.id, def.id).level, tier, zoneOpen: tierUnlocked(ctx, ch.id, tier) });
   if (blocker) throw new SenderError(blocker);
   ctx.db.character.id.update({ ...settled, ...NO_SKILL, activitySkill: def.id, activityRecipe: tier });
 });
@@ -61,8 +61,32 @@ export const startProduction = spacetimedb.reducer({ skillId: t.u8(), recipe: t.
   }
   if (out.kind === 'item' && settled.bagSize - bagCount(ctx, ch.id) <= 0) throw new SenderError('Your bag is full');
   const held = materialCounts(ctx, ch.id);
-  if (affordable(r, id => held.get(id) ?? 0) < 1) throw new SenderError('Not enough materials');
-  ctx.db.character.id.update({ ...settled, activitySkill: def.id, activityRecipe: r.id, activityCountLeft: count });
+  const scrap = out.kind === 'scrap' ? scrapHeld(ctx, ch.id, out.materialId) : {};
+  const stock = { have: (id: number) => held.get(id) ?? 0, scrap: () => Object.values(scrap).reduce((a, b) => a + b, 0) };
+  if (affordable(r, stock) < 1) throw new SenderError(out.kind === 'scrap' ? 'No scrap to smelt' : 'Not enough materials');
+  ctx.db.character.id.update({ ...settled, ...NO_SKILL, activitySkill: def.id, activityRecipe: r.id, activityCountLeft: count });
+});
+
+/**
+ * Tempers item `itemId` one level (life-skills.md, "Smithing: temper an item"): instant, and
+ * whatever the character is doing goes on. Pays the main material and gold, and gives
+ * Smithing XP and as much character XP. The item may be in the bag or equipped. Needs the
+ * tier rule and the temper cap of the Smithing level. Settles first: gear stats change.
+ */
+export const temperItem = spacetimedb.reducer({ itemId: t.u64() }, (ctx, { itemId }) => {
+  const { ch } = requireActive(ctx);
+  const it = requireItem(ctx, ch, itemId);
+  const settled = settle(ctx, ch);
+  const row = skillRow(ctx, ch.id, SkillId.Smithing);
+  const blocker = temperBlocker(it, row.level, tierUnlocked(ctx, ch.id, it.tier));
+  if (blocker) throw new SenderError(blocker);
+  const cost = temperCost(it)!; // temperBlocker refuses tiers without materials
+  if ((materialCounts(ctx, ch.id).get(cost.material.materialId) ?? 0) < cost.material.count) throw new SenderError('Not enough materials');
+  if (settled.gold < cost.gold) throw new SenderError(`Not enough gold: costs ${cost.gold}`);
+  takeMaterials(ctx, ch.id, [cost.material]);
+  ctx.db.item.id.update({ ...it, temper: it.temper + 1 });
+  ctx.db.skill.id.update({ ...row, ...addSkillXp(row.level, row.xp, cost.xp) });
+  ctx.db.character.id.update({ ...settled, ...addXp(settled.level, settled.xp, cost.xp), gold: settled.gold - cost.gold });
 });
 
 /** Stops the life skill: settles, then goes back to fighting the kept target (idle without one). */

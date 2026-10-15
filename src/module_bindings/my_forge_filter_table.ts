@@ -21,4 +21,5 @@ export default __t.row({
   },
   keepAffixes: __t.array(__t.u16()).name("keep_affixes"),
   minAffixTier: __t.u8().name("min_affix_tier"),
+  scrap: __t.bool(),
 });

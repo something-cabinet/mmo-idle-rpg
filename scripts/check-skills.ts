@@ -11,17 +11,28 @@ import {
   gatherActionMicros,
   gatherBlocker,
   skillXpToNext,
+  temperCap,
   tierRequirement,
 } from '../spacetimedb/src/data/skills';
 import { materialOf } from '../spacetimedb/src/data/materials';
-import { seededRng } from '../spacetimedb/src/loot';
+import { makeItem, rollDrops, seededRng } from '../spacetimedb/src/loot';
 import { addSkillXp, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from '../spacetimedb/src/gather';
-import { RECIPES, affordable, forgeRecipeOf, recipeOf, toolRecipeId } from '../spacetimedb/src/data/recipes';
+import {
+  RECIPES,
+  affordable,
+  forgeRecipeOf,
+  recipeOf,
+  scrapMaterialId,
+  scrapRecipeId,
+  smeltRecipeId,
+  temperCost,
+  toolRecipeId,
+} from '../spacetimedb/src/data/recipes';
 import { ELIXIR_KILLS, elixirBuffs, elixirSupplyId } from '../spacetimedb/src/data/supplies';
-import { forgeItem, forged, productionCharacterXp, projectProduction } from '../spacetimedb/src/produce';
+import { forgeItem, forged, productionCharacterXp, projectProduction, temperBlocker } from '../spacetimedb/src/produce';
 import { SLOTS } from '../spacetimedb/src/data/bases';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
-import { combatStats, matchup } from '../spacetimedb/src/combat';
+import { combatStats, matchup, tempered } from '../spacetimedb/src/combat';
 import { project } from '../spacetimedb/src/game';
 import { simulate } from '../spacetimedb/src/sim';
 
@@ -37,13 +48,11 @@ const fresh = { level: 1, xp: 0n, settledMicros: 0n };
 
 check('skill IDs are unique and nonzero', new Set(SKILLS.map(s => s.id)).size === SKILLS.length && SKILLS.every(s => s.id > 0));
 check('tier requirements 1, 11, 21', [1, 2, 3].map(tierRequirement).join() === '1,11,21');
-check('base action is 12 s', gatherActionMicros(1, 1, 1) === BigInt(GATHER_SECONDS * 1e6));
-check('level speed caps at +20%', gatherActionMicros(99, 1, 1) === 10_000_000n, `${gatherActionMicros(99, 1, 1)}`);
-check('tool speed: +5% per tier above, cap +20%', gatherActionMicros(1, 1, 2) === BigInt(Math.round(12e6 / 1.05)) && gatherActionMicros(1, 1, 9) === 10_000_000n);
-check('blocked by level', gatherBlocker({ level: 10, tier: 2, toolTier: 2, zoneOpen: true, tool: 'Pickaxe' }) === 'Needs level 11');
-check('blocked by tool', gatherBlocker({ level: 11, tier: 2, toolTier: 1, zoneOpen: true, tool: 'Pickaxe' }) === 'Needs a tier 2 Pickaxe');
-check('blocked by zone', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: false, tool: 'Pickaxe' }) !== undefined);
-check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true, tool: 'Pickaxe' }) === undefined);
+check('base action is 12 s', gatherActionMicros(1) === BigInt(GATHER_SECONDS * 1e6));
+check('tool speed: +10% per tier above T1', gatherActionMicros(2) === BigInt(Math.round(12e6 / 1.1)) && gatherActionMicros(3) === 10_000_000n);
+check('blocked by level', gatherBlocker({ level: 10, tier: 2, zoneOpen: true }) === 'Needs level 11');
+check('blocked by zone', gatherBlocker({ level: 11, tier: 2, zoneOpen: false }) !== undefined);
+check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen: true }) === undefined);
 
 // ---------------------------------------------------------------- settlement
 
@@ -86,8 +95,8 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   ({ level, xp } = addSkillXp(1, 0n, skillXpToNext(1)));
   check('exact level-up', level === 2 && xp === 0n);
   const g = projectGathering({ level: MAX_SKILL_LEVEL, xp: 0n, settledMicros: 0n }, { tier: 1, toolTier: 1 }, HOUR);
-  check('max level still gathers', g.actions === 360 && g.xpGained === 0n, `${g.actions}`);
-  check('max level: 10% double yield', Math.abs(g.doubleMean - 36) < 1e-9, `${g.doubleMean}`);
+  check('max level still gathers, no faster', g.actions === 300 && g.xpGained === 0n, `${g.actions}`);
+  check('max level: 10% double yield', Math.abs(g.doubleMean - 30) < 1e-9, `${g.doubleMean}`);
 }
 
 // ---------------------------------------------------------------- yields
@@ -95,9 +104,9 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
 {
   const mining = SKILLS_BY_ID.get(SkillId.Mining)!;
   const drops = rollGathering(seededRng(1n), mining, 2, { actions: 3000, doubleMean: 0 });
-  const metal = drops.find(d => d.materialId === materialOf(2, 'Metal').id)?.count ?? 0;
+  const ore = drops.find(d => d.materialId === materialOf(2, 'Ore').id)?.count ?? 0;
   const gems = drops.find(d => d.materialId === materialOf(2, 'Gem').id)?.count ?? 0;
-  check('one metal per action', metal === 3000, `${metal}`);
+  check('mining: one Ore per action, never Metal', ore === 3000 && !drops.some(d => d.materialId === materialOf(2, 'Metal').id), `${ore}`);
   check('~5% gems', gems > 100 && gems < 200, `${gems}`);
   const wood = rollGathering(seededRng(1n), SKILLS_BY_ID.get(SkillId.Woodcutting)!, 1, { actions: 1000, doubleMean: 100 });
   check('woodcutting: wood only, double yields added', wood.length === 1 && wood[0].count > 1050 && wood[0].count < 1150, `${wood[0]?.count}`);
@@ -115,7 +124,7 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   }
   const once = projectGathering(fresh, { tier: 1, toolTier: 1 }, p.settledMicros);
   const onceDrops = rollGatheringActions(7n, mining, 1, once);
-  const metal = materialOf(1, 'Metal').id;
+  const metal = materialOf(1, 'Ore').id;
   const gem = materialOf(1, 'Gem').id;
   const count = (id: number) => onceDrops.find(d => d.materialId === id)?.count ?? 0;
   check('per-action rolls: in pieces match one settle', total.get(metal) === count(metal) && (total.get(gem) ?? 0) === count(gem),
@@ -145,7 +154,58 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   check('no T1 tool recipe', !recipeOf(SkillId.Smithing, toolRecipeId(SkillId.Mining, 1)));
   const wrath = recipeOf(SkillId.Alchemy, elixirSupplyId(1, 1))!;
   check('elixir: 10 Reagent + 1 Core, 7.5 min', cost(wrath) === '10 601 + 1 301' && wrath.seconds === 450);
-  check('affordable counts whole actions', affordable(wrath, id => (id === 601 ? 95 : 4)) === 4 && affordable(wrath, () => 9) === 0);
+  check('affordable counts whole actions', affordable(wrath, { have: id => (id === 601 ? 95 : 4) }) === 4 && affordable(wrath, { have: () => 9 }) === 0);
+
+  const smelt = recipeOf(SkillId.Smithing, smeltRecipeId(2))!;
+  check('smelt T2: 1 Ore → 1 Metal, 12 s', cost(smelt) === '1 902' && smelt.output.kind === 'material' && smelt.output.materialId === 102 && smelt.seconds === 12);
+  check('scrap kinds: armor → its main material, jewelry → Metal',
+    scrapMaterialId(35, 1) === 201 && scrapMaterialId(31, 2) === 402 && scrapMaterialId(8, 1) === 501 && scrapMaterialId(50, 3) === 103 && scrapMaterialId(1, 1) === 101);
+  const scrapR = recipeOf(SkillId.Smithing, scrapRecipeId(201))!;
+  check('scrap recipe: 30 s, no material inputs', scrapR.seconds === 30 && scrapR.inputs.length === 0 && scrapR.tier === 1);
+  check('scrap recipe: affordable counts scrap', affordable(scrapR, { have: () => 0, scrap: () => 7 }) === 7 && affordable(scrapR, { have: () => 0 }) === 0);
+  check('no recipe for Gem or Core scrap', !recipeOf(SkillId.Smithing, scrapRecipeId(701)) && !recipeOf(SkillId.Smithing, scrapRecipeId(301)));
+
+  const t = temperCost({ baseId: 1, tier: 2, temper: 2 })!;
+  check('temper step 3 on a T2 sword: 30 T2 Metal, 0.15 h of gold, 9 min of XP',
+    t.material.materialId === 102 && t.material.count === 30 && t.gold === BigInt(Math.round(1200 * 0.15 * 2.9)) && t.xp === BigInt(Math.floor(600 * 2.9 * 540 / 3600)),
+    JSON.stringify(t, (_, v) => (typeof v === 'bigint' ? String(v) : v)));
+  check('temper: leather uses Hide', temperCost({ baseId: 35, tier: 1, temper: 0 })?.material.materialId === 201);
+  const full = Array.from({ length: 10 }, (_, k) => temperCost({ baseId: 1, tier: 1, temper: k })!);
+  check('+0 → +10: 550 material', full.reduce((n, c) => n + c.material.count, 0) === 550);
+}
+
+// ---------------------------------------------------------------- tempering
+
+{
+  check('temper cap: +1 per 10 levels, +10 at 99', [1, 9, 10, 55, 90, 98, 99].map(temperCap).join() === '0,0,1,5,9,9,10');
+  const common = { baseId: 1, rarity: { tag: 'Common' as const }, tier: 1, temper: 0 };
+  check('no temper cost above the material tiers', temperCost({ baseId: 1, tier: 5, temper: 0 }) === undefined &&
+    temperBlocker({ ...common, tier: 5 }, 99, true) === 'No tier 5 materials yet');
+  check('no scrap above the material tiers', scrapMaterialId(1, 5) === undefined);
+  check('temper blocked below level 10', temperBlocker(common, 9, true) === '+1 needs level 10');
+  check('temper allowed at level 10', temperBlocker(common, 10, true) === undefined);
+  check('temper +10 needs level 99', temperBlocker({ ...common, temper: 9 }, 98, true) === '+10 needs level 99' && temperBlocker({ ...common, temper: 9 }, 99, true) === undefined);
+  check('fully tempered at +10', temperBlocker({ ...common, temper: 10 }, 99, true) === 'Fully tempered');
+  check('tier rule applies', temperBlocker({ ...common, tier: 3 }, 20, true) === 'Needs level 21');
+  check("uniques and anomalies can't be tempered",
+    temperBlocker({ ...common, rarity: { tag: 'Unique' } }, 99, true) !== undefined && temperBlocker({ ...common, rarity: { tag: 'Anomaly' } }, 99, true) !== undefined);
+
+  const sword = makeItem(seededRng(3n), 1, 5, 'Rare');
+  const plate = makeItem(seededRng(3n), 39, 5, 'Magic');
+  const t10 = tempered({ ...sword, temper: 10 });
+  check('+10: weapon hit ×1.2, rounded to a whole hit', Number(t10.weapon!.hit) === Math.round((Number(sword.weapon!.hit) / 100) * 1.2) * 100,
+    `${sword.weapon!.hit} → ${t10.weapon!.hit}`);
+  check('affixes unchanged by temper', t10.affixes === sword.affixes);
+  const p5 = tempered({ ...plate, temper: 5 });
+  check('+5: implicits ×1.1', p5.implicits.every((imp, i) => Math.abs(Number(imp.value) - Number(plate.implicits[i].value) * 1.1) <= 100),
+    `${plate.implicits.map(i => i.value)} → ${p5.implicits.map(i => i.value)}`);
+  check('+0 changes nothing', tempered(sword) === sword);
+  const gear = SLOTS.map(sl => (sl === 'MainHand' ? sword : sl === 'Chest' ? plate : undefined));
+  const gearT = SLOTS.map(sl => (sl === 'MainHand' ? { ...sword, temper: 10 } : sl === 'Chest' ? { ...plate, temper: 10 } : undefined));
+  const a = combatStats(50, gear);
+  const b = combatStats(50, gearT);
+  check('tempered gear: more damage and armor in combat', b.sources[0].hit.Physical > a.sources[0].hit.Physical * 1.15 && b.armor > a.armor,
+    `${a.sources[0].hit.Physical.toFixed(0)} → ${b.sources[0].hit.Physical.toFixed(0)}, armor ${a.armor.toFixed(0)} → ${b.armor.toFixed(0)}`);
 }
 
 // ---------------------------------------------------------------- production
@@ -198,9 +258,55 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   const onceUsed = once.used.find(u => u.materialId === 601)?.count ?? 0;
   check('per-minute settles match one settle', actions === once.actions && used === onceUsed && p.level === once.level,
     `${actions}/${once.actions} used ${used}/${onceUsed}`);
-  check('level 60 is faster and sometimes keeps its inputs', once.actions > 64 && onceUsed < once.actions * 10, `${once.actions}, ${onceUsed}`);
+  check('level 60 is no faster and sometimes keeps its inputs', once.actions === 64 && onceUsed < once.actions * 10, `${once.actions}, ${onceUsed}`);
   const capped = projectProduction(fresh, wrath, plenty, 1n, 10n * HOUR, HOUR);
   check('capped settle counts only the cap and ends now', capped.actions === 8 && capped.settledMicros === 10n * HOUR);
+}
+
+// ---------------------------------------------------------------- smelting
+
+{
+  const ore = recipeOf(SkillId.Smithing, smeltRecipeId(1))!;
+  const pr = projectProduction(fresh, ore, { countLeft: 1000, have: () => 1e6, bagFree: 0 }, 1n, HOUR);
+  check('Ore: ~300 bars an hour, one per action', pr.actions >= 300 && pr.actions <= 320 && pr.yielded === pr.actions, `${pr.actions} ${pr.yielded}`);
+  check('Ore: 2 XP each at T1', pr.xpGained === BigInt(pr.actions * 2), `${pr.xpGained}`);
+  const short = projectProduction(fresh, ore, { countLeft: 1000, have: () => 5, bagFree: 0 }, 1n, HOUR);
+  check('Ore runs out', short.actions === 5 && short.endedAt !== undefined && short.used[0].count === 5);
+
+  const scrap = recipeOf(SkillId.Smithing, scrapRecipeId(101))!;
+  const sp = projectProduction(fresh, scrap, { countLeft: 1000, have: () => 0, scrap: { Common: 3, Rare: 1, Legendary: 1 }, bagFree: 0 }, 1n, HOUR);
+  check('scrap: smelts every piece, highest rarity first', sp.actions === 5 && sp.endedAt !== undefined, `${sp.actions}`);
+  check('scrap: 40 + 5 + 3 × 2 materials', sp.yielded === 51, `${sp.yielded}`);
+  check('scrap used by rarity', sp.scrapUsed.map(u => `${u.count} ${u.rarity}`).join() === '1 Legendary,1 Rare,3 Common', JSON.stringify(sp.scrapUsed));
+  const first = projectProduction(fresh, scrap, { countLeft: 1, have: () => 0, scrap: { Common: 3, Epic: 2 }, bagFree: 0 }, 1n, HOUR);
+  check('scrap: the first action takes an Epic', first.yielded === 15 && first.scrapUsed[0].rarity === 'Epic');
+  const empty = projectProduction(fresh, scrap, { countLeft: 10, have: () => 0, bagFree: 0 }, 1n, HOUR);
+  check('no scrap: ends at once', empty.actions === 0 && empty.endedAt === 0n);
+
+}
+
+// ---------------------------------------------------------------- scrap from drops
+
+{
+  const rat = ENEMIES_BY_ID.get(101)!.enemy;
+  const input = {
+    kills: 20_000,
+    enemy: rat,
+    tier: 1,
+    rewardScale: 1,
+    itemFind: 0,
+    filter: { minRarity: 'Rare' as const, keepAffixes: [], keepTypes: [], minAffixTier: 1 },
+    bagFree: 1000,
+    discoverRng: seededRng(9n, 1n),
+  };
+  const salvaged = rollDrops(seededRng(9n), { ...input, discoverRng: seededRng(9n, 1n) });
+  const scrapped = rollDrops(seededRng(9n), { ...input, discoverRng: seededRng(9n, 1n), scrap: true });
+  const nSalvaged = salvaged.salvaged.Common + salvaged.salvaged.Magic;
+  const nScrapped = scrapped.scrapped.reduce((n, x) => n + x.count, 0);
+  check('scrap mode: rejected drops become scrap, no Dust or gold', nSalvaged > 0 && nScrapped === nSalvaged && scrapped.dust === 0n && scrapped.gold === 0n,
+    `${nSalvaged} salvaged vs ${nScrapped} scrapped, ${scrapped.dust} Dust`);
+  check('scrap mode: kept drops unchanged', scrapped.kept.length === salvaged.kept.length && scrapped.seen.length === salvaged.seen.length);
+  check('scrap is of the drops\' kinds at the zone tier', scrapped.scrapped.every(x => x.materialId % 100 === 1 && (x.rarity === 'Common' || x.rarity === 'Magic')));
 }
 
 // ---------------------------------------------------------------- forging

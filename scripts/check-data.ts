@@ -7,7 +7,7 @@ import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { RAIDS, RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
 import { ENEMIES_BY_ID, WALL_FACTOR, ZONES, isWallTier } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
-import { MATERIALS, MATERIAL_KINDS, MATERIAL_KIND_IDS, materialOf, migrateMaterialId } from '../spacetimedb/src/data/materials';
+import { DROP_KINDS, MATERIALS, MATERIAL_KINDS, MATERIAL_KIND_IDS, materialOf, migrateMaterialId } from '../spacetimedb/src/data/materials';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -53,7 +53,7 @@ for (const zone of ZONES) {
   check(`${zone.name}: every enemy drops 1–3 distinct material kinds`, zone.enemies.every(e =>
     e.materials.length >= 1 && e.materials.length <= 3 && new Set(e.materials).size === e.materials.length));
   check(`${zone.name}: every kind drops from some regular enemy`,
-    MATERIAL_KINDS.every(k => zone.enemies.some(e => !e.boss && e.materials.includes(k))));
+    DROP_KINDS.every(k => zone.enemies.some(e => !e.boss && e.materials.includes(k))));
 }
 check('stat IDs match keys', Object.entries(STATS).every(([k, d]) => Number(k) === d.id));
 

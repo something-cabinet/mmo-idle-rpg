@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import type { DbConnection } from '../module_bindings';
 import * as auth from '../auth';
 import type { Item } from '../module_bindings/types';
-import { combatStats, defenseAgainst, type Matchup } from '../../spacetimedb/src/combat';
+import { combatStats, defenseAgainst, tempered, type Matchup } from '../../spacetimedb/src/combat';
 import type { CraftCost } from '../../spacetimedb/src/craft';
 import type { Slot } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID, Effect, LEGENDARIES_BY_ID, copiesToCap, effectAmount, type EffectCounts } from '../../spacetimedb/src/data/legendary';
@@ -177,7 +177,7 @@ export function totals(s: Snapshot, slots: readonly bigint[]): Total[] {
   /** A primary attribute: `level` from levels plus gear. */
   const primary = (id: number) =>
     s.level +
-    gear.reduce((sum, it) => sum + (it ? [...it.implicits, ...it.affixes, ...(it.legendary ? [it.legendary] : [])] : [])
+    gear.map(it => it && tempered(it)).reduce((sum, it) => sum + (it ? [...it.implicits, ...it.affixes, ...(it.legendary ? [it.legendary] : [])] : [])
       .reduce((n, g) => n + (g.stat === id ? fromStored(g.value) : 0), 0), 0);
   return [
     { label: 'Might', value: primary(Stat.Might), show: fmt },

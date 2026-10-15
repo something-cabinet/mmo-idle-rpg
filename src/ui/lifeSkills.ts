@@ -2,7 +2,8 @@
 
 import type { Recipe } from '../../spacetimedb/src/data/recipes';
 import type { SupplyDef } from '../../spacetimedb/src/data/supplies';
-import { MAX_SKILL_LEVEL, SkillId, doubleYieldChance, tierRequirement, type SkillDef } from '../../spacetimedb/src/data/skills';
+import { MAX_SKILL_LEVEL, SkillId, doubleYieldChance, temperRequirement, tierRequirement, type SkillDef } from '../../spacetimedb/src/data/skills';
+import { MAX_TEMPER } from '../../spacetimedb/src/data/recipes';
 import { materialOf } from '../../spacetimedb/src/data/materials';
 import { ZONES } from '../../spacetimedb/src/data/zones';
 import { pct } from './format';
@@ -19,13 +20,11 @@ export const elixirText = (sup: SupplyDef) => {
 // Milestones (life-skills.md, "Levels and gating"), from the same formulas the server uses.
 
 const TIERS = [...new Set(ZONES.map(z => z.tier))].sort((a, b) => a - b);
-/** Levels above a tier's requirement for the full +20% speed there (levelSpeedBonus). */
-const SPEED_LEVELS = 20;
 
 /** What working tier `tier` means for `skill`. */
 function tierText(skill: SkillDef, tier: number): string {
-  if (skill.kind === 'Gathering') return `Gather ${materialOf(tier, skill.makes).name} (needs a T${tier} ${skill.tool})`;
-  if (skill.id === SkillId.Smithing) return tier > 1 ? `Forge T${tier} gear, make T${tier} tools` : `Forge T${tier} gear`;
+  if (skill.kind === 'Gathering') return `Gather ${materialOf(tier, skill.makes).name}`;
+  if (skill.id === SkillId.Smithing) return `Forge, smelt and temper T${tier}${tier > 1 ? `, make T${tier} tools` : ''}`;
   if (skill.id === SkillId.Alchemy) return `Brew T${tier} elixirs`;
   return `Tier ${tier} recipes`;
 }
@@ -34,9 +33,11 @@ function tierText(skill: SkillDef, tier: number): string {
 export function skillMilestones(skill: SkillDef): { level: number; perks: string[] }[] {
   const perks: [number, string][] = [];
   for (const tier of TIERS) perks.push([tierRequirement(tier), tierText(skill, tier)]);
-  for (const tier of TIERS) perks.push([tierRequirement(tier) + SPEED_LEVELS, `Max speed at T${tier} (+20%)`]);
   const extra = skill.kind === 'Gathering' ? 'double yield' : 'chance to keep the inputs';
   for (const lv of [50, MAX_SKILL_LEVEL]) perks.push([lv, `${pct(doubleYieldChance(lv))} ${extra}`]);
+  if (skill.id === SkillId.Smithing) {
+    for (let k = 1; k <= MAX_TEMPER; k++) perks.push([temperRequirement(k), `Temper up to +${k}`]);
+  }
   perks.push([MAX_SKILL_LEVEL, 'Max level']);
 
   const byLevel = new Map<number, string[]>();

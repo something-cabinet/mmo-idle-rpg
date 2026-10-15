@@ -88,15 +88,15 @@ const b = await connect();
 await expectError('name taken (case-insensitive)', b.conn.reducers.createCharacter({ name: `alice_${suffix}`, starterWeapon: 1 }), 'taken');
 await expectError('chat without character rejected', b.conn.reducers.sendChat({ text: 'hi' }), 'Not in the world');
 
-await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6], keepTypes: [1, 1, 8], minAffixTier: 3 });
+await a.conn.reducers.setLootFilter({ minRarity: { tag: 'Rare' }, keepAffixes: [22, 22, 6], keepTypes: [1, 1, 8], minAffixTier: 3, scrap: true });
 await sleep(200);
 {
   const filter = [...a.conn.db.myLootFilter.iter()][0];
   check('loot filter saved (deduplicated)',
-    filter?.minRarity.tag === 'Rare' && filter.keepAffixes.join() === '22,6' && filter.keepTypes.join() === '1,8' && filter.minAffixTier === 3,
+    filter?.minRarity.tag === 'Rare' && filter.keepAffixes.join() === '22,6' && filter.keepTypes.join() === '1,8' && filter.minAffixTier === 3 && filter.scrap,
     `${filter?.keepAffixes.join()} / ${filter?.keepTypes.join()} / ${filter?.minAffixTier}`);
 }
-const badFilter = { minRarity: { tag: 'Rare' as const }, keepAffixes: [], keepTypes: [], minAffixTier: 1 };
+const badFilter = { minRarity: { tag: 'Rare' as const }, keepAffixes: [], keepTypes: [], minAffixTier: 1, scrap: false };
 await expectError('unknown affix in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, keepAffixes: [999] }), 'Unknown affix');
 await expectError('unknown item type in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, keepTypes: [999] }), 'Unknown item type');
 await expectError('affix tier 0 in filter rejected', a.conn.reducers.setLootFilter({ ...badFilter, minAffixTier: 0 }), 'Bad affix tier');
@@ -173,8 +173,8 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
   await a.conn.reducers.settleNow({});
   await sleep(300);
   const log = [...a.conn.db.mySettleLog.iter()].sort((x, y) => (x.id < y.id ? -1 : 1)).at(-1)!;
-  check('a gathering settle is logged', log.skillId === 1 && log.enemyId === 0 && log.kills === 0 && log.actions >= 1 &&
-    log.skillXp === BigInt(log.actions * 2) && log.materials.some(m => m.materialId === 101 && m.count >= log.actions),
+  check('a gathering settle is logged (Mining gives Ore)', log.skillId === 1 && log.enemyId === 0 && log.kills === 0 && log.actions >= 1 &&
+    log.skillXp === BigInt(log.actions * 2) && log.materials.some(m => m.materialId === 901 && m.count >= log.actions),
     `actions=${log.actions} xp=${log.skillXp}`);
   check('… with as much character XP as skill XP', log.xp === log.skillXp && log.gold === 0n, `xp=${log.xp}`);
   const mining = [...a.conn.db.mySkills.iter()].find(r => r.skillId === 1)!;
@@ -213,12 +213,32 @@ await a.conn.reducers.setTarget({ enemyId: 101 });
 
   // The forge keep rule.
   check('no forge keep rule at first', [...a.conn.db.myForgeFilter.iter()].length === 0);
-  await expectError('a forge rule above Rare rejected', r.setForgeFilter({ minRarity: { tag: 'Epic' }, keepAffixes: [], minAffixTier: 1 }), 'Common to Rare');
-  await r.setForgeFilter({ minRarity: { tag: 'Magic' }, keepAffixes: [], minAffixTier: 2 });
+  await expectError('a forge rule above Rare rejected', r.setForgeFilter({ minRarity: { tag: 'Epic' }, keepAffixes: [], minAffixTier: 1, scrap: false }), 'Common to Rare');
+  await r.setForgeFilter({ minRarity: { tag: 'Magic' }, keepAffixes: [], minAffixTier: 2, scrap: true });
   await sleep(200);
   const ff = [...a.conn.db.myForgeFilter.iter()][0];
-  check('the forge keep rule is saved', ff?.minRarity.tag === 'Magic' && ff.minAffixTier === 2);
-  await r.setForgeFilter({ minRarity: { tag: 'Common' }, keepAffixes: [], minAffixTier: 1 });
+  check('the forge keep rule is saved', ff?.minRarity.tag === 'Magic' && ff.minAffixTier === 2 && ff.scrap);
+  await r.setForgeFilter({ minRarity: { tag: 'Common' }, keepAffixes: [], minAffixTier: 1, scrap: false });
+
+  // Smithing: scrap, smelting and tempering (life-skills.md).
+  await r.devGiveItem({ baseId: 35, tier: 1, rarity: 'Magic' });
+  await sleep(200);
+  const vest = [...a.conn.db.myItems.iter()].find(i => i.baseId === 35 && i.rarity.tag === 'Magic')!;
+  await r.scrapItems({ itemIds: [vest.id] });
+  await sleep(200);
+  const hideScrap = [...a.conn.db.myScrap.iter()].find(x => x.materialId === 201 && x.rarity.tag === 'Magic');
+  check('scrapping a bag item turns it into Hide scrap', !a.conn.db.myItems.id.find(vest.id) && hideScrap?.count === 1n, `${hideScrap?.count}`);
+  await expectError('no scrap to smelt rejected', r.startProduction({ skillId: 11, recipe: 61101, count: 1 }), 'No scrap');
+  await r.startProduction({ skillId: 11, recipe: 61201, count: 1 });
+  await sleep(200);
+  check('a scrap smelt queue starts', charOf(a)!.activityRecipe === 61201);
+  await r.startProduction({ skillId: 11, recipe: 60001, count: 5 });
+  await sleep(200);
+  check('an Ore smelt queue starts', charOf(a)!.activityRecipe === 60001 && charOf(a)!.activityCountLeft === 5);
+  await r.stopSkill({});
+  const sword = [...a.conn.db.myItems.iter()].find(i => i.baseId === 1)!;
+  await expectError('tempering needs Smithing level 10', r.temperItem({ itemId: sword.id }), '+1 needs level 10');
+  await expectError('tempering an unknown item rejected', r.temperItem({ itemId: 999_999n }), 'No such item');
 
   // Elixirs: drink one, kills use its charges.
   await expectError('drinking with none in stock rejected', r.drinkElixir({ supplyId: 111 }), 'None in stock');

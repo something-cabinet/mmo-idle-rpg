@@ -1,18 +1,20 @@
 // A skill's level milestones (lifeSkills.ts `skillMilestones`): what each level unlocks,
-// so the next goal is always in view.
+// so the next goal is always in view. Collapsed until opened: the summary names the next one.
 
 import type { SkillDef } from '../../../spacetimedb/src/data/skills';
-import { CardHead } from '../shared';
+import { CollapsibleCard } from '../itemFilter';
 import { skillMilestones } from '../lifeSkills';
 
 export function MilestonesCard({ skill, level }: { skill: SkillDef; level: number }) {
   const rows = skillMilestones(skill);
   const next = rows.find(r => r.level > level);
   return (
-    <div className="card">
-      <CardHead title="Milestones">
-        <span className="muted">{next ? `Next at level ${next.level}` : 'All reached'}</span>
-      </CardHead>
+    <CollapsibleCard
+      storageKey="skill_milestones_collapsed"
+      title="Milestones"
+      defaultCollapsed
+      summary={next ? `Next at level ${next.level}: ${next.perks.join(' · ')}` : 'All reached'}
+    >
       <div className="table-wrap">
         <table className="table milestones">
           <thead>
@@ -28,6 +30,6 @@ export function MilestonesCard({ skill, level }: { skill: SkillDef; level: numbe
           </tbody>
         </table>
       </div>
-    </div>
+    </CollapsibleCard>
   );
 }

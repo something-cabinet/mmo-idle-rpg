@@ -74,6 +74,15 @@ function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?
         </li>
       );
     }
+    const scrapped = RARITIES.map((r, i) => [r, log.scrapped[i] ?? 0] as const).filter(([, n]) => n > 0);
+    if (scrapped.length) {
+      lines.push(
+        <li className="dim" key={`x${log.id}`}>
+          <span>{scrapped.map(([r, n]) => `${n} ${r}`).join(', ')}</span>
+          <span className="muted">scrapped</span>
+        </li>
+      );
+    }
     if (lines.length >= max) break;
   }
   return <>{lines.length ? lines.slice(0, max) : <li className="muted">No drops yet. Drops are rare: about 1 every 2 minutes.</li>}</>;

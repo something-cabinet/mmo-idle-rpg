@@ -95,6 +95,7 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
     keepAffixes: s.filter?.keepAffixes ?? [],
     keepTypes: s.filter?.keepTypes ?? [],
     minAffixTier: s.filter?.minAffixTier ?? 1,
+    scrap: s.filter?.scrap ?? false,
   };
   const setFilter = (patch: Partial<LootFilterArgs>) => call(s.conn.reducers.setLootFilter({ ...f, ...patch }));
 
@@ -123,6 +124,15 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
                 {t === 1 ? 'Any' : `T${t}+`}
               </button>
             ))}
+          </div>
+          <div className="card-head" style={{ marginTop: 12 }}><h2>Rejected drops</h2></div>
+          <p className="muted">
+            Salvage turns them into Dust and gold. Scrap keeps them as scrap for Smithing to smelt into materials, with no Dust
+            or gold. Neither takes a bag slot.
+          </p>
+          <div className="seg">
+            <button className={`seg-btn${!f.scrap ? ' active' : ''}`} onClick={() => setFilter({ scrap: false })}>Salvage</button>
+            <button className={`seg-btn${f.scrap ? ' active' : ''}`} onClick={() => setFilter({ scrap: true })}>Scrap</button>
           </div>
           <div className="card-head" style={{ marginTop: 12 }}><h2>Last 8 hours</h2></div>
           <FilterSummary s={s} />

@@ -11,6 +11,8 @@ import { ItemIcon } from '../itemArt';
 import { ItemFilterCard, useItemFilter } from '../itemFilter';
 import { CardHead, ViewHeader, cantAfford, costText, loadoutNote } from '../shared';
 import type { Snapshot } from '../snapshot';
+import { TemperAction } from './TemperAction';
+import { SkillId } from '../../../spacetimedb/src/data/skills';
 
 type Where = 'all' | 'equipped' | 'bag';
 type CraftSort = 'rarity' | 'tier' | 'newest' | 'slot';
@@ -182,6 +184,16 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
           {action('Reroll affix', rerollBody, rCost, rBlocked, 'Reroll', () => call(r.rerollAffix({ itemId: item.id, affixIndex: rerollIndex })))}
           {action('Upgrade rarity', upgradeBody, uCost, uBlocked, 'Upgrade', () =>
             call(r.upgradeRarity({ itemId: item.id, removeAffix: toLegendary ? removeIndex : undefined })))}
+          {!unique && (
+            <div className="card">
+              <CardHead title="Temper">
+                <a className="chip" href="#smithing" title="A Smithing action: uses and levels your Smithing skill">
+                  <Icon name="anvil" />Smithing {s.skills.get(SkillId.Smithing)!.level}
+                </a>
+              </CardHead>
+              <TemperAction s={s} it={item} />
+            </div>
+          )}
         </div>
       </div>
     </>

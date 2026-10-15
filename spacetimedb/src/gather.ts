@@ -64,7 +64,7 @@ export function projectGathering(p: SkillProgress, g: { tier: number; toolTier: 
   const runs: Gathered['runs'] = [];
   let left = elapsed;
   for (;;) {
-    const step = gatherActionMicros(level, g.tier, g.toolTier);
+    const step = gatherActionMicros(g.toolTier);
     const available = Number(left / step);
     if (available <= 0) break;
     // Stop at the next level-up: the speed changes there.

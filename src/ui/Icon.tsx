@@ -80,6 +80,7 @@ const PATHS: Record<string, string> = {
   'm-wood': 'M5 8h12a3 4 0 0 1 0 8H5M5 8a3 4 0 0 0 0 8 3 4 0 0 0 0-8zM11 12h4',
   'm-reagent': 'M5 19C5 10 10 5 20 4c-1 10-6 15-15 15zM5 19l8-8',
   'm-gem': 'M12 3l7 9-7 9-7-9 7-9zM5 12h14',
+  'm-ore': 'M4 17l3-8 5-4 6 3 2 7-5 4H8l-4-2zM9 11l3 2 4-2M12 13v5',
 };
 
 export function Icon({ name, className = '' }: { name: string; className?: string }) {

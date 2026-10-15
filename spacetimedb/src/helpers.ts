@@ -8,13 +8,27 @@ import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
 import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, type ProductionSkillDef } from './data/skills';
-import { recipeOf, type MaterialCost } from './data/recipes';
+import { recipeOf, scrapMaterialId, type MaterialCost, type ScrapRarity } from './data/recipes';
 import { elixirBuffs } from './data/supplies';
 import { GATHER_SALT, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from './gather';
 import { forged, productionCharacterXp, projectProduction, type ForgeFilter } from './produce';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
-import { AFFIX_STAT_IDS, RARITIES, firstKillReward, makeItem, rollDrops, rollMaterials, salvageValue, seededRng, type DropResult, type MaterialDrop, type Seen } from './loot';
+import {
+  AFFIX_STAT_IDS,
+  RARITIES,
+  addScrap,
+  firstKillReward,
+  makeItem,
+  rollDrops,
+  rollMaterials,
+  salvageValue,
+  seededRng,
+  type DropResult,
+  type MaterialDrop,
+  type ScrapDrop,
+  type Seen,
+} from './loot';
 import { simulate } from './sim';
 
 /** Character columns for "no life skill": fighting the target (or idle). */
@@ -63,6 +77,7 @@ export function requireItem(ctx: Ctx, ch: Character, itemId: bigint): Item {
   if (!it || it.characterId !== ch.id) throw new SenderError('No such item');
   return it;
 }
+
 
 /** The active loadout's items in slot order (undefined = empty slot). */
 export function gearOf(ctx: Ctx, ch: Character): (Item | undefined)[] {
@@ -127,6 +142,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
         keepTypes: filter?.keepTypes ?? [],
         minAffixTier: filter?.minAffixTier ?? 1,
       },
+      scrap: filter?.scrap ?? false,
       bagFree: ch.bagSize - bagCount(ctx, ch.id),
       fortune: effectAmount(stats.effects, Effect.FortunesFavor),
       discoverRng: seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, DISCOVER_SALT),
@@ -139,6 +155,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     }
     dust += drops.dust;
     salvageGold = drops.gold;
+    addScrapRows(ctx, ch.id, drops.scrapped);
     // Own seed, so adding materials didn't change the item rolls above.
     materials = rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, p.kills,
       rewardScale(target.zone, target.enemy));
@@ -215,6 +232,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       dust: dust - dustBefore,
       keptItemIds,
       salvaged: RARITIES.map(r => drops?.salvaged[r] ?? 0),
+      scrapped: scrappedPerRarity(drops?.scrapped ?? []),
       overflow: drops?.overflow ?? 0,
       materials,
       discovered,
@@ -290,40 +308,46 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
 
 /**
  * `settle` while the character works a production queue (produce.ts `projectProduction`):
- * inputs are used up, items go to the bag, elixirs to the supply stock, a tool upgrade to
- * the `tool` row. When the queue runs out (count, inputs or bag), the rest of the time
- * settles as combat against the kept target, so an empty queue never wastes offline time.
+ * inputs (and scrap) are used up, items go to the bag, elixirs to the supply stock,
+ * smelted materials to the counters, a tool upgrade to the `tool` row. When the queue runs out (count, inputs or bag), the rest of the time settles as
+ * combat against the kept target, so an empty queue never wastes offline time.
  */
 function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capMicros?: bigint): Character {
   const start = ch.lastSettledAt.microsSinceUnixEpoch;
   const backToCombat = (c: Character, cap?: bigint) => settle(ctx, { ...c, ...NO_SKILL }, cap);
   const r = recipeOf(def.id, ch.activityRecipe);
   if (!r) return backToCombat(ch, capMicros);
+  const out = r.output;
   const row = skillRow(ctx, ch.id, def.id);
   const held = materialCounts(ctx, ch.id);
   const filter = forgeFilterOf(ctx, ch.id);
   const queue = {
     countLeft: ch.activityCountLeft,
     have: (id: number) => held.get(id) ?? 0,
+    scrap: out.kind === 'scrap' ? scrapHeld(ctx, ch.id, out.materialId) : undefined,
     bagFree: ch.bagSize - bagCount(ctx, ch.id),
     keeps: (m: { at: bigint; level: number }) => forged(ch.id, r, m, filter).kept,
   };
   const pr = projectProduction({ ...row, settledMicros: start }, r, queue, ch.id, ctx.timestamp.microsSinceUnixEpoch, capMicros);
   takeMaterials(ctx, ch.id, pr.used);
+  if (out.kind === 'scrap') takeScrap(ctx, ch.id, out.materialId, pr.scrapUsed);
 
   const keptItemIds: bigint[] = [];
   const discovered: Found[] = [];
-  // Forged bases the keep rule turns down are salvaged, like drops the loot filter turns down.
+  // Forged bases the keep rule turns down are salvaged (or scrapped), like drops the loot filter turns down.
   const salvaged = RARITIES.map(() => 0);
+  const scrapped: ScrapDrop[] = [];
+  let materials: MaterialDrop[] = [];
   let dust = 0n;
   let gold = 0n;
-  const out = r.output;
   if (out.kind === 'item') {
     for (const m of pr.made) {
-      const { item: it } = forged(ch.id, r, m, filter);
+      const { item: it, kept } = forged(ch.id, r, m, filter);
       discovered.push(...discover(ctx, ch.id, r.tier, [{ baseId: out.baseId }]));
-      if (m.kept) {
+      if (kept) {
         keptItemIds.push(ctx.db.item.insert({ ...it, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id);
+      } else if (filter?.scrap && it.rarity.tag !== 'Anomaly' && scrapMaterialIdOf(it) !== undefined) {
+        addScrap(scrapped, scrapMaterialIdOf(it)!, it.rarity.tag as ScrapRarity);
       } else {
         const v = salvageValue(it.rarity.tag, it.tier);
         dust += v.dust;
@@ -331,8 +355,12 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
         salvaged[RARITIES.indexOf(it.rarity.tag)]++;
       }
     }
+    addScrapRows(ctx, ch.id, scrapped);
   } else if (out.kind === 'supply') {
     addSupply(ctx, ch.id, out.supplyId, pr.actions);
+  } else if (out.kind === 'material' || out.kind === 'scrap') {
+    if (pr.yielded > 0) materials = [{ materialId: out.materialId, count: pr.yielded }];
+    addMaterials(ctx, ch.id, materials);
   } else if (pr.actions > 0) {
     const tool = [...ctx.db.tool.characterId.filter(ch.id)].find(t => t.skillId === out.skillId);
     if (!tool) ctx.db.tool.insert({ id: 0n, characterId: ch.id, skillId: out.skillId, tier: r.tier });
@@ -360,9 +388,11 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
       skillLevelFrom: row.level,
       skillLevelTo: pr.level,
       used: pr.used,
+      materials,
       keptItemIds,
       discovered,
       salvaged,
+      scrapped: scrappedPerRarity(scrapped),
       dust,
       gold,
     });
@@ -385,7 +415,45 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
 /** The character's forge keep rule (undefined: keep everything). */
 export function forgeFilterOf(ctx: Ctx, characterId: bigint): ForgeFilter | undefined {
   const f = ctx.db.forgeFilter.characterId.find(characterId);
-  return f ? { minRarity: f.minRarity.tag, keepAffixes: f.keepAffixes, minAffixTier: f.minAffixTier } : undefined;
+  return f ? { minRarity: f.minRarity.tag, keepAffixes: f.keepAffixes, minAffixTier: f.minAffixTier, scrap: f.scrap } : undefined;
+}
+
+/** The material an item's scrap smelts into; undefined for tiers without materials. */
+export const scrapMaterialIdOf = (it: { baseId: number; tier: number }) => scrapMaterialId(it.baseId, it.tier);
+
+/** Scrapped items per rarity, in RARITIES order (settle logs). */
+function scrappedPerRarity(list: readonly ScrapDrop[]): number[] {
+  return RARITIES.map(r => list.filter(x => x.rarity === r).reduce((n, x) => n + x.count, 0));
+}
+
+/** The character's scrap that smelts into `materialId`, by rarity. */
+export function scrapHeld(ctx: Ctx, characterId: bigint, materialId: number): Partial<Record<ScrapRarity, number>> {
+  const out: Partial<Record<ScrapRarity, number>> = {};
+  for (const row of ctx.db.scrap.characterId.filter(characterId)) {
+    if (row.materialId === materialId) out[row.rarity.tag as ScrapRarity] = Number(row.count);
+  }
+  return out;
+}
+
+/** Adds scrapped items to the character's scrap counters. */
+export function addScrapRows(ctx: Ctx, characterId: bigint, list: readonly ScrapDrop[]) {
+  if (!list.length) return;
+  const rows = [...ctx.db.scrap.characterId.filter(characterId)];
+  for (const d of list) {
+    const row = rows.find(r => r.materialId === d.materialId && r.rarity.tag === d.rarity);
+    if (row) ctx.db.scrap.id.update({ ...row, count: row.count + BigInt(d.count) });
+    else ctx.db.scrap.insert({ id: 0n, characterId, materialId: d.materialId, rarity: { tag: d.rarity }, count: BigInt(d.count) });
+  }
+}
+
+/** Takes smelted scrap of `materialId` from the counters (callers check there is enough). */
+function takeScrap(ctx: Ctx, characterId: bigint, materialId: number, used: readonly { rarity: ScrapRarity; count: number }[]) {
+  const rows = [...ctx.db.scrap.characterId.filter(characterId)];
+  for (const u of used) {
+    const row = rows.find(r => r.materialId === materialId && r.rarity.tag === u.rarity);
+    if (!row || row.count < BigInt(u.count)) throw new SenderError('Not enough scrap');
+    ctx.db.scrap.id.update({ ...row, count: row.count - BigInt(u.count) });
+  }
 }
 
 /** Material ID → count the character holds. */
@@ -460,6 +528,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     dust: 0n,
     keptItemIds: [],
     salvaged: RARITIES.map(() => 0),
+    scrapped: RARITIES.map(() => 0),
     overflow: 0,
     defeated: false,
     idleMicros: 0n,
@@ -534,6 +603,7 @@ export function ensureCharacterRows(ctx: Ctx, characterId: bigint) {
       keepBases: [],
       minAffixTier: 1,
       keepTypes: [],
+      scrap: false,
     });
   }
   // Life skills start at level 1, gathering tools at tier 1.
@@ -668,6 +738,7 @@ export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   ctx.db.tool.characterId.delete(characterId);
   ctx.db.supply.characterId.delete(characterId);
   ctx.db.forgeFilter.characterId.delete(characterId);
+  ctx.db.scrap.characterId.delete(characterId);
   ctx.db.settleLog.characterId.delete(characterId);
   ctx.db.discovery.characterId.delete(characterId);
   ctx.db.lootFilter.characterId.delete(characterId);

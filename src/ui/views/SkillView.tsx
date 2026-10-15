@@ -1,8 +1,8 @@
 // One gathering skill's page (life-skills.md): its level and tool, what it can gather, and its log.
 // Gathering takes the place of fighting: one activity at a time.
 
-import { memo, useRef, useState } from 'react';
-import { call, useTick } from '../../store';
+import { memo, useRef, useState, type ReactNode } from 'react';
+import { call, useSticky, useTick } from '../../store';
 import {
   GEM_CHANCE,
   MAX_SKILL_LEVEL,
@@ -12,10 +12,8 @@ import {
   gatherBlocker,
   gatherCharacterXpPerAction,
   gatherXpPerAction,
-  levelSpeedBonus,
-  skillXpToNext,
-  tierRequirement,
   toolSpeedBonus,
+  skillXpToNext,
   type GatheringSkillDef,
 } from '../../../spacetimedb/src/data/skills';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
@@ -32,9 +30,9 @@ import { MilestonesCard } from './MilestonesCard';
 
 const TIERS = [...new Set(ZONES.map(z => z.tier))].sort((a, b) => a - b);
 
-/** Actions, skill XP and character XP per hour gathering `tier` at `level` with a tool of `toolTier`. */
-function rates(level: number, tier: number, toolTier: number) {
-  const perHour = 3600e6 / Number(gatherActionMicros(level, tier, toolTier));
+/** Actions, skill XP and character XP per hour gathering `tier` with a tool of `toolTier`. */
+function rates(tier: number, toolTier: number) {
+  const perHour = 3600e6 / Number(gatherActionMicros(toolTier));
   return { actions: perHour, xp: perHour * gatherXpPerAction(tier), charXp: perHour * gatherCharacterXpPerAction(tier) };
 }
 
@@ -65,7 +63,7 @@ export function ActionBar({ start, step }: { start: bigint; step: bigint }) {
   });
   const animated = step >= MIN_ANIMATED_STEP;
   return (
-    <div className="bar action-bar">
+    <div className="bar progress-bar">
       <div
         className={animated ? 'action-fill' : 'action-fill full'}
         style={animated ? { animationDuration: `${Number(step) / 1e6}s`, animationDelay: `-${delay}s` } : undefined}
@@ -96,11 +94,11 @@ function GatheringCard({ s }: { s: Snapshot }) {
   const g = live.gathering;
   if (!g) return null;
   const at = live.skills.get(g.skill.id)!;
-  const r = rates(at.level, g.tier, g.toolTier);
+  const r = rates(g.tier, g.toolTier);
   const material = materialOf(g.tier, g.skill.makes);
   const gem = g.skill.id === SkillId.Mining ? materialOf(g.tier, 'Gem') : undefined;
   const toNext = at.level >= MAX_SKILL_LEVEL ? 'Max level' : `~${duration(BigInt(Math.ceil((Number(skillXpToNext(at.level) - at.xp) / r.xp) * 3600e6)))}`;
-  const step = gatherActionMicros(at.level, g.tier, g.toolTier);
+  const step = gatherActionMicros(g.toolTier);
   const target = s.row.targetEnemyId !== 0;
   return (
     <div className="card">
@@ -138,13 +136,38 @@ export function activityText(s: Snapshot): string {
   return s.target ? `Fighting ${s.target.enemy.name}` : 'Idle';
 }
 
-/** What the character does instead, when it isn't working this skill: `verb` here stops it. */
-export function ElsewhereCard({ s, verb = 'Gathering' }: { s: Snapshot; verb?: string }) {
+/** A skill page's top card: the level and a full-width XP bar, then the skill's perks (`children`). */
+export function SkillLevelCard({ level, xp, children }: { level: number; xp: bigint; children?: ReactNode }) {
+  const need = skillXpToNext(level);
+  const maxed = level >= MAX_SKILL_LEVEL;
+  const pct = maxed ? 100 : Number((xp * 1000n) / need) / 10;
   return (
-    <div className="card">
-      <p>Now: <strong>{activityText(s)}</strong></p>
-      {(s.skilling || s.target) && <p className="muted">{verb} here stops it.</p>}
+    <div className="card skill-level">
+      <div className="skill-level-head">
+        <h2>Level {level}</h2>
+        <span className="muted">{maxed ? 'Max level' : `${xp.toLocaleString()} / ${need.toLocaleString()} XP · ${fmtBig(need - xp)} to level ${level + 1}`}</span>
+      </div>
+      <div className="bar skill-level-bar"><div className="skill-fill" style={{ width: `${pct}%` }} /></div>
+      {children}
     </div>
+  );
+}
+
+/** A skill's actions, one per tab (the choice is kept per `id`). */
+export function SkillTabs({ id, tabs }: { id: string; tabs: { key: string; label: string; body: ReactNode }[] }) {
+  const [key, setKey] = useSticky(`skillTab:${id}`, tabs[0].key);
+  const active = tabs.find(t => t.key === key) ?? tabs[0];
+  return (
+    <>
+      <div className="skill-tabs" role="tablist">
+        {tabs.map(t => (
+          <button key={t.key} role="tab" aria-selected={t === active} className={`skill-tab${t === active ? ' active' : ''}`} onClick={() => setKey(t.key)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {active.body}
+    </>
   );
 }
 
@@ -152,10 +175,10 @@ function TierRow({ s, skill, tier }: { s: Snapshot; skill: GatheringSkillDef; ti
   const { level } = s.skills.get(skill.id)!;
   const toolTier = s.tools.get(skill.id) ?? 1;
   const zoneOpen = ZONES.some(z => z.tier === tier && zoneUnlocked(s, z));
-  const blocker = gatherBlocker({ level, tier, toolTier, zoneOpen, tool: skill.tool });
+  const blocker = gatherBlocker({ level, tier, zoneOpen });
   const active = s.gathering?.skill.id === skill.id && s.gathering.tier === tier;
   const material = materialOf(tier, skill.makes);
-  const r = rates(level, tier, toolTier);
+  const r = rates(tier, toolTier);
   return (
     <li className={`foe${active ? ' active' : ''}`}>
       <div className="foe-row">
@@ -184,27 +207,23 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
   const toolTier = s.tools.get(skill.id) ?? 1;
   const double = doubleYieldChance(at.level);
   const here = s.gathering?.skill.id === skill.id;
-  // Speed at the tier being gathered, or the highest the skill level allows.
-  const tier = here ? s.gathering!.tier : Math.max(...TIERS.filter(t => at.level >= tierRequirement(t)));
   const logs = s.logs.filter(l => l.skillId === skill.id && !l.offline).slice(0, 10);
   return (
     <>
       <a className="btn back-link" href="#skills"><Icon name="back" />All skills</a>
       <ViewHeader title={skill.name} icon={skill.icon} />
-      <div className="card">
-        <CardHead title={`Level ${at.level}`}><span className="muted">{skill.tool} T{toolTier}</span></CardHead>
-        <SkillBar {...at} />
-        <div className="stat-row"><span>Speed at T{tier}</span><strong>+{Math.round((levelSpeedBonus(at.level, tier) + toolSpeedBonus(toolTier, tier)) * 100)}%</strong></div>
+      <SkillLevelCard {...at}>
+        <div className="stat-row"><span>{skill.tool}</span><strong>T{toolTier} · +{Math.round(toolSpeedBonus(toolTier) * 100)}% speed</strong></div>
         <div className="stat-row"><span>Double yield</span><strong>{double > 0 ? `${Math.round(double * 100)}%` : 'From level 50'}</strong></div>
-      </div>
-      {here ? <GatheringCard s={s} /> : <ElsewhereCard s={s} />}
+      </SkillLevelCard>
+      <MilestonesCard skill={skill} level={at.level} />
+      {here && <GatheringCard s={s} />}
       <div className="card">
-        <CardHead title="Gather"><span className="muted">Each tier needs its skill level, its zone and a tool of its tier</span></CardHead>
+        <CardHead title="Gather"><span className="muted">Each tier needs its skill level and its zone</span></CardHead>
         <ul className="foes">
           {TIERS.map(t => <TierRow key={t} s={s} skill={skill} tier={t} />)}
         </ul>
       </div>
-      <MilestonesCard skill={skill} level={at.level} />
       {logs.length > 0 && (
         <div className="card">
           <CardHead title="Log" />

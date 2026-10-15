@@ -6,6 +6,7 @@ import { EFFECTS_BY_ID, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/leg
 import { MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
+import { TEMPER_STEP, tempered } from '../../spacetimedb/src/combat';
 import { fmt } from './format';
 import { Icon } from './Icon';
 import { ItemIcon } from './itemArt';
@@ -13,8 +14,9 @@ import { ItemIcon } from './itemArt';
 export const rarityCls = (tag: string) => tag.toLowerCase();
 /** A rarity's name in the game: an Anomaly is never named. */
 export const rarityLabel = (tag: string) => (tag === 'Anomaly' ? '???' : tag);
-export const itemName = (it: { baseId: number; tier: number; uniqueId?: number }) =>
-  (it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier);
+/** "+3 Iron Longsword": the temper level, then the unique's or the base's name. */
+export const itemName = (it: { baseId: number; tier: number; uniqueId?: number; temper?: number }) =>
+  (it.temper ? `+${it.temper} ` : '') + ((it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier));
 
 /** Bag glyph for an item: weapon/off-hand family, armor slot, or ring/amulet. */
 export const materialName = (id: number) => MATERIALS_BY_ID.get(id)?.name ?? `Material ${id}`;
@@ -56,7 +58,9 @@ function weaponLines(it: Item, w: NonNullable<Item['weapon']>): string[] {
 export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /** Extra line under the header, e.g. "In Farm". */ note?: string }) {
   const r = rarityCls(it.rarity.tag);
   const leg = it.legendary && EFFECTS_BY_ID.get(it.legendary.effect);
-  const implicits = [...(it.weapon ? weaponLines(it, it.weapon) : []), ...it.implicits.map(i => statText(i.stat, i.value))];
+  // Tempering raises the base part: the weapon's damage and heal, and the implicits.
+  const t = tempered(it);
+  const implicits = [...(t.weapon ? weaponLines(t, t.weapon) : []), ...t.implicits.map(i => statText(i.stat, i.value))];
   return (
     <div className={`item-card r-${r}${compact ? ' compact' : ''}`}>
       <div className="item-head">
@@ -77,7 +81,12 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
           <span className="muted">{note}</span>
         </div>
       )}
-      <div className="item-implicits">
+      {it.temper > 0 && (
+        <div className="item-sub">
+          <span className="c-temper">Tempered +{it.temper}: base stats +{Math.round(it.temper * TEMPER_STEP * 100)}%</span>
+        </div>
+      )}
+      <div className={`item-implicits${it.temper > 0 ? ' tempered' : ''}`}>
         {implicits.map((t, i) => (
           <span key={i}>{t}</span>
         ))}

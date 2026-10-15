@@ -2,16 +2,27 @@
 // recipe, action by action (a few per hour), until its count, the inputs or the bag run
 // out. Pure: the client projects with it too.
 
-import { MAX_SKILL_LEVEL, doubleYieldChance, productionActionMicros, productionXpPerAction, tierRequirement } from './data/skills';
-import type { MaterialCost, Recipe } from './data/recipes';
+import {
+  MAX_SKILL_LEVEL,
+  doubleYieldChance,
+  productionActionMicros,
+  productionBlocker,
+  productionXpPerAction,
+  temperCap,
+  temperRequirement,
+  tierRequirement,
+} from './data/skills';
+import { MAX_TEMPER, SCRAP_ORDER, SCRAP_YIELD, temperCost, type MaterialCost, type Recipe, type ScrapRarity } from './data/recipes';
 import { addSkillXp, type SkillProgress } from './gather';
-import { makeItem, passesFilter, seededRng, type LootFilter, type NewItem, type RarityName, type Rng } from './loot';
+import { makeItem, passesFilter, rarityRank, seededRng, type LootFilter, type NewItem, type RarityName, type Rng } from './loot';
 
 export interface Queue {
   /** Actions still queued. */
   countLeft: number;
   /** Material ID → count held. */
   have: (materialId: number) => number;
+  /** Scrap held of a scrap recipe's material, by rarity. */
+  scrap?: Partial<Record<ScrapRarity, number>>;
   /** Free bag slots, for recipes that make items. */
   bagFree: number;
   /** Whether the item an action makes is kept (the forge keep rule); salvaged ones take no bag slot. Default: all kept. */
@@ -24,6 +35,10 @@ export interface Produced extends SkillProgress {
   countLeft: number;
   /** Inputs used up (an action that keeps its inputs uses none). */
   used: MaterialCost[];
+  /** Scrap used up, by rarity. */
+  scrapUsed: { rarity: ScrapRarity; count: number }[];
+  /** Materials a smelting recipe made (its output material). */
+  yielded: number;
   /** Each action's end and the skill level it was made at, to seed and roll what it made; `kept` by the forge keep rule. */
   made: { at: bigint; level: number; kept: boolean }[];
   /** When the queue ran out (count, inputs or bag); undefined while it still runs. */
@@ -48,6 +63,10 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
   const perAction = productionXpPerAction(r.tier, r.seconds);
   const stock = new Map(r.inputs.map(i => [i.materialId, q.have(i.materialId)]));
   const used = new Map(r.inputs.map(i => [i.materialId, 0]));
+  const out = r.output;
+  const scrap = { ...q.scrap };
+  const scrapUsed = new Map<ScrapRarity, number>();
+  let yielded = 0;
   const made: Produced['made'] = [];
   let { level, xp } = p;
   let xpGained = 0n;
@@ -56,21 +75,34 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
   let t = start;
   let endedAt: bigint | undefined;
   for (;;) {
-    if (countLeft <= 0 || bagFree <= 0 || r.inputs.some(i => stock.get(i.materialId)! < i.count)) {
+    // Scrap smelts highest rarity first.
+    const rarity = out.kind === 'scrap' ? SCRAP_ORDER.find(x => (scrap[x] ?? 0) > 0) : undefined;
+    if (
+      countLeft <= 0 ||
+      bagFree <= 0 ||
+      r.inputs.some(i => stock.get(i.materialId)! < i.count) ||
+      (out.kind === 'scrap' && !rarity)
+    ) {
       endedAt = t;
       break;
     }
-    const step = productionActionMicros(level, r.tier, r.seconds);
+    const step = productionActionMicros(r.seconds);
     if (t + step > end) break;
     t += step;
     const kept = r.output.kind !== 'item' || (q.keeps?.({ at: t, level }) ?? true);
     made.push({ at: t, level, kept });
     countLeft--;
     if (kept) bagFree--;
+    if (out.kind === 'material') yielded += out.count;
+    if (rarity) yielded += SCRAP_YIELD[rarity];
     if (seededRng(characterId, t, KEEP_SALT)() >= doubleYieldChance(level)) {
       for (const i of r.inputs) {
         stock.set(i.materialId, stock.get(i.materialId)! - i.count);
         used.set(i.materialId, used.get(i.materialId)! + i.count);
+      }
+      if (rarity) {
+        scrap[rarity]!--;
+        scrapUsed.set(rarity, (scrapUsed.get(rarity) ?? 0) + 1);
       }
     }
     if (level < MAX_SKILL_LEVEL) {
@@ -86,6 +118,8 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
     xpGained,
     countLeft,
     used: [...used].filter(([, n]) => n > 0).map(([materialId, count]) => ({ materialId, count })),
+    scrapUsed: [...scrapUsed].map(([rarity, count]) => ({ rarity, count })),
+    yielded,
     made,
     endedAt,
   };
@@ -115,7 +149,10 @@ export function forgeItem(rng: Rng, baseId: number, tier: number, level: number)
  * without an affix of `minAffixTier` are salvaged (like the loot filter, without types:
  * the base is chosen). No rule keeps everything.
  */
-export type ForgeFilter = Omit<LootFilter, 'keepTypes'>;
+export type ForgeFilter = Omit<LootFilter, 'keepTypes'> & {
+  /** Rejected bases are scrapped instead of salvaged (they take no bag slot either way). */
+  scrap?: boolean;
+};
 
 const FORGE_SALT = 0x666f726765n; // "forge"
 
@@ -124,4 +161,18 @@ export function forged(characterId: bigint, r: Recipe, made: { at: bigint; level
   if (r.output.kind !== 'item') throw new Error('Not a forge recipe');
   const item = forgeItem(seededRng(characterId, made.at, FORGE_SALT), r.output.baseId, r.tier, made.level);
   return { item, kept: !f || passesFilter(item, { ...f, keepTypes: [] }) };
+}
+
+/**
+ * Why `it` can't be tempered one more level (life-skills.md, "Smithing: temper an item") at
+ * Smithing `level`, or undefined. `zoneOpen`: a zone of the item's tier is unlocked.
+ */
+export function temperBlocker(it: { baseId: number; rarity: { tag: RarityName }; tier: number; temper: number }, level: number, zoneOpen: boolean): string | undefined {
+  if (rarityRank(it.rarity.tag) >= rarityRank('Unique')) return it.rarity.tag === 'Unique' ? "Uniques can't be tempered" : "This item can't be tempered";
+  if (it.temper >= MAX_TEMPER) return 'Fully tempered';
+  const blocker = productionBlocker({ level, tier: it.tier, zoneOpen });
+  if (blocker) return blocker;
+  if (it.temper + 1 > temperCap(level)) return `+${it.temper + 1} needs level ${temperRequirement(it.temper + 1)}`;
+  if (!temperCost(it)) return `No tier ${it.tier} materials yet`;
+  return undefined;
 }

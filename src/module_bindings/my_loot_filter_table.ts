@@ -23,4 +23,5 @@ export default __t.row({
   keepBases: __t.array(__t.u16()).name("keep_bases"),
   minAffixTier: __t.u8().name("min_affix_tier"),
   keepTypes: __t.array(__t.u16()).name("keep_types"),
+  scrap: __t.bool(),
 });

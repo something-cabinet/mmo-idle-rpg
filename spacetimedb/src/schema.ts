@@ -75,6 +75,8 @@ export const character = table(
     elixirKillsLeft: t.u32().default(0),
     /** When the elixir runs out, take another of the same from stock. */
     elixirAutoRenew: t.bool().default(true),
+    /** Unused: the item of a queued temper, before tempering became instant. Drop on the next wipe. */
+    activityItemId: t.u64().default(0n),
   }
 );
 
@@ -155,6 +157,8 @@ export const item = table(
     createdAt: t.timestamp(),
     /** A unique's effect IDs (data/legendary.ts); empty on other items. */
     effects: t.array(t.u16()).default([]),
+    /** Temper level 0–10 (life-skills.md, "Smithing: temper an item"): +2% base stats each, applied when stats are computed. */
+    temper: t.u8().default(0),
   }
 );
 
@@ -245,6 +249,8 @@ export const lootFilter = table(
     minAffixTier: t.u8().default(1),
     /** Type IDs: drops are kept only of these types (empty = any; a full list is stored as empty). */
     keepTypes: t.array(t.u16()).default([]),
+    /** Rejected drops go to the `scrap` counters (no Dust or gold) instead of being salvaged. */
+    scrap: t.bool().default(false),
   }
 );
 
@@ -262,6 +268,24 @@ export const forgeFilter = table(
     keepAffixes: t.array(t.u16()),
     /** Kept only with an affix of at least this tier (1 = any). */
     minAffixTier: t.u8(),
+    /** Rejected bases go to the `scrap` counters instead of being salvaged. */
+    scrap: t.bool().default(false),
+  }
+);
+
+/**
+ * Scrapped items (life-skills.md, "Scrap into materials"), counted by the material they
+ * smelt into and their rarity: they take no bag slot. Private; owners read theirs via `my_scrap`.
+ */
+export const scrap = table(
+  { name: 'scrap' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    /** The material it smelts into (data/recipes.ts `scrapMaterialId`). */
+    materialId: t.u16(),
+    rarity: Rarity,
+    count: t.u64(),
   }
 );
 
@@ -367,6 +391,8 @@ export const settleLog = table(
     elixirsUsed: t.u32().default(0),
     /** The elixir ran out with no stock left: the slot is empty now. */
     elixirEmpty: t.bool().default(false),
+    /** Drops (or forged bases) scrapped instead of salvaged, per rarity in loot.ts RARITIES order. */
+    scrapped: t.array(t.u32()).default([]),
   }
 );
 
@@ -604,6 +630,7 @@ export const spacetimedb = schema({
   tool,
   supply,
   forgeFilter,
+  scrap,
   migration,
 }, {
   // Set only when publishing locally (package.json `spacetime:publish:local`); never on

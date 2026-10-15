@@ -7,7 +7,7 @@
 
 import { SLOTS } from './data/bases';
 import { Effect, effectAmount, type EffectCounts } from './data/legendary';
-import { CAPS, Stat, fromStored } from './data/stats';
+import { CAPS, Stat, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType } from './data/bases';
 import type { Buffs } from './data/supplies';
@@ -37,11 +37,33 @@ export interface GearItem {
   /** A unique's effects. */
   effects?: readonly number[];
   weapon?: GearWeapon;
+  /** Temper level (0–10): +2% base stats each (`tempered`). */
+  temper?: number;
 }
 /** Equipped items in SLOTS order (a loadout's slots resolved to rows). */
 export type Gear = readonly (GearItem | undefined)[];
 
 const MAIN_HAND = SLOTS.indexOf('MainHand');
+
+/** Base stats and implicits gained per temper level (life-skills.md, "Smithing: temper an item"). */
+export const TEMPER_STEP = 0.02;
+
+/**
+ * `it` with its base part (implicits, weapon hit and heal) × (1 + 0.02 × temper), rounded
+ * once like a fresh roll. Affixes, legendary affixes and effects don't change. The item
+ * stores only its temper, so the original values stay intact.
+ */
+export function tempered<T extends GearItem>(it: T): T {
+  const k = it.temper ?? 0;
+  if (!k) return it;
+  const m = 1 + TEMPER_STEP * k;
+  const w = it.weapon;
+  return {
+    ...it,
+    implicits: it.implicits.map(i => ({ ...i, value: toStored(roundStat(i.stat as StatId, fromStored(i.value) * m)) })),
+    weapon: w && { ...w, hit: toStored(wholeValue(fromStored(w.hit) * m)), heal: toStored(wholeValue(fromStored(w.heal) * m)) },
+  };
+}
 
 /** One attacking weapon (combat.md "attack sources"). */
 export interface AttackSource {
@@ -102,6 +124,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const sum = new Map<number, number>();
   const effects = new Map<number, number>();
   const add = (s: GearStat) => sum.set(s.stat, (sum.get(s.stat) ?? 0) + fromStored(s.value));
+  gear = gear.map(it => it && tempered(it));
   for (const item of gear) {
     if (!item) continue;
     item.implicits.forEach(add);

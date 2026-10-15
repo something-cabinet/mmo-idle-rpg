@@ -7,6 +7,7 @@ import { LEGENDARIES } from './data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
 import { UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniquePool, type UniqueDef } from './data/uniques';
 import { MATERIAL_CHANCE, materialOf } from './data/materials';
+import { isScrapRarity, scrapMaterialId, type ScrapRarity } from './data/recipes';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
 /** The rarities the game names: drop tables, filters, the loot filter, logs. */
@@ -104,6 +105,8 @@ export interface NewItem {
   uniqueId: number | undefined;
   /** A unique's effect IDs; empty otherwise. */
   effects: number[];
+  /** Temper level (life-skills.md): 0 on new items. */
+  temper: number;
   weapon:
     | {
         damageType: { tag: DamageType };
@@ -163,6 +166,7 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
     legendary: rarity === 'Legendary' ? rollLegendary(rng, baseId, tier) : undefined,
     uniqueId: undefined,
     effects: [],
+    temper: 0,
     weapon: w && {
       damageType: { tag: w.damageType },
       hit: toStored(w.hit),
@@ -281,11 +285,27 @@ export function firstKillReward(rng: Rng, zone: ZoneDef, boss: EnemyDef): { gold
   };
 }
 
+/** Scrapped items of one rarity that smelt into one material (data/recipes.ts `scrapMaterialId`). */
+export interface ScrapDrop {
+  materialId: number;
+  rarity: ScrapRarity;
+  count: number;
+}
+
+/** Adds one scrapped item to `list`. */
+export function addScrap(list: ScrapDrop[], materialId: number, rarity: ScrapRarity, count = 1) {
+  const row = list.find(x => x.materialId === materialId && x.rarity === rarity);
+  if (row) row.count += count;
+  else list.push({ materialId, rarity, count });
+}
+
 export interface DropResult {
   /** Items to add to the bag, highest rarity first. */
   kept: NewItem[];
   /** Salvaged drops per rarity (filter and full bag). */
   salvaged: Record<RarityName, number>;
+  /** Drops scrapped instead of salvaged (`DropInput.scrap`). */
+  scrapped: ScrapDrop[];
   dust: bigint;
   /** Gold from salvage. */
   gold: bigint;
@@ -315,6 +335,11 @@ export interface DropInput {
   /** Fortune's Favor: chance per kept drop to be raised one rarity (max Legendary). */
   fortune?: number;
   /**
+   * Scrap rejected drops instead of salvaging them (life-skills.md, "Scrap into materials"):
+   * no Dust or gold. Needs `discoverRng` for the bases of drops salvaged unrolled.
+   */
+  scrap?: boolean;
+  /**
    * Picks the bases of drops salvaged without rolling them, for `seen`. Its own
    * generator, so discovery doesn't change the item rolls.
    */
@@ -324,13 +349,20 @@ export interface DropInput {
 /**
  * Samples a drop count per rarity (one draw per rarity, not per kill), rolls the
  * items, applies the loot filter, fills the free bag slots (highest
- * rarity first), and salvages the rest into Dust and gold.
+ * rarity first), and salvages (or scraps) the rest.
  */
 export function rollDrops(rng: Rng, d: DropInput): DropResult {
   const salvaged = Object.fromEntries(RARITIES.map(r => [r, 0])) as Record<RarityName, number>;
+  const scrapped: ScrapDrop[] = [];
   let dust = 0n;
   let gold = 0n;
-  const salvage = (r: RarityName, tier = d.tier) => {
+  /** Gets rid of a drop of `baseId` (unknown for drops salvaged unrolled without `discoverRng`). */
+  const salvage = (r: RarityName, baseId: number | undefined, tier = d.tier) => {
+    const materialId = d.scrap && baseId !== undefined && isScrapRarity(r) ? scrapMaterialId(baseId, tier) : undefined;
+    if (materialId !== undefined && isScrapRarity(r)) {
+      addScrap(scrapped, materialId, r);
+      return;
+    }
     salvaged[r]++;
     const v = salvageValue(r, tier);
     dust += v.dust;
@@ -360,14 +392,15 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
     const skip = rarityRank(rarity) < rarityRank(d.filter.minRarity);
     for (let i = 0; i < count; i++) {
       if (skip) {
-        salvage(rarity);
-        if (d.discoverRng) seen.push({ baseId: pick(d.discoverRng, d.enemy.drops) });
+        const baseId = d.discoverRng && pick(d.discoverRng, d.enemy.drops);
+        if (baseId !== undefined) seen.push({ baseId });
+        salvage(rarity, baseId);
         continue;
       }
       const item = makeItem(rng, pick(rng, d.enemy.drops), d.tier, rarity);
       seen.push({ baseId: item.baseId });
       if (passesFilter(item, d.filter)) kept.push(item);
-      else salvage(rarity);
+      else salvage(rarity, item.baseId);
     }
   }
 
@@ -392,9 +425,9 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   kept.sort((a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag));
   const room = Math.max(0, d.bagFree);
   const over = kept.splice(room);
-  over.forEach(item => salvage(item.rarity.tag, item.tier));
+  over.forEach(item => salvage(item.rarity.tag, item.baseId, item.tier));
   kept.unshift(...anomalies);
-  return { kept, salvaged, dust, gold, overflow: over.length, seen };
+  return { kept, salvaged, scrapped, dust, gold, overflow: over.length, seen };
 }
 
 // ---------------------------------------------------------------- materials

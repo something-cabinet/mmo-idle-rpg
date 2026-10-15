@@ -529,7 +529,7 @@ select:focus,
   background: var(--material);
   transition: width 0.3s;
 }
-.action-bar {
+.progress-bar {
   flex: 1;
   width: auto;
   min-width: 60px;
@@ -1963,7 +1963,7 @@ select:focus,
   height: 58%;
   stroke-width: 1.6;
 }
-/* Item art (itemArt.tsx): a rim in the rarity color around the painted shape. The
+/* Item art (itemArt.tsx): a rim in the rarity color around the item's shape. The
    anomaly animation keeps it through --rim. */
 .item-art {
   --rim: drop-shadow(0 0 1px var(--rc, transparent));
@@ -3437,4 +3437,51 @@ fieldset.affix-pick legend {
 .weight-stats > summary {
   cursor: pointer;
   font-weight: 600;
+}
+
+/* Tempered items (life-skills.md, "Smithing: temper an item"): the raised base stats. */
+.c-temper { color: var(--accent); }
+.item-implicits.tempered span { color: var(--accent); }
+
+/* A skill page's top card: the level and a full-width XP bar. */
+.skill-level-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+.skill-level-head h2 {
+  margin: 0;
+}
+.skill-level-head .muted {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.bar.skill-level-bar {
+  width: 100%;
+  height: 14px;
+  margin-bottom: 10px;
+}
+/* A skill's actions, one per tab. Scrolls sideways on narrow screens rather than wrapping. */
+.skill-tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border);
+}
+.skill-tab {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.skill-tab.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
 }

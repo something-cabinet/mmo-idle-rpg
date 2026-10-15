@@ -15,7 +15,6 @@ import { foundName } from './discovery';
 import { encounterText } from './encounters';
 import { CardHead, Modal } from './shared';
 import type { Snapshot } from './snapshot';
-import { recipeLabel } from './lifeSkills';
 
 /** Shorter absences (a reload) don't get a report. */
 const MIN_AWAY_MICROS = 60_000_000n;
@@ -24,17 +23,19 @@ let shownFor: bigint | undefined;
 /** A life skill's line: gathering actions, or what a production queue made, and the inputs it used. */
 function SkillLine({ l, salvage }: { l: SettleLog; /** Show what the keep rule salvaged (the report's own lines cover the last settle). */ salvage?: boolean }) {
   const skill = SKILLS_BY_ID.get(l.skillId);
-  const r = recipeOf(l.skillId, l.recipe);
+  const name = recipeOf(l.skillId, l.recipe)?.name;
   return (
     <>
       <p>
-        <strong>{skill?.name}</strong> × {l.actions.toLocaleString()} {r ? recipeLabel(r) : 'actions'} · +{fmtBig(l.skillXp)} XP
+        <strong>{skill?.name}</strong> × {l.actions.toLocaleString()} {name ?? 'actions'} · +{fmtBig(l.skillXp)} XP
         {l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelFrom} → ${l.skillLevelTo}` : ''}
       </p>
       {l.used.length > 0 && <p className="muted">Used: {materialsText(l.used)}</p>}
+      {l.recipe !== 0 && l.materials.length > 0 && <p className="muted">Made: {materialsText(l.materials)}</p>}
       {salvage && l.salvaged.some(n => n > 0) && (
         <p className="muted">Salvaged by the keep rule: {l.salvaged.reduce((a, b) => a + b, 0)} (+{fmtBig(l.dust)} Dust, +{fmtBig(l.gold)} gold)</p>
       )}
+      {salvage && (l.scrapped ?? []).some(n => n > 0) && <p className="muted">Scrapped by the keep rule: {l.scrapped.reduce((a, b) => a + b, 0)}</p>}
     </>
   );
 }
@@ -74,6 +75,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
     encounterCounts.set(text, (encounterCounts.get(text) ?? 0) + 1);
   }
   const salvaged = RARITIES.map((r, i) => [r, log.salvaged[i] ?? 0] as const).filter(([, n]) => n > 0);
+  const scrapped = RARITIES.map((r, i) => [r, log.scrapped[i] ?? 0] as const).filter(([, n]) => n > 0);
   return (
     <Modal onClose={close}>
       <CardHead title={`While you were away (${duration(elapsed)})`} />
@@ -136,6 +138,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
         </p>
       )}
       {salvaged.length > 0 && <p className="muted">Salvaged: {salvaged.map(([r, n]) => `${n} ${r}`).join(', ')}</p>}
+      {scrapped.length > 0 && <p className="muted">Scrapped: {scrapped.map(([r, n]) => `${n} ${r}`).join(', ')}</p>}
       {log.overflow > 0 && <p className="c-bad">⚠ Bag full: {log.overflow} kept items were salvaged.</p>}
       <div className="row">
         {kept.length ? <a className="btn small ghost" href="#bag" onClick={close}>View in bag</a> : <span />}

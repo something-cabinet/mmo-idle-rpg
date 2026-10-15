@@ -4,7 +4,7 @@
 // auto-equip's reference enemy of the character's level (equip.ts `referenceDummy`).
 
 import type { Item } from '../module_bindings/types';
-import { defenseAgainst, type CombatStats } from '../../spacetimedb/src/combat';
+import { defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
 import { Effect, LEGENDARIES_BY_ID, effectAmount } from '../../spacetimedb/src/data/legendary';
 import { CAPS, Stat, fromStored } from '../../spacetimedb/src/data/stats';
 import { scoreGear } from '../../spacetimedb/src/equip';
@@ -47,7 +47,7 @@ const n1 = (x: number) => String(Number(x.toFixed(2)));
 
 /** Every stat line on `gear`. */
 const gearStats = (gear: readonly (Item | undefined)[]) =>
-  gear.flatMap(it => (it ? [...it.implicits, ...it.affixes, ...(it.legendary ? [it.legendary] : [])].map(st => ({ it, st })) : []));
+  gear.flatMap(it => (it ? [...tempered(it).implicits, ...it.affixes, ...(it.legendary ? [it.legendary] : [])].map(st => ({ it, st })) : []));
 
 export interface Sheet {
   primaries: StatRow[];

@@ -8,7 +8,7 @@ import { simulate, type Simulated } from '../../spacetimedb/src/sim';
 import { SKILLS, SKILLS_BY_ID, type GatheringSkillDef, type ProductionSkillDef, type SkillDef } from '../../spacetimedb/src/data/skills';
 import { recipeOf, type Recipe } from '../../spacetimedb/src/data/recipes';
 import { SUPPLIES_BY_ID, elixirBuffs, type Buffs, type SupplyDef } from '../../spacetimedb/src/data/supplies';
-import { gatherCharacterXp, projectGathering, type Gathered } from '../../spacetimedb/src/gather';
+import { gatherCharacterXp, projectGathering, rollGatheringActions, type Gathered } from '../../spacetimedb/src/gather';
 import { forged, productionCharacterXp, projectProduction, type ForgeFilter, type Produced } from '../../spacetimedb/src/produce';
 import { addXp } from '../../spacetimedb/src/game';
 import { foundKey } from './discovery';
@@ -24,7 +24,7 @@ export interface Snapshot {
   /** Gains since the last settle (not yet in `row` or a settle log). */
   pending: { kills: number; xp: bigint; gold: bigint };
   items: Map<bigint, Item>;
-  /** Material ID → count held. */
+  /** Material ID → count held, with what gathering made since the last settle. */
   materials: Map<number, bigint>;
   /** By index. */
   loadouts: Loadout[];
@@ -138,6 +138,8 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     const projected = projectGathering({ ...at, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { tier, toolTier }, nowMicros);
     skills.set(skilling.id, { level: projected.level, xp: projected.xp });
     gathering = { skill: skilling, tier, toolTier, projected };
+    // What each action made, rolled as the server's next settle will.
+    for (const d of rollGatheringActions(row.id, skilling, tier, projected)) materials.set(d.materialId, (materials.get(d.materialId) ?? 0n) + BigInt(d.count));
     // Skilling's character XP (sim.ts saw no target, so `p` holds the settled values).
     const gained = gatherCharacterXp(projected.actions, tier);
     p = { ...p, ...addXp(p.level, p.xp, gained), xpGained: p.level >= MAX_LEVEL ? 0n : gained };

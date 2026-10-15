@@ -1,7 +1,7 @@
 // One gathering skill's page (life-skills.md): its level and tool, what it can gather, and its log.
 // Gathering takes the place of fighting: one activity at a time.
 
-import { memo } from 'react';
+import { memo, useRef, useState } from 'react';
 import { call, useTick } from '../../store';
 import {
   GEM_CHANCE,
@@ -49,16 +49,58 @@ export function SkillBar({ level, xp }: { level: number; xp: bigint }) {
   );
 }
 
+/** Below this an action bar would only flicker: it shows full instead. */
+const MIN_ANIMATED_STEP = 400_000n;
+
+/**
+ * Progress of actions of `step` micros, the first started at `start`. A looping CSS
+ * animation, so it keeps time between redraws however short the actions are. The offset
+ * is read once (updating it would push the running animation ahead): key it by what
+ * realigns it, like a new `start` or `step`.
+ */
+export function ActionBar({ start, step }: { start: bigint; step: bigint }) {
+  const [delay] = useState(() => {
+    const into = nowMicros() - start;
+    return Number(into > 0n ? into % step : 0n) / 1e6;
+  });
+  const animated = step >= MIN_ANIMATED_STEP;
+  return (
+    <div className="bar action-bar">
+      <div
+        className={animated ? 'action-fill' : 'action-fill full'}
+        style={animated ? { animationDuration: `${Number(step) / 1e6}s`, animationDelay: `-${delay}s` } : undefined}
+      />
+    </div>
+  );
+}
+
+/** A count with "+n" floating over it each time it grows. */
+function Held({ count, name }: { count: bigint; name: string }) {
+  const last = useRef({ count, gain: 0n, at: 0 });
+  const r = last.current;
+  if (count !== r.count) last.current = count > r.count ? { count, gain: count - r.count, at: r.at + 1 } : { ...r, count };
+  const { gain, at } = last.current;
+  return (
+    <span className="gain-anchor">
+      {fmtBig(count)} {name}
+      {gain > 0n && <span key={at} className="gain-float">+{fmtBig(gain)}</span>}
+    </span>
+  );
+}
+
 /** What this skill is gathering now. Ticks on its own: views only redraw on data changes. */
 function GatheringCard({ s }: { s: Snapshot }) {
-  useTick(1000);
+  // Often enough for actions of a second or so.
+  useTick(250);
   const live = snapshot(s.conn, s.row, nowMicros());
   const g = live.gathering;
   if (!g) return null;
   const at = live.skills.get(g.skill.id)!;
   const r = rates(at.level, g.tier, g.toolTier);
   const material = materialOf(g.tier, g.skill.makes);
+  const gem = g.skill.id === SkillId.Mining ? materialOf(g.tier, 'Gem') : undefined;
   const toNext = at.level >= MAX_SKILL_LEVEL ? 'Max level' : `~${duration(BigInt(Math.ceil((Number(skillXpToNext(at.level) - at.xp) / r.xp) * 3600e6)))}`;
+  const step = gatherActionMicros(at.level, g.tier, g.toolTier);
   const target = s.row.targetEnemyId !== 0;
   return (
     <div className="card">
@@ -67,11 +109,22 @@ function GatheringCard({ s }: { s: Snapshot }) {
           {target ? <><Icon name="swords" />Back to combat</> : 'Stop'}
         </button>
       </CardHead>
+      <div className="stat-row">
+        <span>Next {material.name}</span>
+        <ActionBar key={`${s.row.lastSettledAt.microsSinceUnixEpoch}:${step}`} start={g.projected.settledMicros} step={step} />
+        <strong>{(Number(step) / 1e6).toFixed(1)} s each</strong>
+      </div>
+      <div className="stat-row">
+        <span>Held</span>
+        <strong>
+          <Held count={live.materials.get(material.id) ?? 0n} name={material.name} />
+          {gem && <> · <Held count={live.materials.get(gem.id) ?? 0n} name={gem.name} /></>}
+        </strong>
+      </div>
       <div className="stat-row"><span>Per hour</span><strong>{fmt(r.actions)} {material.name}</strong></div>
       <div className="stat-row"><span>XP per hour</span><strong>{fmt(r.xp)} {g.skill.name} XP · {fmt(r.charXp)} Character XP</strong></div>
       <div className="stat-row"><span>Next {g.skill.name} level</span><strong>{toNext}</strong></div>
-      <div className="stat-row"><span>Since the last update</span><strong>{fmt(g.projected.actions)} actions</strong></div>
-      <p className="muted">No gold or drops while gathering. Materials arrive every minute.</p>
+      <p className="muted">No gold or drops while gathering.</p>
     </div>
   );
 }

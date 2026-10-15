@@ -15,7 +15,7 @@ import {
 } from '../spacetimedb/src/data/skills';
 import { materialOf } from '../spacetimedb/src/data/materials';
 import { seededRng } from '../spacetimedb/src/loot';
-import { addSkillXp, gatherCharacterXp, projectGathering, rollGathering } from '../spacetimedb/src/gather';
+import { addSkillXp, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from '../spacetimedb/src/gather';
 import { RECIPES, affordable, forgeRecipeOf, recipeOf, toolRecipeId } from '../spacetimedb/src/data/recipes';
 import { ELIXIR_KILLS, elixirBuffs, elixirSupplyId } from '../spacetimedb/src/data/supplies';
 import { forgeItem, forged, productionCharacterXp, projectProduction } from '../spacetimedb/src/produce';
@@ -102,6 +102,31 @@ check('allowed', gatherBlocker({ level: 11, tier: 2, toolTier: 2, zoneOpen: true
   const wood = rollGathering(seededRng(1n), SKILLS_BY_ID.get(SkillId.Woodcutting)!, 1, { actions: 1000, doubleMean: 100 });
   check('woodcutting: wood only, double yields added', wood.length === 1 && wood[0].count > 1050 && wood[0].count < 1150, `${wood[0]?.count}`);
   check('no actions, no drops', rollGathering(seededRng(1n), mining, 1, { actions: 0, doubleMean: 0 }).length === 0);
+}
+{
+  // Online, rolled action by action: settling in pieces (what the client shows between settles) gives the same.
+  const mining = SKILLS_BY_ID.get(SkillId.Mining)!;
+  const total = new Map<number, number>();
+  let p = fresh;
+  for (let t = 37_000_000n; t <= 5n * HOUR; t += 37_000_000n) {
+    const g = projectGathering(p, { tier: 1, toolTier: 1 }, t);
+    for (const d of rollGatheringActions(7n, mining, 1, g)) total.set(d.materialId, (total.get(d.materialId) ?? 0) + d.count);
+    p = g;
+  }
+  const once = projectGathering(fresh, { tier: 1, toolTier: 1 }, p.settledMicros);
+  const onceDrops = rollGatheringActions(7n, mining, 1, once);
+  const metal = materialOf(1, 'Metal').id;
+  const gem = materialOf(1, 'Gem').id;
+  const count = (id: number) => onceDrops.find(d => d.materialId === id)?.count ?? 0;
+  check('per-action rolls: in pieces match one settle', total.get(metal) === count(metal) && (total.get(gem) ?? 0) === count(gem),
+    `${total.get(metal)} vs ${count(metal)}, gems ${total.get(gem)} vs ${count(gem)}`);
+  check('per-action rolls: one metal per action plus double yields', count(metal) >= once.actions && count(metal) - once.actions < once.actions * 0.2,
+    `${count(metal)} for ${once.actions} actions, ~${once.doubleMean.toFixed(0)} doubles expected`);
+  check('per-action rolls: ~5% gems', Math.abs(count(gem) - once.actions * 0.05) < once.actions * 0.03, `${count(gem)}`);
+  check('per-action rolls: the runs cover every action', once.runs.reduce((n, r) => n + r.n, 0) === once.actions);
+  const maxed = projectGathering({ level: MAX_SKILL_LEVEL, xp: 0n, settledMicros: 0n }, { tier: 1, toolTier: 1 }, 10n * HOUR);
+  const wood = rollGatheringActions(7n, SKILLS_BY_ID.get(SkillId.Woodcutting)!, 1, maxed)[0].count - maxed.actions;
+  check('per-action rolls: ~10% double yields at max level', Math.abs(wood - maxed.doubleMean) < maxed.doubleMean * 0.15, `${wood} vs ~${maxed.doubleMean}`);
 }
 
 // ---------------------------------------------------------------- recipes

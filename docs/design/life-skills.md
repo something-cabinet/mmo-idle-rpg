@@ -352,8 +352,10 @@ Construction level `10·(L−1) + 1`.
 All of this stays in closed form (README pillar 1):
 
 - **Gathering**: whole actions in the elapsed time. The speed is recomputed at each
-  skill level-up, the same way `project()` handles character level-ups. Gem rolls and
-  double yields are Poisson draws, seeded like drops.
+  skill level-up, the same way `project()` handles character level-ups. Online, each
+  action rolls its Gem and double yield, seeded by its end time, so the client shows
+  each action's exact yield as it ends and the server settles only on its minute timer.
+  The login settle (time away) draws them in one Poisson draw each.
 - **Production**: `min(time / actionTime, inputs available, count left)`. When the queue
   ends, the remaining time settles as combat against the last target.
 - **Combat with buffs**: each step of `project()` already caps kills at the next

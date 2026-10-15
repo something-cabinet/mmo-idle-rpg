@@ -10,7 +10,7 @@ import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type Zone
 import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, type ProductionSkillDef } from './data/skills';
 import { recipeOf, type MaterialCost } from './data/recipes';
 import { elixirBuffs } from './data/supplies';
-import { gatherCharacterXp, projectGathering, rollGathering } from './gather';
+import { GATHER_SALT, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from './gather';
 import { forged, productionCharacterXp, projectProduction, type ForgeFilter } from './produce';
 import { Effect, effectAmount } from './data/legendary';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
@@ -259,15 +259,15 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const row = skillRow(ctx, ch.id, def.id);
   const tier = ch.activityRecipe;
   const g = projectGathering({ ...row, settledMicros: start }, { tier, toolTier: toolTier(ctx, ch.id, def.id) }, now, capMicros);
-  // Own seed, like the combat material rolls.
-  const materials = rollGathering(seededRng(ch.id, start, GATHER_SALT), def, tier, g);
+  // Online, action by action, as the client shows them; the time away (nobody watching) in one draw.
+  const offline = capMicros !== undefined;
+  const materials = offline ? rollGathering(seededRng(ch.id, start, GATHER_SALT), def, tier, g) : rollGatheringActions(ch.id, def, tier, g);
   addMaterials(ctx, ch.id, materials);
   ctx.db.skill.id.update({ ...row, level: g.level, xp: g.xp });
   // Skilling also levels the character (no gold or drops).
   const charXp = gatherCharacterXp(g.actions, tier);
   const { level, xp } = addXp(ch.level, ch.xp, charXp);
 
-  const offline = capMicros !== undefined;
   if (g.actions > 0 || offline) {
     const elapsed = now - start;
     logSettle(ctx, ch, {
@@ -587,7 +587,6 @@ export const MAX_FRIENDS = 100;
 const MATERIAL_SALT = 0x6d6174n; // "mat"
 const DISCOVER_SALT = 0x6469736376n; // "discv"
 const ENCOUNTER_SALT = 0x656e636fn; // "enco"
-const GATHER_SALT = 0x676174686572n; // "gather"
 
 /** `a` plus `b`, one entry per material. */
 function mergeMaterials(a: readonly MaterialDrop[], b: readonly MaterialDrop[]): MaterialDrop[] {

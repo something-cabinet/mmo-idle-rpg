@@ -529,6 +529,42 @@ select:focus,
   background: var(--material);
   transition: width 0.3s;
 }
+.action-bar {
+  flex: 1;
+  width: auto;
+  min-width: 60px;
+  margin: 0 12px;
+  align-self: center;
+}
+.action-fill {
+  height: 100%;
+  width: 0;
+  background: var(--material);
+  animation: action-fill linear infinite;
+}
+.action-fill.full {
+  width: 100%;
+  animation: none;
+}
+@keyframes action-fill {
+  to { width: 100%; }
+}
+.gain-anchor {
+  position: relative;
+}
+.gain-float {
+  position: absolute;
+  right: 0;
+  top: -2px;
+  color: var(--ok);
+  font-weight: 800;
+  pointer-events: none;
+  animation: gain-up 0.9s ease-out forwards;
+}
+@keyframes gain-up {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-22px); }
+}
 #xp-bar {
   height: 100%;
   width: 0;

@@ -2,7 +2,7 @@ import { SenderError, t } from 'spacetimedb/server';
 import { account, spacetimedb } from '../schema';
 import { ADMIN_IDENTITIES, ADMIN_SUBJECTS, OIDC_CLIENT_IDS, SPACETIMEAUTH_ISSUER } from '../config';
 import { LINK_OFFER_TTL_MICROS } from '../game';
-import { deleteCharacter, enterWorld, leaveWorld, requireAccount, requireAdmin, type Account } from '../helpers';
+import { deleteCharacter, enterWorld, leaveWorld, requireAccount, requireAdmin, type Account, type Ctx } from '../helpers';
 import { runMigrations } from '../migrate';
 
 /**
@@ -17,6 +17,7 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
   let kind: Account['kind'] = { tag: 'Guest' };
   let role: Account['role'] = { tag: 'Player' };
   let email: string | undefined;
+  let emailVerified = false;
 
   if (jwt?.issuer === SPACETIMEAUTH_ISSUER) {
     if (!jwt.audience.some(aud => OIDC_CLIENT_IDS.includes(aud))) {
@@ -26,12 +27,16 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
     if (ADMIN_SUBJECTS.includes(jwt.subject)) role = { tag: 'Admin' };
     const claim = jwt.fullPayload['email'];
     if (typeof claim === 'string') email = claim;
+    emailVerified = jwt.fullPayload['email_verified'] === true;
   }
   if (ADMIN_IDENTITIES.includes(ctx.sender.toHexString())) role = { tag: 'Admin' };
 
   const existing = ctx.db.account.identity.find(ctx.sender);
+  if (existing?.banned) throw new SenderError('Account is banned');
+  if (kind.tag === 'Registered' && email && emailVerified && !ctx.db.character.owner.find(ctx.sender)) {
+    followEmail(ctx, email);
+  }
   if (existing) {
-    if (existing.banned) throw new SenderError('Account is banned');
     ctx.db.account.identity.update({
       ...existing,
       kind,
@@ -39,20 +44,48 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
       email: email ?? existing.email,
       lastLoginAt: ctx.timestamp,
     });
-    enterWorld(ctx);
-    return;
+  } else {
+    ctx.db.account.insert({
+      identity: ctx.sender,
+      kind,
+      role,
+      banned: false,
+      email,
+      createdAt: ctx.timestamp,
+      lastLoginAt: ctx.timestamp,
+    });
   }
-
-  ctx.db.account.insert({
-    identity: ctx.sender,
-    kind,
-    role,
-    banned: false,
-    email,
-    createdAt: ctx.timestamp,
-    lastLoginAt: ctx.timestamp,
-  });
+  enterWorld(ctx);
 });
+
+/**
+ * SpacetimeAuth can move a player to a new identity when they sign in with a
+ * second method on the same email. When the caller has no character, takes
+ * over the character of another registered account with that email and
+ * deletes the old account. A ban on any account with that email rejects the
+ * connection, so switching login method doesn't get around it. Players with a
+ * character on both identities still need `transferCharacter`.
+ */
+function followEmail(ctx: Ctx, email: string) {
+  const key = email.toLowerCase();
+  const others = [...ctx.db.account.iter()].filter(
+    a => a.kind.tag === 'Registered' && !a.identity.isEqual(ctx.sender) && a.email?.toLowerCase() === key
+  );
+  if (others.some(a => a.banned)) throw new SenderError('Account is banned');
+  const old = others.find(a => ctx.db.character.owner.find(a.identity));
+  if (!old) return;
+
+  leaveWorld(ctx, old.identity);
+  // Leaving settles the character, so read it after.
+  const ch = ctx.db.character.owner.find(old.identity)!;
+  ctx.db.character.id.update({ ...ch, owner: ctx.sender });
+  for (const offer of [...ctx.db.linkOffer.iter()]) {
+    if (offer.guest.isEqual(old.identity) || offer.target.isEqual(old.identity)) {
+      ctx.db.linkOffer.guest.delete(offer.guest);
+    }
+  }
+  ctx.db.account.identity.delete(old.identity);
+}
 
 export const onDisconnect = spacetimedb.clientDisconnected(ctx => {
   // Only leave the world if this connection is the one playing; another tab

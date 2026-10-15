@@ -23,17 +23,10 @@ Things to do later that are easy to forget. Build milestones live in
 
 ## Accounts
 
-- **Follow the email when SpacetimeAuth changes a player's identity.** Signing in with
-  a second method (magic link, then Google) on the same email can move the player to a
-  new `sub`, so a new identity with no character, while the old character sits on an
-  identity no login reaches. In `onConnect`: when a registered identity with no character
-  arrives and another registered account with the same email has one, move that
-  character over (as `transferCharacter` does) and delete the old account row.
-  - Only when the token's `email_verified` is `true` (check SpacetimeAuth sends it).
-  - Carry `banned` over, or switching login method gets around a ban.
-  - Doesn't cover players who already have characters on both identities: those still
-    need `transferCharacter` by hand.
-  - Alternative: allow only one login method in the SpacetimeAuth dashboard.
+- **Check SpacetimeAuth sends `email_verified: true`.** `onConnect` follows the email
+  to a player's new identity only when it does (reducers/account.ts `followEmail`); if
+  the claim is missing, the follow never happens. Players with characters on both
+  identities still need `transferCharacter` by hand.
 
 ## On the next wipe (`npm run deploy -- --delete-data`)
 

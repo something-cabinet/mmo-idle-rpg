@@ -39,10 +39,23 @@ export function setItemArt(on: boolean) {
   }
 }
 
+/** URL of an item's art, or undefined when art is off or missing. */
+export function itemArtUrl(it: ArtItem): string | undefined {
+  return itemArtOn() ? URLS.get(itemArtKey(it)) : undefined;
+}
+
 /** An item's art, or its glyph when art is off or missing. */
 export function ItemIcon({ it, className = '' }: { it: ArtItem; className?: string }) {
-  const url = itemArtOn() ? URLS.get(itemArtKey(it)) : undefined;
+  const url = itemArtUrl(it);
   const [broken, setBroken] = useState<string>();
   if (!url || url === broken) return <Icon name={itemIconName(it)} className={className} />;
   return <img className={`ico item-art ${className}`} src={url} alt="" loading="lazy" draggable={false} onError={() => setBroken(url)} />;
+}
+
+/** An item's art alone (item card): nothing when art is off or missing. */
+export function ItemArt({ it, className = '' }: { it: ArtItem; className?: string }) {
+  const url = itemArtUrl(it);
+  const [broken, setBroken] = useState<string>();
+  if (!url || url === broken) return null;
+  return <img className={`item-art ${className}`} src={url} alt="" draggable={false} onError={() => setBroken(url)} />;
 }

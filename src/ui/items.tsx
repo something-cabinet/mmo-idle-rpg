@@ -9,7 +9,7 @@ import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
 import { TEMPER_STEP, tempered } from '../../spacetimedb/src/combat';
 import { fmt } from './format';
 import { Icon } from './Icon';
-import { ItemIcon } from './itemArt';
+import { ItemArt, ItemIcon, itemArtUrl } from './itemArt';
 
 export const rarityCls = (tag: string) => tag.toLowerCase();
 /** A rarity's name in the game: an Anomaly is never named. */
@@ -61,8 +61,8 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
   // Tempering raises the base part: the weapon's damage and heal, and the implicits.
   const t = tempered(it);
   const implicits = [...(t.weapon ? weaponLines(t, t.weapon) : []), ...t.implicits.map(i => statText(i.stat, i.value))];
-  return (
-    <div className={`item-card r-${r}${compact ? ' compact' : ''}`}>
+  const top = (
+    <>
       <div className="item-head">
         <span className="item-name">{itemName(it)}</span>
         {it.locked && (
@@ -80,6 +80,18 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
         <div className="item-sub">
           <span className="muted">{note}</span>
         </div>
+      )}
+    </>
+  );
+  return (
+    <div className={`item-card r-${r}${compact ? ' compact' : ''}`}>
+      {itemArtUrl(it) ? (
+        <div className="item-top">
+          <ItemArt it={it} className="card-art" />
+          <div className="item-top-text">{top}</div>
+        </div>
+      ) : (
+        top
       )}
       {it.temper > 0 && (
         <div className="item-sub">

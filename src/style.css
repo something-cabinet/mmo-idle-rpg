@@ -1980,6 +1980,27 @@ select:focus,
   --rim: drop-shadow(0 0 1px var(--rc)) drop-shadow(0 0 6px color-mix(in srgb, var(--rc) 80%, transparent));
   filter: var(--rim);
 }
+.item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.item-top-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.item-card .card-art {
+  --rim: drop-shadow(0 0 1px var(--rc)) drop-shadow(0 0 3px color-mix(in srgb, var(--rc) 55%, transparent));
+  flex: none;
+  width: 64px;
+  height: 64px;
+}
+.item-card.compact .card-art {
+  width: 44px;
+  height: 44px;
+}
 .tile-tier {
   position: absolute;
   bottom: 3px;

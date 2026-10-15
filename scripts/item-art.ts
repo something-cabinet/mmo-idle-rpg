@@ -13,7 +13,9 @@
 //                      the new ones match their style.
 //   npm run art:cut    cuts each new raw image off its magenta background into the master
 //                      art-src/<key>.png, plus art-src/preview.html to compare them by group
-//   npm run art:build  pixelizes each master into src/assets/items/<key>.webp (48 px grid, 144 px file)
+//   npm run art:build -- [group|key ...]
+//                      pixelizes each master into src/assets/items/<key>.webp (48 px grid, 144 px file);
+//                      names (like art:gen) build only those
 // art-src/ is not in git, apart from item-art.csv.
 import { existsSync, mkdirSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { join, parse } from 'node:path';
@@ -705,11 +707,16 @@ async function pixelize(file: string): Promise<Buffer> {
   return sharp(quantized).resize(px * SCALE, px * SCALE, { kernel: 'nearest' }).webp({ lossless: true }).toBuffer();
 }
 
-async function build() {
+/** `build` with names (groups or item keys, like `gen`) only builds those. */
+async function build(names: string[]) {
   mkdirSync(OUT, { recursive: true });
   const all = arts().arts;
+  for (const name of names) {
+    if (!all.some(a => a.group === name || a.key === name)) throw new Error(`Unknown group or item key: ${name} (see ${SRC}/item-art.csv)`);
+  }
   let n = 0;
   for (const a of all) {
+    if (names.length && !names.includes(a.group) && !names.includes(a.key)) continue;
     if (!existsSync(master(a.key))) continue;
     writeFileSync(built(a.key), await pixelize(master(a.key)));
     n++;
@@ -725,7 +732,7 @@ async function build() {
 const cmd = process.argv[2];
 if (cmd === 'list') list();
 else if (cmd === 'cut') await cut();
-else if (cmd === 'build') await build();
+else if (cmd === 'build') await build(process.argv.slice(3));
 else if (cmd === 'gen') {
   try {
     process.loadEnvFile('.env');

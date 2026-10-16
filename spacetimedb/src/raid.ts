@@ -4,7 +4,7 @@
 // party replays the very same fight from the stored setup and seed to animate it.
 
 import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from './combat';
-import { Effect, LAST_STAND_BELOW, effectAmount } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingMult } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { base } from './data/bases';
@@ -104,7 +104,8 @@ function offense(s: CombatStats, raid: RaidDef) {
  * living ally ("single") or are split across the living party ("all"); lifesteal and
  * regen heal yourself. The highest Frostbite chill in the party shrinks all the boss's
  * damage. Executioner, Bully, Berserker, Ambush, Riposte, Second Wind, Second Skin,
- * Stoneskin, Bulwark, Last Stand, Thornshell and Zealot's Oath work as in a solo fight.
+ * Stoneskin, Bulwark, Last Stand, Thornshell, Zealot's Oath, Moonlight, Waxing Moon and
+ * Moonshadow work as in a solo fight.
  * Follow-through does nothing here: there is no next enemy. The party wins when the boss dies, and loses when everyone is dead or at the
  * enrage timer.
  */
@@ -118,6 +119,8 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   let bossHp = boss.hp;
   const amount = (i: number, id: number) => effectAmount(fighters[i].effects, id);
   const ambush = fighters.map(s => (s.effects.has(Effect.Ambush) ? 5 : 1));
+  const swings = fighters.map(() => 0);
+  const lastDodged = fighters.map(() => false);
   const secondWind = fighters.map((_, i) => amount(i, Effect.SecondWind));
   const executeBelow = fighters.map((_, i) => amount(i, Effect.Executioner) * boss.hp);
   const bullyAbove = fighters.map((_, i) => (1 - amount(i, Effect.Bully)) * boss.hp);
@@ -152,6 +155,9 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     blocked = bulwark > 0 && rng() < bulwark;
     if (blocked) damage /= 2;
     if (hp[i] < LAST_STAND_BELOW * maxHp[i]) damage *= 1 - amount(i, Effect.LastStand);
+    // Moonshadow: halved right after a dodge, × 1.1 otherwise.
+    if (fighters[i].effects.has(Effect.Moonshadow)) damage *= (lastDodged[i] ? MOONSHADOW_AFTER_DODGE : 1) * MOONSHADOW_TAKEN;
+    lastDodged[i] = false;
     dealt = damage;
     const absorbed = Math.min(shield[i], damage);
     shield[i] -= absorbed;
@@ -190,6 +196,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       let r = rng() * living.reduce((sum, i) => sum + weight[i], 0);
       const target = living.find(i => (r -= weight[i]) < 0) ?? living[living.length - 1];
       if (rng() < defense[target].evasion) {
+        lastDodged[target] = true;
         // Riposte: the dodge counters for a share of an average hit.
         const counter = amount(target, Effect.Riposte) * off[target].hit * (1 + off[target].crit * (off[target].critX - 1));
         if (counter > 0) bossHp = Math.max(0, bossHp - counter);
@@ -208,7 +215,12 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       const doubled = bossHp < executeBelow[a] || bossHp > bullyAbove[a] ? 2 : 1;
       // Berserker: more damage the more of your max HP is missing.
       const rage = 1 + (10 * amount(a, Effect.Berserker) * (maxHp[a] - hp[a])) / maxHp[a];
-      let damage = o.hit * critX * (0.9 + 0.2 * rng()) * doubled * ambush[a] * rage;
+      swings[a] += 1;
+      // Moonlight: every 3rd swing hits twice. Waxing Moon: swing k × waxingMult(k).
+      const fx = fighters[a].effects;
+      const wave = fx.has(Effect.Moonlight) && swings[a] % MOONLIGHT_EVERY === 0 ? 2 : 1;
+      const wax = fx.has(Effect.WaxingMoon) ? waxingMult(swings[a]) : 1;
+      let damage = o.hit * critX * (0.9 + 0.2 * rng()) * doubled * ambush[a] * rage * wave * wax;
       ambush[a] = 1;
       const healed = o.heal * critX;
       // Zealot's Oath: heals also hit for a share of the heal (magic).

@@ -30,6 +30,13 @@ const ZONE_LINES: Record<number, readonly string[]> = {
     'The cold seeps through your armor.',
     'An avalanche rumbles somewhere above you.',
   ],
+  4: [
+    'Silver leaves fall, though there is no wind.',
+    'The sky is clear, but there is no moon in it.',
+    'An elven statue watches the path, its face worn smooth.',
+    'Pale light seeps up from cracks in the old marble road.',
+    'Somewhere, a harp plays three notes and stops.',
+  ],
 };
 
 /** By area ID (zones.ts `areas`): lines about that place. */
@@ -114,6 +121,33 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'The tracks in the snow are each the size of a shield.',
     'A drinking horn the size of a barrel lies on its side.',
     "The hall's great fire has burned down to blue embers.",
+  ],
+  41: [
+    'Moths drift between the pale trunks like falling snow.',
+    'Deep claw marks score a silverbark tree, oozing light.',
+    'A feather the size of your arm lies in the moss.',
+    'The moths all drift the same way, toward the dark.',
+  ],
+  42: [
+    'A moonwell, bone dry, its rim carved with the phases of the moon.',
+    'Vines curl around a fallen arch, and one of them moves.',
+    'An empty helm turns to follow you.',
+    'Marble steps lead down into still, black water.',
+  ],
+  43: [
+    'Starlight falls through the cracked glass dome.',
+    'Chanting echoes beneath the glass, in a tongue long dead.',
+    'Star charts cover the walls, every moon scratched out.',
+  ],
+  44: [
+    'Silver banners hang in tatters from the throne-hall pillars.',
+    'A black moon hangs above the throne. It does not shine.',
+    'The court still kneels, though none of them have breathed in years.',
+  ],
+  45: [
+    'White petals drift past, though nothing here is in bloom.',
+    "Your shadow falls the wrong way, toward a moon that isn't there.",
+    'The fountain shows a full moon. The sky above it is empty.',
   ],
 };
 

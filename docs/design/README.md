@@ -15,7 +15,7 @@ not decisions.
 | [zones.md](zones.md) | Zones, enemy levels, enemy stats, rewards, loot tables |
 | [trading.md](trading.md) | Async gold market (5 listings, 2% listing fee, 10% tax) and friend gifts (5/day); registered level 30+ only |
 | [duels.md](duels.md) | Friendly duels against a friend's character (client-only, no rewards) |
-| [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass: enemies, bosses, drops, starter kit |
+| [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass, T4 Moonveil Vale: enemies, bosses, drops, starter kit |
 | [legendary.md](legendary.md) | Legendary affixes: effects, slot pools, formulas |
 | [uniques.md](uniques.md) | Uniques: rules, global drops, the list |
 | [ui.md](ui.md) | Desktop layout and screens (wireframes) |
@@ -35,6 +35,8 @@ not decisions.
 | Date | Decision |
 |---|---|
 | 2026-10-16 | Trading designed, not built (trading.md): async market for gold only and gifts to mutual friends. Only registered accounts with a level 30+ character can list, buy or gift. Max 5 active listings per account. Listing fee 2% (min 10 gold, never refunded) and 10% sales tax, both burned. 5 gifts per day. A mailbox catches gifts and returns. Clients subscribe to listings only while browsing, with filtered queries. The trade log keeps full items for 90 days. |
+| 2026-10-16 | T4 Moonveil Vale (zone-content.md): fallen elven valley, boss Selvara (magic, armored), secret Moonlight Garden (1,000 Moonmoth kills) with the Moonlit Champion. T4 uniques (uniques.md): Moonlight Greatsword (bound to the Champion), Waxing Crescent, Moonshadow Jerkin, Tear of the Moon, and Lunatic's Wager (no effect, stats roll −1.4 to +1.4 × value). New unique effects 45–48: Moonlight, Waxing Moon, Moonshadow, Lunar Insight. |
+| 2026-10-16 | Difficulty climb replaces the wall-tier sawtooth: enemy HP and DPS × 1.05^(T−1), compounding (T4 1.16, T9 1.48), so enemies outgrow weapon base damage and every tier leans harder on affixes and rerolls. T2 enemies +5%, T3 unchanged within 0.3%. Boss HP gets a bonus ramping × 1.1 (T2), × 1.2 (T3), × 1.3 from T4 (rewards unchanged), so from T4 the boss pays less per hour than the zone's strongest enemy. |
 | 2026-10-15 | Masterwork removed: forged items roll affix tiers 1..N like drops, at any Smithing level (was a floor of 1 + floor((level − requirement) / 20)). Smithing level still raises the forge's Magic chance and speed. |
 | 2026-10-15 | Material IDs renumbered from `tier × 10 + kind` (room for 9 kinds) to `kind × 100 + tier` with explicit permanent kind IDs (`MATERIAL_KIND_IDS`): ~650 kinds and 99 tiers in the same `u16` column. No schema change and no wipe: migrate.ts rewrites `material` rows and settle-log material lists once after the publish (recorded in a private `migration` table), run from the online settle timer and on connect. |
 | 2026-10-15 | Mining gives only **Ore** (material kind 9, gathering-only), no more Metal; Smithing smelts 1 Ore → 1 Metal in 12 s, so Mining and Smithing level together and Smithing has a steady XP recipe. Combat still drops Metal. 300 Metal from Ore takes 2 h (Mining, then smelting), where Mining alone took 1 h. |

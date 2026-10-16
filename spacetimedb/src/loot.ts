@@ -5,7 +5,7 @@
 import { TYPE_LIST, base, baseType, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES } from './data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, fromStored, roundStat, toStored, type StatDef, type StatId } from './data/stats';
-import { UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniquePool, type UniqueDef } from './data/uniques';
+import { uniquePool, uniqueRoll, type UniqueDef } from './data/uniques';
 import { MATERIAL_CHANCE, materialOf } from './data/materials';
 import { isScrapRarity, scrapMaterialId, type ScrapRarity } from './data/recipes';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
@@ -188,7 +188,8 @@ export function makeUnique(rng: Rng, u: UniqueDef): NewItem {
   return {
     ...makeItem(rng, u.baseId, u.tier, 'Unique'),
     affixes: u.stats.map(s => {
-      const value = affixRef(s.stat, u.tier) * (s.x ?? 1) * (UNIQUE_ROLL_MIN + (UNIQUE_ROLL_MAX - UNIQUE_ROLL_MIN) * rng());
+      const [lo, hi] = uniqueRoll(s);
+      const value = affixRef(s.stat, u.tier) * (s.x ?? 1) * (lo + (hi - lo) * rng());
       return { stat: s.stat, tier: 0, value: toStored(roundStat(s.stat, value)) };
     }),
     uniqueId: u.id,

@@ -57,6 +57,7 @@ of kills of one of the zone's regular enemies.
 | Zone | Secret area | Found by | Hint | Enemy | Unique |
 |---|---|---|---|---|---|
 | Greenhollow | Sunken Chapel | 1,000 Bog Wisp kills (≈ 4 h on Wisps) | 500 | Drowned Bellringer (Lv 22, T2 strength, Magic, Armored) | The Drowned Hymnal |
+| Moonveil Vale | Moonlight Garden | 1,000 Moonmoth Swarm kills | 500 | Moonlit Champion (Lv 52, T5 strength, Magic, Balanced) | Moonlight Greatsword |
 
 ## Enemy level
 
@@ -92,7 +93,7 @@ average Magic gear, see bases.md):
 m(T) = 1 + 0.15T                          // damage multiplier growth (level + gear %)
 
 playerDPS(T) = 10 × offense(T) × m(T)    // before enemy mitigation
-offense(T)   = 2.1^(T−1) to T3, then 44.1 × 1.6^(T−3)   // weapon damage curve
+offense(T)   = 2.1^(T−1) to T3, then 4.41 × 1.6^(T−3)   // weapon damage curve
 playerHP(T)  = 250 × 1.42^(T−1)          // level HP + gear HP (×1.6) + HP %
 playerMitigation ≈ 30%, playerEvasion ≈ 10%
 ```
@@ -102,8 +103,8 @@ playerMitigation ≈ 30%, playerEvasion ≈ 10%
 For the zone's average enemy (o = 0):
 
 ```
-enemyHP(T)     = 70 × offense(T) × m(T)  // ≈ 10 s vs 33% mitigation
-enemyDPS(T)    = 16 × 1.42^(T−1)         // ≈ 25 s vs 30% mitigation and 10% evasion
+enemyHP(T)     = 70 × offense(T) × m(T) × climb(T)  // ≈ 10 s × climb(T) vs 33% mitigation
+enemyDPS(T)    = 16 × 1.42^(T−1)        × climb(T)  // ≈ 25 s ÷ climb(T) vs 30% mitigation and 10% evasion
 enemyArmor     = 2.5 × level × profile.armor
 enemyResist    = 2.5 × level × profile.resist
 ```
@@ -152,44 +153,47 @@ share of the cycle against weak enemies.
 | Tier | Level | Player DPS | Player HP | Enemy HP | Enemy DPS | XP / kill | Gold / kill |
 |---|---|---|---|---|---|---|---|
 | 1 | 10 | 12 | 250 | 80 | 16 | 20 | 5 |
-| 2 | 20 | 27 | 355 | 191 | 23 | 58 | 14 |
-| 3 | 30 | 64 | 504 | 492 † | 35 † | 168 | 42 |
-| 4 | 40 | 148 | 716 | 1,037 | 46 | 488 | 122 |
-| 5 | 50 | 340 | 1,016 | 2,620 † | 72 † | 1,415 | 354 |
-| 6 | 60 | 776 | 1,443 | 5,432 | 92 | 4,102 | 1,026 |
-| 7 | 70 | 1,758 | 2,050 | 13,538 † | 144 † | 11,896 | 2,974 |
-| 8 | 80 | 3,962 | 2,910 | 27,737 | 186 | 34,500 | 8,625 |
-| 9 | 90 | 8,888 | 4,133 | 68,441 † | 292 † | 100,000 | 25,000 |
+| 2 | 20 | 27 | 355 | 201 | 23.9 | 58 | 14 |
+| 3 | 30 | 64 | 504 | 493 | 35.6 | 168 | 42 |
+| 4 | 40 | 113 | 716 | 915 | 53.0 | 488 | 122 |
+| 5 | 50 | 198 | 1,016 | 1,681 | 79.1 | 1,415 | 354 |
+| 6 | 60 | 343 | 1,443 | 3,066 | 117.9 | 4,102 | 1,026 |
+| 7 | 70 | 592 | 2,050 | 5,558 | 175.8 | 11,896 | 2,974 |
+| 8 | 80 | 1,017 | 2,910 | 10,020 | 262.1 | 34,500 | 8,625 |
+| 9 | 90 | 1,739 | 4,133 | 17,982 | 390.8 | 100,000 | 25,000 |
 
-† Wall tier: × 1.1 (see below).
+Enemy HP and DPS include `climb(T)` (below); player numbers are the reference player.
 
-### Difficulty rhythm
+### Difficulty climb
 
-Difficulty doesn't rise evenly. **Wall tiers** (odd tiers from 3: T3, T5, T7, T9) get
-enemy HP and DPS **× 1.1** on top of the curve above (`WALL_FACTOR` in zones.ts); other
-tiers sit on the curve. T1 is the tutorial and is never a wall.
+Every tier is harder than the last. Enemy HP and DPS outgrow the reference player's
+curve by **× 1.05 a tier, compounding** (`CLIMB_FACTOR` in zones.ts). T1 is the tutorial
+and sits on the curve.
 
 ```
-wall(T) = 1.1 if T ≥ 3 and T is odd, else 1
-enemyHP(T)  = 70 × offense(T) × m(T) × wall(T)
-enemyDPS(T) = 16 × 1.42^(T−1)       × wall(T)
+climb(T) = 1.05^(T−1)          // T2 1.05, T3 1.10, T4 1.16, T5 1.22, T7 1.34, T9 1.48
 ```
 
-| Step | Extra HP and DPS vs the curve | Felt difficulty* |
-|---|---|---|
-| T1 → T2 | × 1 | normal |
-| T2 → T3, T4 → T5, T6 → T7, T8 → T9 | × 1.1 | ~1.21× harder than a normal step |
-| T3 → T4, T5 → T6, T7 → T8 | × 1/1.1 | ~0.83×, a breather |
+| Tier | climb | Felt difficulty vs reference* | Reference player vs average enemy (kill / die) |
+|---|---|---|---|
+| 2 | 1.05 | 1.10× | 10.5 s / 23.8 s |
+| 3 | 1.10 | 1.22× | 11.0 s / 22.7 s |
+| 4 | 1.16 | 1.34× | 11.6 s / 21.6 s |
+| 5 | 1.22 | 1.48× | 12.2 s / 20.6 s |
+| 7 | 1.34 | 1.80× | 13.4 s / 18.7 s |
+| 9 | 1.48 | 2.18× | 14.8 s / 16.9 s |
 
-\* HP and DPS both scale, so difficulty moves with `wall²`.
+\* HP and DPS both scale, so difficulty moves with `climb²`.
 
-- It's a sawtooth, not a compounding curve: walls don't stack, so T9 is only 1.1×
-  above the reference player, not 1.1⁴×.
-- On a wall tier the reference player kills in ~11 s and dies in ~22.7 s (vs 10 s / 25 s),
-  so the average enemy is closer to an o = +1 target. The boss (× 1.08^7 on top) needs
-  clearly better than average gear or extra levels.
-- Rewards stay on the reward curve; a wall pays the same per kill but kills are slower,
-  so pushing gear before moving on pays off.
+- The point: enemies grow a little faster than weapon base damage, so average gear picked
+  up along the way falls further behind each tier. Rolled affixes, rerolls, tempering and
+  a planned build have to make up the gap, more and more the higher the player climbs.
+- By T9 a reference player only just beats the average enemy; comfortable farming needs
+  clearly better than average gear.
+- Rewards stay on the reward curve; a harder tier pays the same per kill but kills are
+  slower, so pushing gear before moving on pays off.
+- Replaces the 2026-10-12 sawtooth (× 1.1 on odd tiers from 3). T3 lands almost where it
+  was (1.1025 vs 1.1).
 
 ## Enemy rewards
 

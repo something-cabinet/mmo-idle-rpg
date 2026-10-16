@@ -295,6 +295,35 @@ const UNIQUE_LOOKS: Record<number, UniqueLook> = {
     colors: 'icy white, pale blue, silver',
     look: 'the blade one long curved pale dragon tooth, a grip of dark wyrm leather, a silver guard shaped like small claws',
   },
+  15: {
+    type: 'a huge two-handed greatsword, held point up, diagonal with the handle at the bottom left and the point at the top right',
+    colors: 'pale moonlight blue, silver, soft white glow',
+    look: 'a long straight blade of translucent pale blue crystal that glows from within like moonlight, faint runes of moon phases ' +
+      'down its center, a simple elegant silver crossguard and a long silver-wrapped grip',
+  },
+  16: {
+    type: 'a two-handed katana with a long slightly curved blade, diagonal with the handle at the bottom left and the point at the top right',
+    colors: 'silver, deep night blue, pale gold',
+    look: 'a polished silver blade with a pale gold crescent-moon hamon along the edge, a round guard shaped like a waxing crescent, ' +
+      'a night blue wrapped grip',
+  },
+  17: {
+    type: 'a sleeveless leather jerkin, front view',
+    colors: 'charcoal grey, midnight blue, silver',
+    look: 'soft dark leather with layered owl-feather shapes at the shoulders, faint silver crescent stitching, ' +
+      'the edges fading into wisps of shadow',
+  },
+  18: {
+    type: 'a pendant hanging straight down, facing the viewer: a short chain in a V at the top, the pendant centered below',
+    colors: 'silver, pale blue moonstone, soft white glow',
+    look: 'a teardrop-shaped moonstone with a soft inner glow, held in a fine silver setting shaped like a thin crescent moon',
+  },
+  19: {
+    type: 'a ring standing upright, seen from the front: a band below and a set stone on top facing the viewer',
+    colors: 'tarnished silver, milky moonstone, sickly violet',
+    look: 'a crooked twisted silver band, a cracked moonstone with a swirl of violet madness inside, ' +
+      'tiny dice and crescent moons engraved around the setting',
+  },
 };
 
 

@@ -225,7 +225,7 @@ target**, so an empty queue never wastes offline time.
 
 - Same structure as elixirs: 10 Fish + 2 Reagent of tier T, 7.5 min, 240 kills,
   full effect in zones of tier ≤ T.
-- Meals are the main tool for wall tiers and first boss kills.
+- Meals are the main tool for pushing into a new tier and first boss kills.
 
 ### Buff rules
 

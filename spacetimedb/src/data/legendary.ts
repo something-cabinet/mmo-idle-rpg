@@ -55,6 +55,10 @@ export const Effect = {
   KeenEye: 42,
   Savor: 43,
   RaidFavor: 44,
+  Moonlight: 45,
+  WaxingMoon: 46,
+  Moonshadow: 47,
+  LunarInsight: 48,
 } as const;
 
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
@@ -142,7 +146,7 @@ export const LEGENDARIES: LegendaryDef[] = [
   // Utility
   legendary({ id: 7, name: 'Swift Hunter', group: 'Utility', bonusStat: Stat.AttackSpeedPct, perCopy: 0.4, cap: 0.8,
     describe: a => `Walk time between fights −${pc(a)}.` }),
-  legendary({ id: 9, name: "Fortune's Favor", group: 'Utility', bonusStat: Stat.ItemFindPct, perCopy: 0.15, cap: 0.3,
+  legendary({ id: 9, name: "Fortune's Favor", group: 'Utility', bonusStat: Stat.ItemFindPct, perCopy: 0.1, cap: 0.3,
     describe: a => `Each kept drop has a ${pc(a)} chance to be upgraded one rarity.` }),
   legendary({ id: 19, name: 'Seasoned', group: 'Utility', bonusStat: Stat.XpGainPct, perCopy: 4, cap: 8,
     describe: a => `Offline progress cap +${a}h.` }),
@@ -176,7 +180,30 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 22, name: 'Frostbite', text: 'Your crits deal no extra damage. Instead the enemy deals 0.5% less damage per 1% crit chance (up to 50%).' },
   { id: 23, name: 'Frozen Blood', text: '+1 armor and resistance per 10 bonus max HP (from gear), but attack speed × 0.6 and HP regen and lifesteal do nothing.' },
   { id: 24, name: 'Ambush', text: 'Your first attack each fight deals 5× damage, but attack speed × 0.7.' },
+  { id: 45, name: 'Moonlight', text: 'All your damage is magic (only magic damage % and Mind boost it; armor penetration counts as magic penetration). Every 3rd attack hits twice.' },
+  { id: 46, name: 'Waxing Moon', text: 'Your hits start at −40% damage and grow +10% per attack, up to +60% from the 11th attack on. Resets each fight.' },
+  { id: 47, name: 'Moonshadow', text: "After you evade, the enemy's next hit deals 50% less. But hits that land deal 10% more." },
+  { id: 48, name: 'Lunar Insight', text: 'Each point of Mind also gives +0.25% max HP and +0.5% resistance, but Might gives nothing.' },
 ];
+
+/** Moonlight: every MOONLIGHT_EVERY-th attack hits twice. */
+export const MOONLIGHT_EVERY = 3;
+/** Moonlight's average damage multiplier. */
+export const MOONLIGHT_MULT = 1 + 1 / MOONLIGHT_EVERY;
+/** Waxing Moon: attack `k` (from 1) deals × this. */
+export const waxingMult = (k: number) => Math.min(1.6, 0.5 + 0.1 * k);
+/**
+ * Waxing Moon: attacks needed to deal `x` average hits (continuous): ×0.6 for the first,
+ * +0.1 per attack, ×1.6 from the 11th. W(n) = 0.05n² + 0.55n up to n = 11 (W = 12.1).
+ */
+export function waxingAttacks(x: number): number {
+  if (x <= 0) return 0;
+  if (x <= 12.1) return (Math.sqrt(0.3025 + 0.2 * x) - 0.55) / 0.1;
+  return 11 + (x - 12.1) / 1.6;
+}
+/** Moonshadow: an attack right after a dodge deals × MOONSHADOW_AFTER_DODGE; every landed hit × MOONSHADOW_TAKEN. */
+export const MOONSHADOW_AFTER_DODGE = 0.5;
+export const MOONSHADOW_TAKEN = 1.1;
 
 export const LEGENDARIES_BY_ID: ReadonlyMap<number, LegendaryDef> = new Map(LEGENDARIES.map(l => [l.id, l]));
 export const EFFECTS_BY_ID: ReadonlyMap<number, EffectDef> = new Map([...LEGENDARIES, ...UNIQUE_EFFECTS].map(e => [e.id, e]));

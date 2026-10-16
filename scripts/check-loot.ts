@@ -4,7 +4,7 @@
 import { BASE_LIST, TYPE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, LEGENDARIES_BY_ID, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRange, affixRef, roundStat, toStored } from '../spacetimedb/src/data/stats';
-import { UNIQUES, UNIQUES_BY_ID, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniqueWeight } from '../spacetimedb/src/data/uniques';
+import { UNIQUES, UNIQUES_BY_ID, uniqueRoll, uniqueWeight } from '../spacetimedb/src/data/uniques';
 import { MATERIAL_CHANCE, MATERIALS_BY_ID } from '../spacetimedb/src/data/materials';
 import { DROP_CHANCE, ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
 import {
@@ -234,7 +234,7 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
 // ---------------------------------------------------------------- Fortune's Favor
 
 {
-  const FORTUNE = 0.15;
+  const FORTUNE = 0.1;
   // The upgrade rolls come after every drop roll, so the same seed keeps the same drops.
   const pairs = Array.from({ length: 300 }, (_, i) => [
     rollDrops(seededRng(BigInt(i)), session({ filter: { minRarity: 'Common', keepAffixes: [], keepTypes: [], minAffixTier: 1 }, kills: killsFor(35, 'Common') })),
@@ -272,9 +272,10 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
         const top = affixRef(u.stats[i].stat, u.tier) * (u.stats[i].x ?? 1);
         const v = Number(a.value) / 100;
         const tol = STATS[u.stats[i].stat].decimals ? 0.01 : 0.5;
-        return a.tier === 0 && a.stat === u.stats[i].stat && v >= top * UNIQUE_ROLL_MIN - tol && v <= top * UNIQUE_ROLL_MAX + tol;
+        const [lo, hi] = uniqueRoll(u.stats[i]);
+        return a.tier === 0 && a.stat === u.stats[i].stat && v >= top * lo - tol && v <= top * hi + tol;
       }));
-    check(`${u.name}: its base, tier and effects; stats in [${UNIQUE_ROLL_MIN}, ${UNIQUE_ROLL_MAX}] × value`, ok);
+    check(`${u.name}: its base, tier and effects; stats in their roll range × value`, ok);
   }
 
   check('T1 zone drops only T1 uniques', Array.from({ length: 300 }, () => pickUnique(rng, 1)!).every(u => u.tier === 1));

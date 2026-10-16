@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useSyncExternalStore } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { craftable as canCraft, rerollCost, uncraftable, upgradeCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
@@ -8,7 +8,7 @@ import { fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { ItemCard, itemName, rarityCls, statText } from '../items';
 import { ItemIcon } from '../itemArt';
-import { ItemFilterCard, useItemFilter } from '../itemFilter';
+import { CollapsibleCard, ItemFilterCard, useItemFilter } from '../itemFilter';
 import { CardHead, ViewHeader, cantAfford, costText, loadoutNote } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { TemperAction } from './TemperAction';
@@ -16,6 +16,14 @@ import { SkillId } from '../../../spacetimedb/src/data/skills';
 
 type Where = 'all' | 'equipped' | 'bag';
 type CraftSort = 'rarity' | 'tier' | 'newest' | 'slot';
+
+/** Stacked layout (matches the 900px breakpoint in style.css): the item list collapses above the item. */
+const stacked = window.matchMedia('(max-width: 900px)');
+const useStacked = () =>
+  useSyncExternalStore(l => {
+    stacked.addEventListener('change', l);
+    return () => stacked.removeEventListener('change', l);
+  }, () => stacked.matches);
 
 /** Rarities that can be crafted: uniques can't. */
 const CRAFT_RARITIES = LISTED_RARITIES.filter(r => r !== 'Unique');
@@ -42,6 +50,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const [rerollIndex, setRerollIndex] = useState(0);
   const [removeIndex, setRemoveIndex] = useState(0);
   const r = s.conn.reducers;
+  const isStacked = useStacked();
 
   const craftable = [...s.items.values()].filter(canCraft);
   const by: Record<CraftSort, (a: Item, b: Item) => number> = {
@@ -155,29 +164,41 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
     </div>
   );
 
+  const list = (
+    <>
+      {!items.length && <p className="muted">No items match the filters.</p>}
+      {items.map(it => (
+        <button
+          key={String(it.id)}
+          className={`list-item r-${rarityCls(it.rarity.tag)}${it.id === item.id ? ' active' : ''}`}
+          onClick={() => {
+            setItemId(it.id);
+            setRerollIndex(0);
+            setRemoveIndex(0);
+          }}
+        >
+          <span className="list-item-name"><ItemIcon it={it} /><span className="item-name">{itemName(it)}</span></span>
+          <span className="muted">T{it.tier} {it.rarity.tag}{s.inLoadouts.has(it.id) ? ' · equipped' : ''}</span>
+        </button>
+      ))}
+    </>
+  );
+
   return (
     <>
       {head}
       {filters}
       <div className="craft">
-        <div className="card craft-list">
-          <CardHead title="Items"><span className="muted">{items.length}</span></CardHead>
-          {!items.length && <p className="muted">No items match the filters.</p>}
-          {items.map(it => (
-            <button
-              key={String(it.id)}
-              className={`list-item r-${rarityCls(it.rarity.tag)}${it.id === item.id ? ' active' : ''}`}
-              onClick={() => {
-                setItemId(it.id);
-                setRerollIndex(0);
-                setRemoveIndex(0);
-              }}
-            >
-              <span className="list-item-name"><ItemIcon it={it} /><span className="item-name">{itemName(it)}</span></span>
-              <span className="muted">T{it.tier} {it.rarity.tag}{s.inLoadouts.has(it.id) ? ' · equipped' : ''}</span>
-            </button>
-          ))}
-        </div>
+        {isStacked ? (
+          <CollapsibleCard storageKey="craft_list_collapsed" title="Items" summary={`${items.length} · ${itemName(item)}`} className="craft-list" defaultCollapsed>
+            {list}
+          </CollapsibleCard>
+        ) : (
+          <div className="card craft-list">
+            <CardHead title="Items"><span className="muted">{items.length}</span></CardHead>
+            {list}
+          </div>
+        )}
         <div className="craft-item">
           <ItemCard it={item} note={loadoutNote(s, item)} />
         </div>

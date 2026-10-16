@@ -74,8 +74,10 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   const src = st.sources[0];
   const w = gear[0]?.weapon;
   const prim = (id: number) => level + (sums.get(id) ?? 0);
-  const [might, finesse, mind, vit] = [prim(Stat.Might), prim(Stat.Finesse), prim(Stat.Mind), prim(Stat.Vitality)];
   const has = (e: number) => st.effects.has(e);
+  const lunar = has(Effect.LunarInsight);
+  // Lunar Insight: Might gives nothing.
+  const [might, finesse, mind, vit] = [lunar ? 0 : prim(Stat.Might), prim(Stat.Finesse), prim(Stat.Mind), prim(Stat.Vitality)];
   /** Frozen Blood's base: max HP above what the level gives with no gear. */
   const frozen = bonusHp(level, st.maxHp, has(Effect.GlassCannon));
   /** A worn legendary effect as a note: its name and stacked effect. */
@@ -93,6 +95,9 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
             `Mind ${n1(mind)}: +${n1(0.45 * mind)}% magic damage`,
             'Flat added damage is per hit: fast weapons get more from it',
             has(Effect.Spellblade) && 'Spellblade: damage type swapped, both damage-% groups apply',
+            has(Effect.Moonlight) && 'Moonlight: all damage magic, only magic % applies; every 3rd attack hits twice',
+            has(Effect.WaxingMoon) && 'Waxing Moon: hits start at −40%, +10% per attack, up to +60% from the 11th',
+            lunar && 'Lunar Insight: Might gives nothing',
             has(Effect.GlassCannon) && 'Glass Cannon: × 2',
             has(Effect.Voidtouched) && 'Voidtouched: × 0.75, ignores enemy mitigation')),
         ...(src.heal ? [row('Heal', fmt(src.heal), from([Stat.Heal, Stat.HealPct], `Mind ${n1(mind)}: +${n1(0.45 * mind)}% heal`, 'Flat added heal is per hit: fast weapons get more from it'))] : []),
@@ -105,6 +110,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
         row('Crit damage', pct(st.critDamage), from([Stat.CritDamage], 'Base 150%',
           has(Effect.Frostbite) && `Frostbite: crits deal no extra damage; enemy damage −${pct(st.chill)}`)),
         row('Armor / magic pen', `${pct(st.armorPen)} / ${pct(st.magicPen)}`, from([Stat.ArmorPenPct, Stat.MagicPenPct], 'Cap 75% each',
+          has(Effect.Moonlight) && 'Moonlight: armor penetration also counts as magic penetration',
           leg(Effect.Rending), leg(Effect.Spellbreaker))),
         row('DPS', fmt(scoreGear(level, gear).dps),
           ["Damage × attack speed × average crit, after a reference enemy's mitigation\n(armor and resistance 2.5 × your level, half its damage physical, half magic)",
@@ -115,16 +121,17 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
 
   const defense: StatRow[] = [
     row('Max HP', fmt(st.maxHp), from([Stat.MaxHp, Stat.MaxHpPct], `Base ${100 + 10 * (level - 1)} (100 + 10 per level)`,
-      `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
+      `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.25 * mind)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
     row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
     row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + ${5 * level}), cap ${pct(mitCap)}`,
       leg(Effect.Runeguard), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
       `Reduction: resistance / (resistance + ${5 * level}), cap ${pct(mitCap)}`,
-      leg(Effect.Ironclad), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
+      leg(Effect.Ironclad), lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.5 * mind)}%`, has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
     row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${level}: rating / (rating + ${10 * level})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
-      (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade")),
+      (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade",
+      has(Effect.Moonshadow) && "Moonshadow: the enemy's hit after a dodge deals 50% less; landed hits deal 10% more")),
     row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], `Cap ${pct(CAPS.lifesteal / 100 + effectAmount(st.effects, Effect.Bloodthirst))}`, leg(Effect.Bloodthirst), has(Effect.FrozenBlood) && 'Frozen Blood: no lifesteal')),
   ];
 

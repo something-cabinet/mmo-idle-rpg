@@ -6,7 +6,7 @@
 // hundredths, converted with `fromStored`.
 
 import { SLOTS } from './data/bases';
-import { Effect, LAST_STAND_BELOW, effectAmount, type EffectCounts } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingAttacks, type EffectCounts } from './data/legendary';
 import { CAPS, Stat, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType } from './data/bases';
@@ -143,8 +143,10 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const pct = (s: number) => flat(s) / 100;
 
   // Primaries: `level` from level-ups (1 at level 1) plus gear; each point is a
-  // percent bonus to a bundle of stats (attributes.md).
-  const might = level + flat(Stat.Might);
+  // percent bonus to a bundle of stats (attributes.md). Lunar Insight: Might gives
+  // nothing; Mind also gives max HP and resistance.
+  const lunar = has(Effect.LunarInsight);
+  const might = lunar ? 0 : level + flat(Stat.Might);
   const finesse = level + flat(Stat.Finesse);
   const mind = level + flat(Stat.Mind);
   const vitality = level + flat(Stat.Vitality);
@@ -153,8 +155,10 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     Physical: pct(Stat.PhysDamagePct) + 0.005 * might,
     Magic: pct(Stat.MagicDamagePct) + 0.0045 * mind,
   };
-  // Spellblade swaps the damage type and both damage-% groups apply.
+  // Spellblade swaps the damage type and both damage-% groups apply. Moonlight makes all
+  // damage magic (it wins over Spellblade's swap).
   const spellblade = has(Effect.Spellblade);
+  const moonlight = has(Effect.Moonlight);
   if (spellblade) damagePct.Physical = damagePct.Magic = damagePct.Physical + damagePct.Magic;
   const damageMult = effectDamageMult(effects);
   // Honed Edge raises flat added damage; it never deepens an Anomaly's negative roll.
@@ -175,6 +179,11 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     const baseSpeed = w.speedMilli / 1000;
     const hit = { Physical: 0, Magic: 0 };
     for (const t of ['Physical', 'Magic'] as const) {
+      if (moonlight) {
+        // Weapon hit and every flat added damage, as magic, scaled by magic % only.
+        hit[t] = t === 'Physical' ? 0 : Math.max(0, (fromStored(w.hit) + addedFlat.Physical + addedFlat.Magic) * (1 + damagePct.Magic) * damageMult * discipline * (buffs?.damage ?? 1));
+        continue;
+      }
       const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
       const base = w.damageType.tag === from ? fromStored(w.hit) : 0;
       // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
@@ -201,7 +210,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const maxHp = Math.max(
     1,
     (100 + 10 * (level - 1) + flat(Stat.MaxHp)) *
-    (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality) *
+    (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality + (lunar ? 0.0025 * mind : 0)) *
     (has(Effect.GlassCannon) ? 0.5 : 1),
   );
   const frozenBlood = has(Effect.FrozenBlood);
@@ -209,14 +218,15 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   // resistance before either is added, so they don't loop (max HP never depends on them).
   const fromHp = frozenBlood ? bonusHp(level, maxHp, has(Effect.GlassCannon)) / 10 : 0;
   const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct)) + fromHp;
-  const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct)) + fromHp;
+  const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct) + (lunar ? 0.005 * mind : 0)) + fromHp;
 
   return {
     level,
     sources,
     critDamage,
     armorPen: Math.min(CAPS.penetration / 100, pct(Stat.ArmorPenPct)),
-    magicPen: Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct)),
+    // Moonlight: armor penetration counts as magic penetration.
+    magicPen: Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct) + (moonlight ? pct(Stat.ArmorPenPct) : 0)),
     maxHp,
     regen: frozenBlood ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.01 * vitality)),
     armor: armor + amount(Effect.Runeguard) * resistance,
@@ -307,6 +317,8 @@ export interface Matchup {
   shield: number;
   /** Your damage per second after the enemy's mitigation. */
   dps: number;
+  /** Waxing Moon's average damage multiplier over this fight (1 without it); already in `dps`. */
+  waxing: number;
   /** Self-heal per second. */
   hps: number;
   /** Enemy damage per second after your mitigation and evasion. */
@@ -338,14 +350,24 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   let hps = 0;
   let critMult = 1;
   const deadeye = amount(Effect.Deadeye);
+  // Moonlight: every 3rd attack hits twice.
+  const wave = has(Effect.Moonlight) ? MOONLIGHT_MULT : 1;
   for (const src of s.sources) {
     const perHit = src.hit.Physical * (1 - enemyMitigation.Physical) + src.hit.Magic * (1 - enemyMitigation.Magic);
     const cm = critMultAgainst(src, enemyMitigation, deadeye);
     if (src === s.sources[0]) critMult = cm;
-    dps += perHit * src.attacksPerSec * cm;
+    dps += perHit * src.attacksPerSec * cm * wave;
     hps += src.heal * src.attacksPerSec * src.critMult; // solo: heals land on yourself
   }
   const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
+  // Waxing Moon: hits grow through the fight. `x` average hits kill at full strength;
+  // waxingAttacks(x) is how many it takes, so the fight's average multiplier is x / that.
+  let waxing = 1;
+  if (has(Effect.WaxingMoon) && dps > 0 && period > 0) {
+    const x = e.hp / (dps * period);
+    waxing = x / waxingAttacks(x);
+    dps *= waxing;
+  }
 
   const { mitigation: playerMitigation, evasion } = defenseAgainst(s, e.damageType, e.level);
   // Stoneskin takes a share of max HP off each hit; Bulwark blocks half of a share of the hits.
@@ -354,6 +376,8 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   const enemyHit = Math.max(0, (e.dps / e.speed) * (1 - s.chill) * (1 - playerMitigation) - stoneskin);
   let incoming = stoneskin > 0 ? enemyHit * e.speed * (1 - evasion) : e.dps * (1 - s.chill) * (1 - playerMitigation) * (1 - evasion);
   if (bulwark > 0) incoming *= 1 - bulwark / 2;
+  // Moonshadow: a hit right after a dodge (chance = evasion) is halved; landed hits × 1.1.
+  if (has(Effect.Moonshadow)) incoming *= (1 - (1 - MOONSHADOW_AFTER_DODGE) * evasion) * MOONSHADOW_TAKEN;
   // Riposte: each evaded attack counters for a share of your average hit.
   dps += amount(Effect.Riposte) * evasion * e.speed * dps * period;
   // Effect damage is your damage: Glass Cannon and Voidtouched apply to it too.
@@ -410,6 +434,7 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     enemyHit,
     shield,
     dps,
+    waxing,
     hps,
     incoming,
     netIncoming,

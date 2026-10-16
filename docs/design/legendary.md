@@ -125,7 +125,7 @@ Berserker:    damage × (1 + 10a × missing / maxHp). Missing HP grows at netInc
 | ID | Name | Stat bonus | Per copy | Cap |
 |---|---|---|---|---|
 | 7 | **Swift Hunter** | Attack speed % | Walk time **−40%** | −80% |
-| 9 | **Fortune's Favor** | Item find % | Each **kept** drop has a **15%** chance to be upgraded one rarity (max Legendary) | 30% |
+| 9 | **Fortune's Favor** | Item find % | Each **kept** drop has a **10%** chance to be upgraded one rarity (max Legendary) | 30% |
 | 19 | **Seasoned** | XP gain % | Offline progress cap **+4h** (8h → 12h) | +8h (16h) |
 | 20 | **Prosperity** | Gold find % | Gold **× 1.4** | × 1.6 |
 | 38 | **Salvager** | Gold find % | Each drop the loot filter or a full bag rejects has a **25%** chance to be salvaged (or scrapped) twice | 50% |
@@ -178,6 +178,10 @@ this split keep working.
 | 22 | **Frostbite** | Your crits deal **no extra damage**. Instead the enemy deals 0.5% less damage per 1% crit chance: `enemyDPS × (1 − 0.5 × min(1, critChance))`. |
 | 23 | **Frozen Blood** | **+1 armor and resistance per 10 bonus max HP**, but attack speed × 0.6 (after the floor) and HP regen and lifesteal do nothing. Added before Ironclad / Runeguard convert. Bonus HP = max HP − what your level gives with no gear: `(100 + 10 × (level − 1)) × (1 + 0.45% × level)` (× 0.5 with Glass Cannon). |
 | 24 | **Ambush** | Your **first attack each fight deals 5×** damage, but attack speed × 0.7. `timeToKill = max(TTK − 4 / attacksPerSec, 0.5 / attacksPerSec)` (the first swing lands half a period in). |
+| 45 | **Moonlight** | **All your damage is magic**: the weapon's hit and flat physical convert, only the magic %-group applies (magic damage %, Mind), and armor penetration counts as magic penetration. **Every 3rd attack hits twice.** |
+| 46 | **Waxing Moon** | Your hits start at **−40%** damage and grow **+10%** per attack, up to **+60%** from the 11th attack on. Resets each fight. |
+| 47 | **Moonshadow** | After you evade, the enemy's **next hit deals 50% less**. But hits that land deal **10% more**. |
+| 48 | **Lunar Insight** | Each point of Mind also gives **+0.25% max HP** and **+0.5% resistance**, but **Might gives nothing**. |
 
 ```
 Spellblade:   each damage term moves to the other type; damage multiplier =
@@ -189,10 +193,26 @@ Midas Touch:  xp = 0;  gold × 2.5
 Voidtouched:  enemy mitigation = 0;  damage × 0.75
 Glass Cannon: damage × 2;  maxHP × 0.5
 Scholar's:    xp × 1.75;  gold × 0.5
+Moonlight:    hit_magic = (weaponBase + flat_phys + flat_magic) × (1 + pct_magic) × … × (1 + 1/3);
+              hit_phys = 0;  magicPen = min(cap, magicPen% + armorPen%)
+Waxing Moon:  attack k (from 1) deals × w(k) = min(1.6, 0.5 + 0.1k);
+              cumulative W(n) = 0.5n + 0.05n(n+1) for n ≤ 11, then W(11) + 1.6(n − 11)
+              x = enemyHP / (weapon DPS × period);  DPS_you × x / n(x), n solving W(n) = x
+              (quadratic, then linear), so timeToKill = n periods and lifesteal etc. see the average
+Moonshadow:   landed hits × (1 − 0.5 × evasion) × 1.1   // P(previous attack was evaded) = evasion
+              netIncoming uses DPS_enemy × (1 − evasion) × (1 − 0.5 × evasion) × 1.1
+Lunar Insight: might = 0 for its bonuses;  maxHP% += 0.25% × mind;  resistance% += 0.5% × mind
 ```
 
 - Damage from Zealot's Oath and Thornshell counts as your damage: Glass Cannon's ×2
   and Voidtouched (no enemy mitigation, ×0.75) apply to it too.
+- **Waxing Moon** at a 1.4/s katana: a 3 s fight (4 attacks) averages × 0.75, a ~12 s
+  fight (16 attacks) × 1.26, a ~30 s boss fight (42 attacks) × 1.47. Over-farming easy
+  enemies loses damage; hard targets and bosses gain the most.
+- **Moonlight with Spellblade:** Moonlight's all-magic wins over the swap; Spellblade still
+  merges the %-groups.
+- **Moonshadow** vs plain: 20% evasion × 0.99 damage taken, 40% × 0.88, 60% × 0.77,
+  85% × 0.63. Multiplicative, so it never makes you immune.
 - Midas Touch + Scholar's Focus together: both apply (xp × 0 = 0, gold × 1.25). The
   effects card points this out.
 

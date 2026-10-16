@@ -5,7 +5,7 @@ import { BASE_LIST, implicitValue, weaponValues, type BaseDef, type BaseKind, ty
 import { EFFECTS_BY_ID, LEGENDARIES, LEGENDARIES_BY_ID, type LegendaryGroup } from '../../../spacetimedb/src/data/legendary';
 import { MAX_TIER, STATS, Stat, affixRange, affixRef, roundStat, toStored, type StatId } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS } from '../../../spacetimedb/src/loot';
-import { UNIQUES, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, type UniqueDef } from '../../../spacetimedb/src/data/uniques';
+import { UNIQUES, uniqueRoll, type UniqueDef } from '../../../spacetimedb/src/data/uniques';
 import { RAIDS_BY_ID } from '../../../spacetimedb/src/data/raids';
 import { useSticky } from '../../store';
 import { fmt } from '../format';
@@ -162,8 +162,11 @@ function LegendaryTable() {
 function rangeText(stat: UniqueDef['stats'][number], tier: number): string {
   const d = STATS[stat.stat];
   const top = affixRef(stat.stat, tier) * (stat.x ?? 1);
-  const [lo, hi] = [roundStat(stat.stat, top * UNIQUE_ROLL_MIN), roundStat(stat.stat, top * UNIQUE_ROLL_MAX)];
-  return `+${num(lo)}–${num(hi)}${d.percent ? '%' : ''} ${d.name}`;
+  const [rlo, rhi] = uniqueRoll(stat);
+  const [lo, hi] = [roundStat(stat.stat, top * rlo), roundStat(stat.stat, top * rhi)];
+  const unit = d.percent ? '%' : '';
+  // A range that crosses zero (Lunatic's Wager) reads "−14% to +14%".
+  return lo < 0 ? `${num(lo)}${unit} to +${num(hi)}${unit} ${d.name}` : `+${num(lo)}–${num(hi)}${unit} ${d.name}`;
 }
 
 type UniqueSource = 'world' | 'raid';

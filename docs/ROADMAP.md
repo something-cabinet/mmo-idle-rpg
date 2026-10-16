@@ -112,7 +112,7 @@ fighting the target enemy with the active loadout.
   (none with Voidtouched) and the Glass Cannon / Voidtouched multipliers apply. `scoreGear` is now the average of a
   physical and a magic dummy matchup (same numbers as before), so auto-equip sees
   every effect. Fortune's Favor: `rollDrops({ fortune })` raises each kept drop with
-  15% chance via `raiseRarity` (loot.ts, shared with crafting's `upgradeRarity`),
+  10% chance via `raiseRarity` (loot.ts, shared with crafting's `upgradeRarity`),
   after the filter and before the bag limit; Epic → Legendary removes a random
   affix.
 - **Settle log** (table `settle_log`, view `my_settle_log`): one row per settle with

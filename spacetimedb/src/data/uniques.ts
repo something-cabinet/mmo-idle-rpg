@@ -13,6 +13,8 @@ export interface UniqueStat {
   stat: StatId;
   /** × the best regular affix roll at the unique's tier (`affixRef`); default 1. */
   x?: number;
+  /** Roll range × value, in place of [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] (Lunatic's Wager rolls [−1.4, 1.4]). */
+  roll?: [number, number];
 }
 
 export interface UniqueDef {
@@ -33,6 +35,10 @@ export interface UniqueDef {
 /** Each stat rolls in [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] × its value (uniques.md). */
 export const UNIQUE_ROLL_MIN = 0.8;
 export const UNIQUE_ROLL_MAX = 1.4;
+/** The range a unique stat rolls in, × its value. */
+export const uniqueRoll = (s: UniqueStat): [number, number] => s.roll ?? [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX];
+/** Lunatic's Wager: anywhere from the worst curse to the best unique roll. */
+const WAGER: [number, number] = [-UNIQUE_ROLL_MAX, UNIQUE_ROLL_MAX];
 
 export const UNIQUES: UniqueDef[] = [
   // T1
@@ -67,6 +73,18 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.HealPct, x: 1.25 }, { stat: Stat.Mind }, { stat: Stat.ResistancePct }] },
   { id: 14, name: "Skaldrith's Fang", tier: 3, baseId: 2, effects: [Effect.Executioner, Effect.Rending], raidId: 1,
     stats: [{ stat: Stat.CritDamage }, { stat: Stat.PhysDamagePct }, { stat: Stat.AttackSpeedPct }] },
+  // T4
+  { id: 15, name: 'Moonlight Greatsword', tier: 4, baseId: 7, effects: [Effect.Moonlight], enemyId: 407,
+    stats: [{ stat: Stat.MagicDamagePct }, { stat: Stat.Mind }, { stat: Stat.CritDamage }] },
+  { id: 16, name: 'Waxing Crescent', tier: 4, baseId: 6, effects: [Effect.WaxingMoon],
+    stats: [{ stat: Stat.PhysDamagePct }, { stat: Stat.AttackSpeedPct }, { stat: Stat.CritDamage }] },
+  { id: 17, name: 'Moonshadow Jerkin', tier: 4, baseId: 35, effects: [Effect.Moonshadow],
+    stats: [{ stat: Stat.EvasionRatingPct }, { stat: Stat.Finesse }, { stat: Stat.MaxHpPct }] },
+  { id: 18, name: 'Tear of the Moon', tier: 4, baseId: 56, effects: [Effect.LunarInsight],
+    stats: [{ stat: Stat.Mind }, { stat: Stat.MagicDamagePct }, { stat: Stat.ResistancePct }] },
+  // No effect: four stats that each roll from a curse to a blessing (after Ventor's Gamble).
+  { id: 19, name: "Lunatic's Wager", tier: 4, baseId: 52, effects: [],
+    stats: [{ stat: Stat.MaxHpPct, roll: WAGER }, { stat: Stat.AttackSpeedPct, roll: WAGER }, { stat: Stat.ItemFindPct, roll: WAGER }, { stat: Stat.ResistancePct, roll: WAGER }] },
 ];
 
 export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map(u => [u.id, u]));

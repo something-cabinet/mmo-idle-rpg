@@ -4,7 +4,7 @@
 // the fight's start time. Offline time still uses the expected-value `project`.
 
 import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from './combat';
-import { Effect, LAST_STAND_BELOW, effectAmount } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONLIGHT_MULT, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingMult } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { ElixirTracker, xpToNext, type Activity, type Progress, type Settled } from './game';
 import { seededRng, type Rng } from './loot';
@@ -39,6 +39,8 @@ export interface FightEvent {
   carried?: boolean;
   /** Bulwark blocked half of this hit. */
   blocked?: boolean;
+  /** Moonlight: this swing hit twice. */
+  wave?: boolean;
 }
 
 export interface Fight {
@@ -66,7 +68,9 @@ export interface Fight {
  * while the enemy is above its threshold; Berserker scales them with your missing HP;
  * Follow-through lands the average overkill as the fight starts (so each fight stays
  * on its own). Second Skin's shield takes hits first; Bulwark halves some hits; Last
- * Stand shrinks hits while you are below its threshold. New effects draw from the
+ * Stand shrinks hits while you are below its threshold. Moonlight doubles every 3rd
+ * swing; Waxing Moon scales swing k by `waxingMult(k)`; Moonshadow halves the enemy's
+ * hit after a dodge and raises landed hits × 1.1. New effects draw from the
  * generator only when worn, so fights without them replay as before.
  */
 export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng): Fight {
@@ -76,7 +80,10 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const foePeriod = 1 / enemy.speed;
   const crit = Math.min(1, src?.critChance ?? 0);
   // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = DPS.
-  const hit = src && m.dps > 0 ? m.dps / src.attacksPerSec / m.critMult : 0;
+  // Moonlight's wave and Waxing Moon's average are in `m.dps`; take them out, then add them per swing.
+  const moonlight = s.effects.has(Effect.Moonlight);
+  const waxing = s.effects.has(Effect.WaxingMoon);
+  const hit = src && m.dps > 0 ? m.dps / src.attacksPerSec / m.critMult / m.waxing / (moonlight ? MOONLIGHT_MULT : 1) : 0;
   const critX = crit > 0 && src ? 1 + (m.critMult - 1) / crit : 1;
   const healPerSwing = src && m.hps > 0 ? m.hps / src.attacksPerSec : 0;
   const enemyHit = m.enemyHit;
@@ -90,6 +97,9 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const lowHp = LAST_STAND_BELOW * s.maxHp;
   let secondWind = amount(Effect.SecondWind);
   let shield = m.shield;
+  const moonshadow = s.effects.has(Effect.Moonshadow);
+  let lastDodged = false;
+  let swings = 0;
 
   let youHp = s.maxHp;
   let foeHp = enemy.hp;
@@ -119,11 +129,13 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const isCrit = rng() < crit;
       const doubled = foeHp < executeBelow || foeHp > bullyAbove ? 2 : 1;
       const rage = berserk > 0 ? 1 + (berserk * (s.maxHp - youHp)) / s.maxHp : 1;
-      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage;
+      swings += 1;
+      const wave = moonlight && swings % MOONLIGHT_EVERY === 0;
+      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1);
       ambush = 1;
       foeHp = Math.max(0, foeHp - damage);
       youHp = Math.min(s.maxHp, youHp + healPerSwing + s.lifesteal * damage);
-      events.push({ t, by: 'you', kind: isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp, ...shieldNote() });
+      events.push({ t, by: 'you', kind: isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp, ...(wave && { wave: true }), ...shieldNote() });
       if (foeHp <= 0) return done(t, 'kill');
     } else {
       nextFoe += foePeriod;
@@ -132,6 +144,8 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const blocked = !dodged && bulwark > 0 && rng() < bulwark;
       if (blocked) damage /= 2;
       if (lastStand > 0 && youHp < lowHp) damage *= 1 - lastStand;
+      if (moonshadow && !dodged) damage *= (lastDodged ? MOONSHADOW_AFTER_DODGE : 1) * MOONSHADOW_TAKEN;
+      lastDodged = dodged;
       const healed = youHp - before;
       const absorbed = Math.min(shield, damage);
       shield -= absorbed;

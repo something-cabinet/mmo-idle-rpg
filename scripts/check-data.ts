@@ -5,7 +5,7 @@ import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, curve, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { RAIDS, RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
-import { ENEMIES_BY_ID, WALL_FACTOR, ZONES, isWallTier } from '../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, ZONES, bossHpFactor, bossOf, climb } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
 import { DROP_KINDS, MATERIALS, MATERIAL_KINDS, MATERIAL_KIND_IDS, materialOf, migrateMaterialId } from '../spacetimedb/src/data/materials';
 
@@ -38,8 +38,8 @@ for (const g of ['Offense', 'Defense', 'Utility'] as const) {
 }
 check('legendary bonus stats can roll as affixes', LEGENDARIES.every(l => STATS[l.bonusStat].ref !== undefined));
 check('unique IDs unique', unique(UNIQUES.map(u => u.id)));
-check('uniques: base exists, tier 1–9, effects exist and are distinct, stats can roll', UNIQUES.every(u =>
-  BASE_LIST.some(b => b.id === u.baseId) && u.tier >= 1 && u.tier <= 9 && u.effects.length > 0 && unique(u.effects) &&
+check('uniques: base exists, tier 1–9, effects (if any) exist and are distinct, stats can roll', UNIQUES.every(u =>
+  BASE_LIST.some(b => b.id === u.baseId) && u.tier >= 1 && u.tier <= 9 && unique(u.effects) &&
   u.effects.every(e => EFFECTS_BY_ID.has(e)) && u.stats.length > 0 && u.stats.every(s => STATS[s.stat].ref !== undefined)));
 check('enemy-bound uniques: a secret enemy of their own tier', UNIQUES.every(u => u.enemyId === undefined ||
   (ENEMIES_BY_ID.get(u.enemyId)?.enemy.secret === true && ENEMIES_BY_ID.get(u.enemyId)!.zone.tier === u.tier)));
@@ -92,14 +92,18 @@ for (const zone of ZONES) {
   check(`${zone.name}: every area joined to the map`, seen.size === ids.size);
 }
 for (const zone of ZONES) {
-  // Average enemy (o = 0) matches the reference curve, × WALL_FACTOR on wall tiers (zones.md).
+  // Average enemy (o = 0) matches the reference curve × the tier's climb (zones.md).
   const avg = zone.enemies.find(e => e.level === 10 * zone.tier);
   if (!avg || zone.tier === 1) continue;
-  const wall = isWallTier(zone.tier) ? WALL_FACTOR : 1;
-  const hp = 70 * curve('offense', zone.tier) * (1 + 0.15 * zone.tier) * wall;
-  const dps = 16 * 1.42 ** (zone.tier - 1) * wall;
+  const hp = 70 * curve('offense', zone.tier) * (1 + 0.15 * zone.tier) * climb(zone.tier);
+  const dps = 16 * 1.42 ** (zone.tier - 1) * climb(zone.tier);
   check(`${zone.name}: average enemy on curve`, Math.abs(avg.hp / hp - 1) < 0.01 && Math.abs(avg.dps / dps - 1) < 0.01,
     `hp ${avg.hp} vs ${hp.toFixed(0)}, dps ${avg.dps} vs ${dps.toFixed(1)}`);
+  // Boss: × 1.08^7, and HP × bossHpFactor (zone-content.md).
+  const boss = bossOf(zone)!;
+  const bossHp = hp * 1.08 ** 7 * bossHpFactor(zone.tier);
+  check(`${zone.name}: boss on curve`, Math.abs(boss.hp / bossHp - 1) < 0.01 && Math.abs(boss.dps / (dps * 1.08 ** 7) - 1) < 0.01,
+    `hp ${boss.hp} vs ${bossHp.toFixed(0)}, dps ${boss.dps} vs ${(dps * 1.08 ** 7).toFixed(1)}`);
 }
 check('enemy lookup', ENEMIES_BY_ID.get(101)?.enemy.name === 'Field Rat');
 

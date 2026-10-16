@@ -277,6 +277,58 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const first = ambFights[0].events.find(e => e.by === 'you')!;
   check('Ambush in a live fight: the first swing is 5×', first.damage > 5 * 0.9 * ambM.dps * period / amb.sources[0].critMult - 1e-9);
 
+  // Moonlight: all damage magic (flat phys too), magic % only, armor pen → magic pen, every 3rd swing twice.
+  const gs = item(7, 1, [[Stat.PhysDamage, 10], [Stat.PhysDamagePct, 50], [Stat.MagicDamagePct, 20]]);
+  const ml = combatStats(10, kit(withEffect(gs, Effect.Moonlight)));
+  const noMl = combatStats(10, kit(gs));
+  const gsHit = Number(gs.weapon!.hit) / 100;
+  check('Moonlight: no physical damage', ml.sources[0].hit.Physical === 0 && noMl.sources[0].hit.Physical > 0);
+  check('Moonlight: (weapon + flat phys) × magic % only', near(ml.sources[0].hit.Magic, (gsHit + 10) * (1 + 0.2 + 0.0045 * 10), 1e-6),
+    f(ml.sources[0].hit.Magic));
+  check('Moonlight: armor pen counts as magic pen', near(ml.magicPen, noMl.magicPen + noMl.armorPen, 1e-12) && ml.armorPen > 0);
+  const voidRat = { ...rat, armor: 0, resistance: 0 };
+  check('Moonlight: × 4/3 average damage', near(matchup(ml, voidRat).dps, ml.sources[0].hit.Magic * ml.sources[0].attacksPerSec * ml.sources[0].critMult * 4 / 3, 1e-6));
+  const mlSponge = { ...voidRat, hp: 3000, dps: 0.01 };
+  const mlM = matchup(ml, mlSponge);
+  const mlFights = Array.from({ length: 300 }, (_, i) => simulateFight(ml, mlM, mlSponge, seededRng(BigInt(i))));
+  const mlLen = mlFights.reduce((a, x) => a + x.end - x.walk, 0) / mlFights.length;
+  check('Moonlight in live fights: average length matches the formula', near(mlLen, mlM.timeToKill, mlM.timeToKill * 0.05), `${f(mlLen)} s vs ${f(mlM.timeToKill)} s`);
+  check('Moonlight in a live fight: every 3rd swing is a wave', mlFights[0].events.filter(e => e.by === 'you').every((e, i) => !!e.wave === ((i + 1) % 3 === 0)));
+
+  // Waxing Moon: × 0.75 over 4 attacks, × 1.6 in the long run; live fights match.
+  const wx = combatStats(10, kit(withEffect(item(6, 1), Effect.WaxingMoon)));
+  const noWx = combatStats(10, kit(item(6, 1)));
+  const wxPeriod = 1 / wx.sources[0].attacksPerSec;
+  const short = { ...voidRat, hp: matchup(noWx, voidRat).dps * wxPeriod * 3, dps: 0.01 }; // 3 full hits: 4 waxing attacks (0.6+0.7+0.8+0.9)
+  check('Waxing Moon: a 3-hit enemy takes 4 attacks', near(matchup(wx, short).timeToKill, 4 * wxPeriod, 1e-9), f(matchup(wx, short).timeToKill / wxPeriod));
+  const longFoe = { ...voidRat, hp: matchup(noWx, voidRat).dps * wxPeriod * 1000, dps: 0.01 };
+  check('Waxing Moon: long fights approach × 1.6', near(matchup(wx, longFoe).waxing, 1000 / (11 + (1000 - 12.1) / 1.6), 1e-9) && matchup(wx, longFoe).waxing > 1.55);
+  const wxFoe = { ...voidRat, hp: matchup(noWx, voidRat).dps * wxPeriod * 20, dps: 0.01 };
+  const wxM = matchup(wx, wxFoe);
+  const wxFights = Array.from({ length: 300 }, (_, i) => simulateFight(wx, wxM, wxFoe, seededRng(BigInt(i))));
+  const wxLen = wxFights.reduce((a, x) => a + x.end - x.walk, 0) / wxFights.length;
+  check('Waxing Moon in live fights: average length matches the formula', near(wxLen, wxM.timeToKill, wxM.timeToKill * 0.06), `${f(wxLen)} s vs ${f(wxM.timeToKill)} s`);
+
+  // Moonshadow: incoming × (1 − 0.5 × evasion) × 1.1.
+  const evChest = item(35, 1, [[Stat.EvasionRating, 400]]);
+  const msh = combatStats(10, kit(sword, { Chest: withEffect(evChest, Effect.Moonshadow) }));
+  const noMsh = combatStats(10, kit(sword, { Chest: evChest }));
+  const mshFoe = { ...rat, dps: 3, hp: 1e9 };
+  const mshM = matchup(msh, mshFoe);
+  check('Moonshadow: incoming × (1 − 0.5 × evasion) × 1.1', mshM.evasion > 0.2 && near(mshM.incoming, matchup(noMsh, mshFoe).incoming * (1 - 0.5 * mshM.evasion) * 1.1, 1e-9),
+    `evasion ${f(mshM.evasion)}`);
+  const mshFight = simulateFight(msh, mshM, mshFoe, seededRng(5n)).events.filter(e => e.by === 'enemy');
+  const afterDodge = mshFight.filter((e, i) => i > 0 && e.kind === 'hit' && mshFight[i - 1].kind === 'dodge');
+  check('Moonshadow in a live fight: the hit after a dodge is halved', afterDodge.length > 0 &&
+    afterDodge.every(e => e.damage <= mshM.enemyHit * 1.1 * 0.5 * 1.1 + 1e-9));
+
+  // Lunar Insight: Might gives nothing; Mind gives max HP and resistance.
+  const amulet = item(56, 1, [[Stat.Mind, 40], [Stat.Might, 40], [Stat.Resistance, 100]]);
+  const li = combatStats(10, kit(sword, { Amulet: withEffect(amulet, Effect.LunarInsight) }));
+  const noLi = combatStats(10, kit(sword, { Amulet: amulet }));
+  check('Lunar Insight: more resistance from Mind', li.resistance > noLi.resistance);
+  check('Lunar Insight: Might adds no physical damage', li.sources[0].hit.Physical < noLi.sources[0].hit.Physical);
+
   const ac = (effect: number) => combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), effect) }));
   const acBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]) }));
   const ic = ac(Effect.Ironclad);

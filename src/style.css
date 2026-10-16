@@ -2224,6 +2224,10 @@ select:focus,
   max-height: calc(100dvh - 170px);
   overflow-y: auto;
 }
+.craft-list .collapse-body {
+  display: grid;
+  gap: 2px;
+}
 /* Crafting fills the screen: the item list takes the height left under the header
    and filters and scrolls on its own, so the page itself doesn't scroll. */
 @media (min-width: 901px) {

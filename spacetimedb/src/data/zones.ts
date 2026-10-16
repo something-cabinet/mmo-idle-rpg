@@ -112,6 +112,13 @@ const T3_DROPS = {
   cultist: [9, 4, 31, 34, 22, 52, 57],
   golem: [1, 6, 11, 35, 40, 41, 55],
 };
+const T4_DROPS = {
+  moth: [2, 5, 30, 32, 36, 22, 52],
+  owlbear: [3, 8, 35, 38, 41, 53, 54],
+  dryad: [9, 10, 11, 33, 34, 51],
+  sentinel: [1, 7, 39, 37, 20, 50, 55],
+  spellweaver: [4, 6, 21, 31, 40, 56, 57],
+};
 const all = (d: Record<string, number[]>) => Object.values(d).flat();
 
 export const ZONES: ZoneDef[] = [
@@ -130,7 +137,7 @@ export const ZONES: ZoneDef[] = [
       // Secret (Sunken Chapel): a T2-strength enemy (Ironbark Treant's level, HP and DPS) hidden in T1,
       // magic damage behind armor. Pays far above T1: XP and gold past a strong T2 enemy, so
       // ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
-      { id: 107, name: 'Drowned Bellringer', level: 22, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 223, dps: 26.5, armor: 132, resistance: 22, xp: 90, gold: 24, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5 },
+      { id: 107, name: 'Drowned Bellringer', level: 22, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 234, dps: 27.8, armor: 132, resistance: 22, xp: 90, gold: 24, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5 },
     ],
     areas: [
       { id: 11, name: 'Village Fields', blurb: 'Trampled wheat and gnawed fences just past the last houses.', enemies: [101, 102], x: 8, y: 90 },
@@ -148,12 +155,12 @@ export const ZONES: ZoneDef[] = [
     name: 'Thornwood',
     blurb: 'A dark, overgrown forest where bandits and beasts hide.',
     enemies: [
-      { id: 201, name: 'Thornback Spider', level: 16, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 140, dps: 16.7, armor: 40, resistance: 40, xp: 37, gold: 9, drops: T2_DROPS.spider, materials: ['Hide', 'Cloth', 'Reagent'] },
-      { id: 202, name: 'Bandit Cutthroat', level: 18, damageType: 'Physical', defense: 'Balanced', speed: 1.3, hp: 164, dps: 19.5, armor: 45, resistance: 45, xp: 46, gold: 12, drops: T2_DROPS.cutthroat, materials: ['Metal', 'Cloth', 'Gem'] },
-      { id: 203, name: 'Briar Shaman', level: 20, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 191, dps: 22.7, armor: 20, resistance: 120, xp: 58, gold: 14, drops: T2_DROPS.shaman, materials: ['Core', 'Reagent'] },
-      { id: 204, name: 'Ironbark Treant', level: 22, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 223, dps: 26.5, armor: 132, resistance: 22, xp: 73, gold: 18, drops: T2_DROPS.treant, materials: ['Core', 'Wood'] },
-      { id: 205, name: 'Dire Wolf', level: 24, damageType: 'Physical', defense: 'Balanced', speed: 1.4, hp: 260, dps: 30.9, armor: 60, resistance: 60, xp: 91, gold: 23, drops: T2_DROPS.wolf, materials: ['Hide', 'Reagent'] },
-      { id: 206, name: 'Morgra, the Thorn Witch', level: 25, damageType: 'Magic', defense: 'Warded', speed: 0.8, hp: 328, dps: 38.9, armor: 25, resistance: 150, xp: 128, gold: 32, drops: all(T2_DROPS), materials: ['Core', 'Reagent', 'Gem'], boss: true },
+      { id: 201, name: 'Thornback Spider', level: 16, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 147, dps: 17.5, armor: 40, resistance: 40, xp: 37, gold: 9, drops: T2_DROPS.spider, materials: ['Hide', 'Cloth', 'Reagent'] },
+      { id: 202, name: 'Bandit Cutthroat', level: 18, damageType: 'Physical', defense: 'Balanced', speed: 1.3, hp: 172, dps: 20.5, armor: 45, resistance: 45, xp: 46, gold: 12, drops: T2_DROPS.cutthroat, materials: ['Metal', 'Cloth', 'Gem'] },
+      { id: 203, name: 'Briar Shaman', level: 20, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 201, dps: 23.9, armor: 20, resistance: 120, xp: 58, gold: 14, drops: T2_DROPS.shaman, materials: ['Core', 'Reagent'] },
+      { id: 204, name: 'Ironbark Treant', level: 22, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 234, dps: 27.8, armor: 132, resistance: 22, xp: 73, gold: 18, drops: T2_DROPS.treant, materials: ['Core', 'Wood'] },
+      { id: 205, name: 'Dire Wolf', level: 24, damageType: 'Physical', defense: 'Balanced', speed: 1.4, hp: 273, dps: 32.5, armor: 60, resistance: 60, xp: 91, gold: 23, drops: T2_DROPS.wolf, materials: ['Hide', 'Reagent'] },
+      { id: 206, name: 'Morgra, the Thorn Witch', level: 25, damageType: 'Magic', defense: 'Warded', speed: 0.8, hp: 378, dps: 40.9, armor: 25, resistance: 150, xp: 128, gold: 32, drops: all(T2_DROPS), materials: ['Core', 'Reagent', 'Gem'], boss: true },
     ],
     areas: [
       { id: 21, name: 'Webbed Road', blurb: 'The forest road, strung with webs and watched by bandits.', enemies: [201, 202], x: 50, y: 94 },
@@ -164,18 +171,17 @@ export const ZONES: ZoneDef[] = [
     links: [[21, 22], [21, 23], [22, 24], [23, 24]],
   },
   {
-    // Wall tier: HP and DPS × WALL_FACTOR (zones.md, "Difficulty rhythm").
     id: 3,
     tier: 3,
     name: 'Frostmaw Pass',
     blurb: 'A snowbound mountain pass below an abandoned dwarven hold.',
     enemies: [
-      { id: 301, name: 'Ice Harpy', level: 26, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 362, dps: 26.1, armor: 65, resistance: 65, xp: 107, gold: 27, drops: T3_DROPS.harpy, materials: ['Hide', 'Reagent'] },
-      { id: 302, name: 'Kobold Tunneler', level: 28, damageType: 'Physical', defense: 'Armored', speed: 1.1, hp: 422, dps: 30.4, armor: 168, resistance: 28, xp: 134, gold: 34, drops: T3_DROPS.kobold, materials: ['Metal', 'Wood', 'Gem'] },
-      { id: 303, name: 'Frost Wraith', level: 30, damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 492, dps: 35.5, armor: 30, resistance: 180, xp: 168, gold: 42, drops: T3_DROPS.wraith, materials: ['Core'] },
-      { id: 304, name: 'Rimebound Cultist', level: 32, damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 574, dps: 41.4, armor: 80, resistance: 80, xp: 211, gold: 53, drops: T3_DROPS.cultist, materials: ['Core', 'Cloth'] },
-      { id: 305, name: 'Stone Golem', level: 34, damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 670, dps: 48.3, armor: 204, resistance: 34, xp: 265, gold: 66, drops: T3_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
-      { id: 306, name: 'Hrimvald, Frost Giant Jarl', level: 35, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 844, dps: 60.8, armor: 210, resistance: 35, xp: 372, gold: 93, drops: all(T3_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
+      { id: 301, name: 'Ice Harpy', level: 26, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 363, dps: 26.1, armor: 65, resistance: 65, xp: 107, gold: 27, drops: T3_DROPS.harpy, materials: ['Hide', 'Reagent'] },
+      { id: 302, name: 'Kobold Tunneler', level: 28, damageType: 'Physical', defense: 'Armored', speed: 1.1, hp: 423, dps: 30.5, armor: 168, resistance: 28, xp: 134, gold: 34, drops: T3_DROPS.kobold, materials: ['Metal', 'Wood', 'Gem'] },
+      { id: 303, name: 'Frost Wraith', level: 30, damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 493, dps: 35.6, armor: 30, resistance: 180, xp: 168, gold: 42, drops: T3_DROPS.wraith, materials: ['Core'] },
+      { id: 304, name: 'Rimebound Cultist', level: 32, damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 576, dps: 41.5, armor: 80, resistance: 80, xp: 211, gold: 53, drops: T3_DROPS.cultist, materials: ['Core', 'Cloth'] },
+      { id: 305, name: 'Stone Golem', level: 34, damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 671, dps: 48.4, armor: 204, resistance: 34, xp: 265, gold: 66, drops: T3_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
+      { id: 306, name: 'Hrimvald, Frost Giant Jarl', level: 35, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1015, dps: 61, armor: 210, resistance: 35, xp: 372, gold: 93, drops: all(T3_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
     ],
     areas: [
       { id: 31, name: 'Switchbacks', blurb: 'The trail climbs past harpy nests and kobold tunnels.', enemies: [301, 302], x: 10, y: 92 },
@@ -184,6 +190,33 @@ export const ZONES: ZoneDef[] = [
       { id: 34, name: "Jarl's Hall", blurb: "The giant's seat in the hold's great hall.", enemies: [306], x: 84, y: 4 },
     ],
     links: [[31, 32], [31, 33], [32, 34], [33, 34]],
+  },
+  {
+    // First zone with the full boss HP bonus (bossHpFactor).
+    id: 4,
+    tier: 4,
+    name: 'Moonveil Vale',
+    blurb: 'A hidden elven valley of silver woods and moonlit ruins, under a moon gone dark.',
+    enemies: [
+      { id: 401, name: 'Moonmoth Swarm', level: 36, damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 672, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
+      { id: 402, name: 'Owlbear', level: 38, damageType: 'Physical', defense: 'Balanced', speed: 0.7, hp: 784, dps: 45.5, armor: 95, resistance: 95, xp: 389, gold: 97, drops: T4_DROPS.owlbear, materials: ['Hide', 'Reagent'] },
+      { id: 403, name: 'Silverbark Dryad', level: 40, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 915, dps: 53, armor: 40, resistance: 240, xp: 488, gold: 122, drops: T4_DROPS.dryad, materials: ['Core', 'Wood'] },
+      { id: 404, name: 'Hollow Sentinel', level: 42, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1067, dps: 61.9, armor: 252, resistance: 42, xp: 612, gold: 153, drops: T4_DROPS.sentinel, materials: ['Metal', 'Core', 'Gem'] },
+      { id: 405, name: 'Lunar Spellweaver', level: 44, damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 1245, dps: 72.2, armor: 110, resistance: 110, xp: 768, gold: 192, drops: T4_DROPS.spellweaver, materials: ['Core', 'Cloth', 'Gem'] },
+      { id: 406, name: 'Selvara, the Moonless Queen', level: 45, damageType: 'Magic', defense: 'Armored', speed: 0.8, hp: 2038, dps: 90.9, armor: 270, resistance: 45, xp: 1078, gold: 270, drops: all(T4_DROPS), materials: ['Metal', 'Core', 'Gem'], boss: true },
+      // Secret (Moonlight Garden): T5 strength (a T5 +2 enemy, about as tough as Selvara) hidden in T4.
+      // Pays like the Bellringer: ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
+      { id: 407, name: 'Moonlit Champion', level: 52, damageType: 'Magic', defense: 'Balanced', speed: 0.5, hp: 1961, dps: 92.3, armor: 130, resistance: 130, xp: 2190, gold: 585, drops: [1, 7, 5, 31, 39, 56], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5 },
+    ],
+    areas: [
+      { id: 41, name: 'Silverbark Glade', blurb: "Pale trees glow under a moon that isn't there.", enemies: [401, 402], x: 10, y: 90 },
+      { id: 42, name: 'Moonwell Ruins', blurb: 'Dry moonwells among fallen arches, still guarded.', enemies: [403, 404], x: 90, y: 62 },
+      { id: 43, name: 'Starlit Conservatory', blurb: "A glass dome where the queen's mages still chant to the dark sky.", enemies: [405], x: 12, y: 32 },
+      { id: 44, name: 'Moonless Throne', blurb: 'The queen waits on her throne beneath a black moon.', enemies: [406], x: 84, y: 6 },
+      { id: 45, name: 'Moonlight Garden', blurb: "A hidden garden where the moon still shines, guarded by the queen's last knight.", enemies: [407], x: 52, y: 96,
+        secret: { enemyId: 401, kills: 1000, hint: 500, rumour: "The moths all drift the same way at night, toward a light that isn't the moon…" } },
+    ],
+    links: [[41, 42], [41, 43], [42, 44], [43, 44], [41, 45]],
   },
 ];
 
@@ -203,12 +236,24 @@ export function secretState(area: AreaDef, kills: (enemyId: number) => number): 
 export const areaIndexOf = (zone: ZoneDef, enemyId: number) => zone.areas.findIndex(a => a.enemies.includes(enemyId));
 
 /**
- * Enemy HP and DPS multiplier on wall tiers: odd tiers from 3 (zones.md, "Difficulty
- * rhythm"). Steps into a wall tier (2→3, 4→5, …) are harder than the steps out of one.
- * Content numbers are precomputed; this documents the factor used.
+ * Enemy HP and DPS multiplier at `tier`, compounding: enemies outgrow the weapon curve by
+ * × CLIMB_FACTOR a tier, so every tier is harder than the last and gear building matters
+ * more the higher you go (zones.md, "Difficulty climb"). Content numbers are
+ * precomputed; this documents the factor used.
  */
-export const WALL_FACTOR = 1.1;
-export const isWallTier = (tier: number) => tier >= 3 && tier % 2 === 1;
+export const CLIMB_FACTOR = 1.05;
+export const climb = (tier: number) => CLIMB_FACTOR ** (tier - 1);
+
+/**
+ * A boss's HP is × `bossHpFactor(tier)` on top of `1.08^7`, rewards unchanged: ramps from 1
+ * at T1 to BOSS_HP_FACTOR at BOSS_HP_FROM_TIER and stays there, so from T4 the boss pays
+ * less per hour than the zone's strongest enemies and they stay the farming targets
+ * (zone-content.md, "Zone boss").
+ */
+export const BOSS_HP_FACTOR = 1.3;
+export const BOSS_HP_FROM_TIER = 4;
+export const bossHpFactor = (tier: number) =>
+  1 + (BOSS_HP_FACTOR - 1) * Math.min(1, (tier - 1) / (BOSS_HP_FROM_TIER - 1));
 
 export const STARTING_ZONE = 1;
 export const STARTING_TARGET = 101;

@@ -3,7 +3,7 @@
 // its name in the `migration` table. Called from the online settle timer and on connect,
 // so it runs within seconds of a publish whether or not anyone is online.
 
-import type { Ctx } from './helpers';
+import { addMaterials, type Ctx } from './helpers';
 import { migrateMaterialId } from './data/materials';
 
 interface Counted {
@@ -64,7 +64,26 @@ function materialIds(ctx: Ctx) {
   }
 }
 
-const MIGRATIONS: [name: string, run: (ctx: Ctx) => void][] = [['material-ids-kind-major', materialIds]];
+/** What one scrap smelted into before 2026-10-17, by rarity: held scrap converts at these. */
+const OLD_SMELT_YIELD: Record<string, number> = { Common: 2, Magic: 3, Rare: 5, Epic: 15, Legendary: 40 };
+
+/**
+ * 2026-10-17: scrapping gives materials at once, with no smelting (life-skills.md, "Scrap
+ * into materials"). Turns every held scrap counter into the materials it would have
+ * smelted into, then empties the `scrap` table.
+ */
+function scrapToMaterials(ctx: Ctx) {
+  for (const row of [...ctx.db.scrap.iter()]) {
+    const count = Number(row.count) * (OLD_SMELT_YIELD[row.rarity.tag] ?? 0);
+    if (count > 0) addMaterials(ctx, row.characterId, [{ materialId: row.materialId, count }]);
+    ctx.db.scrap.id.delete(row.id);
+  }
+}
+
+const MIGRATIONS: [name: string, run: (ctx: Ctx) => void][] = [
+  ['material-ids-kind-major', materialIds],
+  ['scrap-to-materials', scrapToMaterials],
+];
 
 /** Runs every migration not yet recorded in the `migration` table. */
 export function runMigrations(ctx: Ctx) {

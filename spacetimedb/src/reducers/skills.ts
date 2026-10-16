@@ -12,7 +12,6 @@ import {
   materialCounts,
   requireActive,
   requireItem,
-  scrapHeld,
   takeMaterials,
   settle,
   skillRow,
@@ -64,9 +63,7 @@ export const startProduction = spacetimedb.reducer({ skillId: t.u8(), recipe: t.
   }
   if (out.kind === 'item' && settled.bagSize - bagCount(ctx, ch.id) <= 0) throw new SenderError('Your bag is full');
   const held = materialCounts(ctx, ch.id);
-  const scrap = out.kind === 'scrap' ? scrapHeld(ctx, ch.id, out.materialId) : {};
-  const stock = { have: (id: number) => held.get(id) ?? 0, scrap: () => Object.values(scrap).reduce((a, b) => a + b, 0) };
-  if (affordable(r, stock) < 1) throw new SenderError(out.kind === 'scrap' ? 'No scrap to smelt' : 'Not enough materials');
+  if (affordable(r, { have: id => held.get(id) ?? 0 }) < 1) throw new SenderError('Not enough materials');
   ctx.db.character.id.update({ ...settled, ...NO_SKILL, activitySkill: def.id, activityRecipe: r.id, activityCountLeft: count });
 });
 

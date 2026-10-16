@@ -2,14 +2,25 @@ import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { bagExpansionCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
-import { MATERIALS } from '../../../spacetimedb/src/data/materials';
+import { MATERIALS, MATERIALS_BY_ID } from '../../../spacetimedb/src/data/materials';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
 import { LISTED_RARITIES, rarityRank, salvageValue } from '../../../spacetimedb/src/loot';
-import { isScrapRarity, scrapMaterialId } from '../../../spacetimedb/src/data/recipes';
+import { SCRAP_YIELD, isScrapRarity, scrapMaterialId } from '../../../spacetimedb/src/data/recipes';
 
 /** Common to Legendary items of a tier with materials can be scrapped. */
 const scrappable = (it: Item) => isScrapRarity(it.rarity.tag) && scrapMaterialId(it.baseId, it.tier) !== undefined;
+
+/** The materials scrapping `items` gives, e.g. "+6 Wolfhide, +2 Elven Ingot". */
+function scrapYield(items: readonly Item[]): string {
+  const counts = new Map<number, number>();
+  for (const it of items) {
+    if (!scrappable(it)) continue;
+    const id = scrapMaterialId(it.baseId, it.tier)!;
+    counts.set(id, (counts.get(id) ?? 0) + SCRAP_YIELD[it.rarity.tag as keyof typeof SCRAP_YIELD]);
+  }
+  return [...counts].map(([id, n]) => `+${n.toLocaleString()} ${MATERIALS_BY_ID.get(id)!.name}`).join(', ');
+}
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
@@ -35,9 +46,10 @@ function sortedBag(s: Snapshot, sort: BagSort, f: ItemFilter): Item[] {
 /** Materials held, highest tier first, untiered ones last. */
 function MaterialsCard({ s }: { s: Snapshot }) {
   const held = MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => (b.tier || -1) - (a.tier || -1));
+  const kinds = held.length;
   return (
-    <CollapsibleCard storageKey="bag_materials_collapsed" title="Materials" summary={held.length ? `${held.length} kinds` : undefined}>
-      {held.length ? (
+    <CollapsibleCard storageKey="bag_materials_collapsed" title="Materials" summary={kinds ? `${kinds} kinds` : undefined}>
+      {kinds ? (
         <div className="chips">
           {held.map(m => (
             <span key={m.id} className="chip" title={m.tier ? `T${m.tier} ${m.kind}` : 'Untiered'}>
@@ -89,10 +101,10 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
         <button
           className="btn"
           disabled={it.locked || !scrappable(it)}
-          title={it.locked ? "Locked items can't be scrapped" : 'Into scrap for Smithing to smelt into materials (no Dust or gold)'}
-          onClick={() => call(r.scrapItems({ itemIds: [it.id] }))}
+          title={it.locked ? "Locked items can't be recycled" : 'Into materials (no Dust or gold)'}
+          onClick={() => call(r.scrapItems({ itemIds: [it.id] }), `Recycled: ${scrapYield([it])}`)}
         >
-          Scrap
+          Recycle
         </button>
         <button
           className="btn danger"
@@ -121,10 +133,13 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
   // Selections and the popup drop items that left the bag.
   const selected = s.bag.filter(i => sel.has(i.id));
   const open = s.bag.find(i => i.id === openId);
-  const anyLocked = selected.some(i => i.locked);
-  const allScrappable = selected.every(scrappable);
-  const dust = selected.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).dust, 0n);
-  const salvageGold = selected.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).gold, 0n);
+  // Scrap and salvage skip locked items; they're off only when every selected item is locked.
+  const unlocked = selected.filter(i => !i.locked);
+  const skipped = selected.length - unlocked.length;
+  const skipNote = skipped ? ` (skips ${skipped} locked)` : '';
+  const allScrappable = unlocked.every(scrappable);
+  const dust = unlocked.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).dust, 0n);
+  const salvageGold = unlocked.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).gold, 0n);
   const cost = bagExpansionCost(s.row.bagSize);
 
   function clickTile(ev: React.MouseEvent, id: bigint) {
@@ -180,7 +195,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
       </div>
       <div className={`action-bar card${selected.length ? '' : ' empty'}`}>
         <button
-          className={`btn small${selectMode ? ' primary' : ' ghost'}`}
+          className={`btn small${selectMode ? ' primary' : ''}`}
           onClick={() => {
             setSelectMode(!selectMode);
             if (selectMode) setSel(new Set());
@@ -198,7 +213,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
           )}
         </span>
         {selected.length > 0 && <button className="btn small ghost" onClick={() => setSel(new Set())}>Clear</button>}
-        <button className="btn small ghost" onClick={() => setSel(new Set([...sel, ...shown.map(i => i.id)]))}>Select all shown</button>
+        <button className="btn small" onClick={() => setSel(new Set([...sel, ...shown.map(i => i.id)]))}>Select all shown</button>
         <span className="spacer" />
         <button
           className="btn small"
@@ -210,22 +225,19 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
         >
           <Icon name="lock" />{selected.length && selected.every(i => i.locked) ? 'Unlock' : 'Lock'}
         </button>
-        <button className="btn small" disabled={selected.length !== 1} onClick={() => openCraft(selected[0].id)}>
-          <Icon name="hammer" />Craft
-        </button>
         <button
           className="btn small"
-          disabled={!selected.length || anyLocked || !allScrappable}
-          title={anyLocked ? "Locked items can't be scrapped" : !allScrappable ? 'Only Common to Legendary items, of tiers with materials, can be scrapped' : 'Into scrap for Smithing to smelt (no Dust or gold)'}
-          onClick={() => call(r.scrapItems({ itemIds: selected.map(i => i.id) }).then(() => setSel(new Set())))}
+          disabled={!unlocked.length || !allScrappable}
+          title={selected.length && !unlocked.length ? "Locked items can't be recycled" : !allScrappable ? 'Only Common to Legendary items, of tiers with materials, can be recycled' : `Into materials (no Dust or gold)${skipNote}`}
+          onClick={() => call(r.scrapItems({ itemIds: unlocked.map(i => i.id) }).then(() => setSel(new Set())), `Recycled: ${scrapYield(unlocked)}`)}
         >
-          Scrap
+          Recycle
         </button>
         <button
           className="btn small danger"
-          disabled={!selected.length || anyLocked}
-          title={anyLocked ? "Locked items can't be salvaged" : undefined}
-          onClick={() => call(r.salvage({ itemIds: selected.map(i => i.id) }).then(() => setSel(new Set())))}
+          disabled={!unlocked.length}
+          title={selected.length && !unlocked.length ? "Locked items can't be salvaged" : skipped ? `Skips ${skipped} locked` : undefined}
+          onClick={() => call(r.salvage({ itemIds: unlocked.map(i => i.id) }).then(() => setSel(new Set())))}
         >
           Salvage → +{fmtBig(dust)} Dust, +{fmtBig(salvageGold)} gold
         </button>

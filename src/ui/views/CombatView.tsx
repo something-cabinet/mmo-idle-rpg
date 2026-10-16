@@ -5,7 +5,7 @@ import { call, useTick } from '../../store';
 import { MAX_LEVEL } from '../../../spacetimedb/src/combat';
 import { xpToNext } from '../../../spacetimedb/src/game';
 import { RARITIES, restrictsAffixes, restrictsTypes } from '../../../spacetimedb/src/loot';
-import { areaIndexOf } from '../../../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, areaIndexOf } from '../../../spacetimedb/src/data/zones';
 import { nowMicros } from '../clock';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
 import { EnemyArt } from '../enemyArt';
@@ -23,6 +23,14 @@ import { activityText } from './SkillView';
 function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?: number }) {
   const lines: React.ReactNode[] = [];
   for (const log of logs) {
+    if (log.respawns > 0) {
+      lines.push(
+        <li key={`r${log.id}`} className="dim">
+          <span><Icon name="skull" />Defeated{log.respawns > 1 ? ` ${log.respawns}×` : ''} by {ENEMIES_BY_ID.get(log.enemyId)?.enemy.name ?? 'an enemy'}</span>
+          <span className="muted">respawned</span>
+        </li>
+      );
+    }
     log.encounters.forEach((enc, i) =>
       lines.push(
         <li key={`e${log.id}-${i}`} className="encounter">
@@ -80,7 +88,7 @@ function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?
       lines.push(
         <li className="dim" key={`x${log.id}`}>
           <span>{scrapped.map(([r, n]) => `${n} ${r}`).join(', ')}</span>
-          <span className="muted">scrapped</span>
+          <span className="muted">recycled</span>
         </li>
       );
     }

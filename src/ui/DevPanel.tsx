@@ -9,6 +9,7 @@ import { MAX_TIER } from '../../spacetimedb/src/data/stats';
 import { UNIQUES } from '../../spacetimedb/src/data/uniques';
 import { DEV_RARITIES } from '../../spacetimedb/src/loot';
 import { call, useSticky } from '../store';
+import { DEV_ENEMY_STATS, STATS_UNLOCK_KILLS } from './enemy';
 import { CardHead } from './shared';
 import type { Snapshot } from './snapshot';
 
@@ -30,6 +31,7 @@ export function DevPanel({ s }: { s: Snapshot }) {
   const [level, setLevel] = useState('50');
   const [skillId, setSkillId] = useSticky('devSkill', 0);
   const [skillLevel, setSkillLevel] = useState('99');
+  const [enemyStats, setEnemyStats] = useSticky(DEV_ENEMY_STATS, false);
   const grant = (g: bigint, d: bigint) => call(r.devGrant({ gold: g, dust: d }), `+${g} gold, +${d} Dust`);
   const amount = (v: string) => (/^\d+$/.test(v) ? BigInt(v) : 0n);
 
@@ -43,6 +45,9 @@ export function DevPanel({ s }: { s: Snapshot }) {
         <button className="btn small" onClick={() => call(r.devUnlockZones({}), 'Every zone unlocked')}>Unlock all zones</button>
         <button className="btn small" onClick={() => call(r.devGrantMaterials({ count: 1000 }), '+1,000 of every material')}>+1k every material</button>
         <button className="btn small" onClick={() => call(r.devGrantSupplies({ count: 10 }), '+10 of every elixir')}>+10 every elixir</button>
+        <button className={`btn small${enemyStats ? ' primary' : ''}`} onClick={() => setEnemyStats(!enemyStats)}>
+          {enemyStats ? 'Hide' : 'Show'} all enemy stats
+        </button>
       </div>
 
       <h4 className="dev-h">Levels</h4>
@@ -114,7 +119,7 @@ export function DevPanel({ s }: { s: Snapshot }) {
           Give unique
         </button>
       </div>
-      <p className="muted hint">Items go straight into the bag, past the bag limit. "Reveal" sets every enemy to at least 1 kill and each secret's trigger enemy to its threshold.</p>
+      <p className="muted hint">Items go straight into the bag, past the bag limit. "Reveal" sets every enemy to at least 1 kill and each secret's trigger enemy to its threshold. "Show all enemy stats" opens every enemy's Stats tab without the {STATS_UNLOCK_KILLS} kills, on this client only, until reload.</p>
     </div>
   );
 }

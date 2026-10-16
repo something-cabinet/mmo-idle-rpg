@@ -128,7 +128,7 @@ Berserker:    damage × (1 + 10a × missing / maxHp). Missing HP grows at netInc
 | 9 | **Fortune's Favor** | Item find % | Each **kept** drop has a **10%** chance to be upgraded one rarity (max Legendary) | 30% |
 | 19 | **Seasoned** | XP gain % | Offline progress cap **+4h** (8h → 12h) | +8h (16h) |
 | 20 | **Prosperity** | Gold find % | Gold **× 1.4** | × 1.6 |
-| 38 | **Salvager** | Gold find % | Each drop the loot filter or a full bag rejects has a **25%** chance to be salvaged (or scrapped) twice | 50% |
+| 38 | **Salvager** | Gold find % | Each drop the loot filter or a full bag rejects has a **25%** chance to be salvaged (or recycled) twice | 50% |
 | 39 | **Bounty** | Item find % | Every **200** kills of an enemy, an extra Rare drops | every 67 |
 | 40 | **Prospector** | Max HP | Kills drop **0.1** Ore of the zone's tier on average | 0.3 |
 | 41 | **Patience** | XP gain % | Offline fighting past the first 4h earns **+15%** XP, gold, drops and materials | +30% |
@@ -143,7 +143,7 @@ Fortune's Favor: after the loot filter, each kept item rolls a: rarity + 1
                  removes one random regular affix and adds a legendary affix)
 Seasoned:        offline cap = 8h + a      (the gear worn at login decides)
 Prosperity:      gold × (1 + a)
-Salvager:        each rejected drop rolls a (own generator): Dust, gold or scrap × 2
+Salvager:        each rejected drop rolls a (own generator): Dust, gold or recycled materials × 2
 Bounty:          extra Rares = ⌊(before + kills) × a⌋ − ⌊before × a⌋   (before = kills of
                  this enemy so far, so the count carries across settles)
 Prospector:      Ore ~ Poisson(kills × a)   (own generator; enemies otherwise never drop Ore)

@@ -5,7 +5,7 @@
 import type { Item } from '../../module_bindings/types';
 import { TEMPER_STEP } from '../../../spacetimedb/src/combat';
 import { MAX_TEMPER, temperCost } from '../../../spacetimedb/src/data/recipes';
-import { SkillId, temperCap } from '../../../spacetimedb/src/data/skills';
+import { SkillId } from '../../../spacetimedb/src/data/skills';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
 import { temperBlocker } from '../../../spacetimedb/src/produce';
 import { call } from '../../store';
@@ -27,7 +27,7 @@ export function temperState(s: Snapshot, it: Item) {
 
 /** `it`'s next temper level: what it gives, what it costs, and the button. */
 export function TemperAction({ s, it }: { s: Snapshot; it: Item }) {
-  const { level, cost, short, blocker } = temperState(s, it);
+  const { cost, short, blocker } = temperState(s, it);
   const pct = (k: number) => `+${Math.round(k * TEMPER_STEP * 100)}%`;
   return (
     <div className="temper-action">
@@ -55,11 +55,7 @@ export function TemperAction({ s, it }: { s: Snapshot; it: Item }) {
           {blocker && <span className="muted">{blocker}</span>}
         </div>
       )}
-      <p className="muted">
-        Each level adds {pct(1)} to the item's base stats and implicits (weapon damage, armor, evasion, resistance, its trait); affixes don't
-        change. Smithing level {level} tempers up to +{temperCap(level)} (+1 per 10 levels, +{MAX_TEMPER} at 99). Instant: it doesn't stop what
-        you're doing.
-      </p>
+      <p className="muted">Each temper level adds {Math.round(TEMPER_STEP * 100)}% to base stats and implicits.</p>
     </div>
   );
 }

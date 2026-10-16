@@ -250,7 +250,7 @@ export const lootFilter = table(
     minAffixTier: t.u8().default(1),
     /** Type IDs: drops are kept only of these types (empty = any; a full list is stored as empty). */
     keepTypes: t.array(t.u16()).default([]),
-    /** Rejected drops go to the `scrap` counters (no Dust or gold) instead of being salvaged. */
+    /** Rejected drops are scrapped into materials (no Dust or gold) instead of being salvaged. */
     scrap: t.bool().default(false),
   }
 );
@@ -269,14 +269,14 @@ export const forgeFilter = table(
     keepAffixes: t.array(t.u16()),
     /** Kept only with an affix of at least this tier (1 = any). */
     minAffixTier: t.u8(),
-    /** Rejected bases go to the `scrap` counters instead of being salvaged. */
+    /** Rejected bases are scrapped into materials instead of being salvaged. */
     scrap: t.bool().default(false),
   }
 );
 
 /**
- * Scrapped items (life-skills.md, "Scrap into materials"), counted by the material they
- * smelt into and their rarity: they take no bag slot. Private; owners read theirs via `my_scrap`.
+ * Unused since 2026-10-17: scrap was held here until smelted; scrapping now gives materials
+ * at once, and migrate.ts `scrapToMaterials` emptied it. Drop (with `my_scrap`) at the M9 save reset.
  */
 export const scrap = table(
   { name: 'scrap' },
@@ -394,6 +394,8 @@ export const settleLog = table(
     elixirEmpty: t.bool().default(false),
     /** Drops (or forged bases) scrapped instead of salvaged, per rarity in loot.ts RARITIES order. */
     scrapped: t.array(t.u32()).default([]),
+    /** Live fights lost to `enemyId` in a matchup won on average: each cost a respawn, not the target (sim.ts). */
+    respawns: t.u32().default(0),
   }
 );
 

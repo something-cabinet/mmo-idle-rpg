@@ -128,10 +128,10 @@ from it at the raid's tier. Variant base IDs start at 1000.
 | Rime Greatsword | Greatsword | Wyrm Hollow (T3) | Physical | 20 / 88 | 0.6 | 53 | 5% | +40 Vitality (P), +4T resistance |
 | Rime Healing Staff | Healing Staff | Wyrm Hollow (T3) | Magic | 5 / 22 | 1.1 | 24 | 5% | Heal 11.25 per hit (T3: 20), single target; +4T resistance |
 | Rime Bow | Bow | Wyrm Hollow (T3) | Magic | 12.5 / 55 | 1.0 | 55 | 6% | +4T resistance |
-| Umbral Katana | Katana | The Drowned Moon (T4) | **Split** | 9.5 / 67 (T4) | 1.4 | 94 (T4) | 10% | +40% crit damage (P), as a katana |
-| Umbral Fire Staff | Fire Staff | The Drowned Moon (T4) | **Split** | 18.75 / 132 (T4) | 0.8 | 106 (T4) | 5% | None, as a fire staff |
-| Umbral Scepter | Scepter | The Drowned Moon (T4) | **Split** | 7.5 / 53 (T4) | 0.8 | 42 (T4) | 5% | Heal 10 per hit (T4: 24), single target, as a scepter |
-| Umbral Crossbow | Crossbow | The Drowned Moon (T4) | **Split** | 18 / 127 (T4) | 0.7 | 89 (T4) | 12% | +40% crit damage (P), +10T accuracy, as a crossbow |
+| Umbral Katana | Katana | The Drowned Moon (T4) | **Split** | 9.5 / 67 (T4) | 1.5 | 101 (T4) | 10% | +40% crit damage (P), as a katana; +15T accuracy (T4: 60) |
+| Umbral Fire Staff | Fire Staff | The Drowned Moon (T4) | **Split** | 18.75 / 132 (T4) | 0.9 | 119 (T4) | 5% | +15T accuracy (T4: 60), +15 Mind (P; T4: 10) |
+| Umbral Scepter | Scepter | The Drowned Moon (T4) | **Split** | 9.1 / 64 (T4) | 0.9 | 58 (T4) | 5% | Heal 6.8 per hit (T4: 16), single target; +15T accuracy (T4: 60) |
+| Umbral Crossbow | Crossbow | The Drowned Moon (T4) | **Split** | 18 / 127 (T4) | 0.8 | 102 (T4) | 12% | +40% crit damage (P), +25T accuracy (T4: 100) |
 
 | Variant | Type | Source | Implicits (T1 template; T3) |
 |---|---|---|---|
@@ -152,12 +152,13 @@ for one, magic damage % and Mind for the other) and its own mitigation (armor or
 resistance). Flat added damage keeps its own type. Moonlight still turns the whole hit
 magic; Spellblade swaps the halves, which changes nothing.
 
-The Umbral weapons are their type's stats with a Split hit: a sidegrade, never an
-upgrade. Against a Balanced enemy it deals the same; against an enemy with one weakness,
+The Umbral weapons are their type's stats with a Split hit, plus +0.1 attacks per second
+and accuracy (60 at T4, the crossbow 100); the scepter trades heal for damage (T4: 64 hit,
+16 heal) and the fire staff adds Mind. Per hit, against a Balanced enemy it deals the same; against an enemy with one weakness,
 half of every hit lands on its strong side, so it is worse; it needs both damage groups to
 scale. Against Umbriel it deals about the same total as a one-type weapon (the phases are
 mirror images and damage is linear) but **steadily**: a plain T4 katana does 59 / 109
-DPS in the Full / New Moon, an Umbral one 83 / 83. The other Umbral pieces carry both
+DPS in the Full / New Moon, an Umbral one 83 / 83 at the same speed (89 / 89 at its 1.5). The other Umbral pieces carry both
 defenses (greatshield, ring) or both damage groups (amulet, made for a Split weapon).
 
 ## Off-hands (*illustrative*)

@@ -11,7 +11,7 @@ import {
   temperRequirement,
   tierRequirement,
 } from './data/skills';
-import { MAX_TEMPER, SCRAP_ORDER, SCRAP_YIELD, temperCost, type MaterialCost, type Recipe, type ScrapRarity } from './data/recipes';
+import { MAX_TEMPER, temperCost, type MaterialCost, type Recipe } from './data/recipes';
 import { addSkillXp, type SkillProgress } from './gather';
 import { makeItem, passesFilter, rarityRank, rollAffix, seededRng, type LootFilter, type NewItem, type RarityName, type Rng } from './loot';
 
@@ -20,8 +20,6 @@ export interface Queue {
   countLeft: number;
   /** Material ID → count held. */
   have: (materialId: number) => number;
-  /** Scrap held of a scrap recipe's material, by rarity. */
-  scrap?: Partial<Record<ScrapRarity, number>>;
   /** Free bag slots, for recipes that make items. */
   bagFree: number;
   /** Whether the item an action makes is kept (the forge keep rule); salvaged ones take no bag slot. Default: all kept. */
@@ -34,8 +32,6 @@ export interface Produced extends SkillProgress {
   countLeft: number;
   /** Inputs used up (an action that keeps its inputs uses none). */
   used: MaterialCost[];
-  /** Scrap used up, by rarity. */
-  scrapUsed: { rarity: ScrapRarity; count: number }[];
   /** Materials a smelting recipe made (its output material). */
   yielded: number;
   /** Each action's end and the skill level it was made at, to seed and roll what it made; `kept` by the forge keep rule. */
@@ -63,8 +59,6 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
   const stock = new Map(r.inputs.map(i => [i.materialId, q.have(i.materialId)]));
   const used = new Map(r.inputs.map(i => [i.materialId, 0]));
   const out = r.output;
-  const scrap = { ...q.scrap };
-  const scrapUsed = new Map<ScrapRarity, number>();
   let yielded = 0;
   const made: Produced['made'] = [];
   let { level, xp } = p;
@@ -74,14 +68,7 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
   let t = start;
   let endedAt: bigint | undefined;
   for (;;) {
-    // Scrap smelts highest rarity first.
-    const rarity = out.kind === 'scrap' ? SCRAP_ORDER.find(x => (scrap[x] ?? 0) > 0) : undefined;
-    if (
-      countLeft <= 0 ||
-      bagFree <= 0 ||
-      r.inputs.some(i => stock.get(i.materialId)! < i.count) ||
-      (out.kind === 'scrap' && !rarity)
-    ) {
+    if (countLeft <= 0 || bagFree <= 0 || r.inputs.some(i => stock.get(i.materialId)! < i.count)) {
       endedAt = t;
       break;
     }
@@ -93,15 +80,10 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
     countLeft--;
     if (kept) bagFree--;
     if (out.kind === 'material') yielded += out.count;
-    if (rarity) yielded += SCRAP_YIELD[rarity];
     if (seededRng(characterId, t, KEEP_SALT)() >= doubleYieldChance(level)) {
       for (const i of r.inputs) {
         stock.set(i.materialId, stock.get(i.materialId)! - i.count);
         used.set(i.materialId, used.get(i.materialId)! + i.count);
-      }
-      if (rarity) {
-        scrap[rarity]!--;
-        scrapUsed.set(rarity, (scrapUsed.get(rarity) ?? 0) + 1);
       }
     }
     if (level < MAX_SKILL_LEVEL) {
@@ -117,7 +99,6 @@ export function projectProduction(p: SkillProgress, r: Recipe, q: Queue, charact
     xpGained,
     countLeft,
     used: [...used].filter(([, n]) => n > 0).map(([materialId, count]) => ({ materialId, count })),
-    scrapUsed: [...scrapUsed].map(([rarity, count]) => ({ rarity, count })),
     yielded,
     made,
     endedAt,

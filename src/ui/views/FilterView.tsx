@@ -2,6 +2,7 @@ import { Fragment, memo } from 'react';
 import { TYPE_LIST, type BaseKind } from '../../../spacetimedb/src/data/bases';
 import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS, RARITIES } from '../../../spacetimedb/src/loot';
+import { SCRAP_YIELD } from '../../../spacetimedb/src/data/recipes';
 import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { affixLabel, rarityCls } from '../items';
@@ -127,12 +128,12 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
           </div>
           <div className="card-head" style={{ marginTop: 12 }}><h2>Rejected drops</h2></div>
           <p className="muted">
-            Salvage turns them into Dust and gold. Scrap keeps them as scrap for Smithing to smelt into materials, with no Dust
-            or gold. Neither takes a bag slot.
+            Salvage turns them into Dust and gold. Recycle turns them into materials of their tier, with no Dust or gold:{' '}
+            {Object.entries(SCRAP_YIELD).map(([r, n]) => `${n} (${r})`).join(', ')}. Neither takes a bag slot.
           </p>
           <div className="seg">
             <button className={`seg-btn${!f.scrap ? ' active' : ''}`} onClick={() => setFilter({ scrap: false })}>Salvage</button>
-            <button className={`seg-btn${f.scrap ? ' active' : ''}`} onClick={() => setFilter({ scrap: true })}>Scrap</button>
+            <button className={`seg-btn${f.scrap ? ' active' : ''}`} onClick={() => setFilter({ scrap: true })}>Recycle</button>
           </div>
           <div className="card-head" style={{ marginTop: 12 }}><h2>Last 8 hours</h2></div>
           <FilterSummary s={s} />

@@ -6,7 +6,7 @@ import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from 
 import { ENEMIES_BY_ID, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { simulate, type Simulated } from '../../spacetimedb/src/sim';
 import { SKILLS, SKILLS_BY_ID, gatherSpot, type GatheringSkillDef, type ProductionSkillDef, type SkillDef } from '../../spacetimedb/src/data/skills';
-import { recipeOf, type Recipe, type ScrapRarity } from '../../spacetimedb/src/data/recipes';
+import { recipeOf, type Recipe } from '../../spacetimedb/src/data/recipes';
 import { SUPPLIES_BY_ID, elixirBuffs, type Buffs, type SupplyDef } from '../../spacetimedb/src/data/supplies';
 import { gatherCharacterXp, projectGathering, rollGatheringActions, type Gathered } from '../../spacetimedb/src/gather';
 import { forged, productionCharacterXp, projectProduction, type ForgeFilter, type Produced } from '../../spacetimedb/src/produce';
@@ -74,8 +74,6 @@ export interface Snapshot {
   supplies: Map<number, number>;
   /** The forge keep rule; undefined keeps every forged base. */
   forgeFilter: ForgeFilter | undefined;
-  /** Material ID → scrap held that smelts into it, by rarity. */
-  scrap: Map<number, Partial<Record<ScrapRarity, number>>>;
   /** The active elixir, projected to now; undefined when the slot is empty. */
   elixir: { supply: SupplyDef; killsLeft: number } | undefined;
 }
@@ -96,10 +94,6 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const fighting = skilling ? undefined : ENEMIES_BY_ID.get(row.targetEnemyId);
   const ff = [...conn.db.myForgeFilter.iter()][0];
   const forgeFilter: ForgeFilter | undefined = ff && { minRarity: ff.minRarity.tag, keepAffixes: ff.keepAffixes, minAffixTier: ff.minAffixTier, scrap: ff.scrap };
-  const scrap = new Map<number, Partial<Record<ScrapRarity, number>>>();
-  for (const r of conn.db.myScrap.iter()) {
-    if (r.count > 0n) scrap.set(r.materialId, { ...scrap.get(r.materialId), [r.rarity.tag]: Number(r.count) });
-  }
   const supplies = new Map([...conn.db.mySupplies.iter()].map(r => [r.supplyId, Number(r.count)]));
   const elixirSupply = row.elixirKillsLeft > 0 ? SUPPLIES_BY_ID.get(row.elixirId) : undefined;
   const buffsNow = fighting && elixirSupply && elixirBuffs(elixirSupply.id, fighting.zone.tier);
@@ -130,7 +124,6 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     const queue = {
       countLeft: row.activityCountLeft,
       have: (id: number) => Number(materials.get(id) ?? 0n),
-      scrap: out.kind === 'scrap' ? scrap.get(out.materialId) : undefined,
       bagFree: row.bagSize - bag.length,
       keeps: (m: { at: bigint; level: number }) => forged(row.id, recipe, m, forgeFilter).kept,
     };
@@ -140,7 +133,7 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     const gained = productionCharacterXp(projected.actions, recipe);
     p = { ...p, ...addXp(p.level, p.xp, gained), xpGained: p.level >= MAX_LEVEL ? 0n : gained };
     // What smelting made so far.
-    if ((out.kind === 'material' || out.kind === 'scrap') && projected.yielded > 0)
+    if (out.kind === 'material' && projected.yielded > 0)
       materials.set(out.materialId, (materials.get(out.materialId) ?? 0n) + BigInt(projected.yielded));
   } else if (skilling?.kind === 'Gathering') {
     const at = skills.get(skilling.id)!;
@@ -196,7 +189,6 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
     production,
     supplies,
     forgeFilter,
-    scrap,
     elixir,
   };
 }

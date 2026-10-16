@@ -153,7 +153,7 @@ export const LEGENDARIES: LegendaryDef[] = [
   legendary({ id: 20, name: 'Prosperity', group: 'Utility', bonusStat: Stat.GoldFindPct, perCopy: 0.4, cap: 0.6,
     describe: a => `Gold × ${Number((1 + a).toFixed(2))}.` }),
   legendary({ id: 38, name: 'Salvager', group: 'Utility', bonusStat: Stat.GoldFindPct, perCopy: 0.25, cap: 0.5,
-    describe: a => `Each drop the loot filter or a full bag rejects has a ${pc(a)} chance to be salvaged or scrapped twice.` }),
+    describe: a => `Each drop the loot filter or a full bag rejects has a ${pc(a)} chance to be salvaged or recycled twice.` }),
   legendary({ id: 39, name: 'Bounty', group: 'Utility', bonusStat: Stat.ItemFindPct, perCopy: 0.005, cap: 0.015,
     describe: a => `Every ${Math.round(1 / a)} kills of an enemy, an extra Rare drops.` }),
   legendary({ id: 40, name: 'Prospector', group: 'Utility', bonusStat: Stat.MaxHp, perCopy: 0.1, cap: 0.3,

@@ -60,7 +60,7 @@ export interface TypeDef {
 
 export interface BaseDef {
   id: number;
-  /** Its type (`TYPES`); kind, family and slots are the type's. */
+  /** Its type (`TYPES`); kind and slots are the type's, and family too apart from jewelry variants. */
   typeId: number;
   kind: BaseKind;
   /** The type's name, e.g. "Sword", "Plate · Chest". */
@@ -238,10 +238,16 @@ export const TYPE_LIST: TypeDef[] = CORE.map(c => ({
 }));
 export const TYPES: ReadonlyMap<number, TypeDef> = new Map(TYPE_LIST.map(t => [t.id, t]));
 
-/** A variant of type `typeId`: kind, family and slots copy the type's. */
+/**
+ * A variant family: the type's name, but a jewelry variant drops the gem ("Ring · Amber" → "Ring"),
+ * since it trades away the gem's primary stat.
+ */
+export const variantFamily = (t: TypeDef) => (t.kind === 'jewelry' ? t.name.split(' · ')[0] : t.name);
+
+/** A variant of type `typeId`: kind and slots copy the type's, family per `variantFamily`. */
 function variant(id: number, typeId: number, v: Pick<BaseDef, 'name' | 'implicits' | 'weapon' | 'raidId'>): BaseDef {
   const t = TYPES.get(typeId)!;
-  return { id, typeId, kind: t.kind, family: t.name, slots: t.slots, ...v };
+  return { id, typeId, kind: t.kind, family: variantFamily(t), slots: t.slots, ...v };
 }
 
 /**
@@ -300,28 +306,30 @@ const VARIANTS: BaseDef[] = [
   // The Drowned Moon (raid 2, T4): named Umbral <type>, half silver and half void like Umbriel.
   // The weapons are their type with a Split hit (half physical, half magic): half of every swing lands on
   // the soft side of either Lunar Phase, but against a one-weakness enemy half always lands on its strong side.
+  // Each is also a little quicker (+0.1 attacks/s) and adds accuracy (15T; the crossbow 25T instead of 10T).
   variant(1007, 6, {
     name: () => 'Umbral Katana',
-    weapon: { damageType: 'Split', hit: 9.5, speed: 1.4, baseCrit: 10, twoHanded: true, ranged: false },
-    implicits: [pct(Stat.CritDamage, 40)],
+    weapon: { damageType: 'Split', hit: 9.5, speed: 1.5, baseCrit: 10, twoHanded: true, ranged: false },
+    implicits: [pct(Stat.CritDamage, 40), lin(Stat.Accuracy, 15)],
     raidId: 2,
   }),
   variant(1008, 9, {
     name: () => 'Umbral Fire Staff',
-    weapon: { damageType: 'Split', hit: 18.75, speed: 0.8, baseCrit: 5, twoHanded: true, ranged: true },
-    implicits: [],
+    weapon: { damageType: 'Split', hit: 18.75, speed: 0.9, baseCrit: 5, twoHanded: true, ranged: true },
+    implicits: [lin(Stat.Accuracy, 15), pct(Stat.Mind, 15)],
     raidId: 2,
   }),
+  // The scepter trades heal for damage: T4 hit 64 (32 + 32), heal 16.
   variant(1009, 4, {
     name: () => 'Umbral Scepter',
-    weapon: { damageType: 'Split', hit: 7.5, speed: 0.8, baseCrit: 5, heal: 10, healTarget: 'Single', twoHanded: false, ranged: false },
-    implicits: [],
+    weapon: { damageType: 'Split', hit: 9.1, speed: 0.9, baseCrit: 5, heal: 6.8, healTarget: 'Single', twoHanded: false, ranged: false },
+    implicits: [lin(Stat.Accuracy, 15)],
     raidId: 2,
   }),
   variant(1010, 11, {
     name: () => 'Umbral Crossbow',
-    weapon: { damageType: 'Split', hit: 18, speed: 0.7, baseCrit: 12, twoHanded: true, ranged: true },
-    implicits: [pct(Stat.CritDamage, 40), lin(Stat.Accuracy, 10)],
+    weapon: { damageType: 'Split', hit: 18, speed: 0.8, baseCrit: 12, twoHanded: true, ranged: true },
+    implicits: [pct(Stat.CritDamage, 40), lin(Stat.Accuracy, 25)],
     raidId: 2,
   }),
   // The armor split evenly with resistance; same HP, threat and attack speed cost.

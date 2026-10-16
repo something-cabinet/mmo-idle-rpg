@@ -245,6 +245,15 @@ button {
   border-color: var(--bad);
   color: var(--bad);
 }
+.btn.accent-outline {
+  background: transparent;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.btn.accent-outline:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
 .btn.ghost {
   background: transparent;
   border-color: transparent;

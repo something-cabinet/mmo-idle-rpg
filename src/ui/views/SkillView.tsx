@@ -168,8 +168,11 @@ export function activityText(s: Snapshot): string {
 
 /** A skill page's top card: the level and a full-width XP bar, then the skill's perks (`children`). */
 export function SkillLevelCard({ level, xp, children }: { level: number; xp: bigint; children?: ReactNode }) {
-  const need = skillXpToNext(level);
-  const maxed = level >= MAX_SKILL_LEVEL;
+  return <LevelCard level={level} xp={xp} need={skillXpToNext(level)} maxed={level >= MAX_SKILL_LEVEL}>{children}</LevelCard>;
+}
+
+/** A level and a full-width XP bar toward the next one (skills and the character page). */
+export function LevelCard({ level, xp, need, maxed, children }: { level: number; xp: bigint; need: bigint; maxed: boolean; children?: ReactNode }) {
   const pct = maxed ? 100 : Number((xp * 1000n) / need) / 10;
   return (
     <div className="card skill-level">
@@ -250,7 +253,7 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
       <ViewHeader title={skill.name} icon={skill.icon} />
       <SkillLevelCard {...at}>
         <div className="stat-row"><span>{skill.tool}</span><strong>T{toolTier} · +{Math.round(toolSpeedBonus(toolTier) * 100)}% speed</strong></div>
-        <div className="stat-row"><span>Double yield</span><strong>{double > 0 ? `${Math.round(double * 100)}%` : 'From level 50'}</strong></div>
+        {double > 0 && <div className="stat-row"><span>Double yield</span><strong>{Math.round(double * 100)}%</strong></div>}
         <div className="stat-row"><span>Rare finds</span><strong>×{findLevelMult(at.level).toFixed(2)}</strong></div>
       </SkillLevelCard>
       <MilestonesCard skill={skill} level={at.level} />

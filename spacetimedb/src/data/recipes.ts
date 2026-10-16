@@ -5,12 +5,12 @@
 // never renumber them. Per skill:
 //   Smithing: forge a base = baseId × 10 + tier; empowered forge (+1 Dryad's Tear) =
 //     30000 + baseId × 10 + tier; upgrade a tool = 1000 + skill × 10 + tier;
-//     smelt Ore = 60000 + tier; smelt scrap = 61000 + the material ID it makes. (Tempering is
-//     instant, not a recipe: `temperCost`.)
+//     smelt Ore = 60000 + tier; 61000 + material ID was smelt scrap (retired: scrap is instant
+//     now, `SCRAP_YIELD`). (Tempering is instant, not a recipe: `temperCost`.)
 //   Alchemy: the elixir's supply ID (data/supplies.ts); Greater elixirs add a rare herb.
 
 import { ZONE_BASES, base, type BaseDef } from './bases';
-import { MATERIALS, MATERIALS_BY_ID, materialAt, materialOf, untieredMaterial, type MaterialKind } from './materials';
+import { MATERIALS_BY_ID, materialAt, materialOf, untieredMaterial, type MaterialKind } from './materials';
 import { GATHERING_SKILLS, SkillId, productionXpPerAction } from './skills';
 import { SUPPLIES, SUPPLY_TIERS } from './supplies';
 
@@ -25,9 +25,7 @@ export type RecipeOutput =
   | { kind: 'tool'; skillId: number }
   | { kind: 'supply'; supplyId: number }
   /** `count` of a material per action (smelting Ore). */
-  | { kind: 'material'; materialId: number; count: number }
-  /** A material from its scrap (that material's scrap counters, highest rarity first): SCRAP_YIELD per action. */
-  | { kind: 'scrap'; materialId: number };
+  | { kind: 'material'; materialId: number; count: number };
 
 export interface Recipe {
   id: number;
@@ -49,7 +47,6 @@ export const FORGE_SECONDS = 120;
 export const TOOL_SECONDS = 1800;
 export const ELIXIR_SECONDS = 450;
 export const SMELT_SECONDS = 12;
-export const SCRAP_SECONDS = 30;
 /** Tempering step k is instant but gives the Smithing XP of TEMPER_XP_SECONDS × k of work. */
 export const TEMPER_XP_SECONDS = 180;
 
@@ -85,20 +82,15 @@ function forgeRecipe(b: BaseDef, tier: number, empowered = false): Recipe {
 
 export const toolRecipeId = (skillId: number, tier: number) => 1000 + skillId * 10 + tier;
 export const smeltRecipeId = (tier: number) => 60000 + tier;
-export const scrapRecipeId = (materialId: number) => 61000 + materialId;
 
 /** The material an item scraps into: its base family's main material, but Metal for jewelry (Gems stay scarce). */
 export const scrapKind = (b: BaseDef): MaterialKind => (b.kind === 'jewelry' ? 'Metal' : forgeKinds(b)[0]);
-/** The material ID of the scrap of `baseId` at `tier`; undefined for tiers without materials yet. */
+/** The material ID `baseId` at `tier` scraps into; undefined for tiers without materials yet. */
 export const scrapMaterialId = (baseId: number, tier: number): number | undefined => materialAt(tier, scrapKind(base(baseId)))?.id;
-/** The kinds scrap comes in. */
-export const SCRAP_KINDS: readonly MaterialKind[] = [...new Set(ZONE_BASES.map(scrapKind))];
 
-/** Materials one smelt of scrap makes, by the scrapped item's rarity. */
-export const SCRAP_YIELD = { Common: 2, Magic: 3, Rare: 5, Epic: 15, Legendary: 40 } as const;
+/** Materials scrapping one item gives at once, by its rarity (life-skills.md, "Recycle into materials"). */
+export const SCRAP_YIELD = { Common: 1, Magic: 2, Rare: 3, Epic: 8, Legendary: 20 } as const;
 export type ScrapRarity = keyof typeof SCRAP_YIELD;
-/** Scrap rarities in the order they smelt (highest first). */
-export const SCRAP_ORDER: readonly ScrapRarity[] = ['Legendary', 'Epic', 'Rare', 'Magic', 'Common'];
 export const isScrapRarity = (r: string): r is ScrapRarity => r in SCRAP_YIELD;
 
 /** Highest temper level. */
@@ -161,17 +153,6 @@ export const RECIPES: Recipe[] = [
     output: { kind: 'material' as const, materialId: materialOf(tier, 'Metal').id, count: 1 },
     max: MAX_QUEUE,
   })),
-  // Scrap → materials of its kind and tier.
-  ...MATERIALS.filter(m => (SCRAP_KINDS as readonly string[]).includes(m.kind)).map(m => ({
-    id: scrapRecipeId(m.id),
-    skillId: SkillId.Smithing,
-    tier: m.tier,
-    name: `Smelt scrap into ${m.name}`,
-    seconds: SCRAP_SECONDS,
-    inputs: [],
-    output: { kind: 'scrap' as const, materialId: m.id },
-    max: MAX_QUEUE,
-  })),
   ...SUPPLIES.map(s => ({
     id: s.id,
     skillId: SkillId.Alchemy,
@@ -201,18 +182,13 @@ export const forgeRecipeOf = (baseId: number, tier: number, empowered = false) =
 export interface Stock {
   /** Material ID → count held. */
   have: (materialId: number) => number;
-  /** Scrap held that smelts into a material (every rarity). */
-  scrap?: (materialId: number) => number;
 }
 
-/** How many actions of `r` the stock pays for (a scrap recipe: one per scrap). */
+/** How many actions of `r` the stock pays for. */
 export function affordable(r: Recipe, s: Stock): number {
-  const out = r.output;
   const counts = r.inputs.map(i => Math.floor(s.have(i.materialId) / i.count));
-  if (out.kind === 'scrap') counts.push(s.scrap?.(out.materialId) ?? 0);
   return counts.length ? Math.min(...counts) : Infinity;
 }
 
-/** The material a smelting recipe (Ore or scrap) makes, or undefined. */
-export const smeltedMaterial = (r: Recipe) =>
-  r.output.kind === 'material' || r.output.kind === 'scrap' ? MATERIALS_BY_ID.get(r.output.materialId) : undefined;
+/** The material a smelting recipe makes, or undefined. */
+export const smeltedMaterial = (r: Recipe) => (r.output.kind === 'material' ? MATERIALS_BY_ID.get(r.output.materialId) : undefined);

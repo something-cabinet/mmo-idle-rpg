@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Presence, SettleLog } from '../module_bindings/types';
 import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
+import { RESPAWN_SECONDS } from '../../spacetimedb/src/sim';
 import { SKILLS_BY_ID } from '../../spacetimedb/src/data/skills';
 import { recipeOf } from '../../spacetimedb/src/data/recipes';
 import { SUPPLIES_BY_ID } from '../../spacetimedb/src/data/supplies';
@@ -23,7 +24,9 @@ let shownFor: bigint | undefined;
 /** A life skill's line: gathering actions, or what a production queue made, and the inputs it used. */
 function SkillLine({ l, salvage }: { l: SettleLog; /** Show what the keep rule salvaged (the report's own lines cover the last settle). */ salvage?: boolean }) {
   const skill = SKILLS_BY_ID.get(l.skillId);
-  const name = recipeOf(l.skillId, l.recipe)?.name;
+  const r = recipeOf(l.skillId, l.recipe);
+  const name = r?.name;
+  const scrappedCount = (l.scrapped ?? []).reduce((a, b) => a + b, 0);
   return (
     <>
       <p>
@@ -31,11 +34,13 @@ function SkillLine({ l, salvage }: { l: SettleLog; /** Show what the keep rule s
         {l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelFrom} → ${l.skillLevelTo}` : ''}
       </p>
       {l.used.length > 0 && <p className="muted">Used: {materialsText(l.used)}</p>}
-      {l.recipe !== 0 && l.materials.length > 0 && <p className="muted">Made: {materialsText(l.materials)}</p>}
+      {l.recipe !== 0 && r?.output.kind !== 'item' && l.materials.length > 0 && <p className="muted">Made: {materialsText(l.materials)}</p>}
       {salvage && l.salvaged.some(n => n > 0) && (
         <p className="muted">Salvaged by the keep rule: {l.salvaged.reduce((a, b) => a + b, 0)} (+{fmtBig(l.dust)} Dust, +{fmtBig(l.gold)} gold)</p>
       )}
-      {salvage && (l.scrapped ?? []).some(n => n > 0) && <p className="muted">Scrapped by the keep rule: {l.scrapped.reduce((a, b) => a + b, 0)}</p>}
+      {salvage && scrappedCount > 0 && (
+        <p className="muted">Recycled by the keep rule: {scrappedCount}{r?.output.kind === 'item' && l.materials.length > 0 && ` (+${materialsText(l.materials)})`}</p>
+      )}
     </>
   );
 }
@@ -91,6 +96,11 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
       ) : (
         !log.defeated && <p>0 kills of {enemy.name}.</p>
       )}
+      {enemy && !skill && log.respawns > 0 && (
+        <p className="muted">
+          Defeated about {log.respawns.toLocaleString()}× by bad luck, back up each time after {RESPAWN_SECONDS} s.
+        </p>
+      )}
       {enemy && log.defeated && (
         <p className="c-bad">
           <strong>{enemy.name}</strong> killed you. You spent the last {duration(log.idleMicros)} idle: plan your fights before you leave.
@@ -138,7 +148,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
         </p>
       )}
       {salvaged.length > 0 && <p className="muted">Salvaged: {salvaged.map(([r, n]) => `${n} ${r}`).join(', ')}</p>}
-      {scrapped.length > 0 && <p className="muted">Scrapped: {scrapped.map(([r, n]) => `${n} ${r}`).join(', ')}</p>}
+      {scrapped.length > 0 && <p className="muted">Recycled: {scrapped.map(([r, n]) => `${n} ${r}`).join(', ')}</p>}
       {log.overflow > 0 && <p className="c-bad">⚠ Bag full: {log.overflow} kept items were salvaged.</p>}
       <div className="row">
         {kept.length ? <a className="btn small ghost" href="#bag" onClick={close}>View in bag</a> : <span />}

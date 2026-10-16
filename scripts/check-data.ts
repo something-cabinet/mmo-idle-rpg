@@ -1,11 +1,11 @@
 // Consistency checks for the static game data (spacetimedb/src/data). No server needed:
 //   npm run test:data
-import { BASE_LIST, TYPES, TYPE_LIST, ZONE_BASES, TRACKS, base, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
+import { BASE_LIST, TYPES, TYPE_LIST, ZONE_BASES, TRACKS, base, variantFamily, implicitValue, weaponValues } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, curve, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { RAIDS, RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
-import { ENEMIES_BY_ID, ZONES, bossHpFactor, bossOf, climb, effectiveHp } from '../spacetimedb/src/data/zones';
+import { BOSS_OFFSET, ENEMIES_BY_ID, ZONES, bossHpFactor, bossOf, climb, effectiveHp, offsetRewards, offsetStats } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
 import { DROP_KINDS, MATERIALS, MATERIAL_KINDS, MATERIAL_KIND_IDS, materialOf, migrateMaterialId } from '../spacetimedb/src/data/materials';
 
@@ -24,7 +24,7 @@ check('every type has a core base of its ID; the core bases are the zone bases',
   ZONE_BASES.length === TYPE_LIST.length);
 check('bases match their type', BASE_LIST.every(b => {
   const t = TYPES.get(b.typeId);
-  return !!t && t.kind === b.kind && t.name === b.family && t.slots.join() === b.slots.join();
+  return !!t && t.kind === b.kind && (b.id === b.typeId ? t.name : variantFamily(t)) === b.family && t.slots.join() === b.slots.join();
 }));
 check('variants have a source', BASE_LIST.every(b => b.id === b.typeId || b.raidId !== undefined));
 check('raid-only bases: their raid exists and drops them', BASE_LIST.every(b => b.raidId === undefined ||
@@ -92,23 +92,26 @@ for (const zone of ZONES) {
   check(`${zone.name}: every area joined to the map`, seen.size === ids.size);
 }
 for (const zone of ZONES) {
-  // Average enemy (o = 0) matches the reference curve × the tier's climb (zones.md).
+  // Average enemy (o = 0) matches the reference curve × the tier's climb × offsetStats(0) (zones.md).
   const avg = zone.enemies.find(e => e.level === 10 * zone.tier);
   if (!avg || zone.tier === 1) continue;
   const hp = 70 * curve('offense', zone.tier) * (1 + 0.15 * zone.tier) * climb(zone.tier);
   const dps = 16 * 1.42 ** (zone.tier - 1) * climb(zone.tier);
-  check(`${zone.name}: average enemy on curve`, Math.abs(effectiveHp(avg) / hp - 1) < 0.01 && Math.abs(avg.dps / dps - 1) < 0.01,
-    `hp ${effectiveHp(avg)} vs ${hp.toFixed(0)}, dps ${avg.dps} vs ${dps.toFixed(1)}`);
-  // Traits are paid for with HP: an enemy with one stays on its offset's curve (× 1.08^o).
-  for (const e of zone.enemies.filter(e => (e.evasionRating || e.regen) && !e.boss && !e.secret)) {
-    const want = hp * 1.08 ** (e.level - 10 * zone.tier);
-    check(`${e.name}: traits paid for with HP`, Math.abs(effectiveHp(e) / want - 1) < 0.01, `effective hp ${effectiveHp(e).toFixed(0)} vs ${want.toFixed(0)}`);
+  // Every regular enemy sits on its offset's curve (offsetStats); traits are paid for with HP.
+  for (const e of zone.enemies.filter(e => !e.boss && !e.secret)) {
+    const o = e.level - 10 * zone.tier;
+    const want = hp * offsetStats(o);
+    check(`${e.name}: on its offset's curve`, Math.abs(effectiveHp(e) / want - 1) < 0.01 && Math.abs(e.dps / (dps * offsetStats(o)) - 1) < 0.01,
+      `effective hp ${effectiveHp(e).toFixed(0)} vs ${want.toFixed(0)}, dps ${e.dps} vs ${(dps * offsetStats(o)).toFixed(1)}`);
+    const xp = 20 * 2.9 ** (zone.tier - 1) * offsetRewards(o);
+    check(`${e.name}: XP on its offset's curve`, Math.abs(e.xp / xp - 1) < 0.02, `${e.xp} vs ${xp.toFixed(0)}`);
   }
-  // Boss: × 1.08^7, and HP × bossHpFactor (zone-content.md).
+  // Boss: offset BOSS_OFFSET, and HP × bossHpFactor (zone-content.md).
   const boss = bossOf(zone)!;
-  const bossHp = hp * 1.08 ** 7 * bossHpFactor(zone.tier);
-  check(`${zone.name}: boss on curve`, Math.abs(boss.hp / bossHp - 1) < 0.01 && Math.abs(boss.dps / (dps * 1.08 ** 7) - 1) < 0.01,
-    `hp ${boss.hp} vs ${bossHp.toFixed(0)}, dps ${boss.dps} vs ${(dps * 1.08 ** 7).toFixed(1)}`);
+  const bossHp = hp * offsetStats(BOSS_OFFSET) * bossHpFactor(zone.tier);
+  const bossDps = dps * offsetStats(BOSS_OFFSET);
+  check(`${zone.name}: boss on curve`, Math.abs(boss.hp / bossHp - 1) < 0.01 && Math.abs(boss.dps / bossDps - 1) < 0.01,
+    `hp ${boss.hp} vs ${bossHp.toFixed(0)}, dps ${boss.dps} vs ${bossDps.toFixed(1)}`);
 }
 check('enemy lookup', ENEMIES_BY_ID.get(101)?.enemy.name === 'Field Rat');
 

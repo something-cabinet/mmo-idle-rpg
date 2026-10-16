@@ -3,6 +3,9 @@ import { EffectsCard, StatBoard, ViewHeader } from "../shared";
 import type { Snapshot } from "../snapshot";
 import { statSheet } from "../statSheet";
 import { touchFirst } from "../TapTip";
+import { LevelCard } from "./SkillView";
+import { MAX_LEVEL } from "../../../spacetimedb/src/combat";
+import { xpToNext } from "../../../spacetimedb/src/game";
 
 export const CharacterView = memo(function CharacterView({
   s,
@@ -14,6 +17,7 @@ export const CharacterView = memo(function CharacterView({
   return (
     <>
       <ViewHeader title="Character" icon="user" />
+      <LevelCard level={s.level} xp={s.xp} need={xpToNext(s.level)} maxed={s.level >= MAX_LEVEL} />
       <StatBoard sheet={sheet} />
       <EffectsCard effects={s.stats.effects} />
       <p className="muted hint">

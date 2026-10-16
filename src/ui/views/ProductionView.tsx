@@ -8,14 +8,10 @@ import { ZONE_BASES, base, type BaseKind } from '../../../spacetimedb/src/data/b
 import { GATHERING_SKILLS, SkillId, TOOL_SPEED_PER_TIER, productionActionMicros, productionBlocker, productionXpPerAction, tierRequirement, type ProductionSkillDef } from '../../../spacetimedb/src/data/skills';
 import {
   MAX_TEMPER,
-  SCRAP_KINDS,
-  SCRAP_ORDER,
-  SCRAP_YIELD,
   affordable,
   forgeRecipeOf,
   isScrapRarity,
   recipeOf,
-  scrapRecipeId,
   smeltRecipeId,
   toolRecipeId,
   type Recipe,
@@ -35,7 +31,7 @@ import { itemName, materialIconName, materialName, rarityCls } from '../items';
 import type { Item } from '../../module_bindings/types';
 import { CardHead, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
-import { SkillLevelCard, SkillTabs } from './SkillView';
+import { ActionBar, SkillLevelCard, SkillTabs } from './SkillView';
 import { AFFIX_ENTRIES, KeepList } from './FilterView';
 import { elixirText, recipeLabel } from '../lifeSkills';
 import { MilestonesCard } from './MilestonesCard';
@@ -44,19 +40,16 @@ import { TemperAction } from './TemperAction';
 const VERB: Record<number, string> = { [SkillId.Smithing]: 'Forging', [SkillId.Alchemy]: 'Brewing' };
 
 /** What doing `r` is called: "Smelting", "Tempering", or the skill's verb. */
-const verbOf = (r: Recipe) =>
-  r.output.kind === 'material' || r.output.kind === 'scrap' ? 'Smelting' : VERB[r.skillId];
+const verbOf = (r: Recipe) => (r.output.kind === 'material' ? 'Smelting' : VERB[r.skillId]);
 /** A queue's title: smelting recipes are named as actions already. */
-const queueTitle = (r: Recipe) => (r.output.kind === 'material' || r.output.kind === 'scrap' ? r.name : `${verbOf(r)} ${recipeLabel(r)}`);
+const queueTitle = (r: Recipe) => (r.output.kind === 'material' ? r.name : `${verbOf(r)} ${recipeLabel(r)}`);
 
 /** Forged bases a settle salvaged (or scrapped) for the keep rule. */
 const salvagedOf = (l: { salvaged: number[] }) => l.salvaged.reduce((a, b) => a + b, 0);
 const scrappedOf = (l: { scrapped: number[] }) => l.scrapped.reduce((a, b) => a + b, 0);
 
 const held = (s: Snapshot, materialId: number) => Number(s.materials.get(materialId) ?? 0n);
-/** Scrap held that smelts into `materialId`, every rarity. */
-const scrapCount = (s: Snapshot, materialId: number) => Object.values(s.scrap.get(materialId) ?? {}).reduce((a, b) => a + b, 0);
-const stockOf = (s: Snapshot): Stock => ({ have: id => held(s, id), scrap: id => scrapCount(s, id) });
+const stockOf = (s: Snapshot): Stock => ({ have: id => held(s, id) });
 
 /** Why `r` can't be queued now, and how many its materials (and the bag) allow. */
 function queueState(s: Snapshot, r: Recipe): { blocker?: string; max: number } {
@@ -72,7 +65,7 @@ function queueState(s: Snapshot, r: Recipe): { blocker?: string; max: number } {
   let max = Math.min(r.max, affordable(r, stockOf(s)));
   if (out.kind === 'item') max = Math.min(max, s.row.bagSize - s.bag.length);
   if (!blocker && out.kind === 'item' && s.row.bagSize - s.bag.length <= 0) blocker = 'Your bag is full';
-  if (!blocker && max < 1) blocker = out.kind === 'scrap' ? 'No scrap' : 'Not enough materials';
+  if (!blocker && max < 1) blocker = 'Not enough materials';
   return { blocker, max };
 }
 
@@ -116,11 +109,14 @@ function CountInput({ count, setCount }: { count: string; setCount: (c: string) 
   );
 }
 
+/** Tier buttons. */
 function TierSeg({ tier, setTier }: { tier: number; setTier: (t: number) => void }) {
   return (
     <div className="seg">
       {SUPPLY_TIERS.map(t => (
-        <button key={t} className={`seg-btn${t === tier ? ' active' : ''}`} onClick={() => setTier(t)}>T{t}</button>
+        <button key={t} className={`seg-btn${t === tier ? ' active' : ''}`} onClick={() => setTier(t)}>
+          T{t}
+        </button>
       ))}
     </div>
   );
@@ -149,7 +145,11 @@ function QueueCard({ s }: { s: Snapshot }) {
         <p>Queue done. {target ? 'Back to combat' : 'Idle'} at the next update.</p>
       ) : (
         <>
-          <div className="stat-row"><span>Each takes</span><strong>{duration(step)}</strong></div>
+          <div className="stat-row">
+            <span>Next action</span>
+            {canMake > 0 && <ActionBar key={`${s.row.lastSettledAt.microsSinceUnixEpoch}:${step}`} start={pr.settledMicros} step={step} />}
+            <strong>{duration(step)} each</strong>
+          </div>
           <div className="stat-row"><span>Left</span><strong>{canMake.toLocaleString()}{canMake < pr.countLeft && <span className="muted"> (materials for {canMake} of {pr.countLeft})</span>}</strong></div>
           <div className="stat-row"><span>Done in</span><strong>~{duration(BigInt(canMake) * step)}</strong></div>
           <div className="stat-row"><span>XP per hour</span><strong>{fmt(perHour * Number(productionXpPerAction(r.tier, r.seconds)))} {q.skill.name} XP · as much Character XP</strong></div>
@@ -330,13 +330,13 @@ function ForgeKeepCard({ s }: { s: Snapshot }) {
   const keepsAll = f.minRarity === 'Common' && f.minAffixTier === 1 && !restrictsAffixes(f);
   return (
     <div className="card">
-      <CardHead title="Keep rule"><span className="muted">{keepsAll ? 'Keeps everything' : f.scrap ? 'Scraps the rest' : 'Salvages the rest'}</span></CardHead>
+      <CardHead title="Keep rule"><span className="muted">{keepsAll ? 'Keeps everything' : f.scrap ? 'Recycles the rest' : 'Salvages the rest'}</span></CardHead>
       <p className="muted">
-        Forged bases that fail this rule are salvaged into Dust and gold (or scrapped, to smelt back into materials) right away and take no bag slot. Separate from the loot filter.
+        Forged bases that fail this rule are salvaged into Dust and gold (or recycled back into materials) right away and take no bag slot. Separate from the loot filter.
       </p>
       <div className="seg">
         <button className={`seg-btn${!f.scrap ? ' active' : ''}`} onClick={() => set({ scrap: false })}>Salvage</button>
-        <button className={`seg-btn${f.scrap ? ' active' : ''}`} onClick={() => set({ scrap: true })}>Scrap</button>
+        <button className={`seg-btn${f.scrap ? ' active' : ''}`} onClick={() => set({ scrap: true })}>Recycle</button>
       </div>
       <div className="seg wrap">
         {(['Common', 'Magic', 'Rare'] as const).map(r => (
@@ -369,7 +369,7 @@ function ForgeKeepCard({ s }: { s: Snapshot }) {
   );
 }
 
-/** Ore into bars, and scrap into materials (life-skills.md, "Smithing: smelting"). */
+/** Ore into bars (life-skills.md, "Smithing: smelting"). */
 function SmeltCard({ s }: { s: Snapshot }) {
   const [tier, setTier] = useSticky('smeltTier', 1);
   const [count, setCount] = useState('');
@@ -389,38 +389,8 @@ function SmeltCard({ s }: { s: Snapshot }) {
             <QueueButton s={s} r={ore} count={count} label="Smelt" />
           </div>
         </li>
-        {SCRAP_KINDS.map(kind => {
-          const m = materialOf(tier, kind);
-          const r = recipeOf(SkillId.Smithing, scrapRecipeId(m.id))!;
-          const have = s.scrap.get(m.id) ?? {};
-          const counts = SCRAP_ORDER.filter(x => (have[x] ?? 0) > 0);
-          return (
-            <li key={kind} className="foe">
-              <div className="foe-row">
-                <Icon name={materialIconName(m.id)} className="c-material" />
-                <div className="foe-info">
-                  <div className="foe-name">{kind} scrap → {m.name}</div>
-                  <div className="foe-meta">
-                    {counts.length ? (
-                      counts.map((x, i) => (
-                        <span key={x} className={`c-${rarityCls(x)}`}>{i > 0 && ', '}{have[x]!.toLocaleString()} {x}</span>
-                      ))
-                    ) : (
-                      <span className="muted">No scrap</span>
-                    )}
-                    {' '}· {duration(BigInt(r.seconds) * 1_000_000n)} each
-                  </div>
-                </div>
-                <QueueButton s={s} r={r} count={count} label="Smelt" />
-              </div>
-            </li>
-          );
-        })}
       </ul>
-      <p className="muted">
-        Ore comes from Mining, one bar per Ore. Scrap comes from drops the loot filter (or the keep rule) scraps instead of
-        salvaging, or from the bag. Each scrap makes {SCRAP_ORDER.slice().reverse().map(x => `${SCRAP_YIELD[x]} (${x})`).join(', ')}, highest rarity first.
-      </p>
+      <p className="muted">Ore comes from Mining, one bar per Ore.</p>
     </div>
   );
 }
@@ -497,7 +467,7 @@ export const ProductionView = memo(function ProductionView({ s, skill }: { s: Sn
                     {l.actions}× {r ? recipeLabel(r) : '?'}
                     {l.materials.length > 0 && <span className="muted"> · +{l.materials.map(m => `${m.count.toLocaleString()} ${materialName(m.materialId)}`).join(', ')}</span>}
                     {salvagedOf(l) > 0 && <span className="muted"> · {salvagedOf(l)} salvaged (+{fmtBig(l.dust)} Dust, +{fmtBig(l.gold)} gold)</span>}
-                    {scrappedOf(l) > 0 && <span className="muted"> · {scrappedOf(l)} scrapped</span>}
+                    {scrappedOf(l) > 0 && <span className="muted"> · {scrappedOf(l)} recycled</span>}
                   </span>
                   <span className="muted">
                     +{fmtBig(l.skillXp)} {skill.name} XP · +{fmtBig(l.xp)} XP{l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelTo}!` : ''}

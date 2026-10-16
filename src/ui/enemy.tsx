@@ -16,6 +16,7 @@ import {
   hasUniques,
   materialMeans,
 } from "../../spacetimedb/src/loot";
+import { useSticky } from "../store";
 import { fmt, pct } from "./format";
 import { Icon } from "./Icon";
 import { materialIconName, materialName, rarityCls } from "./items";
@@ -67,6 +68,8 @@ const chanceText = (p: number) =>
 
 /** Kills of an enemy that reveal its stats. */
 export const STATS_UNLOCK_KILLS = 100;
+/** Sticky key of the dev toggle (DevPanel) that shows every enemy's stats tab without the kills. */
+export const DEV_ENEMY_STATS = "devEnemyStats";
 
 /** An enemy's rewards tab and, after STATS_UNLOCK_KILLS kills, its stats tab. */
 export function EnemyDetail({
@@ -81,8 +84,10 @@ export function EnemyDetail({
   m: Matchup;
 }) {
   const [tab, setTab] = useState<"rewards" | "stats">("rewards");
+  const [devStats] = useSticky(DEV_ENEMY_STATS, false);
   const kills = s.kills.get(e.id) ?? 0;
-  const unlocked = kills >= STATS_UNLOCK_KILLS;
+  const unlocked =
+    kills >= STATS_UNLOCK_KILLS || (import.meta.env.DEV && devStats);
   return (
     <div className="enemy-detail">
       <div className="seg">

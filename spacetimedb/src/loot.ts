@@ -7,7 +7,7 @@ import { LEGENDARIES } from './data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, fromStored, roundStat, toStored, type StatDef, type StatId } from './data/stats';
 import { uniquePool, uniqueRoll, type UniqueDef } from './data/uniques';
 import { MATERIAL_CHANCE, materialOf } from './data/materials';
-import { isScrapRarity, scrapMaterialId, type ScrapRarity } from './data/recipes';
+import { SCRAP_YIELD, isScrapRarity, scrapMaterialId, type ScrapRarity } from './data/recipes';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
 /** The rarities the game names: drop tables, filters, the loot filter, logs. */
@@ -307,7 +307,7 @@ export function firstKillReward(rng: Rng, zone: ZoneDef, boss: EnemyDef): { gold
   };
 }
 
-/** Scrapped items of one rarity that smelt into one material (data/recipes.ts `scrapMaterialId`). */
+/** Scrapped items of one rarity that scrap into one material (data/recipes.ts `scrapMaterialId`). */
 export interface ScrapDrop {
   materialId: number;
   rarity: ScrapRarity;
@@ -363,8 +363,8 @@ export interface DropInput {
   /** Salvager: chance per rejected drop to be salvaged (or scrapped) twice, with its own generator. */
   salvager?: { chance: number; rng: Rng };
   /**
-   * Scrap rejected drops instead of salvaging them (life-skills.md, "Scrap into materials"):
-   * no Dust or gold. Needs `discoverRng` for the bases of drops salvaged unrolled.
+   * Scrap rejected drops instead of salvaging them (life-skills.md, "Recycle into materials"):
+   * materials (`scrapMaterials`), no Dust or gold. Needs `discoverRng` for the bases of drops salvaged unrolled.
    */
   scrap?: boolean;
   /**
@@ -480,6 +480,18 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
 export interface MaterialDrop {
   materialId: number;
   count: number;
+}
+
+/** The materials `scrapped` items give: SCRAP_YIELD each, by rarity. */
+export function scrapMaterials(scrapped: readonly ScrapDrop[]): MaterialDrop[] {
+  const out: MaterialDrop[] = [];
+  for (const x of scrapped) {
+    const n = SCRAP_YIELD[x.rarity] * x.count;
+    const row = out.find(m => m.materialId === x.materialId);
+    if (row) row.count += n;
+    else out.push({ materialId: x.materialId, count: n });
+  }
+  return out;
 }
 
 /** Mean material drops per kill of `enemy`, per material it drops (as `rollMaterials` samples). */

@@ -3,9 +3,9 @@ import { EquipProfile, spacetimedb } from '../schema';
 import { LOADOUT_COUNT } from '../game';
 import { SLOT_COUNT } from '../data/bases';
 import { autoEquip as bestSlots, isCustomProfile, isProfile, placeItem, validCustomWeights } from '../equip';
-import { addScrap, salvageValue, type ScrapDrop } from '../loot';
+import { addScrap, salvageValue, scrapMaterials, type ScrapDrop } from '../loot';
 import { isScrapRarity } from '../data/recipes';
-import { addScrapRows, requireActive, requireItem, scrapMaterialIdOf, settle, type Character, type Ctx } from '../helpers';
+import { addMaterials, requireActive, requireItem, scrapMaterialIdOf, settle, type Character, type Ctx } from '../helpers';
 
 const MAX_LOADOUT_NAME = 20;
 
@@ -130,8 +130,8 @@ export const salvage = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, 
 });
 
 /**
- * Scraps bag items (life-skills.md, "Scrap into materials"): into the scrap counters for
- * smelting, with no Dust or gold. Common to Legendary only; refused like `salvage`.
+ * Scraps bag items (life-skills.md, "Recycle into materials"): straight into materials, with
+ * no Dust or gold. Common to Legendary only; refused like `salvage`.
  */
 export const scrapItems = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, { itemIds }) => {
   const { ch } = requireActive(ctx);
@@ -146,5 +146,5 @@ export const scrapItems = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ct
     addScrap(scrapped, materialId, rarity);
     ctx.db.item.id.delete(id);
   }
-  addScrapRows(ctx, ch.id, scrapped);
+  addMaterials(ctx, ch.id, scrapMaterials(scrapped));
 });

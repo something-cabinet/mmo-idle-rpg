@@ -5,6 +5,7 @@ import { BASE_OFFLINE_HOURS, MAX_LEVEL, combatStats, matchup, type CombatStats, 
 import { Effect, PATIENCE_HOURS, effectAmount } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { ELIXIR_KILLS, type Buffs } from './data/supplies';
+import { liveKillRate } from './sim';
 
 /** Offline progress is capped so a player can't come back to infinite loot. */
 export const MAX_OFFLINE_MICROS = BigInt(BASE_OFFLINE_HOURS) * 60n * 60n * 1_000_000n;
@@ -74,6 +75,8 @@ export interface Settled extends Progress {
   elixir?: ElixirLeft;
   /** Patience: extra kills' worth of drops and materials (fractional; offline only). */
   bonusKills?: number;
+  /** Lost fights the character got up from (sim.ts `respawns`), each followed by a respawn; offline, the expected number. */
+  respawns?: number;
 }
 
 /**
@@ -157,7 +160,10 @@ export class ElixirTracker {
  *
  * A losing fight (not viable) kills the character `timeToDie` after it started
  * (`defeatedAt`); until then nothing is settled, so the fight's clock keeps running
- * across settles. If neither side can ever win, time passes with no effect.
+ * across settles. If neither side can ever win, time passes with no effect. A viable
+ * matchup still loses some live fights to bad luck, each costing a respawn: the kill
+ * rate is what live fights average out to (sim.ts `liveKillRate`), so online and
+ * offline earn the same.
  *
  * An elixir's charges cap kills like a level-up does: the matchup is recomputed when it
  * runs out (renewed from stock, or none).
@@ -170,6 +176,7 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
   const patience = capMicros !== undefined ? effectAmount(effects, Effect.Patience) : 0;
   const patientFrom = BigInt(PATIENCE_HOURS * 3600) * 1_000_000n;
   let bonusKills = 0;
+  let respawned = 0;
   if (elapsed <= 0n) return { ...p, kills: 0, xpGained: 0n, elixir: elixir.left };
   const start = p.settledMicros;
   const capped = capMicros !== undefined && elapsed > capMicros;
@@ -197,7 +204,12 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
       }
       break; // still fighting: `left` stays unsettled
     }
-    const available = Math.floor((Number(left) / 1e6) * m.killRate);
+    const { killRate, lossShare } = liveKillRate(combatStats(level, a.gear, buffs), m, a.enemy!);
+    if (killRate <= 0) {
+      left = 0n; // every live fight lost: the time goes by in respawns
+      break;
+    }
+    const available = Math.floor((Number(left) / 1e6) * killRate);
     if (available <= 0) break;
     const at = elapsed - left;
     const patient = patience > 0 && at >= patientFrom;
@@ -212,9 +224,10 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
     // And at the elixir's last charge: the buffs change there.
     if (buffs) kills = Math.min(kills, Math.max(1, elixir.killsCovered));
     // And where Patience starts.
-    if (patience > 0 && !patient) kills = Math.min(kills, Math.max(1, Math.ceil((Number(patientFrom - at) / 1e6) * m.killRate)));
+    if (patience > 0 && !patient) kills = Math.min(kills, Math.max(1, Math.ceil((Number(patientFrom - at) / 1e6) * killRate)));
     elixir.use(kills);
     total += kills;
+    respawned += (kills * lossShare) / (1 - lossShare);
     if (patient) bonusKills += kills * patience;
     if (!maxed) {
       const gained = BigInt(Math.floor(kills * xpPerKill));
@@ -222,7 +235,7 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
       xpGained += gained;
     }
     gold += BigInt(Math.floor(kills * m.goldPerKill * reward));
-    left -= BigInt(Math.ceil((kills / m.killRate) * 1e6));
+    left -= BigInt(Math.ceil((kills / killRate) * 1e6));
     if (left < 0n) left = 0n;
     for (let need = xpToNext(level); level < MAX_LEVEL && xp >= need; need = xpToNext(level)) {
       xp -= need;
@@ -233,5 +246,6 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
   }
 
   const settledMicros = capped ? nowMicros : start + elapsed - left;
-  return { level, xp, gold, settledMicros, kills: total, xpGained, defeatedAt, elixir: elixir.left, ...(bonusKills > 0 && { bonusKills }) };
+  const respawns = Math.round(respawned);
+  return { level, xp, gold, settledMicros, kills: total, xpGained, defeatedAt, elixir: elixir.left, ...(bonusKills > 0 && { bonusKills }), ...(respawns > 0 && { respawns }) };
 }

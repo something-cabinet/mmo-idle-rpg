@@ -20,7 +20,7 @@ import {
   tierRequirement,
 } from '../spacetimedb/src/data/skills';
 import { materialOf, untieredMaterial } from '../spacetimedb/src/data/materials';
-import { makeItem, rollDrops, seededRng } from '../spacetimedb/src/loot';
+import { makeItem, rollDrops, scrapMaterials, seededRng } from '../spacetimedb/src/loot';
 import { addSkillXp, gatherCharacterXp, projectGathering, relicGold, rollGathering, rollGatheringActions } from '../spacetimedb/src/gather';
 import {
   RECIPES,
@@ -28,7 +28,6 @@ import {
   forgeRecipeOf,
   recipeOf,
   scrapMaterialId,
-  scrapRecipeId,
   smeltRecipeId,
   temperCost,
   toolRecipeId,
@@ -222,10 +221,15 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('smelt T2: 1 Ore → 1 Metal, 12 s', cost(smelt) === '1 902' && smelt.output.kind === 'material' && smelt.output.materialId === 102 && smelt.seconds === 12);
   check('scrap kinds: armor → its main material, jewelry → Metal',
     scrapMaterialId(35, 1) === 201 && scrapMaterialId(31, 2) === 402 && scrapMaterialId(8, 1) === 501 && scrapMaterialId(50, 3) === 103 && scrapMaterialId(1, 1) === 101);
-  const scrapR = recipeOf(SkillId.Smithing, scrapRecipeId(201))!;
-  check('scrap recipe: 30 s, no material inputs', scrapR.seconds === 30 && scrapR.inputs.length === 0 && scrapR.tier === 1);
-  check('scrap recipe: affordable counts scrap', affordable(scrapR, { have: () => 0, scrap: () => 7 }) === 7 && affordable(scrapR, { have: () => 0 }) === 0);
-  check('no recipe for Gem or Core scrap', !recipeOf(SkillId.Smithing, scrapRecipeId(701)) && !recipeOf(SkillId.Smithing, scrapRecipeId(301)));
+  check('no scrap smelting recipes (scrap is instant)', !RECIPES.some(r => r.id >= 61000 && r.id < 62000));
+  check('scrap yields 1 / 2 / 3 / 8 / 20 by rarity, merged per material',
+    JSON.stringify(scrapMaterials([
+      { materialId: 101, rarity: 'Common', count: 3 },
+      { materialId: 101, rarity: 'Legendary', count: 1 },
+      { materialId: 201, rarity: 'Magic', count: 1 },
+      { materialId: 201, rarity: 'Rare', count: 1 },
+      { materialId: 201, rarity: 'Epic', count: 1 },
+    ])) === JSON.stringify([{ materialId: 101, count: 23 }, { materialId: 201, count: 13 }]));
 
   const t = temperCost({ baseId: 1, tier: 2, temper: 2 })!;
   check('temper step 3 on a T2 sword: 30 T2 Metal, 0.15 h of gold, 9 min of XP',
@@ -334,17 +338,6 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('Ore: 2 XP each at T1', pr.xpGained === BigInt(pr.actions * 2), `${pr.xpGained}`);
   const short = projectProduction(fresh, ore, { countLeft: 1000, have: () => 5, bagFree: 0 }, 1n, HOUR);
   check('Ore runs out', short.actions === 5 && short.endedAt !== undefined && short.used[0].count === 5);
-
-  const scrap = recipeOf(SkillId.Smithing, scrapRecipeId(101))!;
-  const sp = projectProduction(fresh, scrap, { countLeft: 1000, have: () => 0, scrap: { Common: 3, Rare: 1, Legendary: 1 }, bagFree: 0 }, 1n, HOUR);
-  check('scrap: smelts every piece, highest rarity first', sp.actions === 5 && sp.endedAt !== undefined, `${sp.actions}`);
-  check('scrap: 40 + 5 + 3 × 2 materials', sp.yielded === 51, `${sp.yielded}`);
-  check('scrap used by rarity', sp.scrapUsed.map(u => `${u.count} ${u.rarity}`).join() === '1 Legendary,1 Rare,3 Common', JSON.stringify(sp.scrapUsed));
-  const first = projectProduction(fresh, scrap, { countLeft: 1, have: () => 0, scrap: { Common: 3, Epic: 2 }, bagFree: 0 }, 1n, HOUR);
-  check('scrap: the first action takes an Epic', first.yielded === 15 && first.scrapUsed[0].rarity === 'Epic');
-  const empty = projectProduction(fresh, scrap, { countLeft: 10, have: () => 0, bagFree: 0 }, 1n, HOUR);
-  check('no scrap: ends at once', empty.actions === 0 && empty.endedAt === 0n);
-
 }
 
 // ---------------------------------------------------------------- scrap from drops

@@ -7,7 +7,7 @@ import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 import { combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { project, type Progress } from '../spacetimedb/src/game';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
-import { fightRng, simulate, simulateFight } from '../spacetimedb/src/sim';
+import { RESPAWN_SECONDS, fightRng, simulate, simulateFight } from '../spacetimedb/src/sim';
 import { Effect, LEGENDARIES_BY_ID, copiesToCap } from '../spacetimedb/src/data/legendary';
 
 let failed = 0;
@@ -96,6 +96,55 @@ const secs = (s: number) => BigInt(Math.round(s * 1e6));
   check('… settled to now, with the lost fight to show', r.settledMicros === T0 + secs(600) && r.current?.fight.outcome === 'defeat');
   const early = simulate(fresh, { gear: starter, enemy: boss }, T0 + secs(1), ID);
   check('… and still fighting before then', early.defeatedAt === undefined && early.settledMicros === T0);
+}
+
+{
+  // A close matchup won on average (time to die 1.1× time to kill): bad luck loses some
+  // fights, each costing a respawn, never the target.
+  const rat = enemy(101);
+  const m0 = matchup(combatStats(1, starter), rat);
+  const close = { ...rat, dps: (rat.dps * m0.timeToDie) / (1.1 * m0.timeToKill), xp: 0 };
+  check('a close matchup is still won on average', matchup(combatStats(1, starter), close).viable);
+  const r = simulate(fresh, { gear: starter, enemy: close }, T0 + secs(3600), ID);
+  check('lost fights in a winnable matchup respawn instead of ending the session',
+    r.defeatedAt === undefined && (r.respawns ?? 0) > 0 && r.kills > 0, `${r.kills} kills, ${r.respawns} respawns`);
+  // Cut the hour into settles: the same fights, kills and respawns.
+  let p: Progress = fresh;
+  let kills = 0;
+  let respawned = 0;
+  for (let t = T0 + secs(97); t < T0 + secs(3600); t += secs(97)) {
+    const x = simulate(p, { gear: starter, enemy: close }, t, ID);
+    kills += x.kills;
+    respawned += x.respawns ?? 0;
+    p = x;
+  }
+  const last = simulate(p, { gear: starter, enemy: close }, T0 + secs(3600), ID);
+  check('… and settling in pieces plays the same fights and respawns',
+    kills + last.kills === r.kills && respawned + (last.respawns ?? 0) === r.respawns && last.settledMicros === r.settledMicros,
+    `${kills + last.kills} vs ${r.kills}, ${respawned + (last.respawns ?? 0)} vs ${r.respawns}`);
+  // Replayed by hand (no XP, so no level-ups): each lost fight is followed by RESPAWN_SECONDS.
+  const stats = combatStats(1, starter);
+  const mc = matchup(stats, close);
+  let start = T0;
+  let won = 0;
+  let lost = 0;
+  for (;;) {
+    const f = simulateFight(stats, mc, close, fightRng(ID, start));
+    const next = start + BigInt(Math.ceil((f.end + (f.outcome === 'defeat' ? RESPAWN_SECONDS : 0)) * 1e6));
+    if (next > T0 + secs(3600)) break;
+    if (f.outcome === 'kill') won++;
+    else lost++;
+    start = next;
+  }
+  check(`… each lost fight followed by ${RESPAWN_SECONDS} s`, won === r.kills && lost === r.respawns && start === r.settledMicros, `${won} / ${lost}`);
+  // Offline earns what live fights average out to, losses and respawns included.
+  const day = T0 + secs(8 * 3600);
+  const live = simulate(fresh, { gear: starter, enemy: close }, day, ID);
+  const away = project(fresh, { gear: starter, enemy: close }, day);
+  check('offline settles a close matchup like live fights: about the same kills',
+    near(away.kills, live.kills, 0.1 * live.kills) && away.defeatedAt === undefined, `${away.kills} vs ${live.kills}`);
+  check('… and about the same respawns', near(away.respawns ?? 0, live.respawns ?? 0, 0.1 * (live.respawns ?? 0)), `${away.respawns} vs ${live.respawns}`);
+  check('… where the formulas alone would grant far more', away.kills < 0.7 * Math.floor(8 * 3600 * mc.killRate), `${Math.floor(8 * 3600 * mc.killRate)}`);
 }
 
 {

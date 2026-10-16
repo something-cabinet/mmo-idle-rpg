@@ -1,4 +1,4 @@
-// The item filter shared by Bag and Crafting: search, rarity, slot, affixes and minimum affix tier.
+// The item filter shared by Bag and Crafting: search, rarity, item tier, slot, affixes and affix tiers.
 
 import { useState, type ReactNode } from 'react';
 import type { Item } from '../module_bindings/types';
@@ -11,15 +11,17 @@ import { affixLabel, itemName, rarityCls, rarityLabel, statText } from './items'
 import { SLOT_FILTERS, toggle } from './shared';
 
 const AFFIX_OPTIONS = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) })).sort((a, b) => a.label.localeCompare(b.label));
+const TIERS = Array.from({ length: MAX_TIER }, (_, i) => i + 1);
 
 /** Lowercased text the search matches: name, family, rarity and every stat line. */
 const searchText = (it: Item) =>
   [itemName(it), base(it.baseId).family, rarityLabel(it.rarity.tag), ...[...it.implicits, ...it.affixes].map(a => statText(a.stat, a.value))].join(' ').toLowerCase();
 
-/** The item has every chosen affix at the minimum tier, or (none chosen) any affix at it. */
-function matchesAffixes(it: Item, affixes: readonly number[], minTier: number): boolean {
-  if (!affixes.length) return minTier <= 1 || it.affixes.some(a => a.tier >= minTier);
-  return affixes.every(stat => it.affixes.some(a => a.stat === stat && a.tier >= minTier));
+/** The item has every chosen affix at one of the chosen tiers, or (no affix chosen) any affix at one. Empty tiers mean any. */
+function matchesAffixes(it: Item, affixes: readonly number[], tiers: readonly number[]): boolean {
+  const atTier = (t: number) => !tiers.length || tiers.includes(t);
+  if (!affixes.length) return !tiers.length || it.affixes.some(a => atTier(a.tier));
+  return affixes.every(stat => it.affixes.some(a => a.stat === stat && atTier(a.tier)));
 }
 
 /** One view's filter selections (an empty selection means any), kept while the view is away. */
@@ -28,24 +30,27 @@ export function useItemFilter(prefix: string) {
   const [rarities, setRarities] = useSticky<readonly RarityName[]>(`${prefix}Rarities`, []);
   const [slots, setSlots] = useSticky<readonly Slot[]>(`${prefix}Slots`, []);
   const [affixes, setAffixes] = useSticky<readonly number[]>(`${prefix}Affixes`, []);
-  const [minAffixTier, setMinAffixTier] = useSticky(`${prefix}MinAffixTier`, 1);
+  const [tiers, setTiers] = useSticky<readonly number[]>(`${prefix}Tiers`, []);
+  const [affixTiers, setAffixTiers] = useSticky<readonly number[]>(`${prefix}AffixTiers`, []);
   const words = search.toLowerCase().split(/\s+/).filter(Boolean);
   return {
-    search, setSearch, rarities, setRarities, slots, setSlots, affixes, setAffixes, minAffixTier, setMinAffixTier,
+    search, setSearch, rarities, setRarities, tiers, setTiers, slots, setSlots, affixes, setAffixes, affixTiers, setAffixTiers,
     /** How many filters are on (each selected button counts). */
-    active: (words.length ? 1 : 0) + rarities.length + slots.length + affixes.length + (minAffixTier > 1 ? 1 : 0),
+    active: (words.length ? 1 : 0) + rarities.length + tiers.length + slots.length + affixes.length + affixTiers.length,
     matches: (it: Item) =>
       // An Anomaly passes for a Common.
       (!rarities.length || rarities.includes(it.rarity.tag === 'Anomaly' ? 'Common' : it.rarity.tag)) &&
+      (!tiers.length || tiers.includes(it.tier)) &&
       (!slots.length || slots.includes(base(it.baseId).slots[0])) &&
-      matchesAffixes(it, affixes, minAffixTier) &&
+      matchesAffixes(it, affixes, affixTiers) &&
       (!words.length || (t => words.every(w => t.includes(w)))(searchText(it))),
     clear: () => {
       setSearch('');
       setRarities([]);
+      setTiers([]);
       setSlots([]);
       setAffixes([]);
-      setMinAffixTier(1);
+      setAffixTiers([]);
     },
   };
 }
@@ -134,6 +139,14 @@ export function ItemFilterCard({ f, storageKey, rarities, shown, total, extra, e
             </button>
           ))}
         </div>
+        <span className="toolbar-label">Tier</span>
+        <div className="seg wrap">
+          {TIERS.map(t => (
+            <button key={t} className={`seg-btn${f.tiers.includes(t) ? ' active' : ''}`} onClick={() => f.setTiers(toggle(f.tiers, t))}>
+              T{t}
+            </button>
+          ))}
+        </div>
         <span className="toolbar-label">Slot</span>
         <div className="seg wrap">
           {SLOT_FILTERS.map(([slot, label]) => (
@@ -162,9 +175,9 @@ export function ItemFilterCard({ f, storageKey, rarities, shown, total, extra, e
         </div>
         <span className="toolbar-label">Affix tier</span>
         <div className="seg wrap">
-          {Array.from({ length: MAX_TIER }, (_, i) => i + 1).map(t => (
-            <button key={t} className={`seg-btn${t === f.minAffixTier ? ' active' : ''}`} onClick={() => f.setMinAffixTier(t)}>
-              {t === 1 ? 'Any' : `T${t}+`}
+          {TIERS.map(t => (
+            <button key={t} className={`seg-btn${f.affixTiers.includes(t) ? ' active' : ''}`} onClick={() => f.setAffixTiers(toggle(f.affixTiers, t))}>
+              T{t}
             </button>
           ))}
         </div>

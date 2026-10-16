@@ -37,7 +37,7 @@ pushing a target or boss into viability.
 | 2 | Woodcutting | Gathering | Wood | — |
 | 3 | Foraging | Gathering | Reagent | — |
 | 4 | Fishing | Gathering | Fish (new material kind) | — |
-| 11 | Smithing | Production | Gear bases of your choice, tool upgrades, tempering, smelting | Ore, Metal, Wood, Hide, Cloth, Gem, scrap |
+| 11 | Smithing | Production | Gear bases of your choice, tool upgrades, tempering, smelting | Ore, Metal, Wood, Hide, Cloth, Gem |
 | 12 | Alchemy | Production | Elixirs | Reagent, Core |
 | 13 | Cooking | Production | Meals | Fish, Reagent |
 | 14 | Enchanting | Production | Essences | Core, Gem, Dust |
@@ -305,8 +305,9 @@ want. Tempering is the steady goal: it makes gear the player already owns better
 
 ### Smithing: smelting
 
-Smelting is Smithing's steady XP recipe: nothing it makes is thrown away. It has two
-inputs, Ore from Mining and scrap from combat.
+Smelting is Smithing's steady XP recipe: nothing it makes is thrown away. Its input is
+Ore from Mining. (Scrap used to be smelted too; it is now Recycle, which gives materials
+at once, outside Smithing: see "Recycle into materials" below.)
 
 #### Ore into bars
 
@@ -320,38 +321,38 @@ inputs, Ore from Mining and scrap from combat.
 - Forging stays the way to pick a base; smelting is the cheap XP. A player leveling
   Smithing mines, smelts, then spends the bars on tools, forging and tempering.
 
-#### Scrap into materials
+#### Recycle into materials
 
-Scrap turns unwanted drops into materials and Smithing XP instead of Dust and gold.
+Recycle turns unwanted drops into materials instead of Dust and gold. (Called scrap
+before; the code keeps that name: `scrapItems`, the filters' `scrap` flag, `SCRAP_YIELD`.) It is not part of
+Smithing: no recipe, no queue, no skill XP, and the Smithing level doesn't change it.
 
-- **Scrap instead of salvage.** The loot filter (and the forge keep rule) gets a choice
-  for items it rejects: **Salvage** (Dust and gold, as now) or **Scrap**. Scrapped items
-  take no bag slot; they go into scrap counters and **give no Dust or gold**. Bag items
-  can be scrapped by hand too.
-- An item's scrap kind is its base family's main material (table above), except rings
-  and amulets, which give Metal (Gems stay scarce).
-- **Smelting scrap** is a production recipe per (kind, tier): 1 scrap → materials of that kind
-  and tier, **30 s** per action, with the normal skill XP for tier T.
+- **Recycle instead of salvage.** The loot filter (and the forge keep rule) gets a choice
+  for items it rejects: **Salvage** (Dust and gold) or **Recycle**. Recycled items take no
+  bag slot and **give no Dust or gold**: they turn into materials **at once**. Bag items
+  can be recycled by hand too (Common to Legendary, of tiers with materials).
+- An item recycles into its base family's main material at its tier (table above), except
+  rings and amulets, which give Metal (Gems stay scarce).
 
-| Item rarity | Materials per smelt |
+| Item rarity | Materials per item |
 |-|-|
-| Common | 2 |
-| Magic | 3 |
-| Rare | 5 |
-| Epic | 15 |
-| Legendary | 40 |
+| Common | 1 |
+| Magic | 2 |
+| Rare | 3 |
+| Epic | 8 |
+| Legendary | 20 |
 
-- Rarity is kept in the scrap counter (kind, tier, rarity), so higher-rarity scrap
-  smelts first.
-- At 2–3 per 30 s, scrap smelting yields about what gathering does (300 per hour), but
-  across every kind, Hide and Cloth included. Those still come only from combat drops,
-  so the "Hide, Cloth and Core stay combat-only" rule holds.
+- These are about half of what smelting one scrap used to give (2 / 3 / 5 / 15 / 40 over
+  30 s each). The smelting time was what held scrap back; without it the yield is cut
+  instead.
 - Supply: an 8 h session drops ~218 items and a keep-Rare+ filter rejects ~190 of them
-  (zones.md), which is ~1.6 h of smelting. Smelting can't replace gathering or
-  outpace combat.
-- Trade-off: the player gives up Dust and gold (the crafting currencies) for materials
-  and Smithing XP. Players saving for rerolls keep salvaging; players leveling Smithing
-  or short on Hide or Cloth scrap.
+  (zones.md), nearly all Common and Magic: ~250–300 materials a session, against ~560
+  Metal from the session's kills. A real top-up, Hide and Cloth included, that doesn't
+  replace gathering or outpace combat. Those still come only from combat drops, so the
+  "Hide, Cloth and Core stay combat-only" rule holds.
+- Salvager (legendary.md) recycles a rejected drop twice, so it doubles the materials.
+- Trade-off: the player gives up Dust and gold (the crafting currencies) for materials.
+  Players saving for rerolls keep salvaging; players short on Hide or Cloth recycle.
 
 ### Smithing: level rewards
 
@@ -430,7 +431,7 @@ All of this stays in closed form (README pillar 1):
 | Where | What |
 |-|-|
 | `item` column | `temper` (0–10) |
-| `scrap` table | (characterId, kind, tier, rarity, count): items scrapped for smelting |
+| `scrap` table | Unused since scrap became instant (emptied by migrate.ts); drop at the M9 save reset |
 | `character` columns | `activitySkill` (0 = combat), `activityRecipe` (gathering: `node × 100 + tier`, node 0 = normal; production: the recipe ID), `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `elixirAutoRenew`; later `mealId`, `mealKillsLeft`, `mealAutoRenew` |
 | `skill` table | (characterId, skillId, level, xp) |
 | `tool` table | (characterId, skillId, tier) |
@@ -438,7 +439,7 @@ All of this stays in closed form (README pillar 1):
 | `supply` table | (characterId, supplyId, count): elixirs; later meals, essences, parts |
 | `material` | Fish is new material kind 8, Ore kind 9, rare herbs 10, Meteor Fragment 11 and Dryad's Tear 12 (untiered) |
 | `data/skills.ts` | Skills, levels, speeds, permanent skill IDs |
-| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, empowered forge = 30000 + baseId × 10 + tier, tool = 1000 + skill × 10 + tier, elixir = its supply ID; temper and smelt are proposed, IDs TBD |
+| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, empowered forge = 30000 + baseId × 10 + tier, tool = 1000 + skill × 10 + tier, smelt Ore = 60000 + tier, elixir = its supply ID; 61000 + material ID was smelt scrap (retired) |
 | `data/supplies.ts` | Elixirs and their buffs. Permanent supply IDs: elixirs 100 + kind × 10 + tier, Greater elixirs 200 + kind × 10 + tier |
 | `gather.ts`, `produce.ts` | Closed-form settlement, shared with the client |
 

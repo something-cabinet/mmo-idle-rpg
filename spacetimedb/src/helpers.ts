@@ -25,6 +25,7 @@ import {
   rollMaterials,
   salvageValue,
   samplePoisson,
+  scrapMaterials,
   seededRng,
   type DropResult,
   type MaterialDrop,
@@ -101,7 +102,8 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
  * Online time is played as live fights (sim.ts `simulate`, the fights the client
  * animates); offline time uses the expected-value formulas (game.ts `project`). A
  * boss's first kill grants its reward and unlocks the next zone (zone-content.md); a
- * lost fight clears the target (idle). Call before anything that changes gear or
+ * lost fight in a matchup won on average costs a respawn (sim.ts), any other lost fight
+ * clears the target (idle). Call before anything that changes gear or
  * target. `capMicros` is only passed for the login settle, which covers the time
  * away and is always logged.
  */
@@ -169,10 +171,12 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     }
     dust += drops.dust;
     salvageGold = drops.gold;
-    addScrapRows(ctx, ch.id, drops.scrapped);
-    // Own seed, so adding materials didn't change the item rolls above.
-    materials = rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, dropKills,
-      rewardScale(target.zone, target.enemy));
+    // Own seed, so adding materials didn't change the item rolls above. Scrapped drops add theirs.
+    materials = mergeMaterials(
+      rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, dropKills,
+        rewardScale(target.zone, target.enemy)),
+      scrapMaterials(drops.scrapped)
+    );
     // Prospector: Ore, which enemies otherwise never drop.
     const ore = materialAt(target.zone.tier, 'Ore');
     const oreCount = ore && amount(Effect.Prospector) > 0
@@ -237,7 +241,8 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const elixirEmpty = !!p.elixir && p.elixir.killsLeft <= 0;
 
   const offline = capMicros !== undefined;
-  if (p.kills > 0 || offline || p.defeatedAt !== undefined) {
+  const respawned = p.respawns ?? 0;
+  if (p.kills > 0 || offline || p.defeatedAt !== undefined || respawned > 0) {
     const elapsed = ctx.timestamp.microsSinceUnixEpoch - ch.lastSettledAt.microsSinceUnixEpoch;
     const idle = p.defeatedAt === undefined ? 0n : ctx.timestamp.microsSinceUnixEpoch - p.defeatedAt;
     logSettle(ctx, ch, {
@@ -263,6 +268,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       elixirKills: buffedKills,
       elixirsUsed: renewed,
       elixirEmpty,
+      respawns: respawned,
     });
   }
 
@@ -331,7 +337,7 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
 
 /**
  * `settle` while the character works a production queue (produce.ts `projectProduction`):
- * inputs (and scrap) are used up, items go to the bag, elixirs to the supply stock,
+ * inputs are used up, items go to the bag, elixirs to the supply stock,
  * smelted materials to the counters, a tool upgrade to the `tool` row. When the queue runs out (count, inputs or bag), the rest of the time settles as
  * combat against the kept target, so an empty queue never wastes offline time.
  */
@@ -347,13 +353,11 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
   const queue = {
     countLeft: ch.activityCountLeft,
     have: (id: number) => held.get(id) ?? 0,
-    scrap: out.kind === 'scrap' ? scrapHeld(ctx, ch.id, out.materialId) : undefined,
     bagFree: ch.bagSize - bagCount(ctx, ch.id),
     keeps: (m: { at: bigint; level: number }) => forged(ch.id, r, m, filter).kept,
   };
   const pr = projectProduction({ ...row, settledMicros: start }, r, queue, ch.id, ctx.timestamp.microsSinceUnixEpoch, capMicros);
   takeMaterials(ctx, ch.id, pr.used);
-  if (out.kind === 'scrap') takeScrap(ctx, ch.id, out.materialId, pr.scrapUsed);
 
   const keptItemIds: bigint[] = [];
   const discovered: Found[] = [];
@@ -378,10 +382,11 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
         salvaged[RARITIES.indexOf(it.rarity.tag)]++;
       }
     }
-    addScrapRows(ctx, ch.id, scrapped);
+    materials = scrapMaterials(scrapped);
+    addMaterials(ctx, ch.id, materials);
   } else if (out.kind === 'supply') {
     addSupply(ctx, ch.id, out.supplyId, pr.actions);
-  } else if (out.kind === 'material' || out.kind === 'scrap') {
+  } else if (out.kind === 'material') {
     if (pr.yielded > 0) materials = [{ materialId: out.materialId, count: pr.yielded }];
     addMaterials(ctx, ch.id, materials);
   } else if (pr.actions > 0) {
@@ -441,42 +446,12 @@ export function forgeFilterOf(ctx: Ctx, characterId: bigint): ForgeFilter | unde
   return f ? { minRarity: f.minRarity.tag, keepAffixes: f.keepAffixes, minAffixTier: f.minAffixTier, scrap: f.scrap } : undefined;
 }
 
-/** The material an item's scrap smelts into; undefined for tiers without materials. */
+/** The material an item scraps into; undefined for tiers without materials. */
 export const scrapMaterialIdOf = (it: { baseId: number; tier: number }) => scrapMaterialId(it.baseId, it.tier);
 
 /** Scrapped items per rarity, in RARITIES order (settle logs). */
 function scrappedPerRarity(list: readonly ScrapDrop[]): number[] {
   return RARITIES.map(r => list.filter(x => x.rarity === r).reduce((n, x) => n + x.count, 0));
-}
-
-/** The character's scrap that smelts into `materialId`, by rarity. */
-export function scrapHeld(ctx: Ctx, characterId: bigint, materialId: number): Partial<Record<ScrapRarity, number>> {
-  const out: Partial<Record<ScrapRarity, number>> = {};
-  for (const row of ctx.db.scrap.characterId.filter(characterId)) {
-    if (row.materialId === materialId) out[row.rarity.tag as ScrapRarity] = Number(row.count);
-  }
-  return out;
-}
-
-/** Adds scrapped items to the character's scrap counters. */
-export function addScrapRows(ctx: Ctx, characterId: bigint, list: readonly ScrapDrop[]) {
-  if (!list.length) return;
-  const rows = [...ctx.db.scrap.characterId.filter(characterId)];
-  for (const d of list) {
-    const row = rows.find(r => r.materialId === d.materialId && r.rarity.tag === d.rarity);
-    if (row) ctx.db.scrap.id.update({ ...row, count: row.count + BigInt(d.count) });
-    else ctx.db.scrap.insert({ id: 0n, characterId, materialId: d.materialId, rarity: { tag: d.rarity }, count: BigInt(d.count) });
-  }
-}
-
-/** Takes smelted scrap of `materialId` from the counters (callers check there is enough). */
-function takeScrap(ctx: Ctx, characterId: bigint, materialId: number, used: readonly { rarity: ScrapRarity; count: number }[]) {
-  const rows = [...ctx.db.scrap.characterId.filter(characterId)];
-  for (const u of used) {
-    const row = rows.find(r => r.materialId === materialId && r.rarity.tag === u.rarity);
-    if (!row || row.count < BigInt(u.count)) throw new SenderError('Not enough scrap');
-    ctx.db.scrap.id.update({ ...row, count: row.count - BigInt(u.count) });
-  }
 }
 
 /** Material ID → count the character holds. */
@@ -569,6 +544,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     elixirKills: 0,
     elixirsUsed: 0,
     elixirEmpty: false,
+    respawns: 0,
     ...row,
   });
   pruneSettleLog(ctx, ch.id);

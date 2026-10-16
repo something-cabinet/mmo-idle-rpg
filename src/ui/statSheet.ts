@@ -91,7 +91,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     ? [
         row('Damage', [src.hit.Physical ? `${fmt(src.hit.Physical)} phys` : '', src.hit.Magic ? `${fmt(src.hit.Magic)} magic` : ''].filter(Boolean).join(' + ') || '0',
           from([Stat.PhysDamage, Stat.PhysDamagePct, Stat.MagicDamage, Stat.MagicDamagePct],
-            w && `Weapon: ${n1(fromStored(w.hit))} ${w.damageType.tag === 'Split' ? 'split (half physical, half magic)' : w.damageType.tag.toLowerCase()} per hit`,
+            w && `Weapon: ${w.damageType.tag === 'Split' ? `${n1(fromStored(w.hit) / 2)} physical, ${n1(fromStored(w.hit) / 2)} magic` : `${n1(fromStored(w.hit))} ${w.damageType.tag.toLowerCase()}`} per hit`,
             `Might ${n1(might)}: +${n1(0.5 * might)}% physical damage`,
             `Mind ${n1(mind)}: +${n1(0.45 * mind)}% magic damage`,
             'Flat added damage is per hit: fast weapons get more from it',

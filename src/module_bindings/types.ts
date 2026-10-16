@@ -473,6 +473,7 @@ export const SettleLog = __t.object("SettleLog", {
   elixirsUsed: __t.u32(),
   elixirEmpty: __t.bool(),
   scrapped: __t.array(__t.u32()),
+  respawns: __t.u32(),
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

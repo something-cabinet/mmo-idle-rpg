@@ -177,6 +177,44 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   }
 }
 
+/**
+ * Seconds a character lies defeated before fighting the same target again, after losing
+ * a live fight it wins on average (`matchup().viable`): bad luck costs a little time,
+ * not the rest of the session (combat.md, "Defeat").
+ */
+export const RESPAWN_SECONDS = 30;
+
+/** A defeat the character gets up from: a lost fight in a matchup it wins on average. */
+export const respawns = (f: Fight) => f.outcome === 'defeat' && f.matchup.viable;
+
+/** Seconds from a fight's start until the next one starts: its end, plus the respawn after a defeat that has one. */
+export const fightSpan = (f: Fight) => f.end + (respawns(f) ? RESPAWN_SECONDS : 0);
+
+/** Live fights sampled per offline estimate (`liveKillRate`). */
+const ODDS_SAMPLES = 400;
+const ODDS_SALT = 0x0dd5n;
+
+/**
+ * Kills per second that live fights of `stats` against `enemy` average out to, for the
+ * offline settle (`project`), and the share of fights lost. Won fights take the formula's
+ * time (`m.killRate`); lost ones (and stalemates) their sampled time, a defeat plus its
+ * respawn (`fightSpan`). Sampled with fixed seeds, so a matchup always gets the same
+ * estimate, and one that never loses settles exactly as by the formulas. Only for a
+ * viable matchup: any other defeat ends farming.
+ */
+export function liveKillRate(stats: CombatStats, m: Matchup, enemy: EnemyDef): { killRate: number; lossShare: number } {
+  if (!Number.isFinite(m.timeToDie) || m.killRate <= 0) return { killRate: m.killRate, lossShare: 0 };
+  let wins = 0;
+  let lostSpan = 0;
+  for (let i = 0; i < ODDS_SAMPLES; i++) {
+    const f = simulateFight(stats, m, enemy, seededRng(ODDS_SALT, BigInt(i)));
+    if (f.outcome === 'kill') wins++;
+    else lostSpan += fightSpan(f);
+  }
+  if (wins === ODDS_SAMPLES) return { killRate: m.killRate, lossShare: 0 };
+  return { killRate: wins / (wins / m.killRate + lostSpan), lossShare: 1 - wins / ODDS_SAMPLES };
+}
+
 export interface Simulated extends Settled {
   /**
    * The latest fight and when it started: the one in progress at `nowMicros`, or the
@@ -190,8 +228,10 @@ export interface Simulated extends Settled {
  * `p.settledMicros` back to back. Each kill grants its XP and gold (batched per
  * level, like `project`); stats are recomputed per fight, so a level-up applies from
  * the next one. Only finished fights are settled: the one in progress stays open and
- * replays identically from its start next time. A defeat or a stalemate settles up
- * to now; a defeat also returns `defeatedAt`. An elixir active when a fight starts
+ * replays identically from its start next time. A defeat in a matchup the character
+ * wins on average is followed by RESPAWN_SECONDS, then the next fight (`respawns`);
+ * until the respawn is over the lost fight counts as in progress. Any other defeat, or
+ * a stalemate, settles up to now; such a defeat also returns `defeatedAt`. An elixir active when a fight starts
  * applies to the whole fight; each kill uses one charge.
  */
 export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterId: bigint): Simulated {
@@ -199,6 +239,7 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
   let start = p.settledMicros;
   let total = 0;
   let xpGained = 0n;
+  let respawned = 0;
   // Kills at the current level not yet turned into XP and gold.
   let batch = 0;
   let m: Matchup | undefined;
@@ -221,7 +262,7 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
   };
   const result = (settledMicros: bigint, extra: Partial<Simulated> = {}): Simulated => {
     commit();
-    return { level, xp, gold, settledMicros, kills: total, xpGained, elixir: elixir.left, ...extra };
+    return { level, xp, gold, settledMicros, kills: total, xpGained, elixir: elixir.left, ...(respawned > 0 && { respawns: respawned }), ...extra };
   };
 
   if (!a.enemy || nowMicros <= start) return result(nowMicros > start ? nowMicros : start);
@@ -232,9 +273,14 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
     if (m && (fm.xpPerKill !== m.xpPerKill || fm.goldPerKill !== m.goldPerKill)) commit();
     m = fm;
     const fight = simulateFight(stats, fm, a.enemy, fightRng(characterId, start));
-    const end = start + BigInt(Math.ceil(fight.end * 1e6));
+    const end = start + BigInt(Math.ceil(fightSpan(fight) * 1e6));
     if (end > nowMicros) return result(start, { current: { startMicros: start, fight } });
     const current = { startMicros: start, fight };
+    if (respawns(fight)) {
+      respawned += 1;
+      start = end;
+      continue;
+    }
     if (fight.outcome === 'defeat') return result(nowMicros, { defeatedAt: end, current });
     if (fight.outcome === 'stalemate') return result(nowMicros, { current });
     total += 1;

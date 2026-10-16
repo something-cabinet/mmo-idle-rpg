@@ -39,7 +39,7 @@ buttons for ineligible characters, but that only spares players an error message
 
 ## What can be traded
 
-- **Items only** in v1. Gold moves only as the price of a sale. Materials, Dust, scrap,
+- **Items only** in v1. Gold moves only as the price of a sale. Materials, Dust,
   supplies and tools aren't tradable (could become a later currency exchange).
 - Any item **not equipped in any of the 4 loadouts** (`loadout.slots`). Unequip first.
 - The item keeps everything: rarity, affixes, legendary, uniqueId, effects, temper and

@@ -60,4 +60,5 @@ export default __t.row({
   elixirsUsed: __t.u32().name("elixirs_used"),
   elixirEmpty: __t.bool().name("elixir_empty"),
   scrapped: __t.array(__t.u32()),
+  respawns: __t.u32(),
 });

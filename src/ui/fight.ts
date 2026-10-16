@@ -3,7 +3,7 @@
 // function of the clock from its start, so leaving and reopening the view resumes
 // where it was.
 
-import type { Simulated } from '../../spacetimedb/src/sim';
+import { fightSpan, respawns, type Simulated } from '../../spacetimedb/src/sim';
 import { nowMicros } from './clock';
 import { fmt } from './format';
 
@@ -116,8 +116,12 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
       el(who, '.hp-text').textContent = `${fmt(hp)} / ${fmt(max)}${who === 'you' && shield >= 0.5 ? ` +${fmt(shield)}` : ''}`;
       el(who, '.swing-fill').style.width = walking || over || !Number.isFinite(period) ? '0%' : `${(swing / period) * 100}%`;
     }
+    // Seconds left lying defeated before the next fight (sim.ts `respawns`).
+    const rising = fightSpan(fight) - Number(now - startMicros) / 1e6;
     $('scene-status').textContent =
-      over && fight.outcome === 'defeat'
+      over && respawns(fight)
+        ? `Defeated · back up in ${Math.max(0, Math.ceil(rising))} s`
+        : over && fight.outcome === 'defeat'
         ? 'Defeated'
         : over && fight.outcome === 'stalemate'
           ? 'Neither side can win'
@@ -133,9 +137,10 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     if (!document.getElementById('scene')) return stopFight(); // view was replaced
     const now = nowMicros();
     draw(cur, now);
-    // A kill: on to the next fight, which starts with the walk. A defeat stays on screen.
-    const endsAt = cur.startMicros + BigInt(Math.ceil(cur.fight.end * 1e6));
-    if (cur.fight.outcome !== 'defeat' && now >= endsAt) {
+    // A kill, or a defeat after its respawn: on to the next fight, which starts with the
+    // walk. A defeat without a respawn stays on screen.
+    const endsAt = cur.startMicros + BigInt(Math.ceil(fightSpan(cur.fight) * 1e6));
+    if ((cur.fight.outcome !== 'defeat' || respawns(cur.fight)) && now >= endsAt) {
       const n = next(now);
       if (n && n.startMicros > cur.startMicros) {
         cur = n;

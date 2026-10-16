@@ -65,6 +65,7 @@ export const my_forge_filter = spacetimedb.view(
   }
 );
 
+/** Unused: the `scrap` table is empty (schema.ts). */
 export const my_scrap = spacetimedb.view({ name: 'my_scrap', public: true }, t.array(scrap.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
   return ch ? [...ctx.db.scrap.characterId.filter(ch.id)] : [];

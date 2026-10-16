@@ -158,11 +158,12 @@ check("an NPC doesn't depend on the party", encodeSetup({ raidId: 1, fighters: [
   // Each half takes its own damage % (attributes boost the two types a little differently), so compare the physical half.
   check('a Split weapon hits half physical, half magic', Math.abs(umbral.hit.Physical - katana.hit.Physical / 2) < 1e-9 &&
     umbral.hit.Magic > 0.9 * umbral.hit.Physical && katana.hit.Magic === 0);
-  // Against symmetric phases a Split hit deals about the same on average (damage is linear), but steadily.
+  // Against symmetric phases a Split hit deals about the same on average (damage is linear), but steadily;
+  // the Umbral katana also swings faster (1.5 vs 1.4), so compare per swing.
   const perPhase = (s: CombatStats) => bossPhases(moon).map(b => matchup(s, b).dps);
   const [k, u] = [perPhase(lone(6)), perPhase(lone(1007))];
-  check('a Split katana against Umbriel: about the same average, far steadier across phases',
-    Math.abs(mean(u) / mean(k) - 1) < 0.05 && Math.abs(u[0] - u[1]) < 0.2 * Math.abs(k[0] - k[1]),
+  check('a Split katana against Umbriel: about the same average per swing, far steadier across phases',
+    Math.abs(mean(u) / 1.5 / (mean(k) / 1.4) - 1) < 0.05 && Math.abs(u[0] - u[1]) < 0.2 * Math.abs(k[0] - k[1]),
     `plain ${k.map(x => x.toFixed(0)).join('/')}, split ${u.map(x => x.toFixed(0)).join('/')}`);
   check('Wyrm Hollow has no phases', !raid.phases && bossPhases(raid).length === 1 && phaseAt(raid, 100) === 0);
 }

@@ -13,4 +13,5 @@ import {
 export default {
   skillId: __t.u8(),
   tier: __t.u8(),
+  node: __t.u8(),
 };

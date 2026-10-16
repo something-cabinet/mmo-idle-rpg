@@ -2,7 +2,8 @@
 // `supply` rows, not bag items. Only Alchemy's elixirs so far. Pure data, shared.
 //
 // PERMANENT IDS: supply IDs are stored in `supply` rows, `character.elixirId` and settle
-// logs; never reuse or renumber them. Elixirs are 100 + kind × 10 + tier.
+// logs; never reuse or renumber them. Elixirs are 100 + kind × 10 + tier, Greater elixirs
+// 200 + kind × 10 + tier.
 
 import { MATERIALS } from './materials';
 
@@ -49,20 +50,36 @@ export interface SupplyDef {
   /** e.g. "Elixir of Wrath"; the tier is shown next to it. */
   name: string;
   elixir: ElixirDef;
+  /** A Greater elixir (needs a rare herb): GREATER_BONUS × the bonus. */
+  greater: boolean;
+  /** Full effect, in zones of its tier or lower. */
+  mult: number;
 }
 
-/** Tiers with materials: recipes need them. */
-export const SUPPLY_TIERS = [...new Set(MATERIALS.map(m => m.tier))].sort((a, b) => a - b);
+/** Tiers with materials: recipes need them (untiered materials are tier 0). */
+export const SUPPLY_TIERS = [...new Set(MATERIALS.map(m => m.tier))].filter(t => t > 0).sort((a, b) => a - b);
 
-export const elixirSupplyId = (kind: number, tier: number) => 100 + kind * 10 + tier;
+/** A Greater elixir's bonus over the normal one (Wrath ×1.2 → ×1.3). */
+export const GREATER_BONUS = 1.5;
 
-export const SUPPLIES: SupplyDef[] = SUPPLY_TIERS.flatMap(tier =>
-  ELIXIRS.map(e => ({ id: elixirSupplyId(e.kind, tier), tier, name: `Elixir of ${e.name}`, elixir: e }))
+export const elixirSupplyId = (kind: number, tier: number, greater = false) => (greater ? 200 : 100) + kind * 10 + tier;
+
+export const SUPPLIES: SupplyDef[] = [false, true].flatMap(greater =>
+  SUPPLY_TIERS.flatMap(tier =>
+    ELIXIRS.map(e => ({
+      id: elixirSupplyId(e.kind, tier, greater),
+      tier,
+      name: `${greater ? 'Greater ' : ''}Elixir of ${e.name}`,
+      elixir: e,
+      greater,
+      mult: greater ? 1 + (e.mult - 1) * GREATER_BONUS : e.mult,
+    }))
+  )
 );
 export const SUPPLIES_BY_ID: ReadonlyMap<number, SupplyDef> = new Map(SUPPLIES.map(s => [s.id, s]));
 
 /** An elixir's multiplier in a zone of `zoneTier`: full up to its tier, half above. */
-export const elixirMult = (s: SupplyDef, zoneTier: number) => (zoneTier <= s.tier ? s.elixir.mult : 1 + (s.elixir.mult - 1) / 2);
+export const elixirMult = (s: SupplyDef, zoneTier: number) => (zoneTier <= s.tier ? s.mult : 1 + (s.mult - 1) / 2);
 
 /** The buffs elixir `supplyId` gives in a zone of `zoneTier` (undefined for no elixir). */
 export function elixirBuffs(supplyId: number, zoneTier: number): Buffs | undefined {

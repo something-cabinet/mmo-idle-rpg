@@ -6,7 +6,7 @@
 // activity and settle logs; never reuse or renumber them. 0 is never a skill (it means
 // combat in `character.activitySkill`).
 
-import type { MaterialKind } from './materials';
+import { materialId, type MaterialKind, type UntieredKind } from './materials';
 
 export const SkillId = { Mining: 1, Woodcutting: 2, Foraging: 3, Smithing: 11, Alchemy: 12 } as const;
 
@@ -94,10 +94,93 @@ export const temperCap = (level: number) => (level >= MAX_SKILL_LEVEL ? 10 : Mat
 /** Smithing level needed to temper to `temper`. */
 export const temperRequirement = (temper: number) => (temper >= 10 ? MAX_SKILL_LEVEL : 10 * temper);
 
-/** Why gathering tier `tier` isn't allowed, or undefined if it is. */
-export function gatherBlocker(g: { level: number; tier: number; zoneOpen: boolean }): string | undefined {
+// ---------------------------------------------------------------- rare finds and nodes
+
+/**
+ * A rare find (life-skills.md, "Rare finds"), rolled per gathering action on top of the
+ * material: a material (tiered: of the node's tier; untiered: one material) or a Relic,
+ * sold on the spot for gold.
+ */
+export interface RareFindDef {
+  skillId: number;
+  what: { kind: 'material'; material: MaterialKind | UntieredKind; untiered: boolean } | { kind: 'relic' };
+  /** Chance per action at tier `tier`, before the level and node multipliers. */
+  chance: (tier: number) => number;
+}
+
+export const RARE_FINDS: RareFindDef[] = [
+  { skillId: SkillId.Mining, what: { kind: 'relic' }, chance: () => 0.02 },
+  { skillId: SkillId.Mining, what: { kind: 'material', material: 'Meteor', untiered: true }, chance: tier => 0.001 * tier },
+  { skillId: SkillId.Woodcutting, what: { kind: 'material', material: 'Tear', untiered: true }, chance: tier => 0.001 * tier },
+  { skillId: SkillId.Foraging, what: { kind: 'material', material: 'Herb', untiered: false }, chance: () => 0.01 },
+];
+
+/** Rare finds come `1 + level / 99` times as often: double at 99. */
+export const findLevelMult = (level: number) => 1 + level / MAX_SKILL_LEVEL;
+
+/** A Relic sells for this many hours of farming gold at its tier (craft.ts `craftCost`). */
+export const RELIC_HOURS = 0.15;
+
+/**
+ * A special node (life-skills.md, "Special nodes"): another target inside a tier that
+ * trades the main material for a focus. Node 0 is the normal node of every skill.
+ *
+ * PERMANENT IDS: node IDs are stored in `character.activityRecipe` (`node × 100 + tier`)
+ * and settle logs; never reuse or renumber them.
+ */
+export interface GatherNodeDef {
+  id: number;
+  skillId: number;
+  name: string;
+  /** Skill level that unlocks it (on top of the tier's requirement). */
+  unlock: number;
+  /** Chance per action of the main material (1 on the normal node). */
+  mainChance: number;
+  /** Mining's Gem chance here (GEM_CHANCE on the normal node). */
+  gemChance?: number;
+  /** The rare find it favours, and by how much. */
+  boost?: { find: RareFindDef; mult: number };
+  /** What it trades, for the client. */
+  text: string;
+}
+
+const findOf = (skillId: number, kind: RareFindDef['what']['kind'], material?: string) =>
+  RARE_FINDS.find(f => f.skillId === skillId && f.what.kind === kind && (!material || (f.what.kind === 'material' && f.what.material === material)))!;
+
+export const GATHER_NODES: GatherNodeDef[] = [
+  { id: 1, skillId: SkillId.Mining, name: 'Gem Pocket', unlock: 30, mainChance: 0, gemChance: 0.2, text: 'No Ore; Gem chance 20%' },
+  { id: 2, skillId: SkillId.Mining, name: 'Ruins Dig Site', unlock: 60, mainChance: 0.5, boost: { find: findOf(SkillId.Mining, 'relic'), mult: 3 }, text: 'Half the Ore; Relics ×3' },
+  { id: 3, skillId: SkillId.Woodcutting, name: 'Ancient Grove', unlock: 60, mainChance: 0.5, boost: { find: findOf(SkillId.Woodcutting, 'material', 'Tear'), mult: 3 }, text: "Half the Wood; Dryad's Tears ×3" },
+  { id: 4, skillId: SkillId.Foraging, name: 'Shaded Glade', unlock: 30, mainChance: 0.5, boost: { find: findOf(SkillId.Foraging, 'material', 'Herb'), mult: 3 }, text: 'Half the Reagent; rare herbs ×3' },
+];
+export const GATHER_NODES_BY_ID: ReadonlyMap<number, GatherNodeDef> = new Map(GATHER_NODES.map(n => [n.id, n]));
+
+/** `character.activityRecipe` while gathering: `node × 100 + tier` (node 0: the normal node). */
+export const gatherSpotId = (tier: number, node: number) => node * 100 + tier;
+/** The tier and node of a gathering `activityRecipe`. */
+export const gatherSpot = (recipe: number) => ({ tier: recipe % 100, node: Math.floor(recipe / 100) });
+
+/** Chance per action of the main material at `node` (0: the normal node). */
+export const mainChance = (node: number) => GATHER_NODES_BY_ID.get(node)?.mainChance ?? 1;
+/** Mining's Gem chance per action at `node`. */
+export const gemChance = (node: number) => GATHER_NODES_BY_ID.get(node)?.gemChance ?? GEM_CHANCE;
+
+/** Each rare find of `skillId` at `tier` and `node` with its chance per action at skill `level`, and the material it makes (undefined: a Relic). */
+export function findChances(skillId: number, tier: number, node: number, level: number): { find: RareFindDef; chance: number; materialId?: number }[] {
+  const boost = GATHER_NODES_BY_ID.get(node)?.boost;
+  return RARE_FINDS.filter(f => f.skillId === skillId).map(f => ({
+    find: f,
+    chance: Math.min(1, f.chance(tier) * findLevelMult(level) * (boost?.find === f ? boost.mult : 1)),
+    materialId: f.what.kind === 'material' ? materialId(f.what.untiered ? 0 : tier, f.what.material) : undefined,
+  }));
+}
+
+/** Why gathering tier `tier` (at special node `node`, 0 for the normal one) isn't allowed, or undefined if it is. */
+export function gatherBlocker(g: { level: number; tier: number; zoneOpen: boolean; node?: number }): string | undefined {
   if (!g.zoneOpen) return `Unlock the tier ${g.tier} zone first`;
   if (g.level < tierRequirement(g.tier)) return `Needs level ${tierRequirement(g.tier)}`;
+  const n = g.node ? GATHER_NODES_BY_ID.get(g.node) : undefined;
+  if (n && g.level < n.unlock) return `Needs level ${n.unlock}`;
   return undefined;
 }
 

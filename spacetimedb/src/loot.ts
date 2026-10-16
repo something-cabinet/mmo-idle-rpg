@@ -132,12 +132,13 @@ function pickAffixStat(rng: Rng): StatDef {
 }
 
 /**
- * A regular affix on a tier-`tier` item: weighted free pool, affix tier 1..N, value uniform
- * in that tier's range (then rounded).
+ * A regular affix on a tier-`tier` item: weighted free pool, affix tier 1..N (or `atTier`),
+ * value uniform in that tier's range (then rounded).
  */
-export function rollAffix(rng: Rng, tier: number): NewItem['affixes'][number] {
+export function rollAffix(rng: Rng, tier: number, atTier?: number): NewItem['affixes'][number] {
   const def = pickAffixStat(rng);
-  const k = 1 + Math.floor(rng() * tier);
+  const roll = 1 + Math.floor(rng() * tier);
+  const k = atTier ?? roll;
   const [lo, hi] = affixRange(def.id, k);
   const value = lo + (hi - lo) * rng();
   return { stat: def.id, tier: k, value: toStored(roundStat(def.id, value)) };

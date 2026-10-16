@@ -77,7 +77,7 @@ function TopStats({ s }: { s: Snapshot }) {
       {e && (
         <button className="chip activity" title={`${e.supply.name} T${e.supply.tier}: ${elixirText(e.supply)}. Kills left · in stock.`} onClick={() => (location.hash = '#alchemy')}>
           <Icon name="flask" className="c-material" />
-          <span>{e.supply.elixir.name} {e.killsLeft}</span>
+          <span>{e.supply.greater ? 'Greater ' : ''}{e.supply.elixir.name} {e.killsLeft}</span>
           <span className="activity-rate">×{s.supplies.get(e.supply.id) ?? 0}</span>
         </button>
       )}

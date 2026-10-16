@@ -13,7 +13,7 @@ import {
 } from './data/skills';
 import { MAX_TEMPER, SCRAP_ORDER, SCRAP_YIELD, temperCost, type MaterialCost, type Recipe, type ScrapRarity } from './data/recipes';
 import { addSkillXp, type SkillProgress } from './gather';
-import { makeItem, passesFilter, rarityRank, seededRng, type LootFilter, type NewItem, type RarityName, type Rng } from './loot';
+import { makeItem, passesFilter, rarityRank, rollAffix, seededRng, type LootFilter, type NewItem, type RarityName, type Rng } from './loot';
 
 export interface Queue {
   /** Actions still queued. */
@@ -138,9 +138,15 @@ export function forgeRarity(rng: Rng, level: number, tier: number): RarityName {
   return r < FORGE_RARE_CHANCE ? 'Rare' : r < FORGE_RARE_CHANCE + forgeMagicChance(level, tier) ? 'Magic' : 'Common';
 }
 
-/** A base forged at Smithing `level` (life-skills.md, "Smithing: forge a base"). */
-export function forgeItem(rng: Rng, baseId: number, tier: number, level: number): NewItem {
-  return makeItem(rng, baseId, tier, forgeRarity(rng, level, tier));
+/**
+ * A base forged at Smithing `level` (life-skills.md, "Smithing: forge a base"). `empowered`
+ * (a Dryad's Tear): at least Magic, and its first affix rolled again at the item's tier.
+ */
+export function forgeItem(rng: Rng, baseId: number, tier: number, level: number, empowered = false): NewItem {
+  const rarity = forgeRarity(rng, level, tier);
+  const it = makeItem(rng, baseId, tier, empowered && rarity === 'Common' ? 'Magic' : rarity);
+  if (!empowered || it.affixes.length === 0) return it;
+  return { ...it, affixes: [rollAffix(rng, tier, tier), ...it.affixes.slice(1)] };
 }
 
 /**
@@ -158,7 +164,7 @@ const FORGE_SALT = 0x666f726765n; // "forge"
 /** What forge recipe `r` makes in the action ending at `at`, made at `level`, and whether `f` keeps it. */
 export function forged(characterId: bigint, r: Recipe, made: { at: bigint; level: number }, f?: ForgeFilter): { item: NewItem; kept: boolean } {
   if (r.output.kind !== 'item') throw new Error('Not a forge recipe');
-  const item = forgeItem(seededRng(characterId, made.at, FORGE_SALT), r.output.baseId, r.tier, made.level);
+  const item = forgeItem(seededRng(characterId, made.at, FORGE_SALT), r.output.baseId, r.tier, made.level, r.output.empowered);
   return { item, kept: !f || passesFilter(item, { ...f, keepTypes: [] }) };
 }
 

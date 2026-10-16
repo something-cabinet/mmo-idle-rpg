@@ -3,13 +3,14 @@
 //
 // A recipe's ID is stored in `character.activityRecipe` while it runs and in settle logs;
 // never renumber them. Per skill:
-//   Smithing: forge a base = baseId × 10 + tier; upgrade a tool = 1000 + skill × 10 + tier;
+//   Smithing: forge a base = baseId × 10 + tier; empowered forge (+1 Dryad's Tear) =
+//     30000 + baseId × 10 + tier; upgrade a tool = 1000 + skill × 10 + tier;
 //     smelt Ore = 60000 + tier; smelt scrap = 61000 + the material ID it makes. (Tempering is
 //     instant, not a recipe: `temperCost`.)
-//   Alchemy: the elixir's supply ID (data/supplies.ts).
+//   Alchemy: the elixir's supply ID (data/supplies.ts); Greater elixirs add a rare herb.
 
 import { ZONE_BASES, base, type BaseDef } from './bases';
-import { MATERIALS, MATERIALS_BY_ID, materialAt, materialOf, type MaterialKind } from './materials';
+import { MATERIALS, MATERIALS_BY_ID, materialAt, materialOf, untieredMaterial, type MaterialKind } from './materials';
 import { GATHERING_SKILLS, SkillId, productionXpPerAction } from './skills';
 import { SUPPLIES, SUPPLY_TIERS } from './supplies';
 
@@ -19,7 +20,8 @@ export interface MaterialCost {
 }
 
 export type RecipeOutput =
-  | { kind: 'item'; baseId: number }
+  /** `empowered`: spends a Dryad's Tear for at least Magic and one affix of the item's tier (life-skills.md). */
+  | { kind: 'item'; baseId: number; empowered?: boolean }
   | { kind: 'tool'; skillId: number }
   | { kind: 'supply'; supplyId: number }
   /** `count` of a material per action (smelting Ore). */
@@ -60,10 +62,13 @@ export function forgeKinds(b: BaseDef): [MaterialKind, MaterialKind] {
   return ['Metal', 'Wood']; // plate and shields
 }
 
-function forgeRecipe(b: BaseDef, tier: number): Recipe {
+/** Recipe IDs of empowered forges start here (+ baseId × 10 + tier). */
+export const EMPOWERED_FORGE = 30000;
+
+function forgeRecipe(b: BaseDef, tier: number, empowered = false): Recipe {
   const [main, second] = forgeKinds(b);
   return {
-    id: b.id * 10 + tier,
+    id: (empowered ? EMPOWERED_FORGE : 0) + b.id * 10 + tier,
     skillId: SkillId.Smithing,
     tier,
     name: b.name(tier),
@@ -71,8 +76,9 @@ function forgeRecipe(b: BaseDef, tier: number): Recipe {
     inputs: [
       { materialId: materialOf(tier, main).id, count: main === 'Gem' ? 5 : 30 },
       { materialId: materialOf(tier, second).id, count: 10 },
+      ...(empowered ? [{ materialId: untieredMaterial('Tear').id, count: 1 }] : []),
     ],
-    output: { kind: 'item', baseId: b.id },
+    output: { kind: 'item', baseId: b.id, empowered },
     max: MAX_QUEUE,
   };
 }
@@ -126,7 +132,7 @@ export function temperCost(it: { baseId: number; tier: number; temper: number })
 
 export const RECIPES: Recipe[] = [
   // Forge any base that drops in zones (raid variants only drop).
-  ...SUPPLY_TIERS.flatMap(tier => ZONE_BASES.map(b => forgeRecipe(b, tier))),
+  ...SUPPLY_TIERS.flatMap(tier => ZONE_BASES.flatMap(b => [forgeRecipe(b, tier), forgeRecipe(b, tier, true)])),
   // Every character starts with tier 1 tools. Tier T is made from tier T−1 materials, so
   // it can be made before farming tier T.
   ...SUPPLY_TIERS.filter(t => t > 1).flatMap(tier =>
@@ -156,7 +162,7 @@ export const RECIPES: Recipe[] = [
     max: MAX_QUEUE,
   })),
   // Scrap → materials of its kind and tier.
-  ...MATERIALS.filter(m => SCRAP_KINDS.includes(m.kind)).map(m => ({
+  ...MATERIALS.filter(m => (SCRAP_KINDS as readonly string[]).includes(m.kind)).map(m => ({
     id: scrapRecipeId(m.id),
     skillId: SkillId.Smithing,
     tier: m.tier,
@@ -175,6 +181,7 @@ export const RECIPES: Recipe[] = [
     inputs: [
       { materialId: materialOf(s.tier, 'Reagent').id, count: 10 },
       { materialId: materialOf(s.tier, 'Core').id, count: 1 },
+      ...(s.greater ? [{ materialId: materialOf(s.tier, 'Herb').id, count: 1 }] : []),
     ],
     output: { kind: 'supply' as const, supplyId: s.id },
     max: MAX_QUEUE,
@@ -186,8 +193,9 @@ const BY_KEY = new Map(RECIPES.map(r => [`${r.skillId}:${r.id}`, r]));
 /** Recipe `id` of skill `skillId`, or undefined. */
 export const recipeOf = (skillId: number, id: number): Recipe | undefined => BY_KEY.get(`${skillId}:${id}`);
 
-/** The forge recipe for `baseId` at `tier`. */
-export const forgeRecipeOf = (baseId: number, tier: number) => recipeOf(SkillId.Smithing, base(baseId).id * 10 + tier);
+/** The forge recipe for `baseId` at `tier` (`empowered`: with a Dryad's Tear). */
+export const forgeRecipeOf = (baseId: number, tier: number, empowered = false) =>
+  recipeOf(SkillId.Smithing, (empowered ? EMPOWERED_FORGE : 0) + base(baseId).id * 10 + tier);
 
 /** What production can spend. */
 export interface Stock {

@@ -8,15 +8,20 @@ import {
   SKILLS,
   SKILLS_BY_ID,
   SkillId,
+  GATHER_NODES,
+  findChances,
+  findLevelMult,
   gatherActionMicros,
   gatherBlocker,
+  gatherSpot,
+  gatherSpotId,
   skillXpToNext,
   temperCap,
   tierRequirement,
 } from '../spacetimedb/src/data/skills';
-import { materialOf } from '../spacetimedb/src/data/materials';
+import { materialOf, untieredMaterial } from '../spacetimedb/src/data/materials';
 import { makeItem, rollDrops, seededRng } from '../spacetimedb/src/loot';
-import { addSkillXp, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from '../spacetimedb/src/gather';
+import { addSkillXp, gatherCharacterXp, projectGathering, relicGold, rollGathering, rollGatheringActions } from '../spacetimedb/src/gather';
 import {
   RECIPES,
   affordable,
@@ -103,14 +108,14 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
 
 {
   const mining = SKILLS_BY_ID.get(SkillId.Mining)!;
-  const drops = rollGathering(seededRng(1n), mining, 2, { actions: 3000, doubleMean: 0 });
+  const drops = rollGathering(seededRng(1n), mining, 2, { actions: 3000, doubleMean: 0 }).materials;
   const ore = drops.find(d => d.materialId === materialOf(2, 'Ore').id)?.count ?? 0;
   const gems = drops.find(d => d.materialId === materialOf(2, 'Gem').id)?.count ?? 0;
   check('mining: one Ore per action, never Metal', ore === 3000 && !drops.some(d => d.materialId === materialOf(2, 'Metal').id), `${ore}`);
   check('~5% gems', gems > 100 && gems < 200, `${gems}`);
-  const wood = rollGathering(seededRng(1n), SKILLS_BY_ID.get(SkillId.Woodcutting)!, 1, { actions: 1000, doubleMean: 100 });
+  const wood = rollGathering(seededRng(1n), SKILLS_BY_ID.get(SkillId.Woodcutting)!, 1, { actions: 1000, doubleMean: 100 }).materials;
   check('woodcutting: wood only, double yields added', wood.length === 1 && wood[0].count > 1050 && wood[0].count < 1150, `${wood[0]?.count}`);
-  check('no actions, no drops', rollGathering(seededRng(1n), mining, 1, { actions: 0, doubleMean: 0 }).length === 0);
+  check('no actions, no drops', rollGathering(seededRng(1n), mining, 1, { actions: 0, doubleMean: 0 }).materials.length === 0);
 }
 {
   // Online, rolled action by action: settling in pieces (what the client shows between settles) gives the same.
@@ -119,11 +124,11 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   let p = fresh;
   for (let t = 37_000_000n; t <= 5n * HOUR; t += 37_000_000n) {
     const g = projectGathering(p, { tier: 1, toolTier: 1 }, t);
-    for (const d of rollGatheringActions(7n, mining, 1, g)) total.set(d.materialId, (total.get(d.materialId) ?? 0) + d.count);
+    for (const d of rollGatheringActions(7n, mining, 1, g).materials) total.set(d.materialId, (total.get(d.materialId) ?? 0) + d.count);
     p = g;
   }
   const once = projectGathering(fresh, { tier: 1, toolTier: 1 }, p.settledMicros);
-  const onceDrops = rollGatheringActions(7n, mining, 1, once);
+  const onceDrops = rollGatheringActions(7n, mining, 1, once).materials;
   const metal = materialOf(1, 'Ore').id;
   const gem = materialOf(1, 'Gem').id;
   const count = (id: number) => onceDrops.find(d => d.materialId === id)?.count ?? 0;
@@ -134,8 +139,65 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('per-action rolls: ~5% gems', Math.abs(count(gem) - once.actions * 0.05) < once.actions * 0.03, `${count(gem)}`);
   check('per-action rolls: the runs cover every action', once.runs.reduce((n, r) => n + r.n, 0) === once.actions);
   const maxed = projectGathering({ level: MAX_SKILL_LEVEL, xp: 0n, settledMicros: 0n }, { tier: 1, toolTier: 1 }, 10n * HOUR);
-  const wood = rollGatheringActions(7n, SKILLS_BY_ID.get(SkillId.Woodcutting)!, 1, maxed)[0].count - maxed.actions;
+  const wood = rollGatheringActions(7n, SKILLS_BY_ID.get(SkillId.Woodcutting)!, 1, maxed).materials[0].count - maxed.actions;
   check('per-action rolls: ~10% double yields at max level', Math.abs(wood - maxed.doubleMean) < maxed.doubleMean * 0.15, `${wood} vs ~${maxed.doubleMean}`);
+}
+
+// ---------------------------------------------------------------- rare finds and special nodes
+
+{
+  const mining = SKILLS_BY_ID.get(SkillId.Mining)!;
+  const forage = SKILLS_BY_ID.get(SkillId.Foraging)!;
+  const wood = SKILLS_BY_ID.get(SkillId.Woodcutting)!;
+  check('node IDs unique, nonzero and below 100', new Set(GATHER_NODES.map(n => n.id)).size === GATHER_NODES.length && GATHER_NODES.every(n => n.id > 0 && n.id < 100));
+  check('spot ID round-trips', gatherSpot(gatherSpotId(3, 2)).tier === 3 && gatherSpot(gatherSpotId(3, 2)).node === 2 && gatherSpotId(2, 0) === 2);
+  check('node blocked below its unlock level', gatherBlocker({ level: 29, tier: 1, zoneOpen: true, node: 1 }) === 'Needs level 30');
+  check('node open at its unlock level', gatherBlocker({ level: 30, tier: 1, zoneOpen: true, node: 1 }) === undefined);
+  check('rare finds double at 99', findLevelMult(MAX_SKILL_LEVEL) === 2);
+  const relic = findChances(SkillId.Mining, 2, 0, 0).find(f => f.materialId === undefined)!;
+  const ruins = findChances(SkillId.Mining, 2, 2, 0).find(f => f.materialId === undefined)!;
+  check('Ruins Dig Site: Relics ×3', Math.abs(ruins.chance - 3 * relic.chance) < 1e-12, `${relic.chance} → ${ruins.chance}`);
+  const tear = findChances(SkillId.Woodcutting, 3, 0, 0)[0];
+  check("Dryad's Tear is untiered and comes faster from higher tiers",
+    tear.materialId === untieredMaterial('Tear').id && Math.abs(tear.chance - 3 * findChances(SkillId.Woodcutting, 1, 0, 0)[0].chance) < 1e-12);
+  check('rare herbs are tiered', findChances(SkillId.Foraging, 2, 0, 1)[0].materialId === materialOf(2, 'Herb').id);
+
+  // Online rolls: in pieces match one settle, finds included.
+  const runs = (skillTier: number, hours: bigint) => projectGathering({ level: 60, xp: 0n, settledMicros: 0n }, { tier: skillTier, toolTier: 1 }, hours * HOUR);
+  const g = runs(2, 100n);
+  const once = rollGatheringActions(7n, mining, 2, g, 2);
+  let p = { level: 60, xp: 0n, settledMicros: 0n };
+  const parts = { relics: 0, ore: 0 };
+  for (let t = 997_000_000n; t <= 100n * HOUR + 997_000_000n; t += 997_000_000n) {
+    const step = projectGathering(p, { tier: 2, toolTier: 1 }, t > 100n * HOUR ? 100n * HOUR : t);
+    const y = rollGatheringActions(7n, mining, 2, step, 2);
+    parts.relics += y.relics;
+    parts.ore += y.materials.find(d => d.materialId === materialOf(2, 'Ore').id)?.count ?? 0;
+    p = step;
+  }
+  const ore = once.materials.find(d => d.materialId === materialOf(2, 'Ore').id)?.count ?? 0;
+  check('node rolls: in pieces match one settle', parts.relics === once.relics && parts.ore === ore, `${parts.relics}/${once.relics}, ${parts.ore}/${ore}`);
+  check('Ruins Dig Site: about half the Ore', Math.abs(ore - g.actions * 0.5) < g.actions * 0.05, `${ore} of ${g.actions}`);
+  const relicMean = g.actions * 0.02 * findLevelMult(60) * 3;
+  check('Ruins Dig Site: ~6% × level Relics, sold for gold', Math.abs(once.relics - relicMean) < relicMean * 0.15 && once.gold === BigInt(once.relics) * relicGold(2),
+    `${once.relics} vs ~${relicMean.toFixed(0)}, ${once.gold} gold`);
+  check('a Relic sells for 0.15 h of farming gold', relicGold(1) === 180n, `${relicGold(1)}`);
+
+  const pocket = rollGatheringActions(7n, mining, 1, runs(1, 20n), 1);
+  const gems = pocket.materials.find(d => d.materialId === materialOf(1, 'Gem').id)?.count ?? 0;
+  check('Gem Pocket: no Ore, ~20% Gems', !pocket.materials.some(d => d.materialId === materialOf(1, 'Ore').id) && Math.abs(gems - runs(1, 20n).actions * 0.2) < runs(1, 20n).actions * 0.03, `${gems}`);
+
+  // The login settle's one draw agrees with the action rolls on average.
+  const glade = runs(1, 200n);
+  const herbs = (y: { materials: { materialId: number; count: number }[] }) => y.materials.find(d => d.materialId === materialOf(1, 'Herb').id)?.count ?? 0;
+  const herbMean = glade.actions * 0.01 * findLevelMult(60) * 3;
+  const drawn = rollGathering(seededRng(3n), forage, 1, glade, 4);
+  check('Shaded Glade: rare herbs ×3, one draw', Math.abs(herbs(drawn) - herbMean) < herbMean * 0.1, `${herbs(drawn)} vs ~${herbMean.toFixed(0)}`);
+  const reagent = drawn.materials.find(d => d.materialId === materialOf(1, 'Reagent').id)?.count ?? 0;
+  check('Shaded Glade: about half the Reagent, one draw', Math.abs(reagent - glade.actions * 0.5) < glade.actions * 0.05, `${reagent} of ${glade.actions}`);
+  const tears = rollGathering(seededRng(4n), wood, 3, runs(3, 200n), 0).materials.find(d => d.materialId === untieredMaterial('Tear').id)?.count ?? 0;
+  check("Dryad's Tears from a T3 node", tears > 0, `${tears}`);
+  check('normal nodes yield no Relic gold outside Mining', rollGathering(seededRng(5n), wood, 1, runs(1, 50n)).gold === 0n);
 }
 
 // ---------------------------------------------------------------- recipes
@@ -323,6 +385,24 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   let minTier = 9;
   for (let i = 0; i < 300; i++) for (const a of forgeItem(seededRng(BigInt(i)), 1, 3, 99).affixes) minTier = Math.min(minTier, a.tier);
   check('forged affixes roll from tier 1 at any level, like drops', minTier === 1, `${minTier}`);
+
+  // Dryad's Tear: at least Magic, one affix of the item's tier.
+  let common = 0;
+  let topped = 0;
+  for (let i = 0; i < 1000; i++) {
+    const it = forgeItem(seededRng(BigInt(i)), 1, 3, 21, true);
+    if (it.rarity.tag === 'Common') common++;
+    if (it.affixes[0]?.tier === 3) topped++;
+  }
+  check("empowered forge: never Common, first affix at the item's tier", common === 0 && topped === 1000, `${common} Common, ${topped} topped`);
+  const plain = forgeRecipeOf(1, 2)!;
+  const tear = forgeRecipeOf(1, 2, true)!;
+  check("empowered forge costs one Dryad's Tear more", tear.id !== plain.id && tear.inputs.length === plain.inputs.length + 1 &&
+    tear.inputs.some(i => i.materialId === untieredMaterial('Tear').id && i.count === 1));
+  check('empowered forge: same rarity roll otherwise (Rare stays Rare)', (() => {
+    for (let i = 0; i < 2000; i++) if (forgeItem(seededRng(BigInt(i)), 1, 1, 1).rarity.tag === 'Rare' && forgeItem(seededRng(BigInt(i)), 1, 1, 1, true).rarity.tag !== 'Rare') return false;
+    return true;
+  })());
 }
 
 // ---------------------------------------------------------------- elixirs in combat
@@ -332,6 +412,11 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   const rat = ENEMIES_BY_ID.get(101)!.enemy;
   const wrath = elixirBuffs(elixirSupplyId(1, 1), 1)!;
   check('Wrath: ×1.2 damage in its tier, ×1.1 above', wrath.damage === 1.2 && elixirBuffs(elixirSupplyId(1, 1), 2)!.damage === 1.1);
+  const greater = elixirBuffs(elixirSupplyId(1, 1, true), 1)!;
+  check('Greater Wrath: ×1.3 damage in its tier, ×1.15 above',
+    Math.abs(greater.damage - 1.3) < 1e-9 && Math.abs(elixirBuffs(elixirSupplyId(1, 1, true), 2)!.damage - 1.15) < 1e-9);
+  const greaterRecipe = recipeOf(SkillId.Alchemy, elixirSupplyId(1, 2, true))!;
+  check('Greater elixir recipe adds one rare herb of its tier', greaterRecipe.inputs.some(i => i.materialId === materialOf(2, 'Herb').id && i.count === 1));
   const plain = matchup(combatStats(1, starter), rat);
   const buffed = matchup(combatStats(1, starter, wrath), rat);
   check('Wrath multiplies DPS', Math.abs(buffed.dps / plain.dps - 1.2) < 1e-9, `${buffed.dps / plain.dps}`);

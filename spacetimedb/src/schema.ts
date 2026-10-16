@@ -65,7 +65,7 @@ export const character = table(
      * (life-skills.md: one activity at a time). The target is kept while skilling.
      */
     activitySkill: t.u8().default(0),
-    /** What the skill works on: the material tier for gathering, the recipe (data/recipes.ts) for production. */
+    /** What the skill works on: gathering `node × 100 + tier` (data/skills.ts `gatherSpotId`), the recipe (data/recipes.ts) for production. */
     activityRecipe: t.u16().default(0),
     /** Production actions still queued; when the queue runs out the character goes back to `targetEnemyId`. */
     activityCountLeft: t.u32().default(0),

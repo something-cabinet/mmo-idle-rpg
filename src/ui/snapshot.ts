@@ -5,7 +5,7 @@ import type { Character, Item, Loadout, LootFilter, SettleLog } from '../module_
 import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from '../../spacetimedb/src/combat';
 import { ENEMIES_BY_ID, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import { simulate, type Simulated } from '../../spacetimedb/src/sim';
-import { SKILLS, SKILLS_BY_ID, type GatheringSkillDef, type ProductionSkillDef, type SkillDef } from '../../spacetimedb/src/data/skills';
+import { SKILLS, SKILLS_BY_ID, gatherSpot, type GatheringSkillDef, type ProductionSkillDef, type SkillDef } from '../../spacetimedb/src/data/skills';
 import { recipeOf, type Recipe, type ScrapRarity } from '../../spacetimedb/src/data/recipes';
 import { SUPPLIES_BY_ID, elixirBuffs, type Buffs, type SupplyDef } from '../../spacetimedb/src/data/supplies';
 import { gatherCharacterXp, projectGathering, rollGatheringActions, type Gathered } from '../../spacetimedb/src/gather';
@@ -64,7 +64,7 @@ export interface Snapshot {
   /** The life skill being worked (then `target` is undefined): one of `gathering` and `production`. */
   skilling: SkillDef | undefined;
   /** The gathering in progress; its projection holds the actions since the last settle. */
-  gathering: { skill: GatheringSkillDef; tier: number; toolTier: number; projected: Gathered } | undefined;
+  gathering: { skill: GatheringSkillDef; tier: number; /** Special node (0: the normal one). */ node: number; toolTier: number; projected: Gathered } | undefined;
   /**
    * The production queue in progress; its projection holds the actions since the last
    * settle (`projected.endedAt`: done, the server goes back to combat on its next settle).
@@ -145,15 +145,16 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   } else if (skilling?.kind === 'Gathering') {
     const at = skills.get(skilling.id)!;
     const toolTier = tools.get(skilling.id) ?? 1;
-    const tier = row.activityRecipe;
+    const { tier, node } = gatherSpot(row.activityRecipe);
     const projected = projectGathering({ ...at, settledMicros: row.lastSettledAt.microsSinceUnixEpoch }, { tier, toolTier }, nowMicros);
     skills.set(skilling.id, { level: projected.level, xp: projected.xp });
-    gathering = { skill: skilling, tier, toolTier, projected };
+    gathering = { skill: skilling, tier, node, toolTier, projected };
     // What each action made, rolled as the server's next settle will.
-    for (const d of rollGatheringActions(row.id, skilling, tier, projected)) materials.set(d.materialId, (materials.get(d.materialId) ?? 0n) + BigInt(d.count));
-    // Skilling's character XP (sim.ts saw no target, so `p` holds the settled values).
+    const made = rollGatheringActions(row.id, skilling, tier, projected, node);
+    for (const d of made.materials) materials.set(d.materialId, (materials.get(d.materialId) ?? 0n) + BigInt(d.count));
+    // Skilling's character XP (sim.ts saw no target, so `p` holds the settled values), and Relics' gold.
     const gained = gatherCharacterXp(projected.actions, tier);
-    p = { ...p, ...addXp(p.level, p.xp, gained), xpGained: p.level >= MAX_LEVEL ? 0n : gained };
+    p = { ...p, ...addXp(p.level, p.xp, gained), xpGained: p.level >= MAX_LEVEL ? 0n : gained, gold: p.gold + made.gold };
   }
   const target = defeated ? undefined : fighting;
   const stats = combatStats(p.level, gear);

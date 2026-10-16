@@ -32,15 +32,15 @@ function sortedBag(s: Snapshot, sort: BagSort, f: ItemFilter): Item[] {
   return items.sort(by[sort]);
 }
 
-/** Materials held, highest tier first. */
+/** Materials held, highest tier first, untiered ones last. */
 function MaterialsCard({ s }: { s: Snapshot }) {
-  const held = MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => b.tier - a.tier);
+  const held = MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => (b.tier || -1) - (a.tier || -1));
   return (
     <CollapsibleCard storageKey="bag_materials_collapsed" title="Materials" summary={held.length ? `${held.length} kinds` : undefined}>
       {held.length ? (
         <div className="chips">
           {held.map(m => (
-            <span key={m.id} className="chip" title={`T${m.tier} ${m.kind}`}>
+            <span key={m.id} className="chip" title={m.tier ? `T${m.tier} ${m.kind}` : 'Untiered'}>
               <Icon name={materialIconName(m.id)} className="c-material" />{m.name}<strong>{fmtBig(s.materials.get(m.id)!)}</strong>
             </span>
           ))}

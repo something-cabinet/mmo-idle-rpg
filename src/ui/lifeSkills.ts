@@ -2,7 +2,7 @@
 
 import type { Recipe } from '../../spacetimedb/src/data/recipes';
 import type { SupplyDef } from '../../spacetimedb/src/data/supplies';
-import { MAX_SKILL_LEVEL, SkillId, doubleYieldChance, temperRequirement, tierRequirement, type SkillDef } from '../../spacetimedb/src/data/skills';
+import { GATHER_NODES, MAX_SKILL_LEVEL, SkillId, doubleYieldChance, temperRequirement, tierRequirement, type SkillDef } from '../../spacetimedb/src/data/skills';
 import { MAX_TEMPER } from '../../spacetimedb/src/data/recipes';
 import { materialOf } from '../../spacetimedb/src/data/materials';
 import { ZONES } from '../../spacetimedb/src/data/zones';
@@ -12,10 +12,8 @@ import { pct } from './format';
 export const recipeLabel = (r: Recipe) => (r.output.kind === 'supply' ? `${r.name} T${r.tier}` : r.name);
 
 /** An elixir's effect: full up to its tier, half above. */
-export const elixirText = (sup: SupplyDef) => {
-  const e = sup.elixir;
-  return `×${e.mult} ${e.text} (×${Number((1 + (e.mult - 1) / 2).toFixed(3))} above T${sup.tier} zones)`;
-};
+export const elixirText = (sup: SupplyDef) =>
+  `×${Number(sup.mult.toFixed(3))} ${sup.elixir.text} (×${Number((1 + (sup.mult - 1) / 2).toFixed(3))} above T${sup.tier} zones)`;
 
 // Milestones (life-skills.md, "Levels and gating"), from the same formulas the server uses.
 
@@ -35,6 +33,7 @@ export function skillMilestones(skill: SkillDef): { level: number; perks: string
   for (const tier of TIERS) perks.push([tierRequirement(tier), tierText(skill, tier)]);
   const extra = skill.kind === 'Gathering' ? 'double yield' : 'chance to keep the inputs';
   for (const lv of [50, MAX_SKILL_LEVEL]) perks.push([lv, `${pct(doubleYieldChance(lv))} ${extra}`]);
+  for (const n of GATHER_NODES.filter(n => n.skillId === skill.id)) perks.push([n.unlock, `${n.name}: ${n.text}`]);
   if (skill.id === SkillId.Smithing) {
     for (let k = 1; k <= MAX_TEMPER; k++) perks.push([temperRequirement(k), `Temper up to +${k}`]);
   }

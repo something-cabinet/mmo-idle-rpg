@@ -1,6 +1,6 @@
 import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
-import { SKILLS_BY_ID, SkillId, gatherBlocker, productionBlocker } from '../data/skills';
+import { GATHER_NODES_BY_ID, SKILLS_BY_ID, SkillId, gatherBlocker, gatherSpotId, productionBlocker } from '../data/skills';
 import { affordable, recipeOf, temperCost } from '../data/recipes';
 import { addSkillXp } from '../gather';
 import { addXp } from '../game';
@@ -24,17 +24,20 @@ import {
 
 /**
  * Starts gathering `skillId` at `tier` (life-skills.md): instead of fighting, online and
- * offline. Needs the skill level and the tier's zone unlocked; the tool only adds speed.
- * Settles the current activity first; the combat target is kept for `stopSkill`.
+ * offline. `node` is a special node of the skill (life-skills.md, "Special nodes"), 0 for
+ * the normal one. Needs the skill level (and the node's), and the tier's zone unlocked; the
+ * tool only adds speed. Settles the current activity first; the combat target is kept for
+ * `stopSkill`.
  */
-export const startGathering = spacetimedb.reducer({ skillId: t.u8(), tier: t.u8() }, (ctx, { skillId, tier }) => {
+export const startGathering = spacetimedb.reducer({ skillId: t.u8(), tier: t.u8(), node: t.u8() }, (ctx, { skillId, tier, node }) => {
   const { ch } = requireActive(ctx);
   const def = SKILLS_BY_ID.get(skillId);
   if (!def || def.kind !== 'Gathering') throw new SenderError('No such skill');
+  if (node !== 0 && GATHER_NODES_BY_ID.get(node)?.skillId !== def.id) throw new SenderError('No such node');
   const settled = settle(ctx, ch);
-  const blocker = gatherBlocker({ level: skillRow(ctx, ch.id, def.id).level, tier, zoneOpen: tierUnlocked(ctx, ch.id, tier) });
+  const blocker = gatherBlocker({ level: skillRow(ctx, ch.id, def.id).level, tier, zoneOpen: tierUnlocked(ctx, ch.id, tier), node });
   if (blocker) throw new SenderError(blocker);
-  ctx.db.character.id.update({ ...settled, ...NO_SKILL, activitySkill: def.id, activityRecipe: tier });
+  ctx.db.character.id.update({ ...settled, ...NO_SKILL, activitySkill: def.id, activityRecipe: gatherSpotId(tier, node) });
 });
 
 /**

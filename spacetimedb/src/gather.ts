@@ -2,10 +2,13 @@
 // time, in closed form like `project()`. Pure: the client projects with it too.
 
 import {
-  GEM_CHANCE,
   MAX_SKILL_LEVEL,
+  RELIC_HOURS,
   SkillId,
   doubleYieldChance,
+  findChances,
+  gemChance,
+  mainChance,
   gatherActionMicros,
   gatherCharacterXpPerAction,
   gatherXpPerAction,
@@ -13,6 +16,7 @@ import {
   type GatheringSkillDef,
 } from './data/skills';
 import { materialOf } from './data/materials';
+import { craftCost } from './craft';
 import { samplePoisson, seededRng, type MaterialDrop, type Rng } from './loot';
 
 export interface SkillProgress {
@@ -27,7 +31,7 @@ export interface Gathered extends SkillProgress {
   /** Whole actions granted. */
   actions: number;
   xpGained: bigint;
-  /** Expected extra materials from double yield (its chance changes with level). */
+  /** Expected extra main materials from double yield (its chance changes with level), before the node's main chance. */
   doubleMean: number;
   /** The actions as runs at one level (one per level-up): `n` actions of `step`, the first ending at `start + step`. */
   runs: { start: bigint; step: bigint; n: number; level: number }[];
@@ -91,36 +95,77 @@ export const gatherCharacterXp = (actions: number, tier: number): bigint => BigI
 /** Mixed into gathering seeds. */
 export const GATHER_SALT = 0x676174686572n; // "gather"
 
+/** What gathering actions yield: materials (the main one, Mining's Gems, rare finds) and Relics, sold on the spot. */
+export interface GatherYield {
+  materials: MaterialDrop[];
+  relics: number;
+  /** What the Relics sold for. */
+  gold: bigint;
+}
+
+/** Gold one Relic of `tier` sells for (life-skills.md, "Mining: Relics"). */
+export const relicGold = (tier: number): bigint => craftCost(RELIC_HOURS, tier).gold;
+
 /**
- * The materials `g`'s actions of `skill` at `tier` yield, action by action: one each, a
- * double yield and Mining's Gem rolled per action, seeded by its end time. So settling in
- * steps gives the same result as settling once, and the client shows each action's
- * yield as it ends. Online settles use this; the login settle rolls `rollGathering`.
+ * What `g`'s actions of `skill` at `tier` and `node` (0: the normal node) yield, action by
+ * action: the main material (with double yield), Mining's Gem and the rare finds rolled
+ * per action, seeded by its end time. So settling in steps gives the same result as
+ * settling once, and the client shows each action's yield as it ends. Online settles use
+ * this; the login settle rolls `rollGathering`.
  */
-export function rollGatheringActions(characterId: bigint, skill: GatheringSkillDef, tier: number, g: Pick<Gathered, 'runs'>): MaterialDrop[] {
+export function rollGatheringActions(characterId: bigint, skill: GatheringSkillDef, tier: number, g: Pick<Gathered, 'runs'>, node = 0): GatherYield {
+  const main = mainChance(node);
+  const gem = gemChance(node);
   let made = 0;
   let gems = 0;
+  const found = new Map<number | undefined, number>();
   for (const run of g.runs) {
     const double = doubleYieldChance(run.level);
+    const finds = findChances(skill.id, tier, node, run.level);
     for (let i = 1; i <= run.n; i++) {
       const rng = seededRng(characterId, run.start + BigInt(i) * run.step, GATHER_SALT);
-      made += rng() < double ? 2 : 1;
-      if (skill.id === SkillId.Mining && rng() < GEM_CHANCE) gems++;
+      // The normal node's rolls come first, in their old order.
+      const twice = rng() < double;
+      if (skill.id === SkillId.Mining && rng() < gem) gems++;
+      if (main >= 1 || rng() < main) made += twice ? 2 : 1;
+      for (const f of finds) if (rng() < f.chance) found.set(f.materialId, (found.get(f.materialId) ?? 0) + 1);
     }
   }
-  return gatheredDrops(skill, tier, made, gems);
+  return gatheredYield(skill, tier, made, gems, found);
 }
 
-function gatheredDrops(skill: GatheringSkillDef, tier: number, made: number, gems: number): MaterialDrop[] {
-  if (made <= 0) return [];
-  const out: MaterialDrop[] = [{ materialId: materialOf(tier, skill.makes).id, count: made }];
-  if (gems > 0) out.push({ materialId: materialOf(tier, 'Gem').id, count: gems });
-  return out;
+function gatheredYield(skill: GatheringSkillDef, tier: number, made: number, gems: number, found: Map<number | undefined, number>): GatherYield {
+  const materials: MaterialDrop[] = [];
+  if (made > 0) materials.push({ materialId: materialOf(tier, skill.makes).id, count: made });
+  if (gems > 0) materials.push({ materialId: materialOf(tier, 'Gem').id, count: gems });
+  let relics = 0;
+  for (const [materialId, count] of found) {
+    if (count <= 0) continue;
+    if (materialId === undefined) relics += count;
+    else materials.push({ materialId, count });
+  }
+  return { materials, relics, gold: BigInt(relics) * relicGold(tier) };
 }
 
-/** The materials `g`'s actions of `skill` at `tier` yield in one draw: one each, plus double yields and Mining's Gems (Poisson draws). */
-export function rollGathering(rng: Rng, skill: GatheringSkillDef, tier: number, g: Pick<Gathered, 'actions' | 'doubleMean'>): MaterialDrop[] {
-  if (g.actions <= 0) return [];
-  const made = g.actions + samplePoisson(rng, g.doubleMean);
-  return gatheredDrops(skill, tier, made, skill.id === SkillId.Mining ? samplePoisson(rng, g.actions * GEM_CHANCE) : 0);
+/**
+ * What `g`'s actions of `skill` at `tier` and `node` yield in one draw: the main material
+ * plus double yields, Mining's Gems and the rare finds (Poisson draws).
+ */
+export function rollGathering(
+  rng: Rng,
+  skill: GatheringSkillDef,
+  tier: number,
+  g: Pick<Gathered, 'actions' | 'doubleMean'> & Partial<Pick<Gathered, 'runs'>>,
+  node = 0
+): GatherYield {
+  const found = new Map<number | undefined, number>();
+  if (g.actions <= 0) return gatheredYield(skill, tier, 0, 0, found);
+  const main = mainChance(node);
+  const made = main >= 1 ? g.actions + samplePoisson(rng, g.doubleMean) : samplePoisson(rng, main * (g.actions + g.doubleMean));
+  const gems = skill.id === SkillId.Mining ? samplePoisson(rng, g.actions * gemChance(node)) : 0;
+  const means = new Map<number | undefined, number>();
+  for (const run of g.runs ?? [])
+    for (const f of findChances(skill.id, tier, node, run.level)) means.set(f.materialId, (means.get(f.materialId) ?? 0) + run.n * f.chance);
+  for (const [id, mean] of means) found.set(id, samplePoisson(rng, mean));
+  return gatheredYield(skill, tier, made, gems, found);
 }

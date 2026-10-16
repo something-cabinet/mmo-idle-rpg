@@ -103,6 +103,78 @@ Reaching 99 gives a title.
 - Mining gives **only Ore**, never Metal. Ore has to be smelted (Smithing) before use.
 - Counts go into the existing `material` counters.
 
+### Rare finds
+
+Each gathering skill rolls a rare find per action, on top of its material. Rare finds are
+what only that skill gives, and each feeds something different. Numbers are illustrative.
+
+| Skill | Find | Tier | Chance per action | Use |
+|-|-|-|-|-|
+| Mining | **Relic** (old coins, idols, tablets) | Tier of the node | 2% | Sold on the spot for gold |
+| Mining | **Ancient Meteor Fragment** | Untiered | 0.1% × node tier | None yet (kept for a later sink) |
+| Woodcutting | **Dryad's Tear** (amber sap of the oldest trees) | Untiered | 0.1% × node tier | Smithing: an empowered forge |
+| Foraging | **Rare herb** (Bloodcap, Wraithbloom, Rimepetal …) | Tier of the node | 1% | Alchemy: Greater elixirs |
+
+- Materials: rare herbs are kind 10 (`1000 + tier`), Meteor Fragment kind 11 and Dryad's
+  Tear kind 12, both untiered (tier 0: IDs 1100 and 1200). Relics are never stored.
+
+- **Level raises the chance:** `× (1 + level / 99)`, so double at 99. Gathering levels
+  pay off on top of the double yield.
+- **Untiered finds come faster from higher nodes** (`0.1% × T`: 0.3 per hour at T1,
+  2.7 per hour at T9 at base speed), so moving up a tier is worth it even for them.
+- All rolls are per action, like the Gem roll: seeded online, one Poisson draw each at the
+  login settle. Closed form stays intact.
+
+#### Mining: Relics (gold)
+
+- A Relic is never stored: it's converted to gold when found, worth **0.15 h of farming
+  gold at its tier** (`craftCost`). The away report and the gathering log show the gold.
+- At level 50 (3% per action, ~9 per hour) that is ~1.35 h of farming gold per hour of
+  Mining, on top of the Ore. Mining is the gathering skill that makes gold.
+
+#### Woodcutting: Dryad's Tear (empowered forge)
+
+- A forge (Smithing) can spend **1 Dryad's Tear** on top of its normal cost. The item is
+  **at least Magic** (a Common roll becomes Magic) and **its first affix rolls at the max
+  tier** (the item's tier N). The Rare chance is unchanged.
+- Untiered, so a Tear saved from a low node still works on a top-tier forge. Its rarity is
+  the limit, not its tier.
+- The empowered forge is its own recipe (the forge's "Dryad's Tear" toggle, off by
+  default): the Tear is one more input, so the queue ends when Tears run out and keep
+  inputs can save one. The forge keep rule still applies.
+
+#### Foraging: Greater elixirs
+
+- **Greater** variant of each elixir: the normal recipe + **1 rare herb** of tier T. Its
+  bonus is **1.5× the normal one** (Wrath ×1.3, Haste ×1.225, Wisdom ×1.3 …), same
+  240 charges, same tier rule.
+- This breaks the ×1.10–×1.25 farming buff guideline on purpose: Greater elixirs are the
+  wall-pushers, limited by herb supply (~3 per hour of Foraging at level 1, ~6 at 99).
+
+### Special nodes
+
+Skill levels unlock special nodes: other targets inside a tier that trade the main
+material for a focus. The player picks one like a recipe (skill, tier, node), so a
+gathering level unlocks choices, not just speed.
+
+| Skill | Node | Unlock | Trade-off |
+|-|-|-|-|
+| Mining | **Gem Pocket** | Level 30 | No Ore; Gem chance 5% → 20% |
+| Mining | **Ruins Dig Site** | Level 60 | Half the Ore; Relic chance ×3 (gold) |
+| Woodcutting | **Ancient Grove** | Level 60 | Half the Wood; Dryad's Tear chance ×3 |
+| Foraging | **Shaded Glade** | Level 30 | Half the Reagent; rare herb chance ×3 |
+
+- A node at tier T needs both its unlock level and the tier's normal requirement
+  (level `10·(T−1) + 1`, zone T).
+- Same action time, skill XP and character XP as the normal node. Double yield applies to
+  the main material only; the level multiplier on rare finds applies on top of ×3.
+- "Half the material" is a 50% chance per action of the material, so settlement stays a
+  Poisson draw per output, like the rest.
+- Other rare finds still roll at their normal chance on a special node (a Ruins Dig Site
+  still drops Meteor Fragments).
+- **PERMANENT IDS:** node IDs are stored in `activityRecipe` (gathering:
+  `node × 100 + tier`, node 0 = the normal node); never reuse or renumber them.
+
 ## Tools
 
 One tool per gathering skill: **Pickaxe** (Mining), **Hatchet** (Woodcutting),
@@ -359,15 +431,15 @@ All of this stays in closed form (README pillar 1):
 |-|-|
 | `item` column | `temper` (0–10) |
 | `scrap` table | (characterId, kind, tier, rarity, count): items scrapped for smelting |
-| `character` columns | `activitySkill` (0 = combat), `activityRecipe` (gathering: the tier; production: the recipe ID), `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `elixirAutoRenew`; later `mealId`, `mealKillsLeft`, `mealAutoRenew` |
+| `character` columns | `activitySkill` (0 = combat), `activityRecipe` (gathering: `node × 100 + tier`, node 0 = normal; production: the recipe ID), `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `elixirAutoRenew`; later `mealId`, `mealKillsLeft`, `mealAutoRenew` |
 | `skill` table | (characterId, skillId, level, xp) |
 | `tool` table | (characterId, skillId, tier) |
 | `station` table | (characterId, stationId, level) (phase 2) |
 | `supply` table | (characterId, supplyId, count): elixirs; later meals, essences, parts |
-| `material` | Fish is new material kind 8, Ore kind 9 |
+| `material` | Fish is new material kind 8, Ore kind 9, rare herbs 10, Meteor Fragment 11 and Dryad's Tear 12 (untiered) |
 | `data/skills.ts` | Skills, levels, speeds, permanent skill IDs |
-| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, tool = 1000 + skill × 10 + tier, elixir = its supply ID; temper and smelt are proposed, IDs TBD |
-| `data/supplies.ts` | Elixirs and their buffs. Permanent supply IDs: elixirs 100 + kind × 10 + tier |
+| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, empowered forge = 30000 + baseId × 10 + tier, tool = 1000 + skill × 10 + tier, elixir = its supply ID; temper and smelt are proposed, IDs TBD |
+| `data/supplies.ts` | Elixirs and their buffs. Permanent supply IDs: elixirs 100 + kind × 10 + tier, Greater elixirs 200 + kind × 10 + tier |
 | `gather.ts`, `produce.ts` | Closed-form settlement, shared with the client |
 
 ## Rollout
@@ -401,6 +473,6 @@ What is left, phase 1 leftovers included, is tracked in [TODO.md](../../TODO.md)
 - Whether item find (or a new "gathering find" stat) should raise gathering yield.
 - Whether forged bases should be marked as forged (inspect flair, or excluded from
   future leaderboards).
-- A second gathering yield per skill (e.g. rare Woodcutting drops) once Core-like
-  scarcity is needed elsewhere.
+- A use for Ancient Meteor Fragments (Mining's untiered rare find).
+- Fishing's rare finds (pearls, sunken chests) when Fishing is built.
 - Recipe and buff numbers need a pass against real play data.

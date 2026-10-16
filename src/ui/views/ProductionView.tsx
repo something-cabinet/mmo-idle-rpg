@@ -21,7 +21,7 @@ import {
   type Recipe,
   type Stock,
 } from '../../../spacetimedb/src/data/recipes';
-import { materialOf } from '../../../spacetimedb/src/data/materials';
+import { materialOf, untieredMaterial } from '../../../spacetimedb/src/data/materials';
 import { ELIXIRS, ELIXIR_KILLS, SUPPLIES, SUPPLY_TIERS, elixirSupplyId } from '../../../spacetimedb/src/data/supplies';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
 import { FORGE_RARE_CHANCE, forgeMagicChance, type ForgeFilter } from '../../../spacetimedb/src/produce';
@@ -214,8 +214,8 @@ function BrewCard({ s }: { s: Snapshot }) {
       <CardHead title="Brew"><CountInput count={count} setCount={setCount} /></CardHead>
       <TierSeg tier={tier} setTier={setTier} />
       <ul className="foes">
-        {ELIXIRS.map(el => {
-          const r = recipeOf(SkillId.Alchemy, elixirSupplyId(el.kind, tier))!;
+        {[false, true].flatMap(greater => ELIXIRS.map(el => {
+          const r = recipeOf(SkillId.Alchemy, elixirSupplyId(el.kind, tier, greater))!;
           return (
             <li key={r.id} className="foe">
               <div className="foe-row">
@@ -229,8 +229,9 @@ function BrewCard({ s }: { s: Snapshot }) {
               </div>
             </li>
           );
-        })}
+        }))}
       </ul>
+      <p className="muted">Greater elixirs need a rare herb from Foraging and give 1.5× the bonus.</p>
     </div>
   );
 }
@@ -269,12 +270,20 @@ function ForgeCard({ s }: { s: Snapshot }) {
   const [tier, setTier] = useSticky('forgeTier', 1);
   const [baseId, setBaseId] = useSticky('forgeBase', 1);
   const [count, setCount] = useState('');
-  const r = forgeRecipeOf(baseId, tier) ?? forgeRecipeOf(1, tier)!;
+  const [tear, setTear] = useSticky('forgeTear', false);
+  const r = forgeRecipeOf(baseId, tier, tear) ?? forgeRecipeOf(1, tier, tear)!;
   const level = s.skills.get(SkillId.Smithing)!.level;
   const b = base(r.output.kind === 'item' ? r.output.baseId : 1);
+  const tearHeld = s.materials.get(untieredMaterial('Tear').id) ?? 0n;
   return (
     <div className="card">
-      <CardHead title="Forge a base"><CountInput count={count} setCount={setCount} /></CardHead>
+      <CardHead title="Forge a base">
+        <label className="check" title="At least Magic, and one affix of the item's tier">
+          <input type="checkbox" checked={tear} onChange={ev => setTear(ev.target.checked)} />
+          Dryad's Tear ({fmtBig(tearHeld)})
+        </label>
+        <CountInput count={count} setCount={setCount} />
+      </CardHead>
       <TierSeg tier={tier} setTier={setTier} />
       <select value={b.id} onChange={e => setBaseId(Number(e.target.value))}>
         {(Object.keys(KIND_LABEL) as BaseKind[]).map(kind => (
@@ -289,7 +298,11 @@ function ForgeCard({ s }: { s: Snapshot }) {
           <div className="foe-name">{r.name} <span className="muted">T{tier} · {b.family}</span></div>
           <div className="foe-meta"><Cost s={s} r={r} /> · {duration(BigInt(r.seconds) * 1_000_000n)}</div>
           <div className="foe-meta muted">
-            <span className="c-magic">Magic {pct(forgeMagicChance(level, tier), 1)}</span> · <span className="c-rare">Rare {pct(FORGE_RARE_CHANCE)}</span> · otherwise Common
+            {tear ? (
+              <><span className="c-magic">Magic</span> or <span className="c-rare">Rare {pct(FORGE_RARE_CHANCE)}</span> · one affix at T{tier}</>
+            ) : (
+              <><span className="c-magic">Magic {pct(forgeMagicChance(level, tier), 1)}</span> · <span className="c-rare">Rare {pct(FORGE_RARE_CHANCE)}</span> · otherwise Common</>
+            )}
           </div>
         </div>
         <QueueButton s={s} r={r} count={count} label="Forge" />

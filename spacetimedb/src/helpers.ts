@@ -8,7 +8,7 @@ import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { materialAt } from './data/materials';
 import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
-import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, type ProductionSkillDef } from './data/skills';
+import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, gatherSpot, type ProductionSkillDef } from './data/skills';
 import { recipeOf, scrapMaterialId, type MaterialCost, type ScrapRarity } from './data/recipes';
 import { elixirBuffs } from './data/supplies';
 import { GATHER_SALT, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from './gather';
@@ -295,14 +295,16 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   // An unknown skill (none today) passes the time idle.
   if (!def) return { ...base, lastSettledAt: ctx.timestamp };
   const row = skillRow(ctx, ch.id, def.id);
-  const tier = ch.activityRecipe;
+  const { tier, node } = gatherSpot(ch.activityRecipe);
   const g = projectGathering({ ...row, settledMicros: start }, { tier, toolTier: toolTier(ctx, ch.id, def.id) }, now, capMicros);
   // Online, action by action, as the client shows them; the time away (nobody watching) in one draw.
   const offline = capMicros !== undefined;
-  const materials = offline ? rollGathering(seededRng(ch.id, start, GATHER_SALT), def, tier, g) : rollGatheringActions(ch.id, def, tier, g);
+  const { materials, gold } = offline
+    ? rollGathering(seededRng(ch.id, start, GATHER_SALT), def, tier, g, node)
+    : rollGatheringActions(ch.id, def, tier, g, node);
   addMaterials(ctx, ch.id, materials);
   ctx.db.skill.id.update({ ...row, level: g.level, xp: g.xp });
-  // Skilling also levels the character (no gold or drops).
+  // Skilling also levels the character (no drops; only Mining's Relics sell for gold).
   const charXp = gatherCharacterXp(g.actions, tier);
   const { level, xp } = addXp(ch.level, ch.xp, charXp);
 
@@ -321,9 +323,10 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       skillLevelFrom: row.level,
       skillLevelTo: g.level,
       materials,
+      gold,
     });
   }
-  return { ...base, level, xp, lastSettledAt: new Timestamp(g.settledMicros) };
+  return { ...base, level, xp, gold: base.gold + gold, lastSettledAt: new Timestamp(g.settledMicros) };
 }
 
 /**

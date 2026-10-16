@@ -81,6 +81,9 @@ const PATHS: Record<string, string> = {
   'm-reagent': 'M5 19C5 10 10 5 20 4c-1 10-6 15-15 15zM5 19l8-8',
   'm-gem': 'M12 3l7 9-7 9-7-9 7-9zM5 12h14',
   'm-ore': 'M4 17l3-8 5-4 6 3 2 7-5 4H8l-4-2zM9 11l3 2 4-2M12 13v5',
+  'm-herb': 'M12 21v-8M12 13c-3 0-5-2-5-5 3 0 5 2 5 5zM12 13c3 0 5-2 5-5-3 0-5 2-5 5zM12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
+  'm-meteor': 'M14 10a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM3 3l8 8M7 3l5 5M3 7l5 5',
+  'm-tear': 'M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z',
 };
 
 export function Icon({ name, className = '' }: { name: string; className?: string }) {

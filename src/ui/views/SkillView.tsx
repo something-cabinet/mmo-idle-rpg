@@ -4,12 +4,17 @@
 import { memo, useRef, useState, type ReactNode } from 'react';
 import { call, useSticky, useTick } from '../../store';
 import {
-  GEM_CHANCE,
+  GATHER_NODES,
+  GATHER_NODES_BY_ID,
   MAX_SKILL_LEVEL,
   SkillId,
   doubleYieldChance,
+  findChances,
+  findLevelMult,
   gatherActionMicros,
   gatherBlocker,
+  gemChance,
+  mainChance,
   gatherCharacterXpPerAction,
   gatherXpPerAction,
   toolSpeedBonus,
@@ -17,7 +22,8 @@ import {
   type GatheringSkillDef,
 } from '../../../spacetimedb/src/data/skills';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
-import { materialOf } from '../../../spacetimedb/src/data/materials';
+import { MATERIALS_BY_ID, materialOf } from '../../../spacetimedb/src/data/materials';
+import { relicGold } from '../../../spacetimedb/src/gather';
 import { nowMicros } from '../clock';
 import { zoneUnlocked } from '../discovery';
 import { duration, fmt, fmtBig } from '../format';
@@ -72,6 +78,21 @@ export function ActionBar({ start, step }: { start: bigint; step: bigint }) {
   );
 }
 
+/** What `skill` at `tier` and `node` yields per hour on top of the main material: Gems and rare finds. */
+function extrasPerHour(skill: GatheringSkillDef, tier: number, node: number, level: number, actions: number): string[] {
+  const out: string[] = [];
+  if (skill.id === SkillId.Mining) out.push(`${fmt(actions * gemChance(node))} ${materialOf(tier, 'Gem').name}`);
+  for (const f of findChances(skill.id, tier, node, level)) {
+    const n = actions * f.chance;
+    out.push(
+      f.materialId === undefined
+        ? `${fmt(n)} Relics (${fmtBig(BigInt(Math.round(n * Number(relicGold(tier)))))} gold)`
+        : `${fmt(n)} ${MATERIALS_BY_ID.get(f.materialId)!.name}`
+    );
+  }
+  return out;
+}
+
 /** A count with "+n" floating over it each time it grows. */
 function Held({ count, name }: { count: bigint; name: string }) {
   const last = useRef({ count, gain: 0n, at: 0 });
@@ -96,33 +117,42 @@ function GatheringCard({ s }: { s: Snapshot }) {
   const at = live.skills.get(g.skill.id)!;
   const r = rates(g.tier, g.toolTier);
   const material = materialOf(g.tier, g.skill.makes);
-  const gem = g.skill.id === SkillId.Mining ? materialOf(g.tier, 'Gem') : undefined;
+  const node = GATHER_NODES_BY_ID.get(g.node);
+  const main = mainChance(g.node);
+  // Everything this spot can yield, to show the counts held.
+  const held = [
+    ...(main > 0 ? [material] : []),
+    ...(g.skill.id === SkillId.Mining ? [materialOf(g.tier, 'Gem')] : []),
+    ...findChances(g.skill.id, g.tier, g.node, at.level).flatMap(f => (f.materialId === undefined ? [] : [MATERIALS_BY_ID.get(f.materialId)!])),
+  ];
   const toNext = at.level >= MAX_SKILL_LEVEL ? 'Max level' : `~${duration(BigInt(Math.ceil((Number(skillXpToNext(at.level) - at.xp) / r.xp) * 3600e6)))}`;
   const step = gatherActionMicros(g.toolTier);
   const target = s.row.targetEnemyId !== 0;
   return (
     <div className="card">
-      <CardHead title={`Gathering ${material.name}`}>
+      <CardHead title={node ? `${node.name} T${g.tier}` : `Gathering ${material.name}`}>
         <button className="btn" onClick={() => call(s.conn.reducers.stopSkill({}))}>
           {target ? <><Icon name="swords" />Back to combat</> : 'Stop'}
         </button>
       </CardHead>
       <div className="stat-row">
-        <span>Next {material.name}</span>
+        <span>Next action</span>
         <ActionBar key={`${s.row.lastSettledAt.microsSinceUnixEpoch}:${step}`} start={g.projected.settledMicros} step={step} />
         <strong>{(Number(step) / 1e6).toFixed(1)} s each</strong>
       </div>
       <div className="stat-row">
         <span>Held</span>
         <strong>
-          <Held count={live.materials.get(material.id) ?? 0n} name={material.name} />
-          {gem && <> · <Held count={live.materials.get(gem.id) ?? 0n} name={gem.name} /></>}
+          {held.map((m, i) => <span key={m.id}>{i > 0 && ' · '}<Held count={live.materials.get(m.id) ?? 0n} name={m.name} /></span>)}
         </strong>
       </div>
-      <div className="stat-row"><span>Per hour</span><strong>{fmt(r.actions)} {material.name}</strong></div>
+      <div className="stat-row">
+        <span>Per hour</span>
+        <strong>{[...(main > 0 ? [`${fmt(r.actions * main)} ${material.name}`] : []), ...extrasPerHour(g.skill, g.tier, g.node, at.level, r.actions)].join(' · ')}</strong>
+      </div>
       <div className="stat-row"><span>XP per hour</span><strong>{fmt(r.xp)} {g.skill.name} XP · {fmt(r.charXp)} Character XP</strong></div>
       <div className="stat-row"><span>Next {g.skill.name} level</span><strong>{toNext}</strong></div>
-      <p className="muted">No gold or drops while gathering.</p>
+      <p className="muted">{g.skill.id === SkillId.Mining ? 'No drops while gathering; Relics sell for gold on the spot.' : 'No gold or drops while gathering.'}</p>
     </div>
   );
 }
@@ -131,7 +161,7 @@ function GatheringCard({ s }: { s: Snapshot }) {
 export function activityText(s: Snapshot): string {
   const g = s.gathering;
   const p = s.production;
-  if (g) return `${g.skill.name}: ${materialOf(g.tier, g.skill.makes).name}`;
+  if (g) return `${g.skill.name}: ${GATHER_NODES_BY_ID.get(g.node)?.name ?? materialOf(g.tier, g.skill.makes).name}${g.node ? ` T${g.tier}` : ''}`;
   if (p) return `${p.skill.name}: ${recipeLabel(p.recipe)}`;
   return s.target ? `Fighting ${s.target.enemy.name}` : 'Idle';
 }
@@ -171,29 +201,34 @@ export function SkillTabs({ id, tabs }: { id: string; tabs: { key: string; label
   );
 }
 
-function TierRow({ s, skill, tier }: { s: Snapshot; skill: GatheringSkillDef; tier: number }) {
+/** One spot to gather: tier `tier` at `node` (0: the normal node). */
+function TierRow({ s, skill, tier, node = 0 }: { s: Snapshot; skill: GatheringSkillDef; tier: number; node?: number }) {
   const { level } = s.skills.get(skill.id)!;
   const toolTier = s.tools.get(skill.id) ?? 1;
   const zoneOpen = ZONES.some(z => z.tier === tier && zoneUnlocked(s, z));
-  const blocker = gatherBlocker({ level, tier, zoneOpen });
-  const active = s.gathering?.skill.id === skill.id && s.gathering.tier === tier;
+  const blocker = gatherBlocker({ level, tier, zoneOpen, node });
+  const active = s.gathering?.skill.id === skill.id && s.gathering.tier === tier && s.gathering.node === node;
   const material = materialOf(tier, skill.makes);
+  const n = GATHER_NODES_BY_ID.get(node);
+  const main = mainChance(node);
   const r = rates(tier, toolTier);
+  const yields = [
+    ...(main > 0 ? [`${fmt(r.actions * main)}/h`] : []),
+    `${fmt(r.xp)} XP/h`,
+    ...extrasPerHour(skill, tier, node, level, r.actions).map(x => `${x}/h`),
+  ];
   return (
     <li className={`foe${active ? ' active' : ''}`}>
       <div className="foe-row">
         <Icon name={materialIconName(material.id)} className="c-material" />
         <div className="foe-info">
-          <div className="foe-name">{material.name} <span className="muted">T{tier}</span></div>
-          <div className="foe-meta muted">
-            {blocker ?? `${fmt(r.actions)}/h · ${fmt(r.xp)} XP/h`}
-            {!blocker && skill.id === SkillId.Mining && ` · ${fmt(r.actions * GEM_CHANCE)} ${materialOf(tier, 'Gem').name}/h`}
-          </div>
+          <div className="foe-name">{n ? n.name : material.name} <span className="muted">T{tier}{n && ` · ${n.text}`}</span></div>
+          <div className="foe-meta muted">{blocker ?? yields.join(' · ')}</div>
         </div>
         {active ? (
           <span className="btn small fighting">Gathering</span>
         ) : (
-          <button className="btn small" disabled={!!blocker} title={blocker} onClick={() => call(s.conn.reducers.startGathering({ skillId: skill.id, tier }))}>
+          <button className="btn small" disabled={!!blocker} title={blocker} onClick={() => call(s.conn.reducers.startGathering({ skillId: skill.id, tier, node }))}>
             Gather
           </button>
         )}
@@ -208,6 +243,7 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
   const double = doubleYieldChance(at.level);
   const here = s.gathering?.skill.id === skill.id;
   const logs = s.logs.filter(l => l.skillId === skill.id && !l.offline).slice(0, 10);
+  const nodes = GATHER_NODES.filter(n => n.skillId === skill.id);
   return (
     <>
       <a className="btn back-link" href="#skills"><Icon name="back" />All skills</a>
@@ -215,6 +251,7 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
       <SkillLevelCard {...at}>
         <div className="stat-row"><span>{skill.tool}</span><strong>T{toolTier} · +{Math.round(toolSpeedBonus(toolTier) * 100)}% speed</strong></div>
         <div className="stat-row"><span>Double yield</span><strong>{double > 0 ? `${Math.round(double * 100)}%` : 'From level 50'}</strong></div>
+        <div className="stat-row"><span>Rare finds</span><strong>×{findLevelMult(at.level).toFixed(2)}</strong></div>
       </SkillLevelCard>
       <MilestonesCard skill={skill} level={at.level} />
       {here && <GatheringCard s={s} />}
@@ -224,6 +261,14 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
           {TIERS.map(t => <TierRow key={t} s={s} skill={skill} tier={t} />)}
         </ul>
       </div>
+      {nodes.length > 0 && (
+        <div className="card">
+          <CardHead title="Special nodes"><span className="muted">Trade the main material for a focus</span></CardHead>
+          <ul className="foes">
+            {nodes.flatMap(n => TIERS.map(t => <TierRow key={`${n.id}:${t}`} s={s} skill={skill} tier={t} node={n.id} />))}
+          </ul>
+        </div>
+      )}
       {logs.length > 0 && (
         <div className="card">
           <CardHead title="Log" />
@@ -231,6 +276,7 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
             {logs.map(l => (
               <li key={String(l.id)}>
                 <span className="c-material">{materialsText(l.materials)}</span>
+                {l.gold > 0n && <span className="c-gold"> +{fmtBig(l.gold)} gold</span>}
                 <span className="muted">
                   +{fmtBig(l.skillXp)} {skill.name} XP · +{fmtBig(l.xp)} XP{l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelTo}!` : ''}
                 </span>

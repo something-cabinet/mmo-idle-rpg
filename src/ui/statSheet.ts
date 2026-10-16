@@ -4,7 +4,7 @@
 // auto-equip's reference enemy of the character's level (equip.ts `referenceDummy`).
 
 import type { Item } from '../module_bindings/types';
-import { defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
+import { bonusHp, defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
 import { Effect, LEGENDARIES_BY_ID, effectAmount } from '../../spacetimedb/src/data/legendary';
 import { CAPS, Stat, fromStored } from '../../spacetimedb/src/data/stats';
 import { scoreGear } from '../../spacetimedb/src/equip';
@@ -76,6 +76,8 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   const prim = (id: number) => level + (sums.get(id) ?? 0);
   const [might, finesse, mind, vit] = [prim(Stat.Might), prim(Stat.Finesse), prim(Stat.Mind), prim(Stat.Vitality)];
   const has = (e: number) => st.effects.has(e);
+  /** Frozen Blood's base: max HP above what the level gives with no gear. */
+  const frozen = bonusHp(level, st.maxHp, has(Effect.GlassCannon));
   /** A worn legendary effect as a note: its name and stacked effect. */
   const leg = (e: number) => has(e) && `${LEGENDARIES_BY_ID.get(e)!.name}: ${LEGENDARIES_BY_ID.get(e)!.describe(effectAmount(st.effects, e))}`;
   const evasionCap = CAPS.evasion / 100 + effectAmount(st.effects, Effect.PhantomStep);
@@ -95,7 +97,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
         ...(src.heal ? [row('Heal', fmt(src.heal), from([Stat.Heal, Stat.HealPct], `Mind ${n1(mind)}: +${n1(0.45 * mind)}% heal`, 'Flat added heal is per hit: fast weapons get more from it'))] : []),
         row('Attack speed', `${src.attacksPerSec.toFixed(2)} /s`,
           from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, "Floor: 25% of the weapon's speed",
-            has(Effect.Ambush) && 'Ambush: × 0.7; first attack each fight deals 5×')),
+            has(Effect.Ambush) && 'Ambush: × 0.7; first attack each fight deals 5×', has(Effect.FrozenBlood) && 'Frozen Blood: × 0.6')),
         row('Crit chance', pct(src.critChance, 1),
           from([Stat.BaseCritChance, Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
             leg(Effect.Overcrit))),
@@ -115,10 +117,10 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
       `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
     row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
     row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + ${5 * level}), cap 85%`,
-      leg(Effect.Runeguard), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(st.maxHp / 10)} (max HP / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
+      leg(Effect.Runeguard), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
       `Reduction: resistance / (resistance + ${5 * level}), cap 85%`,
-      leg(Effect.Ironclad), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(st.maxHp / 10)} (max HP / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
+      leg(Effect.Ironclad), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
     row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${level}: rating / (rating + ${10 * level})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade")),

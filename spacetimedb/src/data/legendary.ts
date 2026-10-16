@@ -109,7 +109,7 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 12, name: 'Spellward', text: "You can't evade, but resistance also reduces physical damage." },
   { id: 13, name: "Scholar's Focus", text: 'XP × 1.75, gold × 0.5.' },
   { id: 22, name: 'Frostbite', text: 'Your crits deal no extra damage. Instead the enemy deals 0.5% less damage per 1% crit chance (up to 50%).' },
-  { id: 23, name: 'Frozen Blood', text: '+1 armor and resistance per 10 max HP, but HP regen and lifesteal do nothing.' },
+  { id: 23, name: 'Frozen Blood', text: '+1 armor and resistance per 10 bonus max HP (from gear), but attack speed × 0.6 and HP regen and lifesteal do nothing.' },
   { id: 24, name: 'Ambush', text: 'Your first attack each fight deals 5× damage, but attack speed × 0.7.' },
 ];
 

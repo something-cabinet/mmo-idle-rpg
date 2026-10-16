@@ -186,8 +186,8 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
       hit,
       heal,
       healAll: w.healTarget?.tag === 'All',
-      // Ambush: × 0.7 after the floor, so it always costs speed.
-      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (buffs?.attackSpeed ?? 1),
+      // Ambush (× 0.7) and Frozen Blood (× 0.6) apply after the floor, so they always cost speed.
+      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (has(Effect.FrozenBlood) ? 0.6 : 1) * (buffs?.attackSpeed ?? 1),
       critChance,
       // Frostbite: crits deal no extra damage (they chill instead, see `chill`).
       critMult: has(Effect.Frostbite) ? 1 : 1 + Math.min(1, critChance) * (critDmg - 1),
@@ -201,9 +201,9 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     (has(Effect.GlassCannon) ? 0.5 : 1),
   );
   const frozenBlood = has(Effect.FrozenBlood);
-  // Frozen Blood adds max HP / 10 to both. Ironclad and Runeguard convert from armor and
+  // Frozen Blood adds bonus HP / 10 to both. Ironclad and Runeguard convert from armor and
   // resistance before either is added, so they don't loop (max HP never depends on them).
-  const fromHp = frozenBlood ? maxHp / 10 : 0;
+  const fromHp = frozenBlood ? bonusHp(level, maxHp, has(Effect.GlassCannon)) / 10 : 0;
   const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct)) + fromHp;
   const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct)) + fromHp;
 
@@ -229,6 +229,16 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     chill: has(Effect.Frostbite) ? 0.5 * Math.min(1, sources[0]?.critChance ?? 0) : 0,
     effects,
   };
+}
+
+/**
+ * Max HP above what `level` gives with no gear: the level base with the level's own Might
+ * and Vitality, halved by Glass Cannon like max HP is. Everything else (flat and % HP,
+ * gear Might and Vitality) is bonus. Frozen Blood scales with it.
+ */
+export function bonusHp(level: number, maxHp: number, glassCannon: boolean): number {
+  const levelHp = (100 + 10 * (level - 1)) * (1 + 0.0045 * level) * (glassCannon ? 0.5 : 1);
+  return Math.max(0, maxHp - levelHp);
 }
 
 /** Bonus `x` (0.5 = +50%) times a "more" multiplier `mult`, as a bonus again. */

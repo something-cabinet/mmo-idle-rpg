@@ -6,7 +6,7 @@ import { Stat, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, WALK_SECONDS } from '../spacetimedb/src/data/zones';
 import { Effect, LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
 import { simulateFight } from '../spacetimedb/src/sim';
-import { MAX_LEVEL, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
+import { MAX_LEVEL, bonusHp, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { scoreGear } from '../spacetimedb/src/equip';
 import { MAX_OFFLINE_MICROS, offlineCapMicros, project, xpToNext, type Progress } from '../spacetimedb/src/game';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
@@ -255,8 +255,11 @@ function withEffect(it: GearItem, effect: number): GearItem {
   };
   const fb = fbChest(Effect.FrozenBlood);
   const noFb = fbChest();
-  check('Frozen Blood: +max HP / 10 armor and resistance', near(fb.armor, noFb.armor + fb.maxHp / 10, 1e-9) &&
-    near(fb.resistance, noFb.resistance + fb.maxHp / 10, 1e-9), `+${f(fb.maxHp / 10)}`);
+  const fbBonus = bonusHp(10, fb.maxHp, false);
+  check('Frozen Blood: +bonus HP / 10 armor and resistance', fbBonus > 0 && near(fb.armor, noFb.armor + fbBonus / 10, 1e-9) &&
+    near(fb.resistance, noFb.resistance + fbBonus / 10, 1e-9), `+${f(fbBonus / 10)}`);
+  check('Frozen Blood: no gear HP, no bonus', bonusHp(10, combatStats(10, gear({})).maxHp, false) === 0);
+  check('Frozen Blood: attack speed × 0.6', near(fb.sources[0].attacksPerSec, noFb.sources[0].attacksPerSec * 0.6, 1e-12));
   check('Frozen Blood: no regen, no lifesteal', fb.regen === 0 && fb.lifesteal === 0 && noFb.regen > 0 && noFb.lifesteal > 0);
 
   const amb = combatStats(10, kit(withEffect(item(9, 1), Effect.Ambush)));

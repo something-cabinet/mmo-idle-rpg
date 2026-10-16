@@ -176,7 +176,7 @@ this split keep working.
 | 12 | **Spellward** | You can't evade, but **resistance also reduces physical damage**. |
 | 13 | **Scholar's Focus** | XP × 1.75, gold × 0.5. |
 | 22 | **Frostbite** | Your crits deal **no extra damage**. Instead the enemy deals 0.5% less damage per 1% crit chance: `enemyDPS × (1 − 0.5 × min(1, critChance))`. |
-| 23 | **Frozen Blood** | **+1 armor and resistance per 10 bonus max HP**, but attack speed × 0.6 (after the floor) and HP regen and lifesteal do nothing. Added before Ironclad / Runeguard convert. Bonus HP = max HP − what your level gives with no gear: `(100 + 10 × (level − 1)) × (1 + 0.45% × level)` (× 0.5 with Glass Cannon). |
+| 23 | **Frozen Blood** | **+1 armor and resistance per 10 bonus max HP**, but attack speed × 0.8 (after the floor) and HP regen and lifesteal do nothing. Added before Ironclad / Runeguard convert. Bonus HP = max HP − what your level gives with no gear: `(100 + 10 × (level − 1)) × (1 + 0.45% × level)` (× 0.5 with Glass Cannon). |
 | 24 | **Ambush** | Your **first attack each fight deals 5×** damage, but attack speed × 0.7. `timeToKill = max(TTK − 4 / attacksPerSec, 0.5 / attacksPerSec)` (the first swing lands half a period in). |
 | 45 | **Moonlight** | **All your damage is magic**: the weapon's hit and flat physical convert, only the magic %-group applies (magic damage %, Mind), and armor penetration counts as magic penetration. **Every 3rd attack hits twice.** |
 | 46 | **Waxing Moon** | Your hits start at **−40%** damage and grow **+10%** per attack, up to **+60%** from the 11th attack on. Resets each fight. |

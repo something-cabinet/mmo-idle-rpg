@@ -61,6 +61,8 @@ flat and percent sums (see attributes.md).
 mitigation(def, pen, level) = min(0.85, d / (d + 5 × level))   where d = def × (1 − pen)
 
 evasion  = min(0.60, r / (r + 10 × enemyLevel))                  // r = evasion rating
+// Your armor, resistance and evasion all scale with the attacker's level, so levelling
+// up never weakens your defense; enemies' armor and resistance use their own level.
 
 // Crit is per source: base crit comes from the weapon (attributes.md).
 critChance(s) = (s.weapon.baseCrit + Σ baseCrit) × (1 + Σ increasedCrit%)        // uncapped
@@ -79,7 +81,7 @@ HPS_self = Σ sources s   s.weapon.heal × healScale × attacksPerSec(s) × crit
                                                        // solo: heals land on yourself
 
 DPS_enemy   = enemyDamage × enemySpeed
-              × (1 − mitigation(yourDef_{enemyType}, 0, yourLevel)) × (1 − evasion)
+              × (1 − mitigation(yourDef_{enemyType}, 0, enemyLevel)) × (1 − evasion)
 netIncoming = DPS_enemy − hpRegen − lifesteal × DPS_you − HPS_self   // lifesteal cap 5%
 
 timeToKill = enemyHP / DPS_you

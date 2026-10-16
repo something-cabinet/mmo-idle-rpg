@@ -46,8 +46,9 @@ function offense(a: CombatStats, b: CombatStats) {
   const physDef = b.effects.has(Effect.Spellward) ? best : b.armor;
   const magicDef = b.effects.has(Effect.Juggernaut) ? best : b.resistance;
   const voidtouched = a.effects.has(Effect.Voidtouched);
-  const mitP = voidtouched ? 0 : mitigation(physDef, a.armorPen, b.level) * (1 - amount(Effect.Rending));
-  const mitM = voidtouched ? 0 : mitigation(magicDef, a.magicPen, b.level) * (1 - amount(Effect.Spellbreaker));
+  // A player's armor and resistance scale with the attacker's level (`defenseAgainst`).
+  const mitP = voidtouched ? 0 : mitigation(physDef, a.armorPen, a.level) * (1 - amount(Effect.Rending));
+  const mitM = voidtouched ? 0 : mitigation(magicDef, a.magicPen, a.level) * (1 - amount(Effect.Spellbreaker));
   if (!src) return { period: Infinity, hit: 0, heal: 0, crit: 0, critX: 1, evasion: 0, mitP, mitM };
   const crit = Math.min(1, src.critChance);
   const type = src.hit.Physical >= src.hit.Magic ? 'Physical' : 'Magic';

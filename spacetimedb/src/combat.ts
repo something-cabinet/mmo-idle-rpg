@@ -199,8 +199,8 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
       hit,
       heal,
       healAll: w.healTarget?.tag === 'All',
-      // Ambush (× 0.7) and Frozen Blood (× 0.6) apply after the floor, so they always cost speed.
-      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (has(Effect.FrozenBlood) ? 0.6 : 1) * (buffs?.attackSpeed ?? 1),
+      // Ambush (× 0.7) and Frozen Blood (× 0.8) apply after the floor, so they always cost speed.
+      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (has(Effect.FrozenBlood) ? 0.8 : 1) * (buffs?.attackSpeed ?? 1),
       critChance,
       // Frostbite: crits deal no extra damage (they chill instead, see `chill`).
       critMult: has(Effect.Frostbite) ? 1 : 1 + Math.min(1, critChance) * (critDmg - 1),
@@ -288,7 +288,8 @@ export function evasionChance(rating: number, enemyLevel: number, cap = CAPS.eva
 }
 
 /**
- * Your mitigation and evasion against `type` damage from an enemy of `enemyLevel`.
+ * Your mitigation and evasion against `type` damage from an enemy of `enemyLevel`. Both
+ * scale with the attacker's level, not yours, so levelling up never weakens your defense.
  * Juggernaut (magic) and Spellward (physical) use the better of armor and resistance
  * but stop evasion; Phantom Step raises the evasion cap.
  */
@@ -299,7 +300,7 @@ export function defenseAgainst(s: CombatStats, type: DamageType, enemyLevel: num
   const def = type === 'Physical' ? (spellward ? best : s.armor) : juggernaut ? best : s.resistance;
   const cap = CAPS.evasion / 100 + effectAmount(s.effects, Effect.PhantomStep);
   return {
-    mitigation: mitigation(def, 0, s.level, MITIGATION_CAP + effectAmount(s.effects, Effect.Unbreakable)),
+    mitigation: mitigation(def, 0, enemyLevel, MITIGATION_CAP + effectAmount(s.effects, Effect.Unbreakable)),
     evasion: juggernaut || spellward ? 0 : evasionChance(s.evasionRating, enemyLevel, cap),
   };
 }

@@ -64,7 +64,7 @@ const warrior = gear({
   const m = matchup(combatStats(10, warrior), enemy(106));
   check('average level-10 warrior kills Grubnak in ~14.7 s', near(m.timeToKill, 14.7, 1.5), f(m.timeToKill));
   // 287 HP with the Might/Vitality HP% rules (zone-content.md).
-  check('… and dies in ~19 s', near(m.timeToDie, 19, 1), f(m.timeToDie));
+  check("… and dies in ~16.7 s (armor counts against the boss's level 15)", near(m.timeToDie, 16.7, 1), f(m.timeToDie));
   check('… just wins', m.viable && m.timeToDie / m.timeToKill < 1.4);
   check('a fresh level-1 starter loses to Grubnak', !matchup(combatStats(1, starter), enemy(106)).viable);
 }
@@ -259,7 +259,7 @@ function withEffect(it: GearItem, effect: number): GearItem {
   check('Frozen Blood: +bonus HP / 10 armor and resistance', fbBonus > 0 && near(fb.armor, noFb.armor + fbBonus / 10, 1e-9) &&
     near(fb.resistance, noFb.resistance + fbBonus / 10, 1e-9), `+${f(fbBonus / 10)}`);
   check('Frozen Blood: no gear HP, no bonus', bonusHp(10, combatStats(10, gear({})).maxHp, false) === 0);
-  check('Frozen Blood: attack speed × 0.6', near(fb.sources[0].attacksPerSec, noFb.sources[0].attacksPerSec * 0.6, 1e-12));
+  check('Frozen Blood: attack speed × 0.8', near(fb.sources[0].attacksPerSec, noFb.sources[0].attacksPerSec * 0.8, 1e-12));
   check('Frozen Blood: no regen, no lifesteal', fb.regen === 0 && fb.lifesteal === 0 && noFb.regen > 0 && noFb.lifesteal > 0);
 
   const amb = combatStats(10, kit(withEffect(item(9, 1), Effect.Ambush)));

@@ -60,9 +60,12 @@ flat and percent sums (see attributes.md).
 ```
 mitigation(def, pen, level) = min(0.85, d / (d + 5 × level))   where d = def × (1 − pen)
 
-evasion  = min(0.60, r / (r + 10 × enemyLevel))                  // r = evasion rating
-// Your armor, resistance and evasion all scale with the attacker's level, so levelling
-// up never weakens your defense; enemies' armor and resistance use their own level.
+dodge(evasion, accuracy) = min(0.60, evasion / (evasion + accuracy))   // ratings; same rule both ways
+evasion      = dodge(yourEvasionRating, 10 × enemyLevel)              // an enemy's accuracy is its level's
+enemyEvasion = dodge(enemy.evasionRating, yourAccuracy)              // your DPS × (1 − enemyEvasion)
+// Your armor, resistance and evasion all scale with the attacker (its level, its
+// accuracy), so levelling up never weakens your defense; enemies' armor and resistance
+// use their own level. Accuracy: attributes.md, "Evasion".
 
 // Crit is per source: base crit comes from the weapon (attributes.md).
 critChance(s) = (s.weapon.baseCrit + Σ baseCrit) × (1 + Σ increasedCrit%)        // uncapped

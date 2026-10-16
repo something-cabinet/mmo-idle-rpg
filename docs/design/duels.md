@@ -18,7 +18,7 @@ timer:
 
 - Per swing, the attacker's weapon hit after the defender's mitigation by type, with the
   attacker's penetration, Rending and Spellbreaker (Voidtouched ignores it), and the
-  defender's Juggernaut / Spellward. The defender's evasion (vs the attacker's level) can
+  defender's Juggernaut / Spellward. The defender's evasion (vs the attacker's accuracy) can
   dodge it. Crits, ±10% variance.
 - Heals land on the attacker, plus lifesteal; regen ticks between swings.
 - Effects: Executioner, Ambush (first swing ×5), Second Wind, Frostbite (the defender's

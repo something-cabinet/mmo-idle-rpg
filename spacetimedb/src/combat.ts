@@ -7,7 +7,7 @@
 
 import { SLOTS } from './data/bases';
 import { Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingAttacks, type EffectCounts } from './data/legendary';
-import { CAPS, Stat, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
+import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, dodgeChance, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType } from './data/bases';
 import type { Buffs } from './data/supplies';
@@ -93,6 +93,8 @@ export interface CombatStats {
   armor: number;
   resistance: number;
   evasionRating: number;
+  /** Accuracy rating: lowers the chance your attacks are dodged (`dodgeChance`). */
+  accuracy: number;
   lifesteal: number;
   threat: number;
   itemFind: number;
@@ -168,7 +170,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const discipline = 1 + (amount(Effect.Discipline) * Math.max(0, might, finesse, mind, vitality)) / 100;
   const attackSpeedPct = pct(Stat.AttackSpeedPct) + 0.001 * finesse;
   const critIncreased = pct(Stat.CritChancePct) + 0.004 * finesse;
-  const critDamage = 1.5 + pct(Stat.CritDamage);
+  const critDamage = 1.5 + pct(Stat.CritDamage) + 0.0025 * mind;
   const healPct = pct(Stat.HealPct) + 0.0045 * mind;
 
   // Only the main hand attacks today; off-hands add stats only.
@@ -232,6 +234,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     armor: armor + amount(Effect.Runeguard) * resistance,
     resistance: resistance + amount(Effect.Ironclad) * armor,
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse),
+    accuracy: (accuracyAtLevel(level) + flat(Stat.Accuracy)) * (1 + pct(Stat.AccuracyPct) + MIGHT_ACCURACY * might),
     // Bloodthirst raises the lifesteal cap.
     lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst), pct(Stat.LifestealPct))),
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
@@ -282,18 +285,15 @@ export function critMultAgainst(src: AttackSource, mit: Record<DamageType, numbe
   return 1 - c + c * critDmg * (pierced / normal);
 }
 
-/** Chance to avoid an attack from an enemy of `enemyLevel`. */
-export function evasionChance(rating: number, enemyLevel: number, cap = CAPS.evasion / 100): number {
-  return rating <= 0 ? 0 : Math.min(cap, rating / (rating + 10 * enemyLevel));
-}
-
 /**
- * Your mitigation and evasion against `type` damage from an enemy of `enemyLevel`. Both
- * scale with the attacker's level, not yours, so levelling up never weakens your defense.
+ * Your mitigation and evasion against `type` damage from an attacker of `enemyLevel`.
+ * Mitigation scales with its level, evasion with its `accuracy` (an enemy's is its
+ * level's, `accuracyAtLevel`; a player's comes from level, gear and Might), never with
+ * yours, so levelling up never weakens your defense.
  * Juggernaut (magic) and Spellward (physical) use the better of armor and resistance
  * but stop evasion; Phantom Step raises the evasion cap.
  */
-export function defenseAgainst(s: CombatStats, type: DamageType, enemyLevel: number): { mitigation: number; evasion: number } {
+export function defenseAgainst(s: CombatStats, type: DamageType, enemyLevel: number, accuracy = accuracyAtLevel(enemyLevel)): { mitigation: number; evasion: number } {
   const juggernaut = s.effects.has(Effect.Juggernaut);
   const spellward = s.effects.has(Effect.Spellward);
   const best = Math.max(s.armor, s.resistance);
@@ -301,7 +301,7 @@ export function defenseAgainst(s: CombatStats, type: DamageType, enemyLevel: num
   const cap = CAPS.evasion / 100 + effectAmount(s.effects, Effect.PhantomStep);
   return {
     mitigation: mitigation(def, 0, enemyLevel, MITIGATION_CAP + effectAmount(s.effects, Effect.Unbreakable)),
-    evasion: juggernaut || spellward ? 0 : evasionChance(s.evasionRating, enemyLevel, cap),
+    evasion: juggernaut || spellward ? 0 : dodgeChance(s.evasionRating, accuracy, cap),
   };
 }
 
@@ -310,6 +310,8 @@ export interface Matchup {
   enemyMitigation: Record<DamageType, number>;
   playerMitigation: number;
   evasion: number;
+  /** Chance the enemy dodges each of your attacks: its evasion rating against your accuracy. */
+  enemyEvasion: number;
   /** The main weapon's average crit multiplier against this enemy (Deadeye included). */
   critMult: number;
   /** One enemy hit after your mitigation and Stoneskin, before evasion and Bulwark. */
@@ -361,7 +363,8 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     hps += src.heal * src.attacksPerSec * src.critMult; // solo: heals land on yourself
   }
   // An evasive enemy dodges a share of your attacks; heals still land.
-  dps *= 1 - (e.evasion ?? 0);
+  const enemyEvasion = dodgeChance(e.evasionRating ?? 0, s.accuracy);
+  dps *= 1 - enemyEvasion;
   const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
   // Waxing Moon: hits grow through the fight. `x` average hits kill at full strength;
   // waxingAttacks(x) is how many it takes, so the fight's average multiplier is x / that.
@@ -435,6 +438,7 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     enemyMitigation,
     playerMitigation,
     evasion,
+    enemyEvasion,
     critMult,
     enemyHit,
     shield,

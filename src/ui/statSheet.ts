@@ -6,7 +6,7 @@
 import type { Item } from '../module_bindings/types';
 import { MITIGATION_CAP, bonusHp, defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
 import { Effect, LEGENDARIES_BY_ID, effectAmount } from '../../spacetimedb/src/data/legendary';
-import { CAPS, Stat, fromStored } from '../../spacetimedb/src/data/stats';
+import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, fromStored } from '../../spacetimedb/src/data/stats';
 import { scoreGear } from '../../spacetimedb/src/equip';
 import { WALK_SECONDS } from '../../spacetimedb/src/data/zones';
 import { fmt, pct } from './format';
@@ -17,9 +17,9 @@ export type StatRow = [string, string, string?, string?];
 
 /** What each stat does, by row label. */
 export const STAT_HELP: Record<string, string> = {
-  Might: 'Each point: +0.5% physical damage, +0.2% max HP.\nYou gain 1 per level.',
+  Might: 'Each point: +0.5% physical damage, +0.2% max HP, +0.25% accuracy rating.\nYou gain 1 per level.',
   Finesse: 'Each point: +0.1% attack speed, +0.4% increased crit chance, +0.25% evasion rating.\nYou gain 1 per level.',
-  Mind: 'Each point: +0.45% magic damage, +0.45% heal.\nYou gain 1 per level.',
+  Mind: 'Each point: +0.45% magic damage, +0.45% heal, +0.25% crit damage.\nYou gain 1 per level.',
   Vitality: 'Each point: +0.25% max HP, +1% HP regen, +0.25% threat.\nYou gain 1 per level.',
   Damage: "Damage per attack, before the enemy's armor (physical) or resistance (magic).",
   Heal: 'HP restored per attack. Solo, heals land on yourself.',
@@ -34,7 +34,8 @@ export const STAT_HELP: Record<string, string> = {
   'HP regen': 'HP restored per second.',
   Armor: 'Reduces physical damage taken. You need more as you level; reduction caps at 85%.',
   Resistance: 'Reduces magic damage taken. You need more as you level; reduction caps at 85%.',
-  Evasion: "Chance to avoid an enemy's attack entirely. Higher-level enemies are harder to evade.",
+  Evasion: "Chance to avoid an enemy's attack entirely, against its accuracy. Higher-level enemies are more accurate, so harder to evade.",
+  Accuracy: 'Lowers the chance an evasive enemy dodges your attacks: it dodges at its evasion rating / (its rating + your accuracy).',
   Lifesteal: 'Heals you for this share of the damage you deal.',
   'Item find': 'Raises the chance for enemies to drop items.',
   'Gold find': 'More gold per kill.',
@@ -107,11 +108,13 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
         row('Crit chance', pct(src.critChance, 1),
           from([Stat.BaseCritChance, Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
             leg(Effect.Overcrit))),
-        row('Crit damage', pct(st.critDamage), from([Stat.CritDamage], 'Base 150%',
+        row('Crit damage', pct(st.critDamage), from([Stat.CritDamage], 'Base 150%', `Mind ${n1(mind)}: +${n1(0.25 * mind)}%`,
           has(Effect.Frostbite) && `Frostbite: crits deal no extra damage; enemy damage −${pct(st.chill)}`)),
         row('Armor / magic pen', `${pct(st.armorPen)} / ${pct(st.magicPen)}`, from([Stat.ArmorPenPct, Stat.MagicPenPct], 'Cap 75% each',
           has(Effect.Moonlight) && 'Moonlight: armor penetration also counts as magic penetration',
           leg(Effect.Rending), leg(Effect.Spellbreaker))),
+        row('Accuracy', fmt(st.accuracy), from([Stat.Accuracy, Stat.AccuracyPct], `Base ${accuracyAtLevel(level)} (10 per level)`,
+          `Might ${n1(might)}: +${n1(100 * MIGHT_ACCURACY * might)}% rating`, 'An evasive enemy dodges at its evasion rating / (its rating + your accuracy)')),
         row('DPS', fmt(scoreGear(level, gear).dps),
           ["Damage × attack speed × average crit, after a reference enemy's mitigation\n(armor and resistance 2.5 × your level, half its damage physical, half magic)",
             leg(Effect.Thornshell), leg(Effect.ZealotsOath),
@@ -128,7 +131,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
       `Reduction: resistance / (resistance + 5 × enemy level); vs Lv ${level}: / (resistance + ${5 * level}), cap ${pct(mitCap)}`,
       leg(Effect.Ironclad), lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.5 * mind)}%`, has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
-    row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${level}: rating / (rating + ${10 * level})`,
+    row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs a Lv ${level} enemy's accuracy: rating / (rating + ${accuracyAtLevel(level)})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade",
       has(Effect.Moonshadow) && "Moonshadow: the enemy's hit after a dodge deals 50% less; landed hits deal 10% more")),

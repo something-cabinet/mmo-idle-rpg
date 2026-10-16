@@ -8,6 +8,7 @@ import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONSHADOW_AFTER_DODGE, MOON
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { base } from './data/bases';
+import { accuracyAtLevel } from './data/stats';
 import { makeItem, makeUnique, seededRng, type NewItem, type Rng } from './loot';
 
 const RAID_SALT = 0x72616964n; // "raid"
@@ -272,6 +273,7 @@ export function npcStats(raid: RaidDef): CombatStats {
     armor: k * r.armor,
     resistance: k * r.resistance,
     evasionRating: k * r.evasionRating,
+    accuracy: accuracyAtLevel(r.level),
     lifesteal: 0,
     threat: k * r.threat,
     itemFind: 0,

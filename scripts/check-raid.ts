@@ -128,7 +128,7 @@ check('lockout: a UTC day', lockoutStart(5n * day + 123n) === 5n * day && lockou
 // ---------------------------------------------------------------- balance
 
 const roles: ('tank' | 'healer' | 'dps')[] = ['tank', 'healer', 'dps', 'dps'];
-const parties = Array.from({ length: 12 }, (_, p) => roles.map((r, i) => character(100 + p * 4 + i, r)));
+const parties = Array.from({ length: 48 }, (_, p) => roles.map((r, i) => character(100 + p * 4 + i, r)));
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 const odds = (setups: RaidSetup[]) => mean(setups.map((s, i) => raidOdds(s, raid, BigInt(i))));
 const full = odds(parties.map(p => party(p)));
@@ -149,7 +149,8 @@ near('DPS vs the boss', mean2(dpsOf), refDps);
 const p0 = parties[0].map(s => ({ dps: dpsOf(s).toFixed(0), hp: s.maxHp.toFixed(0), threat: s.threat.toFixed(2) }));
 console.log(`  party 0: ${JSON.stringify(p0)}`);
 console.log(`  win odds: 4 players ${full.toFixed(2)} · 3 ${short.toFixed(2)} · 3 + NPC ${shortHired.toFixed(2)} · 2 ${pair.toFixed(2)} · 2 + 2 NPCs ${pairHired.toFixed(2)}`);
-check('a full party of T3-cleared players usually wins', full >= 0.45 && full <= 0.95, full.toFixed(2));
+// The T3 raid is intentionally easy (raids.md): a full party nearly always wins.
+check('a full party of T3-cleared players nearly always wins', full >= 0.9, full.toFixed(2));
 check('a party one short wins less often', short < full, `${short.toFixed(2)} vs ${full.toFixed(2)}`);
 check('two players alone rarely win', pair < 0.3, pair.toFixed(2));
 // NPCs are a last resort (NPC_POWER 0.5): a hire never hurts, but adds little.

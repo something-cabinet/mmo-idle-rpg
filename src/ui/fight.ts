@@ -92,6 +92,7 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
         else float('you', `${e.blocked ? 'Block ' : ''}-${fmt(e.damage)}`, e.blocked ? 'block' : e.shield !== undefined && e.youHp === prevHp(e) ? 'shielded' : 'taken');
         if (e.secondWind) float('you', 'Second Wind', 'heal');
         if (e.healed >= 0.5) float('you', `+${fmt(e.healed)}`, 'heal');
+        if ((e.foeHealed ?? 0) >= 0.5) float('enemy', `+${fmt(e.foeHealed!)}`, 'heal');
       }
       if (over && fight.outcome === 'defeat') float('you', 'Defeated', 'taken');
     }

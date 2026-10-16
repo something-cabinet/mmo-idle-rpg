@@ -78,7 +78,7 @@ T1 values; damage ×2.1 per tier to T3, then ×1.6, heal ×1.33 per tier. 1H wea
 | Katana | 2H | Phys | 9.5 | 1.4 | 13.3 | 703 | 10% | +40 crit damage |
 | Greatsword | 2H | Phys | 23.75 | 0.55 | 13.1 | 1,757 | 5% | +25% armor penetration |
 | Bow | 2H | Phys | 13.25 | 1.0 | 13.25 | 980 | 6% | +1.5T evasion rating |
-| Crossbow | 2H | Phys | 18 | 0.7 | 12.6 | 1,332 | 12% | +40 crit damage |
+| Crossbow | 2H | Phys | 18 | 0.7 | 12.6 | 1,332 | 12% | +40 crit damage, +10T accuracy rating |
 | Fire staff | 2H | Magic | 18.75 | 0.8 | 15 | 1,387 | 5% | — (pure damage) |
 | Healing staff | 2H | Magic | 5 | 1.0 | 5 | 370 | 5% | Heal 7.5 per hit (T9: 73), all allies |
 

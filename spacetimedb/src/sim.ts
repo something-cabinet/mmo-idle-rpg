@@ -32,6 +32,8 @@ export interface FightEvent {
   healed: number;
   youHp: number;
   foeHp: number;
+  /** HP the enemy regenerated since its previous swing, on its swings (a regenerating enemy only). */
+  foeHealed?: number;
   /** Second Wind saved you from this hit. */
   secondWind?: boolean;
   /** Second Skin's shield left after this event, while it lasts. */
@@ -81,7 +83,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const yourPeriod = src && m.dps > 0 ? 1 / src.attacksPerSec : Infinity;
   const foePeriod = 1 / enemy.speed;
   const crit = Math.min(1, src?.critChance ?? 0);
-  const evade = enemy.evasion ?? 0;
+  const evade = m.enemyEvasion;
   const foeRegen = enemy.regen ?? 0;
   // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = DPS.
   // Moonlight's wave, Waxing Moon's average and the enemy's evasion are in `m.dps`; take
@@ -104,6 +106,8 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   let shield = m.shield;
   const moonshadow = s.effects.has(Effect.Moonshadow);
   let lastDodged = false;
+  /** Enemy regen since its last swing, shown on its next one. */
+  let foeRegained = 0;
   let swings = 0;
 
   let youHp = s.maxHp;
@@ -128,7 +132,9 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     if (t > walk + MAX_FIGHT_SECONDS) return done(walk + MAX_FIGHT_SECONDS, 'stalemate');
     const before = youHp;
     youHp = Math.min(s.maxHp, youHp + s.regen * (t - now));
+    const foeBefore = foeHp;
     foeHp = Math.min(enemy.hp, foeHp + foeRegen * (t - now));
+    foeRegained += foeHp - foeBefore;
     now = t;
     if (nextYou <= nextFoe) {
       nextYou += yourPeriod;
@@ -164,7 +170,8 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
         secondWind = 0;
       }
       events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp,
-        ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...shieldNote() });
+        ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...(foeRegen > 0 && { foeHealed: foeRegained }), ...shieldNote() });
+      foeRegained = 0;
       if (youHp <= 0) return done(t, 'defeat');
     }
   }

@@ -100,7 +100,7 @@ for (const zone of ZONES) {
   check(`${zone.name}: average enemy on curve`, Math.abs(effectiveHp(avg) / hp - 1) < 0.01 && Math.abs(avg.dps / dps - 1) < 0.01,
     `hp ${effectiveHp(avg)} vs ${hp.toFixed(0)}, dps ${avg.dps} vs ${dps.toFixed(1)}`);
   // Traits are paid for with HP: an enemy with one stays on its offset's curve (× 1.08^o).
-  for (const e of zone.enemies.filter(e => (e.evasion || e.regen) && !e.boss && !e.secret)) {
+  for (const e of zone.enemies.filter(e => (e.evasionRating || e.regen) && !e.boss && !e.secret)) {
     const want = hp * 1.08 ** (e.level - 10 * zone.tier);
     check(`${e.name}: traits paid for with HP`, Math.abs(effectiveHp(e) / want - 1) < 0.01, `effective hp ${effectiveHp(e).toFixed(0)} vs ${want.toFixed(0)}`);
   }

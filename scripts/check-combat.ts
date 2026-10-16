@@ -89,7 +89,7 @@ const warrior = gear({
 
   const crit = combatStats(1, gear({ MainHand: item(1, 1, [[Stat.CritChancePct, 5000]]) }));
   check('crit chance is uncapped but rolls use at most 100%',
-    crit.sources[0].critChance > 1 && near(crit.sources[0].critMult, 1.5, 1e-9));
+    crit.sources[0].critChance > 1 && near(crit.sources[0].critMult, crit.critDamage, 1e-9));
 
   const pen = combatStats(1, gear({ MainHand: item(1, 1, [[Stat.ArmorPenPct, 90]]) }));
   check('armor penetration caps at 75%', pen.armorPen === 0.75);
@@ -128,12 +128,13 @@ function withEffect(it: GearItem, effect: number): GearItem {
   check('Spellblade: a wand deals physical damage', wand.sources[0].hit.Magic === 0 && wand.sources[0].hit.Physical > 0);
 
   const crit = item(1, 1, [[Stat.CritChancePct, 5000]]);
+  const cd = combatStats(10, kit(crit)).critDamage; // 150% + Mind's
   const cc = combatStats(10, kit(crit)).sources[0];
   const oc = combatStats(10, kit(withEffect(crit, Effect.Overcrit))).sources[0];
-  check('Overcrit: excess crit chance becomes +2× crit damage', near(oc.critMult, 1.5 + 2 * (oc.critChance - 1), 1e-9) &&
-    near(cc.critMult, 1.5, 1e-9), `${f(cc.critMult)} → ${f(oc.critMult)}`);
+  check('Overcrit: excess crit chance becomes +2× crit damage', near(oc.critMult, cd + 2 * (oc.critChance - 1), 1e-9) &&
+    near(cc.critMult, cd, 1e-9), `${f(cc.critMult)} → ${f(oc.critMult)}`);
   const oc2 = combatStats(10, kit(withEffect(crit, Effect.Overcrit), { OffHand: withEffect(item(21, 1), Effect.Overcrit) })).sources[0];
-  check('Overcrit ×2 (weapon + tome): +4× crit damage', near(oc2.critMult, 1.5 + 4 * (oc2.critChance - 1), 1e-9));
+  check('Overcrit ×2 (weapon + tome): +4× crit damage', near(oc2.critMult, combatStats(10, kit(crit, { OffHand: item(21, 1) })).critDamage + 4 * (oc2.critChance - 1), 1e-9));
 
   const gc = combatStats(10, kit(withEffect(sword, Effect.GlassCannon)));
   check('Glass Cannon: damage × 2, max HP × 0.5',
@@ -214,7 +215,9 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const ex = matchup(combatStats(10, kit(withEffect(sword, Effect.Executioner))), rat);
   check('Executioner: the last 30% of enemy HP goes twice as fast (TTK × 0.85)', near(ex.timeToKill, base.timeToKill * 0.85, 1e-9) && near(ex.dps, base.dps, 1e-12));
   const ex2 = matchup(combatStats(10, kit(withEffect(sword, Effect.Executioner), { OffHand: withEffect(item(21, 1), Effect.Executioner) })), rat);
-  check('Executioner ×2: threshold capped at 50% (TTK × 0.75)', near(ex2.timeToKill, base.timeToKill * 0.75, 1e-9));
+  // Against the same kit without the effect: the tome's Mind raises crit damage.
+  const tomed = matchup(combatStats(10, kit(sword, { OffHand: item(21, 1) })), rat);
+  check('Executioner ×2: threshold capped at 50% (TTK × 0.75)', near(ex2.timeToKill, tomed.timeToKill * 0.75, 1e-9));
 
   const rd = matchup(combatStats(10, kit(withEffect(sword, Effect.Rending))), armored);
   const rdBase = matchup(plain, armored);
@@ -444,6 +447,36 @@ const rats = { gear: starter, enemy: enemy(101) };
   const m = matchup(s, enemy(101));
   check('… and a fight still works out (no NaN, no negative gold or XP)', !Number.isNaN(m.timeToDie) && m.goldPerKill >= 0 && m.xpPerKill >= 0,
     `ttd ${f(m.timeToDie)}, gold ${m.goldPerKill}, xp ${m.xpPerKill}`);
+}
+
+// ---------------------------------------------------------------- accuracy
+
+{
+  // Accuracy: 10 per level, flat gear, then × (1 + accuracy % + 0.25% per Might).
+  const bare = combatStats(10, gear({ MainHand: item(2, 1) })); // a dagger: no accuracy implicit
+  check('accuracy: 10 per level, raised by the level\'s Might', near(bare.accuracy, 100 * (1 + 0.0025 * 10), 1e-9), f(bare.accuracy));
+  const geared = combatStats(10, gear({ MainHand: item(2, 1, [[Stat.Accuracy, 20], [Stat.AccuracyPct, 10]]) }));
+  check('… plus flat and % accuracy', near(geared.accuracy, 120 * (1 + 0.1 + 0.0025 * 10), 1e-9), f(geared.accuracy));
+  check('crossbows carry flat accuracy', near(combatStats(10, gear({ MainHand: item(11, 1) })).accuracy, 110 * (1 + 0.0025 * 10), 1e-9));
+  // A sword has no flat accuracy: its Might implicit raises accuracy instead.
+  const sword = combatStats(10, gear({ MainHand: item(1, 1) }));
+  check('… swords raise it through their Might', sword.accuracy > bare.accuracy && near(sword.accuracy, 100 * (1 + 0.0025 * (10 + 20)), 1e-9), f(sword.accuracy));
+  check('Mind adds 0.25% crit damage per point', near(bare.critDamage, 1.5 + 0.0025 * 10, 1e-9), f(bare.critDamage));
+
+  // Enemies dodge by the same rule as players: evasion rating / (rating + attacker accuracy).
+  const moth = enemy(401);
+  const lv36 = combatStats(36, gear({ MainHand: item(2, 4) }));
+  const m = matchup(lv36, moth);
+  check('an evasive enemy dodges at rating / (rating + your accuracy)', near(m.enemyEvasion, moth.evasionRating! / (moth.evasionRating! + lv36.accuracy), 1e-9), f(m.enemyEvasion));
+  check('… about 35% for a same-level player without accuracy gear', near(m.enemyEvasion, 0.35, 0.005), f(m.enemyEvasion));
+  const sharp = combatStats(36, gear({ MainHand: item(1, 4, [[Stat.Accuracy, 40], [Stat.AccuracyPct, 17]]) }));
+  check('… and accuracy gear makes it dodge less', matchup(sharp, moth).enemyEvasion < m.enemyEvasion - 0.05, f(matchup(sharp, moth).enemyEvasion));
+  check('enemies without evasion never dodge', matchup(bare, enemy(101)).enemyEvasion === 0);
+  // Your evasion is against the enemy's accuracy, its level's: 10 × level.
+  const dodgy = combatStats(10, gear({ MainHand: item(2, 1), Chest: item(35, 1, [[Stat.EvasionRating, 50]]) }));
+  const brute = enemy(105);
+  const ev = matchup(dodgy, brute).evasion;
+  check('your evasion is against the enemy\'s level accuracy', ev < 0.6 && near(ev, dodgy.evasionRating / (dodgy.evasionRating + 10 * brute.level), 1e-9), f(ev));
 }
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

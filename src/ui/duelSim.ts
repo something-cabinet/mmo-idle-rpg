@@ -60,7 +60,7 @@ function offense(a: CombatStats, b: CombatStats) {
     crit,
     // Deadeye: crits ignore a share of `b`'s mitigation.
     critX: crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
-    evasion: defenseAgainst(b, type, a.level).evasion,
+    evasion: defenseAgainst(b, type, a.level, a.accuracy).evasion,
     mitP,
     mitM,
   };

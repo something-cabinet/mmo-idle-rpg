@@ -52,9 +52,9 @@ worth a little more than one affix because a build rarely uses every stat in it.
 
 | Primary | Per point | At 40 points |
 |---|---|---|
-| **Might** | +0.5% physical damage, +0.2% max HP | +20% phys, +8% HP |
+| **Might** | +0.5% physical damage, +0.2% max HP, +0.25% accuracy rating | +20% phys, +8% HP, +10% acc |
 | **Finesse** | +0.1% attack speed, +0.4% increased crit chance, +0.25% evasion rating | +4% AS, +16% crit, +10% eva |
-| **Mind** | +0.45% magic damage, +0.45% heal | +18% magic, +18% heal |
+| **Mind** | +0.45% magic damage, +0.45% heal, +0.25 points crit damage | +18% magic, +18% heal, +10 crit dmg |
 | **Vitality** | +0.25% max HP, +1% HP regen, +0.25% threat | +10% HP, +40% regen, +10% threat |
 
 All primary bonuses go into the **percent** sums of their stats (see combat.md
@@ -71,7 +71,7 @@ PoE2-style: crit chance starts from the **weapon's base crit chance** and is sca
 
 ```
 critChance(source) = (source.weapon.baseCrit + Σ base crit chance) × (1 + Σ increased crit chance%)     // uncapped
-critDamage         = 150% + Σ crit damage
+critDamage         = 150% + Σ crit damage + 0.25 × Mind
 ```
 
 - Base crit is part of the weapon family (equipment.md), e.g. sword 5%, dagger 8%,
@@ -86,15 +86,20 @@ critDamage         = 150% + Σ crit damage
 
 ## Evasion
 
-Evasion is a **rating** with diminishing returns against the attacker's level, like
-armor:
+Evasion is a **rating** with diminishing returns against the attacker's **accuracy
+rating**. Players and enemies use the same rule, on both sides:
 
 ```
-evasion = min(60%, r / (r + 10 × enemyLevel))     r = final evasion rating
+dodge    = min(60%, evasion / (evasion + accuracy))
+accuracy = (10 × level + Σ flat accuracy) × (1 + Σ accuracy% + 0.25% × Might)   // a player
+accuracy = 10 × level                                                            // an enemy
 ```
 
-The constant is twice armor's (5) because evasion avoids every damage type. The 60%
-cap is hard.
+An enemy's accuracy is its level's, so your evasion works as before against it
+(`10 × enemyLevel` is twice armor's constant because evasion avoids every damage
+type). The 60% cap is hard. Most enemies have no evasion; evasive ones (zones.md,
+"Enemy traits") dodge your attacks, and accuracy (gear, Might, levels) is the counter.
+In duels, each side's evasion is against the other's accuracy.
 
 ## Combat stats
 
@@ -135,6 +140,8 @@ and existing IDs are never reused, renumbered or redefined.
 | 27 | Mind | flat | | Primary |
 | 28 | Vitality | flat | | Primary |
 | 29 | Evasion rating | % | | Survival |
+| 31 | Accuracy rating | flat | base 10 per level | Kill speed vs evasive enemies |
+| 32 | Accuracy rating | % | | Kill speed vs evasive enemies |
 
 - **Flat added damage and heal (1, 3, 19)** are worth the same DPS on every weapon:
   per hit they add `value × 1.0 / weapon base speed` (combat.md), so a 2.0/s dagger
@@ -182,6 +189,7 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 | Armor | 5 | Linear | 45 | One best roll ≈ 9% mitigation vs a matching enemy |
 | Resistance | 5 | Linear | 45 | Same as armor |
 | Evasion rating | 5 | Linear | 45 | One best roll ≈ 5% evasion vs a matching enemy |
+| Accuracy rating | 10 | Linear | 90 | One best roll ≈ +10% accuracy at a matching level |
 
 **Item values are whole numbers.** Every rolled or computed value on an item (affixes,
 implicits, legendary bonuses, weapon hit and heal) is rounded to the nearest whole

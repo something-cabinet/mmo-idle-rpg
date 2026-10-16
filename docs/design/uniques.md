@@ -63,7 +63,7 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 16 | T4 | **Waxing Crescent** | Katana | Waxing Moon | Physical damage %, attack speed %, crit damage |
 | 17 | T4 | **Moonshadow Jerkin** | Leather chest | Moonshadow | Evasion rating %, Finesse, max HP % |
 | 18 | T4 | **Tear of the Moon** | Sapphire (Moonstone) amulet | Lunar Insight | Mind, magic damage %, resistance % |
-| 19 | T4 | **Lunatic's Wager** | Sapphire (Moonstone) ring | None | Max HP %, attack speed %, item find %, resistance %, each rolled **−1.4 to +1.4** × value |
+| 19 | T4 | **Lunatic's Wager** | Sapphire (Moonstone) ring | None | Max HP %, attack speed %, item find %, XP gain %, gold find %, each rolled **−3 to +3** × value |
 
 Unique IDs are permanent, like effect IDs.
 
@@ -84,19 +84,20 @@ one per build style, and Lunatic's Wager with none:
 
 ### Lunatic's Wager
 
-A ring touched by moon-madness, after Ventor's Gamble (PoE). No effect: just four stats
-that can each land anywhere from a curse to a blessing.
+A ring touched by moon-madness, after Ventor's Gamble (PoE). No effect: just five stats
+that can each land anywhere from a deep curse to a huge blessing.
 
 - **Base:** Rough Moonstone Ring (T4). Its implicit (+13 Mind) is the one stable part.
-- **Stats:** each rolls uniform in **[−1.4, +1.4] × value**, where value is the usual
-  `ref(stat, T4)`; the top end is the best roll any unique gets (`UNIQUE_ROLL_MAX`).
+- **Stats:** each rolls uniform in **[−3, +3] × value**, where value is the usual
+  `ref(stat, T4)`: more than twice as far as any other unique's best roll (1.4×) either way.
 
   | Stat | Range (T4) | Why it's here |
   |---|---|---|
-  | Max HP % | −14% to +14% | Defence for every build |
-  | Attack speed % | −9% to +9% | Offence for every build, either damage type |
-  | Item find % | −14% to +14% | The gambler's stat (Ventor's rarity) |
-  | Resistance % | −23% to +23% | The other defence, a nod to Ventor's resistances |
+  | Max HP % | −30% to +30% | Defence for every build |
+  | Attack speed % | −20% to +20% | Offence for every build, either damage type |
+  | Item find % | −30% to +30% | The gambler's stat (Ventor's rarity) |
+  | XP gain % | −20% to +20% | Haste |
+  | Gold find % | −40% to +40% | Greed |
 
 - **Every stat matters to every build**, so no roll is just "dead": a bad roll costs you,
   a good one helps, whatever you play.
@@ -105,22 +106,22 @@ that can each land anywhere from a curse to a blessing.
   | Outcome | Chance |
   |---|---|
   | A given stat positive | 50% |
-  | All four positive | 6.3% (1 in 16) |
-  | A given stat ≥ +1.0 × value (as good as a top regular affix) | 14.3% |
-  | All four ≥ +0.8 × value (a normal unique's floor) | 0.21% (≈ 1 in 480) |
-  | All four ≥ +1.2 × value (the god roll) | 0.003% (≈ 1 in 38,000) |
+  | All five positive | 3.1% (1 in 32) |
+  | A given stat ≥ +1.4 × value (past any other unique's top roll) | 27% |
+  | All five ≥ +2 × value | 0.013% (≈ 1 in 7,800) |
+  | All five ≥ +2.5 × value (the god roll) | ≈ 1 in 250,000 |
 
-- **Average is zero, the chase is the point:** a typical copy has two good stats and two
-  bad ones and is worse than a Rare ring; a god roll is four best-in-slot stats on one
-  ring, more than any other unique's three. Players keep farming T4 for a better copy,
-  and every drop is worth looking at.
+- **Average is zero, the chase is the point:** a typical copy has wild highs and lows and
+  is worse than a Rare ring; a god roll is five huge stats on one ring, more than any
+  other unique. Players keep farming T4 for a better copy, and every drop is worth
+  looking at.
 - **Can't be crafted or rerolled**, like every unique: each drop is a new wager. Always
   kept (uniques skip the loot filter), so bad copies salvage for Dust like any unique.
 - **Global T4 pool**, so it drops from any T4+ zone enemy at the normal weight
   (1 of 4 global T4 uniques).
-- **Safe negatives:** the existing combat floors already cover it (Anomaly, equipment.md):
-  max HP ≥ 1, attack speed ≥ 25% of the weapon's, item find ≥ −100%. Resistance % only
-  scales your own resistance, so it can't go below 0 from this ring alone.
+- **Safe negatives:** the existing combat floors cover it (Anomaly, equipment.md): max HP
+  ≥ 1, attack speed ≥ 25% of the weapon's, item, gold and XP find ≥ −100%. The worst
+  rolls (−30% HP, −20% attack speed) hurt but never break a build.
 - **Display:** negative stats in red. The card shows each stat's place in its range (e.g.
   "+11% attack speed (top 10%)") so players can judge a copy at a glance.
 
@@ -128,7 +129,7 @@ that can each land anywhere from a curse to a blessing.
 `[UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX]`:
 
 ```
-{ stat: Stat.AttackSpeedPct, roll: [-1.4, 1.4] }      // default [0.8, 1.4]
+{ stat: Stat.AttackSpeedPct, roll: [-3, 3] }          // default [0.8, 1.4]
 value = ref(stat, tier) × x × (roll[0] + (roll[1] − roll[0]) × rng())
 ```
 

@@ -13,9 +13,10 @@ export interface UniqueStat {
   stat: StatId;
   /** × the best regular affix roll at the unique's tier (`affixRef`); default 1. */
   x?: number;
-  /** Roll range × value, in place of [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] (Lunatic's Wager rolls [−1.4, 1.4]). */
+  /** Roll range × value, in place of [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX] (Lunatic's Wager rolls [−3, 3]). */
   roll?: [number, number];
 }
+
 
 export interface UniqueDef {
   id: number;
@@ -37,8 +38,8 @@ export const UNIQUE_ROLL_MIN = 0.8;
 export const UNIQUE_ROLL_MAX = 1.4;
 /** The range a unique stat rolls in, × its value. */
 export const uniqueRoll = (s: UniqueStat): [number, number] => s.roll ?? [UNIQUE_ROLL_MIN, UNIQUE_ROLL_MAX];
-/** Lunatic's Wager: anywhere from the worst curse to the best unique roll. */
-const WAGER: [number, number] = [-UNIQUE_ROLL_MAX, UNIQUE_ROLL_MAX];
+/** Lunatic's Wager: anywhere from a deep curse to a blessing past any other unique's. */
+const WAGER: [number, number] = [-3, 3];
 
 export const UNIQUES: UniqueDef[] = [
   // T1
@@ -82,9 +83,10 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.EvasionRatingPct }, { stat: Stat.Finesse }, { stat: Stat.MaxHpPct }] },
   { id: 18, name: 'Tear of the Moon', tier: 4, baseId: 56, effects: [Effect.LunarInsight],
     stats: [{ stat: Stat.Mind }, { stat: Stat.MagicDamagePct }, { stat: Stat.ResistancePct }] },
-  // No effect: four stats that each roll from a curse to a blessing (after Ventor's Gamble).
+  // No effect: five stats that each roll anywhere from a deep curse to a huge blessing (after Ventor's Gamble).
   { id: 19, name: "Lunatic's Wager", tier: 4, baseId: 52, effects: [],
-    stats: [{ stat: Stat.MaxHpPct, roll: WAGER }, { stat: Stat.AttackSpeedPct, roll: WAGER }, { stat: Stat.ItemFindPct, roll: WAGER }, { stat: Stat.ResistancePct, roll: WAGER }] },
+    stats: [{ stat: Stat.MaxHpPct, roll: WAGER }, { stat: Stat.AttackSpeedPct, roll: WAGER }, { stat: Stat.ItemFindPct, roll: WAGER },
+      { stat: Stat.XpGainPct, roll: WAGER }, { stat: Stat.GoldFindPct, roll: WAGER }] },
 ];
 
 export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map(u => [u.id, u]));

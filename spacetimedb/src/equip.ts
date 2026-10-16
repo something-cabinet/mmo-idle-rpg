@@ -142,7 +142,7 @@ export const CUSTOM_GEAR_STATS: readonly { key: string; label: string; group: Ge
   ...(
     [
       ['Offense', [Stat.PhysDamage, Stat.PhysDamagePct, Stat.MagicDamage, Stat.MagicDamagePct, Stat.AttackSpeedPct, Stat.BaseCritChance,
-        Stat.CritChancePct, Stat.CritDamage, Stat.ArmorPenPct, Stat.MagicPenPct]],
+        Stat.CritChancePct, Stat.CritDamage, Stat.ArmorPenPct, Stat.MagicPenPct, Stat.Accuracy, Stat.AccuracyPct]],
       ['Defense', [Stat.MaxHp, Stat.MaxHpPct, Stat.Armor, Stat.ArmorPct, Stat.Resistance, Stat.ResistancePct, Stat.EvasionRating,
         Stat.EvasionRatingPct, Stat.HpRegen, Stat.LifestealPct]],
       ['Primary', [Stat.Might, Stat.Finesse, Stat.Mind, Stat.Vitality]],

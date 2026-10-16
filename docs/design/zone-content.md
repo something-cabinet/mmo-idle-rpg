@@ -198,9 +198,10 @@ climb"), with the boss at its full HP bonus (× 1.3, see "Zone boss").
 | **Boss: Selvara, the Moonless Queen** | 45 | **Magic** | **Armored** | 0.8/s | 2,038 | 90.9 | 270 / 45 | 1,078 | 270 |
 
 - **Traits** (zones.md, "Enemy traits"), each paid for with HP: the **Moonmoth Swarm** is
-  hard to hit (**35% evasion**, HP 672 → 437) and the **Silverbark Dryad** regenerates
-  (**25 HP/s**, HP 915 → 665). The swarm makes fights swingy and starves on-hit sustain
-  (lifesteal); the dryad rewards burst: strong builds kill it faster than before, weak
+  hard to hit (**evasion rating 211**: 35% dodge against a same-level player without
+  accuracy gear, HP 672 → 437) and the **Silverbark Dryad** regenerates (**25 HP/s**,
+  HP 915 → 665). The swarm makes fights swingy and starves on-hit sustain (lifesteal);
+  crossbows, Might and accuracy gear cut its dodge; the dryad rewards burst: strong builds kill it faster than before, weak
   ones (or magic damage into its Warded resistance) slower.
 
 - Three magic enemies of five, so the resistance picked up for Morgra and the T3

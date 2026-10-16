@@ -4,6 +4,7 @@
 // target) and in boss kills; never reuse or renumber them. Enemy IDs are
 // zoneId × 100 + n, area IDs zoneId × 10 + n.
 import type { MaterialKind } from './materials';
+import { MIGHT_ACCURACY, accuracyAtLevel, dodgeChance } from './stats';
 
 export type Defense = 'Balanced' | 'Armored' | 'Warded';
 
@@ -30,8 +31,11 @@ export interface EnemyDef {
   secret?: boolean;
   /** × the chance of Rare and better drops (Unique included), on top of `rewardScale`. Default 1. */
   rareDropMult?: number;
-  /** Trait: chance each of your attacks misses (0–1). Paid for with HP (`effectiveHp`). */
-  evasion?: number;
+  /**
+   * Trait: evasion rating, dodging your attacks at `dodgeChance` against your accuracy (an
+   * enemy's own accuracy is its level's). Paid for with HP (`effectiveHp`).
+   */
+  evasionRating?: number;
   /** Trait: HP the enemy heals per second in a fight. Paid for with HP (`effectiveHp`). */
   regen?: number;
 }
@@ -202,7 +206,7 @@ export const ZONES: ZoneDef[] = [
     name: 'Moonveil Vale',
     blurb: 'A hidden elven valley of silver woods and moonlit ruins, under a moon gone dark.',
     enemies: [
-      { id: 401, name: 'Moonmoth Swarm', level: 36, damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 437, evasion: 0.35, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
+      { id: 401, name: 'Moonmoth Swarm', level: 36, damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 437, evasionRating: 211, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
       { id: 402, name: 'Owlbear', level: 38, damageType: 'Physical', defense: 'Balanced', speed: 0.7, hp: 784, dps: 45.5, armor: 95, resistance: 95, xp: 389, gold: 97, drops: T4_DROPS.owlbear, materials: ['Hide', 'Reagent'] },
       { id: 403, name: 'Silverbark Dryad', level: 40, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 665, regen: 25, dps: 53, armor: 40, resistance: 240, xp: 488, gold: 122, drops: T4_DROPS.dryad, materials: ['Core', 'Wood'] },
       { id: 404, name: 'Hollow Sentinel', level: 42, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1067, dps: 61.9, armor: 252, resistance: 42, xp: 612, gold: 153, drops: T4_DROPS.sentinel, materials: ['Metal', 'Core', 'Gem'] },
@@ -251,12 +255,17 @@ export const climb = (tier: number) => CLIMB_FACTOR ** (tier - 1);
 /** The reference player's time to kill (zones.md, "Design targets"), which prices the regen trait. */
 export const REFERENCE_KILL_SECONDS = 10;
 
+/** Accuracy of a player of `level` with no accuracy gear: the level's, raised by the level's own Might. */
+export const referenceAccuracy = (level: number) => accuracyAtLevel(level) * (1 + MIGHT_ACCURACY * level);
+
 /**
- * An enemy's HP as the reference player feels it: evasion stretches it by 1 / (1 − evasion),
- * regen adds what it heals over a reference kill. Traits are paid for with HP, so this stays
- * on the curve (zones.md, "Enemy traits").
+ * An enemy's HP as the reference player feels it: evasion (against a same-level player's
+ * `referenceAccuracy`) stretches it by 1 / (1 − dodge chance), regen adds what it heals over
+ * a reference kill. Traits are paid for with HP, so this stays on the curve (zones.md,
+ * "Enemy traits"); accuracy gear then beats the curve.
  */
-export const effectiveHp = (e: EnemyDef): number => e.hp / (1 - (e.evasion ?? 0)) + (e.regen ?? 0) * REFERENCE_KILL_SECONDS;
+export const effectiveHp = (e: EnemyDef): number =>
+  e.hp / (1 - dodgeChance(e.evasionRating ?? 0, referenceAccuracy(e.level))) + (e.regen ?? 0) * REFERENCE_KILL_SECONDS;
 
 /**
  * A boss's HP is × `bossHpFactor(tier)` on top of `1.08^7`, rewards unchanged: ramps from 1

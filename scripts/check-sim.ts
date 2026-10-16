@@ -241,7 +241,7 @@ const secs = (s: number) => BigInt(Math.round(s * 1e6));
     check(`${e.name}: live fight length matches the formula`, wins.length > 1900 && near(ttk, m.timeToKill, m.timeToKill * 0.1), `${f(ttk)} s vs ${f(m.timeToKill)} s`);
     const swings = fights.flatMap(x => x.events.filter(ev => ev.by === 'you' && !ev.carried));
     const missRate = mean(swings.map(ev => (ev.kind === 'miss' ? 1 : 0)));
-    check(`${e.name}: your swings miss at its evasion`, near(missRate, e.evasion ?? 0, 0.01), f(missRate));
+    check(`${e.name}: your swings miss at its evasion`, near(missRate, m.enemyEvasion, 0.01), f(missRate));
   }
   const dryad = enemy(403);
   const healed = simulateFight(s, matchup(s, dryad), dryad, fightRng(ID, T0)).events.some((ev, i, all) => i > 0 && ev.foeHp > all[i - 1].foeHp);

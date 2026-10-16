@@ -20,15 +20,17 @@ Opens for a character once it has killed **Hrimvald, Frost Giant Jarl** (T3 boss
 
 Tuned in `npm run test:raid` against random T3 characters at level 38 (60-item bags of
 Rare 60% / Epic 30% / Legendary 10%, auto-equipped per role: a Survival (phys) tank, a Healing Staff healer on the Healing
-profile, Damage (phys) and Damage (magic) builds). A fight lasts about 1:25. Win odds:
+profile, Damage (phys) and Damage (magic) builds), averaged over 48 parties. A fight
+lasts about 1:25. This first raid (T3) is **intentionally easier than later ones**: a
+full party nearly always wins, so the raid teaches the format. Win odds:
 
 | Party | Odds |
 |---|---|
-| 4 players | ~93% (random gear; a real tank with Threat gear and a healer do better) |
-| 3 players | ~89% |
-| 3 players + 1 NPC | ~91% |
-| 2 players + 2 NPCs | ~87% |
-| 2 players | ~25% |
+| 4 players | ~98% (random gear; a real tank with Threat gear and a healer do better) |
+| 3 players | ~95% |
+| 3 players + 1 NPC | ~95% |
+| 2 players + 2 NPCs | ~90% |
+| 2 players | ~10–20% |
 
 *Illustrative.* Outcomes are mostly decided by the stats, like solo fights: a given
 party tends to win nearly always or nearly never.

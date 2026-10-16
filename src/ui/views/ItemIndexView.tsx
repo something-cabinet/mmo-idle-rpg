@@ -94,7 +94,7 @@ const num = (v: number) => String(Number(v.toFixed(2)));
 const TIERS = Array.from({ length: MAX_TIER }, (_, i) => i + 1);
 const AFFIX_WEIGHT = AFFIX_STAT_IDS.reduce((sum, id) => sum + (STATS[id as StatId].weight ?? 100), 0);
 /** Stats added after their kin, listed right after it instead of by ID. */
-const AFFIX_AFTER: Partial<Record<number, number>> = { [Stat.BaseCritChance]: Stat.CritChancePct, [Stat.EvasionRatingPct]: Stat.EvasionRating };
+const AFFIX_AFTER: Partial<Record<number, number>> = { [Stat.BaseCritChance]: Stat.CritChancePct, [Stat.EvasionRatingPct]: Stat.EvasionRating, [Stat.AccuracyPct]: Stat.Accuracy };
 const affixRank = (id: number) => (AFFIX_AFTER[id] ?? id - 0.5) + 0.5;
 const AFFIX_ORDER = [...AFFIX_STAT_IDS].sort((a, b) => affixRank(a) - affixRank(b));
 
@@ -165,7 +165,7 @@ function rangeText(stat: UniqueDef['stats'][number], tier: number): string {
   const [rlo, rhi] = uniqueRoll(stat);
   const [lo, hi] = [roundStat(stat.stat, top * rlo), roundStat(stat.stat, top * rhi)];
   const unit = d.percent ? '%' : '';
-  // A range that crosses zero (Lunatic's Wager) reads "−14% to +14%".
+  // A range that crosses zero (Lunatic's Wager) reads "−30% to +30%".
   return lo < 0 ? `${num(lo)}${unit} to +${num(hi)}${unit} ${d.name}` : `+${num(lo)}–${num(hi)}${unit} ${d.name}`;
 }
 

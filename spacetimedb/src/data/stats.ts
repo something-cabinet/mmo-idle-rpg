@@ -38,6 +38,8 @@ export const Stat = {
   Vitality: 28,
   EvasionRatingPct: 29,
   BaseCritChance: 30, // percentage points added to the weapon's base crit, before increased
+  Accuracy: 31, // accuracy rating: lowers the chance your attacks are dodged
+  AccuracyPct: 32,
 } as const;
 export type StatId = (typeof Stat)[keyof typeof Stat];
 
@@ -126,6 +128,8 @@ export const STATS: Record<StatId, StatDef> = {
   28: s(28, 'Vitality', false, 'percent', 40),
   29: s(29, 'Evasion rating', true, 'percent', 25),
   30: s(30, 'Base crit chance', true, 'percent', 5, 25, true, 0.5),
+  31: s(31, 'Accuracy rating', false, 'linear', 10),
+  32: s(32, 'Accuracy rating', true, 'percent', 25),
 };
 
 /** Caps (display units). */
@@ -134,6 +138,19 @@ export const CAPS = {
   penetration: 75,
   lifesteal: 5,
 } as const;
+
+/** Accuracy rating every attacker gets from its level: players before gear, enemies in full. */
+export const accuracyAtLevel = (level: number) => 10 * level;
+/** Accuracy rating % per point of Might (a fraction). */
+export const MIGHT_ACCURACY = 0.0025;
+
+/**
+ * Chance a defender with `evasionRating` dodges an attack from an attacker with
+ * `accuracy`: the same rule for players and enemies, on both sides (combat.md).
+ */
+export function dodgeChance(evasionRating: number, accuracy: number, cap = CAPS.evasion / 100): number {
+  return evasionRating <= 0 ? 0 : Math.min(cap, evasionRating / (evasionRating + Math.max(1, accuracy)));
+}
 
 /**
  * Rounds a value for an item: whole numbers, at least 1 away from zero, except for

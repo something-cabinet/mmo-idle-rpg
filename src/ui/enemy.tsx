@@ -140,12 +140,13 @@ export function EnemyStats({ e, m }: { e: EnemyDef; m: Matchup }) {
             pct(m.enemyMitigation.Magic, 1),
             "After your magic penetration",
           ],
-          ...(e.evasion
+          ...(e.evasionRating
             ? [
                 [
-                  "Dodges chance",
-                  pct(e.evasion),
-                  "Missed attacks deal nothing; heals still land",
+                  "Dodge chance",
+                  pct(m.enemyEvasion),
+                  `Evasion rating ${fmt(e.evasionRating)} against your accuracy rating: rating / (rating + accuracy)
+Raise accuracy (gear, Might) to miss less. Missed attacks deal nothing; heals still land`,
                 ] as [string, string, string],
               ]
             : []),

@@ -128,18 +128,21 @@ An enemy type can carry a trait that gives it character (`EnemyDef` in zones.ts)
 
 | Trait | Effect |
 |---|---|
-| Evasion | Each of your attacks misses at this chance (heals still land, lifesteal doesn't). Your DPS × (1 − evasion). |
+| Evasion | An evasion rating: each of your attacks misses at `dodge(rating, your accuracy)`, the same rule as your evasion (attributes.md, "Evasion"). Heals still land, lifesteal doesn't. Your DPS × (1 − dodge). |
 | Regen | The enemy heals this many HP per second during a fight, up to its max. Time to kill = HP ÷ (your DPS − regen); never killed if regen ≥ DPS. |
 
-A trait is **paid for with HP**, so the enemy stays on its curve for the reference player:
+A trait is **paid for with HP**, so the enemy stays on its curve for the reference player
+(a same-level player without accuracy gear: accuracy `10 × level × (1 + 0.25% × level)`
+from the level's Might):
 
 ```
-effectiveHp = HP / (1 − evasion) + regen × 10 s     // = the curve's HP × 1.08^o
+effectiveHp = HP / (1 − dodge vs reference accuracy) + regen × 10 s     // = the curve's HP × 1.08^o
 ```
 
-Evasion costs every build the same share of its damage (it adds variance and weakens
-on-hit sustain); regen favours strong builds and punishes weak ones, since it takes the
-same HP per second off any DPS. T4 has the first ones (zone-content.md).
+Evasion is countered by accuracy: affixes, crossbows, Might and levels make
+an evasive enemy dodge less, and it adds variance and weakens on-hit sustain. Regen
+favours strong builds and punishes weak ones, since it takes the same HP per second off
+any DPS. T4 has the first ones (zone-content.md).
 
 ### Weaker and stronger enemies
 

@@ -169,6 +169,8 @@ The planned milestones are done. Candidates, to pick with the user:
 
 - Mobile layout (ui.md "Open").
 - More content: zones 3+ (zone-content.md), uniques for T3+.
+- Trading: market and friend gifts, fully designed in docs/design/trading.md. Settle
+  its open questions (bound items, a cap on gifts received) before building.
 - The dev reducer question below, so the smoke test can cover boss wins and crafting.
 - Schema changes must migrate from now on (see Working notes).
 

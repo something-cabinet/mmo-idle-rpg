@@ -190,12 +190,18 @@ climb"), with the boss at its full HP bonus (× 1.3, see "Zone boss").
 
 | Enemy | Level | Damage | Defense | Speed | HP | DPS | Armor / Res | XP | Gold |
 |---|---|---|---|---|---|---|---|---|---|
-| Moonmoth Swarm | 36 | **Magic** | Balanced | 1.5/s | 672 | 39.0 | 90 / 90 | 310 | 78 |
+| Moonmoth Swarm | 36 | **Magic** | Balanced | 1.5/s | 437 | 39.0 | 90 / 90 | 310 | 78 |
 | Owlbear | 38 | Phys | Balanced | 0.7/s | 784 | 45.5 | 95 / 95 | 389 | 97 |
-| Silverbark Dryad | 40 | **Magic** | Warded | 0.9/s | 915 | 53.0 | 40 / 240 | 488 | 122 |
+| Silverbark Dryad | 40 | **Magic** | Warded | 0.9/s | 665 | 53.0 | 40 / 240 | 488 | 122 |
 | Hollow Sentinel | 42 | Phys | Armored | 0.6/s | 1,067 | 61.9 | 252 / 42 | 612 | 153 |
 | Lunar Spellweaver | 44 | **Magic** | Balanced | 1.0/s | 1,245 | 72.2 | 110 / 110 | 768 | 192 |
 | **Boss: Selvara, the Moonless Queen** | 45 | **Magic** | **Armored** | 0.8/s | 2,038 | 90.9 | 270 / 45 | 1,078 | 270 |
+
+- **Traits** (zones.md, "Enemy traits"), each paid for with HP: the **Moonmoth Swarm** is
+  hard to hit (**35% evasion**, HP 672 → 437) and the **Silverbark Dryad** regenerates
+  (**25 HP/s**, HP 915 → 665). The swarm makes fights swingy and starves on-hit sustain
+  (lifesteal); the dryad rewards burst: strong builds kill it faster than before, weak
+  ones (or magic damage into its Warded resistance) slower.
 
 - Three magic enemies of five, so the resistance picked up for Morgra and the T3
   casters matters most here.
@@ -242,7 +248,7 @@ dryad [9, 10, 11, 33, 34, 51], sentinel [1, 7, 39, 37, 20, 50, 55], spellweaver 
 | Silverbark Dryad | Lunar Core, Silverbark Bough |
 | Hollow Sentinel | Moonsteel Ingot, Lunar Core, Moonlit Gem |
 | Lunar Spellweaver | Lunar Core, Mageweave Bolt, Moonlit Gem |
-| Selvara (boss) | Moonsteel Ingot, Lunar Core, Moonlit Gem |
+| Selvara (boss) | Moonlit Gem |
 
 ### Secret area: Moonlight Garden
 

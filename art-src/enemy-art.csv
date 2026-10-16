@@ -1,0 +1,28 @@
+key,name,group,tier
+e-101,Field Rat,greenhollow,1
+e-102,Wild Boar,greenhollow,1
+e-103,Goblin Scout,greenhollow,1
+e-104,Bog Wisp,greenhollow,1
+e-105,Goblin Brute,greenhollow,1
+e-106,"Grubnak, Goblin Chief",greenhollow,1
+e-107,Drowned Bellringer,greenhollow,1
+e-201,Thornback Spider,thornwood,2
+e-202,Bandit Cutthroat,thornwood,2
+e-203,Briar Shaman,thornwood,2
+e-204,Ironbark Treant,thornwood,2
+e-205,Dire Wolf,thornwood,2
+e-206,"Morgra, the Thorn Witch",thornwood,2
+e-301,Ice Harpy,frostmaw-pass,3
+e-302,Kobold Tunneler,frostmaw-pass,3
+e-303,Frost Wraith,frostmaw-pass,3
+e-304,Rimebound Cultist,frostmaw-pass,3
+e-305,Stone Golem,frostmaw-pass,3
+e-306,"Hrimvald, Frost Giant Jarl",frostmaw-pass,3
+e-401,Moonmoth Swarm,moonveil-vale,4
+e-402,Owlbear,moonveil-vale,4
+e-403,Silverbark Dryad,moonveil-vale,4
+e-404,Hollow Sentinel,moonveil-vale,4
+e-405,Lunar Spellweaver,moonveil-vale,4
+e-406,"Selvara, the Moonless Queen",moonveil-vale,4
+e-407,Moonlit Champion,moonveil-vale,4
+e-9001,"Skaldrith, the Rime Wyrm",raid-wyrm-hollow,3

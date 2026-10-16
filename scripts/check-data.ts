@@ -5,7 +5,7 @@ import { LEGENDARIES, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
 import { STATS, Stat, affixRef, curve, roundStat } from '../spacetimedb/src/data/stats';
 import { UNIQUES } from '../spacetimedb/src/data/uniques';
 import { RAIDS, RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
-import { ENEMIES_BY_ID, ZONES, bossHpFactor, bossOf, climb } from '../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, ZONES, bossHpFactor, bossOf, climb, effectiveHp } from '../spacetimedb/src/data/zones';
 import { EFFECTS_BY_ID } from '../spacetimedb/src/data/legendary';
 import { DROP_KINDS, MATERIALS, MATERIAL_KINDS, MATERIAL_KIND_IDS, materialOf, migrateMaterialId } from '../spacetimedb/src/data/materials';
 
@@ -97,8 +97,13 @@ for (const zone of ZONES) {
   if (!avg || zone.tier === 1) continue;
   const hp = 70 * curve('offense', zone.tier) * (1 + 0.15 * zone.tier) * climb(zone.tier);
   const dps = 16 * 1.42 ** (zone.tier - 1) * climb(zone.tier);
-  check(`${zone.name}: average enemy on curve`, Math.abs(avg.hp / hp - 1) < 0.01 && Math.abs(avg.dps / dps - 1) < 0.01,
-    `hp ${avg.hp} vs ${hp.toFixed(0)}, dps ${avg.dps} vs ${dps.toFixed(1)}`);
+  check(`${zone.name}: average enemy on curve`, Math.abs(effectiveHp(avg) / hp - 1) < 0.01 && Math.abs(avg.dps / dps - 1) < 0.01,
+    `hp ${effectiveHp(avg)} vs ${hp.toFixed(0)}, dps ${avg.dps} vs ${dps.toFixed(1)}`);
+  // Traits are paid for with HP: an enemy with one stays on its offset's curve (× 1.08^o).
+  for (const e of zone.enemies.filter(e => (e.evasion || e.regen) && !e.boss && !e.secret)) {
+    const want = hp * 1.08 ** (e.level - 10 * zone.tier);
+    check(`${e.name}: traits paid for with HP`, Math.abs(effectiveHp(e) / want - 1) < 0.01, `effective hp ${effectiveHp(e).toFixed(0)} vs ${want.toFixed(0)}`);
+  }
   // Boss: × 1.08^7, and HP × bossHpFactor (zone-content.md).
   const boss = bossOf(zone)!;
   const bossHp = hp * 1.08 ** 7 * bossHpFactor(zone.tier);

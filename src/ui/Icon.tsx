@@ -49,6 +49,10 @@ const PATHS: Record<string, string> = {
   'a-shrine': 'M3 8h18L12 3 3 8zM5 8v11M19 8v11M10 8v11M14 8v11M3 21h18',
   'a-bell': 'M6 17V11a6 6 0 0 1 12 0v6l2 2H4l2-2zM10 21h4M12 3v2',
   'a-gate': 'M4 21V9a8 8 0 0 1 16 0v12M8 21v-9a4 4 0 0 1 8 0v9M2 21h20',
+  'a-glade': 'M9 22v-5M9 6 4 14h3l-2 3h8l-2-3h3L9 6zM19 3a3.5 3.5 0 1 0 3 5 2.8 2.8 0 0 1-3-5z',
+  'a-well': 'M4 21h16M6 21v-6h12v6M6 18h12M7 15V7M17 15V7M4 7l8-4 8 4M12 7v4M10.5 11h3v2h-3z',
+  'a-dome': 'M3 21h18M5 21v-8a7 7 0 0 1 14 0v8M12 6v15M5 15h14M12 3v3',
+  'a-flower': 'M12 12.5V22M12 18c-3 0-5-2-5-3 3 0 5 1 5 3zM13.5 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 1 1 3 0zM12 5.5c-1.5-1-1.5-3.5 0-4 1.5.5 1.5 3 0 4zM12 8.5c-1.5 1-1.5 3.5 0 4 1.5-.5 1.5-3 0-4zM10.5 7c-1-1.5-3.5-1.5-4 0 .5 1.5 3 1.5 4 0zM13.5 7c1 1.5 3.5 1.5 4 0-.5-1.5-3-1.5-4 0z',
 
   // Item glyphs for the bag (placeholders until there is item art).
   'i-sword': 'M20 4h-4L6 14l4 4L20 8V4zM5 13l6 6M3 21l4-4',

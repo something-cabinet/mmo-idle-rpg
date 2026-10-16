@@ -71,6 +71,15 @@ b-8-t6,Elderwood Bow,bow,6
 b-8-t7,Ghostwood Bow,bow,7
 b-8-t8,Dragonwood Bow,bow,8
 b-8-t9,Worldroot Bow,bow,9
+b-11-t1,Driftwood Crossbow,crossbow,1
+b-11-t2,Gnarled Crossbow,crossbow,2
+b-11-t3,Heartoak Crossbow,crossbow,3
+b-11-t4,Silverbark Crossbow,crossbow,4
+b-11-t5,Ironwood Crossbow,crossbow,5
+b-11-t6,Elderwood Crossbow,crossbow,6
+b-11-t7,Ghostwood Crossbow,crossbow,7
+b-11-t8,Dragonwood Crossbow,crossbow,8
+b-11-t9,Worldroot Crossbow,crossbow,9
 b-9-t1,Driftwood Fire Staff,fire-staff,1
 b-9-t2,Gnarled Fire Staff,fire-staff,2
 b-9-t3,Heartoak Fire Staff,fire-staff,3
@@ -89,15 +98,6 @@ b-10-t6,Elderwood Healing Staff,healing-staff,6
 b-10-t7,Ghostwood Healing Staff,healing-staff,7
 b-10-t8,Dragonwood Healing Staff,healing-staff,8
 b-10-t9,Worldroot Healing Staff,healing-staff,9
-b-11-t1,Driftwood Crossbow,crossbow,1
-b-11-t2,Gnarled Crossbow,crossbow,2
-b-11-t3,Heartoak Crossbow,crossbow,3
-b-11-t4,Silverbark Crossbow,crossbow,4
-b-11-t5,Ironwood Crossbow,crossbow,5
-b-11-t6,Elderwood Crossbow,crossbow,6
-b-11-t7,Ghostwood Crossbow,crossbow,7
-b-11-t8,Dragonwood Crossbow,crossbow,8
-b-11-t9,Worldroot Crossbow,crossbow,9
 b-20-t1,Rusted Shield,shield,1
 b-20-t2,Bogiron Shield,shield,2
 b-20-t3,Dwarven Shield,shield,3
@@ -326,3 +326,8 @@ u-10,Avalanche Staff,uniques,3
 u-12,Wyrmscale Aegis,uniques,3
 u-13,Hoardkeeper's Censer,uniques,3
 u-14,Skaldrith's Fang,uniques,3
+u-15,Moonlight Greatsword,uniques,4
+u-16,Waxing Crescent,uniques,4
+u-17,Moonshadow Jerkin,uniques,4
+u-18,Tear of the Moon,uniques,4
+u-19,Lunatic's Wager,uniques,4

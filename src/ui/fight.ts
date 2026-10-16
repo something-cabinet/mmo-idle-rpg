@@ -85,7 +85,8 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     // New events since the last frame; after a pause, only the latest few.
     if (lastT >= 0 && t > lastT) {
       for (const e of fight.events.slice(0, i).filter(e => e.t > lastT).slice(-4)) {
-        if (e.by === 'you') float('enemy', e.kind === 'crit' ? `${fmt(e.damage)}!` : fmt(e.damage), e.carried ? 'hit carry' : e.kind);
+        if (e.kind === 'miss') float('enemy', 'Miss', 'dodge');
+        else if (e.by === 'you') float('enemy', e.kind === 'crit' ? `${fmt(e.damage)}!` : fmt(e.damage), e.carried ? 'hit carry' : e.kind);
         else if (e.kind === 'dodge') float('you', 'Dodge', 'dodge');
         // Bulwark: a blocked hit; Second Skin: a hit the shield took (HP unchanged shows as "Shield").
         else float('you', `${e.blocked ? 'Block ' : ''}-${fmt(e.damage)}`, e.blocked ? 'block' : e.shield !== undefined && e.youHp === prevHp(e) ? 'shielded' : 'taken');

@@ -226,5 +226,30 @@ const secs = (s: number) => BigInt(Math.round(s * 1e6));
   check('… offline only', online.bonusKills === undefined);
 }
 
+// ---------------------------------------------------------------- enemy traits
+
+{
+  // Moonmoth Swarm dodges your attacks; Silverbark Dryad regenerates.
+  const t4 = gear({ MainHand: item(1, 4), Chest: item(35, 4, [[Stat.MaxHp, 2000]]), Feet: item(37, 4) });
+  const s = combatStats(40, t4);
+  for (const id of [401, 403]) {
+    const e = enemy(id);
+    const m = matchup(s, e);
+    const fights = Array.from({ length: 2000 }, (_, i) => simulateFight(s, m, e, fightRng(ID, BigInt(i * 7919))));
+    const wins = fights.filter(x => x.outcome === 'kill');
+    const ttk = mean(wins.map(x => x.end - x.walk));
+    check(`${e.name}: live fight length matches the formula`, wins.length > 1900 && near(ttk, m.timeToKill, m.timeToKill * 0.1), `${f(ttk)} s vs ${f(m.timeToKill)} s`);
+    const swings = fights.flatMap(x => x.events.filter(ev => ev.by === 'you' && !ev.carried));
+    const missRate = mean(swings.map(ev => (ev.kind === 'miss' ? 1 : 0)));
+    check(`${e.name}: your swings miss at its evasion`, near(missRate, e.evasion ?? 0, 0.01), f(missRate));
+  }
+  const dryad = enemy(403);
+  const healed = simulateFight(s, matchup(s, dryad), dryad, fightRng(ID, T0)).events.some((ev, i, all) => i > 0 && ev.foeHp > all[i - 1].foeHp);
+  check('Silverbark Dryad heals between hits', healed);
+  const noRegen = matchup(s, { ...dryad, regen: 0 });
+  check('… and takes longer to kill than without its regen', matchup(s, dryad).timeToKill > noRegen.timeToKill);
+  check('an enemy out-healing your damage is never killed', matchup(s, { ...dryad, regen: 1e6 }).timeToKill === Infinity);
+}
+
 console.log(failed ? `\n${failed} failed` : '\nall passed');
 process.exit(failed ? 1 : 0);

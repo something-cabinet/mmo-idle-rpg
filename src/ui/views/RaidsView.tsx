@@ -14,6 +14,7 @@ import { call } from '../../store';
 import { nowMicros } from '../clock';
 import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
 import { DefTag, DmgTag, EnemyStats } from '../enemy';
+import { EnemyArt } from '../enemyArt';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
 import { ItemCard, rarityCls, rarityLabel } from '../items';
@@ -143,6 +144,7 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
           {!unlocked && <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} to unlock</div>}
         </div>
         <div className="raid-boss">
+          <EnemyArt enemyId={boss.id} className="raid-boss-art" />
           <div className="foe-name"><Icon name="skull" className="boss" />{boss.name}</div>
           <div className="tags">
             <span className="tag">Lv {boss.level}</span>

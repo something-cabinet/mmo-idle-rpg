@@ -7,7 +7,8 @@ spacetime.local.json
 .env
 .env.development
 .env.production
-# Item art work files (raw images, masters): kept out of git, see scripts/item-art.ts.
-# The item list is committed.
+# Item art work files (raw images, masters): kept out of git, see scripts/art-lib.ts.
+# The item and enemy lists are committed.
 art-src/*
 !art-src/item-art.csv
+!art-src/enemy-art.csv

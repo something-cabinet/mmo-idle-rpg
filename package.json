@@ -30,7 +30,11 @@
     "art:list": "tsx scripts/item-art.ts list",
     "art:cut": "tsx scripts/item-art.ts cut",
     "art:build": "tsx scripts/item-art.ts build",
-    "art:gen": "tsx scripts/item-art.ts gen"
+    "art:gen": "tsx scripts/item-art.ts gen",
+    "art:enemy:list": "tsx scripts/enemy-art.ts list",
+    "art:enemy:cut": "tsx scripts/enemy-art.ts cut",
+    "art:enemy:build": "tsx scripts/enemy-art.ts build",
+    "art:enemy:gen": "tsx scripts/enemy-art.ts gen"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

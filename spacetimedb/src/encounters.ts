@@ -41,7 +41,8 @@ const CACHE_RARITY: readonly [RarityName, number][] = [
 ];
 
 /** The elite version of `e`. */
-export const eliteOf = (e: EnemyDef): EnemyDef => ({ ...e, name: `Elite ${e.name}`, hp: e.hp * ELITE_MULT, dps: e.dps * ELITE_MULT });
+export const eliteOf = (e: EnemyDef): EnemyDef =>
+  ({ ...e, name: `Elite ${e.name}`, hp: e.hp * ELITE_MULT, dps: e.dps * ELITE_MULT, ...(e.regen && { regen: e.regen * ELITE_MULT }) });
 
 export interface EncounterRoll {
   kind: EncounterKind;

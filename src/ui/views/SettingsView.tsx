@@ -6,6 +6,7 @@ import { AccountControls, CardHead, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { floatsOn, setFloats } from '../fight';
 import { itemArtOn, setItemArt } from '../itemArt';
+import { enemyArtOn, setEnemyArt } from '../enemyArt';
 import { DevPanel } from '../DevPanel';
 import {
   CUSTOM_GEAR_STATS,
@@ -107,6 +108,7 @@ export function SettingsView({ s }: { s: Snapshot }) {
   const [floats, setFloatsState] = useState(floatsOn);
   const [numbers, setNumbers] = useState(getNumberFormat);
   const [art, setArtState] = useState(itemArtOn);
+  const [enemyArt, setEnemyArtState] = useState(enemyArtOn);
   return (
     <>
       <ViewHeader title="Settings" icon="settings" />
@@ -142,6 +144,18 @@ export function SettingsView({ s }: { s: Snapshot }) {
               }}
             />
             Item art (off: simple icons)
+          </label>
+          <label className="check">
+            <input
+              type="checkbox"
+              checked={enemyArt}
+              onChange={e => {
+                setEnemyArt(e.target.checked);
+                setEnemyArtState(e.target.checked);
+                bumpVersion();
+              }}
+            />
+            Enemy art (off: simple icons)
           </label>
           <div className="card-head" style={{ marginTop: 12 }}><h2>Numbers</h2></div>
           <div className="seg">

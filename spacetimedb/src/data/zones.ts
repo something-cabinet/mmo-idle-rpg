@@ -30,6 +30,10 @@ export interface EnemyDef {
   secret?: boolean;
   /** × the chance of Rare and better drops (Unique included), on top of `rewardScale`. Default 1. */
   rareDropMult?: number;
+  /** Trait: chance each of your attacks misses (0–1). Paid for with HP (`effectiveHp`). */
+  evasion?: number;
+  /** Trait: HP the enemy heals per second in a fight. Paid for with HP (`effectiveHp`). */
+  regen?: number;
 }
 
 /** An area on the zone's map (zones.md, "Zone map"). Every area can be fought in; it shows as ??? until visited. */
@@ -198,12 +202,12 @@ export const ZONES: ZoneDef[] = [
     name: 'Moonveil Vale',
     blurb: 'A hidden elven valley of silver woods and moonlit ruins, under a moon gone dark.',
     enemies: [
-      { id: 401, name: 'Moonmoth Swarm', level: 36, damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 672, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
+      { id: 401, name: 'Moonmoth Swarm', level: 36, damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 437, evasion: 0.35, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
       { id: 402, name: 'Owlbear', level: 38, damageType: 'Physical', defense: 'Balanced', speed: 0.7, hp: 784, dps: 45.5, armor: 95, resistance: 95, xp: 389, gold: 97, drops: T4_DROPS.owlbear, materials: ['Hide', 'Reagent'] },
-      { id: 403, name: 'Silverbark Dryad', level: 40, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 915, dps: 53, armor: 40, resistance: 240, xp: 488, gold: 122, drops: T4_DROPS.dryad, materials: ['Core', 'Wood'] },
+      { id: 403, name: 'Silverbark Dryad', level: 40, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 665, regen: 25, dps: 53, armor: 40, resistance: 240, xp: 488, gold: 122, drops: T4_DROPS.dryad, materials: ['Core', 'Wood'] },
       { id: 404, name: 'Hollow Sentinel', level: 42, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1067, dps: 61.9, armor: 252, resistance: 42, xp: 612, gold: 153, drops: T4_DROPS.sentinel, materials: ['Metal', 'Core', 'Gem'] },
       { id: 405, name: 'Lunar Spellweaver', level: 44, damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 1245, dps: 72.2, armor: 110, resistance: 110, xp: 768, gold: 192, drops: T4_DROPS.spellweaver, materials: ['Core', 'Cloth', 'Gem'] },
-      { id: 406, name: 'Selvara, the Moonless Queen', level: 45, damageType: 'Magic', defense: 'Armored', speed: 0.8, hp: 2038, dps: 90.9, armor: 270, resistance: 45, xp: 1078, gold: 270, drops: all(T4_DROPS), materials: ['Metal', 'Core', 'Gem'], boss: true },
+      { id: 406, name: 'Selvara, the Moonless Queen', level: 45, damageType: 'Magic', defense: 'Armored', speed: 0.8, hp: 2038, dps: 90.9, armor: 270, resistance: 45, xp: 1078, gold: 270, drops: all(T4_DROPS), materials: ['Gem'], boss: true },
       // Secret (Moonlight Garden): T5 strength (a T5 +2 enemy, about as tough as Selvara) hidden in T4.
       // Pays like the Bellringer: ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
       { id: 407, name: 'Moonlit Champion', level: 52, damageType: 'Magic', defense: 'Balanced', speed: 0.5, hp: 1961, dps: 92.3, armor: 130, resistance: 130, xp: 2190, gold: 585, drops: [1, 7, 5, 31, 39, 56], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5 },
@@ -243,6 +247,16 @@ export const areaIndexOf = (zone: ZoneDef, enemyId: number) => zone.areas.findIn
  */
 export const CLIMB_FACTOR = 1.05;
 export const climb = (tier: number) => CLIMB_FACTOR ** (tier - 1);
+
+/** The reference player's time to kill (zones.md, "Design targets"), which prices the regen trait. */
+export const REFERENCE_KILL_SECONDS = 10;
+
+/**
+ * An enemy's HP as the reference player feels it: evasion stretches it by 1 / (1 − evasion),
+ * regen adds what it heals over a reference kill. Traits are paid for with HP, so this stays
+ * on the curve (zones.md, "Enemy traits").
+ */
+export const effectiveHp = (e: EnemyDef): number => e.hp / (1 - (e.evasion ?? 0)) + (e.regen ?? 0) * REFERENCE_KILL_SECONDS;
 
 /**
  * A boss's HP is × `bossHpFactor(tier)` on top of `1.08^7`, rewards unchanged: ramps from 1

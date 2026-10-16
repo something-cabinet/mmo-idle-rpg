@@ -122,6 +122,25 @@ enemyResist    = 2.5 × level × profile.resist
 | Armored | 2.4 | 0.4 | 55% / 17% |
 | Warded | 0.4 | 2.4 | 17% / 55% |
 
+### Enemy traits
+
+An enemy type can carry a trait that gives it character (`EnemyDef` in zones.ts):
+
+| Trait | Effect |
+|---|---|
+| Evasion | Each of your attacks misses at this chance (heals still land, lifesteal doesn't). Your DPS × (1 − evasion). |
+| Regen | The enemy heals this many HP per second during a fight, up to its max. Time to kill = HP ÷ (your DPS − regen); never killed if regen ≥ DPS. |
+
+A trait is **paid for with HP**, so the enemy stays on its curve for the reference player:
+
+```
+effectiveHp = HP / (1 − evasion) + regen × 10 s     // = the curve's HP × 1.08^o
+```
+
+Evasion costs every build the same share of its damage (it adds variance and weakens
+on-hit sustain); regen favours strong builds and punishes weak ones, since it takes the
+same HP per second off any DPS. T4 has the first ones (zone-content.md).
+
 ### Weaker and stronger enemies
 
 A fixed ±5 levels is a big gap at T1 (5 vs 15) but a small one at T9 (85 vs 95), so

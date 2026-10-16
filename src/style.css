@@ -991,6 +991,30 @@ select:focus,
   width: 30px;
   height: 30px;
 }
+/* Enemy art (enemyArt.tsx): a bigger frame than the glyph's. */
+.portrait:has(.enemy-art) {
+  width: 104px;
+  height: 104px;
+}
+.enemy-art {
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.portrait .enemy-art {
+  width: 96px;
+  height: 96px;
+}
+.foe-art {
+  flex: none;
+  width: 44px;
+  height: 44px;
+}
+.raid-boss-art {
+  display: block;
+  width: 96px;
+  height: 96px;
+  margin-bottom: 6px;
+}
 .portrait.you {
   color: var(--info);
 }
@@ -1175,6 +1199,7 @@ select:focus,
 .zmap-1 { --land: #5f9e4f; }
 .zmap-2 { --land: #3f6b4a; }
 .zmap-3 { --land: #8fb3d9; }
+.zmap-4 { --land: #6f74c9; }
 .zmap.locked {
   filter: grayscale(0.8);
   opacity: 0.7;

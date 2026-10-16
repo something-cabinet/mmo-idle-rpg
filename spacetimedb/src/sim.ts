@@ -24,8 +24,9 @@ export interface FightEvent {
   t: number;
   /** Who acted: your swing hits the enemy (and heals you); the enemy's hits you. */
   by: 'you' | 'enemy';
-  kind: 'hit' | 'crit' | 'dodge';
-  /** Damage dealt (0 for a dodge). */
+  /** `miss`: an evasive enemy dodged your swing; `dodge`: you dodged the enemy's. */
+  kind: 'hit' | 'crit' | 'miss' | 'dodge';
+  /** Damage dealt (0 for a miss or a dodge). */
   damage: number;
   /** HP you got back with this event: heal, lifesteal and regen since the previous event. */
   healed: number;
@@ -59,7 +60,8 @@ export interface Fight {
  * One fight: a walk, then both sides swing on their own timers until one drops.
  * Per swing, the averages are `matchup`'s: your hit is its DPS split over your
  * attacks and crits, heals its HPS per attack, the enemy's hit its DPS after your
- * mitigation, dodged at your evasion; regen ticks between events. Swing timers start
+ * mitigation, dodged at your evasion; regen (yours and the enemy's) ticks between
+ * events, and an evasive enemy dodges your swings (heals still land). Swing timers start
  * half a period in, so on average a fight lasts what the formulas say. Unlike the
  * formulas, HP can't go above max (overhealing is lost) and damage varies ±10%.
  * Executioner doubles your hits once the enemy is below its threshold; Second Wind
@@ -79,11 +81,14 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const yourPeriod = src && m.dps > 0 ? 1 / src.attacksPerSec : Infinity;
   const foePeriod = 1 / enemy.speed;
   const crit = Math.min(1, src?.critChance ?? 0);
+  const evade = enemy.evasion ?? 0;
+  const foeRegen = enemy.regen ?? 0;
   // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = DPS.
-  // Moonlight's wave and Waxing Moon's average are in `m.dps`; take them out, then add them per swing.
+  // Moonlight's wave, Waxing Moon's average and the enemy's evasion are in `m.dps`; take
+  // them out, then apply them per swing.
   const moonlight = s.effects.has(Effect.Moonlight);
   const waxing = s.effects.has(Effect.WaxingMoon);
-  const hit = src && m.dps > 0 ? m.dps / src.attacksPerSec / m.critMult / m.waxing / (moonlight ? MOONLIGHT_MULT : 1) : 0;
+  const hit = src && m.dps > 0 ? m.dps / (1 - evade) / src.attacksPerSec / m.critMult / m.waxing / (moonlight ? MOONLIGHT_MULT : 1) : 0;
   const critX = crit > 0 && src ? 1 + (m.critMult - 1) / crit : 1;
   const healPerSwing = src && m.hps > 0 ? m.hps / src.attacksPerSec : 0;
   const enemyHit = m.enemyHit;
@@ -123,19 +128,22 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     if (t > walk + MAX_FIGHT_SECONDS) return done(walk + MAX_FIGHT_SECONDS, 'stalemate');
     const before = youHp;
     youHp = Math.min(s.maxHp, youHp + s.regen * (t - now));
+    foeHp = Math.min(enemy.hp, foeHp + foeRegen * (t - now));
     now = t;
     if (nextYou <= nextFoe) {
       nextYou += yourPeriod;
-      const isCrit = rng() < crit;
+      // Rolled only against an evasive enemy, so other fights replay as before.
+      const missed = evade > 0 && rng() < evade;
+      const isCrit = !missed && rng() < crit;
       const doubled = foeHp < executeBelow || foeHp > bullyAbove ? 2 : 1;
       const rage = berserk > 0 ? 1 + (berserk * (s.maxHp - youHp)) / s.maxHp : 1;
       swings += 1;
       const wave = moonlight && swings % MOONLIGHT_EVERY === 0;
-      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1);
+      const damage = missed ? 0 : hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1);
       ambush = 1;
       foeHp = Math.max(0, foeHp - damage);
       youHp = Math.min(s.maxHp, youHp + healPerSwing + s.lifesteal * damage);
-      events.push({ t, by: 'you', kind: isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp, ...(wave && { wave: true }), ...shieldNote() });
+      events.push({ t, by: 'you', kind: missed ? 'miss' : isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp, ...(wave && !missed && { wave: true }), ...shieldNote() });
       if (foeHp <= 0) return done(t, 'kill');
     } else {
       nextFoe += foePeriod;

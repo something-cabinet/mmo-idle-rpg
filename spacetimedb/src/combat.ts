@@ -316,7 +316,7 @@ export interface Matchup {
   enemyHit: number;
   /** Second Skin's shield at the start of each fight, HP. */
   shield: number;
-  /** Your damage per second after the enemy's mitigation. */
+  /** Your damage per second after the enemy's mitigation and evasion (before its regen). */
   dps: number;
   /** Waxing Moon's average damage multiplier over this fight (1 without it); already in `dps`. */
   waxing: number;
@@ -360,6 +360,8 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     dps += perHit * src.attacksPerSec * cm * wave;
     hps += src.heal * src.attacksPerSec * src.critMult; // solo: heals land on yourself
   }
+  // An evasive enemy dodges a share of your attacks; heals still land.
+  dps *= 1 - (e.evasion ?? 0);
   const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
   // Waxing Moon: hits grow through the fight. `x` average hits kill at full strength;
   // waxingAttacks(x) is how many it takes, so the fight's average multiplier is x / that.
@@ -392,14 +394,16 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   const shield = amount(Effect.SecondSkin) * s.maxHp;
   const shieldTime = shield > 0 && incoming > 0 ? shield / incoming : 0;
 
-  let timeToKill = dps > 0 ? e.hp / dps : Infinity;
+  // A regenerating enemy heals while you fight it: only damage above its regen counts.
+  const netDps = dps - (e.regen ?? 0);
+  let timeToKill = netDps > 0 ? e.hp / netDps : Infinity;
   // Berserker: damage × (1 + k × share of max HP missing). Missing HP grows at
   // `netIncoming` once the shield is gone, so the enemy's HP falls as a quadratic in time.
   const berserk = 10 * amount(Effect.Berserker);
-  if (berserk > 0 && dps > 0 && netIncoming > 0 && timeToKill > shieldTime) {
+  if (berserk > 0 && netDps > 0 && netIncoming > 0 && timeToKill > shieldTime) {
     const alpha = (berserk * netIncoming) / (2 * s.maxHp);
-    const hpLeft = e.hp - dps * shieldTime;
-    timeToKill = shieldTime + (Math.sqrt(1 + (4 * alpha * hpLeft) / dps) - 1) / (2 * alpha);
+    const hpLeft = e.hp - netDps * shieldTime;
+    timeToKill = shieldTime + (Math.sqrt(netDps ** 2 + 4 * alpha * dps * hpLeft) - netDps) / (2 * alpha * dps);
   }
   // Executioner (the last share of the enemy's HP) and Bully (the first share) take
   // double damage, so those parts go in half the time.

@@ -5,6 +5,7 @@ import { call, useSticky } from '../../store';
 import { fmt } from '../format';
 import { Icon } from '../Icon';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
+import { EnemyArt } from '../enemyArt';
 import { ViewHeader } from '../shared';
 import { UNKNOWN, areaRevealed, areaSecret, enemyKnown, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
 import { statsIn, type Snapshot } from '../snapshot';
@@ -22,6 +23,8 @@ const AREA_ICONS: Record<number, string> = {
   15: 'a-bell',
   21: 'a-road', 22: 'a-tree', 23: 'a-den',
   31: 'a-mountain', 32: 'a-shrine', 33: 'a-gate',
+  41: 'a-glade', 42: 'a-well', 43: 'a-dome',
+  45: 'a-flower',
 };
 
 /**
@@ -189,6 +192,7 @@ function Foe({ s, z, e, open, toggle }: { s: Snapshot; z: ZoneDef; e: EnemyDef; 
     <li className={`foe${active ? ' active' : ''}${e.boss ? ' boss' : ''}${open ? ' open' : ''}`}>
       <div className="foe-row" onClick={ev => !(ev.target as HTMLElement).closest('button') && toggle()}>
         <Icon name="chevron" className="caret" />
+        {known && <EnemyArt enemyId={e.id} className="foe-art" />}
         <div className="foe-info">
           <div className="foe-name">
             {e.boss && <Icon name="skull" className="boss" />}

@@ -8,6 +8,7 @@ import { RARITIES, restrictsAffixes, restrictsTypes } from '../../../spacetimedb
 import { areaIndexOf } from '../../../spacetimedb/src/data/zones';
 import { nowMicros } from '../clock';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
+import { EnemyArt } from '../enemyArt';
 import { startFight, stopFight } from '../fight';
 import { walkLine } from '../flavor';
 import { foundName } from '../discovery';
@@ -180,7 +181,7 @@ const FightScene = memo(
       <div className="scene card" id="scene">
         {fighter('you', <Icon name="user" />, <>{s.row.name} <span className="muted">Lv {s.level}</span></>)}
         <div className="versus">VS</div>
-        {fighter('enemy', <Icon name={e.boss ? 'skull' : 'swords'} />, <>{e.name} <span className="muted">Lv {e.level}</span></>)}
+        {fighter('enemy', <EnemyArt enemyId={e.id} fallback={<Icon name={e.boss ? 'skull' : 'swords'} />} />, <>{e.name} <span className="muted">Lv {e.level}</span></>)}
         <div className="scene-flavor" id="scene-flavor" />
         <div className="scene-status" id="scene-status" />
       </div>

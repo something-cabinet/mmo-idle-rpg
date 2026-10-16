@@ -4,18 +4,22 @@
 // then the style every enemy shares, so a zone's enemies read as one family and every zone as
 // one game. The pipeline itself (gen, cut, build) is scripts/art-lib.ts:
 //
+// Raid banners (wide scenes of a raid boss in its lair) reuse RAID_REGIONS and LOOKS: scripts/banner-art.ts.
+//
 //   npm run art:enemy:list   writes art-src/enemy-art.csv (every portrait the game expects, committed)
 //   npm run art:enemy:gen -- [group|key ...] [--cut] [--dry-run] [--model <id>] [--ref <key>[,<key>]]
 //                            a group (greenhollow, thornwood, ..., raid-wyrm-hollow) or a key (e-101);
 //                            --ref defaults to ENEMY_STYLE_REF in .env
 //   npm run art:enemy:cut    raw images into masters, art-src/enemies/preview.html
 //   npm run art:enemy:build -- [group|key ...]
-//                            src/assets/enemies/<key>.webp (64 px grid, 192 px file)
+//                            src/assets/enemies/<key>.webp (as drawn, 384 px file)
 // art-src/enemies/ is not in git; art-src/enemy-art.csv is.
 //
-// Resolution: a 64 px pixel grid, every pixel 3x3 in a 192 px file. Items use 48 px; a creature
-// needs more pixels than an item for a face and a pose. The fight scene shows it at 96 px
-// (crisp on 2x screens), Zones lists at 44 px; pixelated scaling keeps the blocks hard at any size.
+// Resolution: kept as the model draws it (its own pixel blocks, about 8 px in a 1024 px image),
+// never put on a grid of ours: that resamples the blocks off their grid and blurs them. Only
+// shrunk once to a 384 px file, at least twice the largest size the game shows (the raid card's
+// 168 px; the fight scene 96, Zones 44), so the browser only ever shrinks it further.
+// The prompt still asks for a 64 px grid: it sets how chunky the model draws.
 import { ZONES } from '../spacetimedb/src/data/zones';
 import { RAIDS } from '../spacetimedb/src/data/raids';
 import { runArt, type Art } from './art-lib';
@@ -41,7 +45,7 @@ const RULES =
   'Solid flat magenta background (#FF00FF) everywhere, no gradient.';
 
 /** A region's shared look: every enemy of the zone takes all of it, so the zone reads as one family. */
-interface Region {
+export interface Region {
   /** Where it lives and what the place feels like. */
   setting: string;
   /** The region's colors, used across every enemy (each adds its own on top). */
@@ -81,17 +85,26 @@ const REGIONS: Record<number, Region> = {
 };
 
 /** By raid ID (data/raids.ts): a raid boss takes its own region. */
-const RAID_REGIONS: Record<number, Region> = {
+export const RAID_REGIONS: Record<number, Region> = {
   1: {
     setting: 'Wyrm Hollow, a frozen cavern below the dwarven hold, heaped with the hoard of a dead dwarf king',
     palette: 'glacier blue, frost white, deep slate, hoard gold',
     motif: 'frost and treasure: ice crusted on scales and horns, gold coins and a dwarven crown caught in the ice',
-    menace: 'a raid boss for a party of four: ancient, colossal and awe-inspiring, the most detailed sprite of its tier',
+    menace: 'a raid boss for a party of four: ancient, colossal and awe-inspiring, the most detailed art of its tier',
+  },
+  // Umbriel turns between Full Moon (silver, armored) and New Moon (void, warded): the art is split the same way.
+  2: {
+    setting: 'The Drowned Moon, the flooded heart of the great moonwell beneath the Moonless Throne: pale elven stairs and broken ' +
+      'silver arches sinking into black still water, a narrow shaft far above open to a starless sky',
+    palette: 'moonlight silver, pale blue-white, abyssal black-blue, dark teal',
+    motif: 'eclipse: everything split between bright silver moonlight and a starry black void, water dripping and running off ' +
+      'every surface, the crescent and elven filigree of Moonveil Vale',
+    menace: 'a raid boss for a party of four: ancient, colossal and awe-inspiring, the most detailed art of its tier',
   },
 };
 
 /** What each enemy is, by enemy ID: the free part of the prompt. */
-const LOOKS: Record<number, string> = {
+export const LOOKS: Record<number, string> = {
   // Greenhollow
   101: 'a fat oversized field rat with mangy brown fur, beady red eyes, a long bald tail and a wheat stalk in its teeth',
   102: 'a bristly dark brown wild boar with curved yellowed tusks, head lowered to charge, mud caked on its legs',
@@ -133,6 +146,17 @@ const LOOKS: Record<number, string> = {
   // Raids
   9001: 'Skaldrith the rime wyrm: an ancient coiled ice dragon with pale blue-white scales, long frost-crusted horns, ' +
     'jagged icicle spines, half-folded wings, crouched over a heap of gold coins',
+  // An abyssal angler that took the moon for its lure: the night it fell into the moonwell, the moon went out.
+  // Its uniques are pieces of it (item-art.ts UNIQUE_LOOKS 20-22): the gill plate and eclipse eye (Eclipse
+  // Aegis), the lure (Lantern of the Drowned Moon), a fang (Umbriel's Edge).
+  9002: 'Umbriel the eclipse: a colossal abyssal anglerfish leviathan rearing up out of the deep, jaws wide open, ' +
+    'its body split down the middle: the front and left side armored in bright silver-white moonstone scales (full moon), ' +
+    'the back and right side smooth black void skin speckled with tiny white stars (new moon); ' +
+    'a huge underbite of long curved needle-like silver fangs, one great round eye like an eclipse: a black disc ringed by a thin silver corona, ' +
+    'a broad armored silver gill plate with curved ridges behind its jaw, ' +
+    'long webbed fins like torn crescent sails, a thick tail coiling below it; ' +
+    'from its brow a long fleshy ridged dark teal stalk curves forward and dangles its lure: a bright white cracked shard of the stolen moon, ' +
+    'water streaming from its jaws and fins',
 };
 
 /** Normal enemies, the zone's boss, its secret enemy. */
@@ -176,16 +200,15 @@ function arts(): { arts: Art[]; missing: string[] } {
   return { arts: out, missing };
 }
 
-await runArt(
+// Run only as the script: banner-art.ts imports the regions and looks.
+if (process.argv[1]?.replace(/\\/g, '/').endsWith('scripts/enemy-art.ts')) await runArt(
   {
     title: 'Enemy art',
     src: 'art-src/enemies',
     csv: '../enemy-art.csv',
     out: 'src/assets/enemies',
-    pixels: PIXELS,
-    scale: 3,
+    shape: { kind: 'cutout', fill: 0.88, size: 384 },
     colors: 32,
-    fill: 0.88,
     arts,
     common: `Style: ${STYLE}. ${RULES}`,
     refRules:

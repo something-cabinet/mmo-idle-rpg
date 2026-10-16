@@ -93,6 +93,7 @@ export type ChatMessage = __Infer<typeof ChatMessage>;
 export const DamageType = __t.enum("DamageType", {
   Physical: __t.unit(),
   Magic: __t.unit(),
+  Split: __t.unit(),
 });
 export type DamageType = __Infer<typeof DamageType>;
 

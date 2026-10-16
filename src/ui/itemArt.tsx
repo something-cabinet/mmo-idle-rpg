@@ -3,7 +3,7 @@
 //   variant:   b-<baseId>           (one fixed name)
 //   unique:    u-<uniqueId>
 // One 144 px file (a 48 px pixel grid), <key>.webp, for tiles and lists alike. Made from
-// the masters in art-src/ by `npm run art:build`; `npm run art:list` lists what
+// the masters in art-src/items/ by `npm run art:build`; `npm run art:list` lists what
 // is missing. Missing art shows the glyph, so gaps stay visible.
 
 import { useState } from 'react';

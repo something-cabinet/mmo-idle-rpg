@@ -2,7 +2,7 @@
 // legendary.md, crafting.md). Pure: shared by server and client, and every roll
 // comes from a seeded generator so a settle is reproducible.
 
-import { TYPE_LIST, base, baseType, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
+import { TYPE_LIST, base, baseType, implicitValue, weaponValues, type HealTarget, type WeaponDamage } from './data/bases';
 import { LEGENDARIES } from './data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, fromStored, roundStat, toStored, type StatDef, type StatId } from './data/stats';
 import { uniquePool, uniqueRoll, type UniqueDef } from './data/uniques';
@@ -109,7 +109,7 @@ export interface NewItem {
   temper: number;
   weapon:
     | {
-        damageType: { tag: DamageType };
+        damageType: { tag: WeaponDamage };
         hit: bigint;
         speedMilli: number;
         baseCritBp: number;

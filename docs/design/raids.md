@@ -35,6 +35,56 @@ full party nearly always wins, so the raid teaches the format. Win odds:
 *Illustrative.* Outcomes are mostly decided by the stats, like solo fights: a given
 party tends to win nearly always or nearly never.
 
+## Raid 2: The Drowned Moon (T4)
+
+Opens for a character once it has killed **Selvara, the Moonless Queen** (T4 boss).
+*"Beneath the Moonless Throne the great moonwell runs deep. Something fell into it the
+night the moon went out, and it is still breathing."* Selvara didn't lose the moon: she
+pulled it down to keep it, and it drowned in her moonwell, half silver light and half
+void, and still alive.
+
+| | |
+|---|---|
+| Boss | Umbriel, the Eclipse: Lv 50, 0.8 attacks/s, each at one fighter picked by threat |
+| HP | 38,000 |
+| Attack | 140 DPS; its damage type follows the phase |
+| **Lunar Phases** (passive) | every 20 s it turns to its other face, starting at Full Moon |
+| · Full Moon | Armored: armor 320, resistance 60; **magic** attacks |
+| · New Moon | Warded: armor 60, resistance 320; **physical** attacks |
+| Moonfall | every 15 s, 440 magic damage **shared evenly by the living** (4 alive: ~110 each; 2 alive: 220); can't be dodged |
+| Enrage | at 4:30 the party wipes |
+
+What it asks for, beyond more stats than Wyrm Hollow:
+
+- **A weakness that keeps moving.** Every zone boss so far had one fixed weakness.
+  Umbriel has all of them in turn: a physical build hits it about 1.8× harder in the New
+  Moon than in the Full Moon, and a magic build the other way round. The phases are
+  mirror images, so over a full cycle every damage mix deals about the same total: the
+  phases change *when* each build does its damage, not how much. Split weapons (the
+  Umbral variants) deal it steadily.
+- **A tank with both defenses.** Its attacks switch between magic and physical with the
+  phase, so armor alone or resistance alone leaves the tank exposed half the time.
+- **Keeping everyone up.** Moonfall is split among the living, so each death makes the
+  next one hit the rest harder. It rewards the healer, and it makes even a 0.5× NPC worth
+  its seat as a soaker.
+
+Tuned in `npm run test:raid` like Wyrm Hollow, against random T4 characters at level 48
+(T4 bags, same roles), averaged over 48 parties. A win takes about 1:25. Harder than the
+T3 raid: random gear wins most fights, and a party one short only about half:
+
+| Party | Odds |
+|---|---|
+| 4 players | ~81% |
+| 3 players | ~48% |
+| 3 players + 1 NPC | ~52% |
+| 2 players + 2 NPCs | ~18% |
+| 2 players | ~7% |
+
+Rewards as Wyrm Hollow's (below), at T4: 15 tokens, 80,000 gold, 110,000 XP; 5,000 gold
+per hired NPC. Its own bases are the seven **Umbral** variants (bases.md) and its own
+uniques the Eclipse Aegis, the Lantern of the Drowned Moon and Umbriel's Edge
+(uniques.md), each built to answer both phases.
+
 ## The fight
 
 One fight per start, played in full by the server when the leader starts it (seeded by
@@ -54,6 +104,12 @@ live fights (combat.md). The server's outcome is final.
 - **Frostbite:** the highest chill in the party shrinks all the boss's damage.
 - Executioner, Ambush, Second Wind, Thornshell (on any damage taken) and Zealot's Oath
   work as in a duel. The dead stop swinging and can't be healed.
+- **Lunar Phases** (`RaidDef.phases`, Drowned Moon only): at each phase change the boss
+  takes the phase's armor, resistance and damage type; every fighter's mitigation and
+  penetration against it, and their defense against its attacks, are recomputed for the
+  new phase. The Raids page shows each seat's DPS averaged over the phases.
+- **Split AoE** (`aoe.split`, Moonfall): the damage is divided by the fighters alive
+  when it lands, then each takes their share after their own mitigation.
 - The party wins when the boss dies; it loses when everyone is dead or at the enrage.
 - No closed form is needed: raids are never settled offline.
 
@@ -98,7 +154,7 @@ On a win, each player gets, for up to **3 clears per raid per day** (`clearsPerD
   are any zone base or one of the raid's **own bases** (variants, bases.md; Wyrm Hollow: the Rime dagger, greatsword, healing staff, bow, shield, ring and amulet), one of the raid's own **1 time in 2** (`ownBaseShare`); a Unique comes from the raid's **own pool**, which drops nowhere else
   (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). The items
   ignore the bag limit, like a first-kill reward.
-- **10 raid tokens** (`character.raidTokens`), 3,000 gold, 4,000 XP.
+- **10 raid tokens** (`character.raidTokens`), 30,000 gold, 40,000 XP (Wyrm Hollow; The Drowned Moon: 15 tokens, 80,000 gold, 110,000 XP).
 
 A player with no clears left today can still join and fight to help others; they get
 nothing. A loss gives nothing, and the hire cost is spent. Every fight is logged per
@@ -109,5 +165,8 @@ player (`raid_log`): win, rewarded, item, tokens, gold, XP, hire cost.
 - **Raid token shop:** trade tokens for things (not decided what).
 - **Precious material:** a rare raid-only material from raid kills, for high-end
   crafting. Not added yet.
-- More raids, one per later tier pair; raid-specific boss mechanics beyond the breath.
+- More raids, one per later tier pair, each with a mechanic of its own (Wyrm Hollow: none
+  beyond the breath; The Drowned Moon: Lunar Phases and a split Moonfall). Ideas kept for
+  later: an Eclipse (a few seconds where heals fail and the boss ignores threat), a Tidal
+  Pull (every fighter's HP % pulled to the party average).
 - Invitations by name or from the friend list (today: open parties only).

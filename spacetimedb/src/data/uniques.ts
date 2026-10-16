@@ -74,6 +74,13 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.HealPct, x: 1.25 }, { stat: Stat.Mind }, { stat: Stat.ResistancePct }] },
   { id: 14, name: "Skaldrith's Fang", tier: 3, baseId: 2, effects: [Effect.Executioner, Effect.Rending], raidId: 1,
     stats: [{ stat: Stat.CritDamage }, { stat: Stat.PhysDamagePct }, { stat: Stat.AttackSpeedPct }] },
+  // Raid: The Drowned Moon (T4). One per raid role, each built for both of Umbriel's phases.
+  { id: 20, name: 'Eclipse Aegis', tier: 4, baseId: 22, effects: [Effect.Ironclad, Effect.Runeguard], raidId: 2,
+    stats: [{ stat: Stat.ThreatPct, x: 1.5 }, { stat: Stat.ArmorPct }, { stat: Stat.ResistancePct }] },
+  { id: 21, name: 'Lantern of the Drowned Moon', tier: 4, baseId: 10, effects: [Effect.SecondSkin, Effect.LunarInsight], raidId: 2,
+    stats: [{ stat: Stat.HealPct, x: 1.25 }, { stat: Stat.Mind }, { stat: Stat.MaxHpPct }] },
+  { id: 22, name: "Umbriel's Edge", tier: 4, baseId: 1007, effects: [Effect.Rending, Effect.Spellbreaker], raidId: 2,
+    stats: [{ stat: Stat.ArmorPenPct }, { stat: Stat.MagicPenPct }, { stat: Stat.CritDamage }] },
   // T4
   { id: 15, name: 'Moonlight Greatsword', tier: 4, baseId: 7, effects: [Effect.Moonlight], enemyId: 407,
     stats: [{ stat: Stat.MagicDamagePct }, { stat: Stat.Mind }, { stat: Stat.CritDamage }] },

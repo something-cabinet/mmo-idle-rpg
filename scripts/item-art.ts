@@ -6,10 +6,10 @@
 //   npm run art:gen -- [group|key ...] [--cut] [--dry-run] [--model <id>] [--ref <key>[,<key>]]
 //                      a group (sword, plate-chest, uniques, ...) or an item key (b-2-t5, u-3);
 //                      --ref defaults to ART_STYLE_REF in .env
-//   npm run art:cut    raw images into masters, art-src/preview.html
+//   npm run art:cut    raw images into masters, art-src/items/preview.html
 //   npm run art:build -- [group|key ...]
 //                      src/assets/items/<key>.webp (48 px grid, 144 px file)
-// art-src/ is not in git, apart from item-art.csv.
+// art-src/items/ is not in git; art-src/item-art.csv is.
 import { BASE_LIST, GEMS, QUALITY, TRACKS } from '../spacetimedb/src/data/bases';
 import { MAX_TIER } from '../spacetimedb/src/data/stats';
 import { RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
@@ -46,7 +46,7 @@ const RULES =
   'Solid flat magenta background (#FF00FF) everywhere, no gradient, no floor, no cast shadows, no frame.';
 
 /** Every word a tier's item names start with: the tier lines (bases.ts), the gems, raid variants. */
-type TierWord = (typeof TRACKS)[keyof typeof TRACKS][number] | (typeof GEMS)[keyof typeof GEMS][number] | 'Rime';
+type TierWord = (typeof TRACKS)[keyof typeof TRACKS][number] | (typeof GEMS)[keyof typeof GEMS][number] | 'Rime' | 'Umbral';
 
 /** A tier's main colors (most of the item first, then trim and accents) and its material. */
 interface Look { colors: string; look: string }
@@ -119,6 +119,7 @@ const TIERS: Record<TierWord, Look> = {
   Dawnheart: { colors: 'gold-orange, amber, gold', look: 'a gem fading like sunrise, set in ornate gold, the stone gold-orange' },
   // raid variants
   Rime: { colors: 'pale ice blue, white, silver', look: 'frost-forged steel and clear ice crystal, frosted edges, icicle points' },
+  Umbral: { colors: 'bright silver, jet black, deep indigo', look: 'split down the middle: polished moon-silver on one side, starry black void on the other, a thin eclipse ring inlaid where they meet' },
 };
 
 /** How much detail and ornament an item carries, by tier (1 to MAX_TIER): plain and crude at
@@ -197,6 +198,8 @@ const TYPES: Record<string, string> = {
 interface UniqueLook extends Look {
   /** What the item is and how it sits in the icon, like a TYPES entry. */
   type: string;
+  /** In place of UNIQUE_DETAIL, for a unique whose look breaks its "no oversized parts" rule on purpose. */
+  detail?: string;
 }
 
 /** How much detail every unique carries, about tiers 7 to 8 (DETAIL): a named masterwork, still a practical item. */
@@ -309,6 +312,45 @@ const UNIQUE_LOOKS: Record<number, UniqueLook> = {
     look: 'a crooked twisted silver band, a cracked moonstone with a swirl of sickly green madness inside, ' +
       'tiny dice and crescent moons engraved around the setting',
   },
+  // The Drowned Moon (raid): pieces of Umbriel, the abyssal angler (enemy-art.ts LOOKS[9002]), each
+  // half silver Full Moon, half void New Moon like it.
+  // Its gill plate, the eclipse its armored eye. Set apart from the plain Umbral Greatshield (a
+  // flat split tower shield): its own curved shape, rich ornament and a jewel of an eye.
+  20: {
+    type: 'a large tall greatshield, front view, shaped like a huge curved fish gill plate: a rounded top, ' +
+      'the sides sweeping down and in to a pointed base, slightly convex, with huge fins flaring out from both sides; ' +
+      'the shield and its fins together fill the icon, the fins as wide as the shield body',
+    colors: 'bright silver, jet black, dark teal, white',
+    look: 'the face split down the middle, overlapping polished moonstone scales on the left and smooth black void skin ' +
+      'scattered with tiny white stars on the right; curved gill ridges of engraved silver filigree sweeping across both halves; ' +
+      'a raised rim of fine silver crescent moons all the way around, a row of short curved silver needle fangs set along ' +
+      'the lower edge like a jaw; ' +
+      'huge webbed dark teal fins sweeping out and back from both sides and over the top like torn crescent sails, ' +
+      'each fin with long silver ribs fanning through solid dark teal webbing, ragged trailing edges; ' +
+      'big layered gill flaps of silver scale overlapping down the shield face, ' +
+      'in the center a large round eclipse boss like an armored eye: a polished black pearl dome ringed by a thick bright silver corona ' +
+      'with fine engraved rays, a thin white crescent highlight on the pearl',
+    // The unique detail, with its "no oversized flared parts" turned around for the fins.
+    detail: 'a named one-of-a-kind masterwork, as fine as tier 8 of 9 gear: superb materials and finish, fine engraving and filigree, ' +
+      'crisp polished highlights and the full palette; the huge fins are its signature and meant to be oversized and dramatic',
+  },
+  // Its lure: the stolen moon on the end of its stalk.
+  21: {
+    type: 'a tall healing staff standing straight up: a long shaft that curves over at the top like a fishing rod, a lantern hanging from the tip',
+    colors: 'pale silver, white moonlight, dark teal',
+    look: "the shaft is the angler's own lure stalk: dark teal, fleshy ridged segments wet with water drops, curving over at the top; " +
+      'a small silver cage lantern hanging from its tip, a bright white cracked sliver of the moon trapped inside it',
+  },
+  // One of its fangs, finned and gilled like the Eclipse Aegis.
+  22: {
+    type: 'a two-handed katana with a long slightly curved blade, diagonal with the handle at the bottom left and the point at the top right',
+    colors: 'bright silver, jet black, dark teal, white',
+    look: 'the blade one long curved needle-like fang, bright silver along the edge and black void with tiny white stars along the spine, ' +
+      'tapering to a needle point; a low webbed dorsal fin of dark teal with fine silver ribs running along the back of the blade ' +
+      'from the guard to halfway up, its trailing edge ragged like a torn crescent sail; ' +
+      'a round guard shaped like an eclipse: a black disc ringed by a thin silver corona, flanked on both sides by layered silver gill flaps ' +
+      'and two small swept-back dark teal fins; a grip wrapped in dark scaled fish skin',
+  },
 };
 
 // ------------------------------------------------------------------ items
@@ -352,7 +394,7 @@ function arts(): { arts: Art[]; missing: string[] } {
   const addUnique = (u: (typeof UNIQUES)[number]) => {
     const look = UNIQUE_LOOKS[u.id];
     if (!look) return void missing.push(`u-${u.id} ${u.name}: no UNIQUE_LOOKS entry`);
-    out.push({ key: `u-${u.id}`, name: u.name, group: 'uniques', tier: u.tier, subject: prompt(u.name, look.type, look, UNIQUE_DETAIL) });
+    out.push({ key: `u-${u.id}`, name: u.name, group: 'uniques', tier: u.tier, subject: prompt(u.name, look.type, look, look.detail ?? UNIQUE_DETAIL) });
   };
   for (const b of BASE_LIST) {
     if (b.typeId === b.id) for (let t = 1; t <= MAX_TIER; t++) add(`b-${b.id}-t${t}`, b.name(t), slug(b.family), t, b.name(t));
@@ -382,13 +424,11 @@ function check(all: Art[]): string[] {
 await runArt(
   {
     title: 'Item art',
-    src: 'art-src',
-    csv: 'item-art.csv',
+    src: 'art-src/items',
+    csv: '../item-art.csv',
     out: 'src/assets/items',
-    pixels: PIXELS,
-    scale: 3,
+    shape: { kind: 'sprite', pixels: PIXELS, fill: 0.84, scale: 3 },
     colors: 24,
-    fill: 0.84,
     arts,
     check,
     common: `Style: ${STYLE}. ${RULES}`,

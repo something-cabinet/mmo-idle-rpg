@@ -29,13 +29,23 @@ export interface ArtSet {
   csv: string;
   /** Built images the game loads. */
   out: string;
-  /** Pixel art grid: a master is pixelized onto pixels x pixels, then scaled up `scale` times with hard edges. */
-  pixels: number;
-  scale: number;
+  /**
+   * sprite: one subject cut off its magenta background, pixelized onto a pixels x pixels grid
+   * with its own dark outline, `fill` of the square (the rest is padding), each grid pixel then a
+   * scale x scale block with hard edges.
+   * cutout: cut like a sprite, but kept as the model drew it (no grid of ours, which would
+   * resample its pixel blocks off their own grid: blurry), only shrunk smoothly to size x size,
+   * at least twice the largest size the game shows it.
+   * scene: a whole picture (no background to cut), center-cropped to `aspect` (width / height)
+   * and kept at the size the model drew it: the model already draws pixel art, and putting it on
+   * a grid of ours would resample its blocks off their own grid (blurry).
+   */
+  shape:
+    | { kind: 'sprite'; pixels: number; fill: number; scale: number }
+    | { kind: 'cutout'; fill: number; size: number }
+    | { kind: 'scene'; aspect: number };
   /** Most colors in one image's palette. */
   colors: number;
-  /** How much of the square the cut subject fills (the rest is padding). */
-  fill: number;
   /** Every image the game expects; `missing` lists entries without a look. */
   arts(): { arts: Art[]; missing: string[] };
   /** The style and rules joined after every subject. */
@@ -209,9 +219,17 @@ async function cut(set: ArtSet) {
   const p = paths(set);
   let n = 0, failed = 0;
   // Every raw image newer than its master: a hand-edited master is kept until it is generated again.
+  // A scene is not cut, only cropped to its shape.
+  const shape = set.shape;
   for (const a of all) {
     if (!existsSync(p.rawOf(a.key)) || mtime(p.rawOf(a.key)) <= mtime(p.master(a.key))) continue;
-    if (await cutOne(p.rawOf(a.key), p.master(a.key), set.fill)) n++;
+    if (shape.kind === 'scene') {
+      // Cropped, never scaled.
+      const { width: W, height: H } = await sharp(p.rawOf(a.key)).metadata();
+      const w = Math.min(W!, Math.round(H! * shape.aspect)), h = Math.min(H!, Math.round(W! / shape.aspect));
+      await sharp(p.rawOf(a.key)).extract({ left: (W! - w) >> 1, top: (H! - h) >> 1, width: w, height: h }).png().toFile(p.master(a.key));
+      n++;
+    } else if (await cutOne(p.rawOf(a.key), p.master(a.key), shape.fill)) n++;
     else failed++;
   }
   // Preview: every entry with art, its new master or else its built image, by group on a checkerboard,
@@ -226,8 +244,8 @@ async function cut(set: ArtSet) {
     join(set.src, 'preview.html'),
     `<!doctype html><meta charset="utf-8"><title>${set.title}</title><style>
 body{font:13px system-ui;background:#1a1d24;color:#ddd;margin:16px}h2{margin:24px 0 8px}
-.g{display:flex;flex-wrap:wrap;gap:12px}figure{margin:0;width:140px;text-align:center}
-img{width:128px;height:128px;image-rendering:pixelated;background:conic-gradient(#333 25%,#444 0 50%,#333 0 75%,#444 0) 0 0/16px 16px;border-radius:6px}
+.g{display:flex;flex-wrap:wrap;gap:12px}figure{margin:0;width:${set.shape.kind === 'scene' ? 1040 : 140}px;text-align:center}
+img{width:${set.shape.kind === 'scene' ? '1024px;aspect-ratio:' + set.shape.aspect : '128px;height:128px'};image-rendering:pixelated;background:conic-gradient(#333 25%,#444 0 50%,#333 0 75%,#444 0) 0 0/16px 16px;border-radius:6px}
 small{color:#888}</style>${sections.map(g => `<h2>${g.name}</h2><div class="g">${g.cells}</div>`).join('')}`
   );
   console.log(`${n} cut, ${failed} failed; check them in ${set.src}/preview.html, then build`);
@@ -251,15 +269,24 @@ interface Job {
   refs: string[];
 }
 
-/** The request options a model takes on OpenRouter's image endpoint (`supported_parameters`). */
-async function imageOptions(model: string) {
+/**
+ * The request options a model takes on OpenRouter's image endpoint (`supported_parameters`):
+ * the aspect ratio it offers closest to `aspect` (width / height, cropped to exact later), 1K.
+ */
+async function imageOptions(model: string, aspect: number) {
   const res = await fetch(`${API}/images/models`);
   const m = ((await res.json())?.data ?? []).find((x: any) => x.id === model);
   if (!m) throw new Error(`${model} is not an image model on OpenRouter (see ${API}/images/models)`);
-  const takes = (k: string, v: string) => m.supported_parameters?.[k]?.values?.includes(v);
+  const values = (k: string): string[] => m.supported_parameters?.[k]?.values ?? [];
+  const ratio = (v: string) => {
+    const [w, h] = v.split(':').map(Number);
+    return w / h;
+  };
+  const ratios = values('aspect_ratio').filter(v => ratio(v) > 0);
+  const best = ratios.sort((a, b) => Math.abs(Math.log(ratio(a) / aspect)) - Math.abs(Math.log(ratio(b) / aspect)))[0];
   return {
-    ...(takes('aspect_ratio', '1:1') && { aspect_ratio: '1:1' }),
-    ...(takes('resolution', '1K') && { resolution: '1K' }),
+    ...(best && { aspect_ratio: best }),
+    ...(values('resolution').includes('1K') && { resolution: '1K' }),
   };
 }
 
@@ -325,7 +352,8 @@ async function gen(set: ArtSet, args: string[]) {
     const group = all.filter(a => a.group === name);
     const art = byKey.get(name);
     if (!group.length && !art) throw new Error(`Unknown group or key: ${name} (see ${join(set.src, set.csv)})`);
-    for (const a of art ? [art] : group) picked.add(a);
+    // A group leaves out its style references: they are the finished look the rest copies.
+    for (const a of art ? [art] : group.filter(a => !refKeys.includes(a.key))) picked.add(a);
   }
   // No names: every entry with no art at all yet.
   if (!args.length) for (const a of all) if (!existsSync(p.built(a.key)) && !existsSync(p.rawOf(a.key))) picked.add(a);
@@ -349,7 +377,7 @@ async function gen(set: ArtSet, args: string[]) {
     for (const j of jobs) console.log(`\n--- ${j.label} -> ${j.out}${j.refs.length ? ` (${j.refs.length} style refs)` : ''}\n${j.prompt}`);
     return;
   }
-  const options = await imageOptions(model);
+  const options = await imageOptions(model, set.shape.kind === 'scene' ? set.shape.aspect : 1);
   console.log(`${jobs.length} images to generate with ${model} ${JSON.stringify(options)}${refs.length ? `, in the style of ${refKeys.join(', ')}` : ''}`);
   if (!jobs.length) return;
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -385,7 +413,18 @@ async function gen(set: ArtSet, args: string[]) {
  * scale x scale block. Whatever the model drew, every image gets the same grid and outline.
  */
 async function pixelize(set: ArtSet, file: string): Promise<Buffer> {
-  const px = set.pixels;
+  const shape = set.shape;
+  if (shape.kind === 'scene') {
+    // A whole picture as drawn: no resizing, opaque, a limited palette (half the file), lossless.
+    const s = await sharp(file).removeAlpha().png({ palette: true, colors: set.colors, dither: 0 }).toBuffer();
+    return sharp(s).webp({ lossless: true }).toBuffer();
+  }
+  if (shape.kind === 'cutout') {
+    // As drawn, shrunk once with a sharp filter onto its transparent square, lossless.
+    const clear = { r: 0, g: 0, b: 0, alpha: 0 };
+    return sharp(file).resize(shape.size, shape.size, { fit: 'contain', background: clear, kernel: 'lanczos3' }).webp({ lossless: true }).toBuffer();
+  }
+  const px = shape.pixels;
   const s = await sharp(file).resize(px, px, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } }).ensureAlpha().raw().toBuffer();
   for (let i = 3; i < s.length; i += 4) s[i] = s[i] >= 128 ? 255 : 0;
   const on = (x: number, y: number) => x >= 0 && y >= 0 && x < px && y < px && s[(y * px + x) * 4 + 3] > 0;
@@ -395,7 +434,7 @@ async function pixelize(set: ArtSet, file: string): Promise<Buffer> {
   }
   for (const i of edge) for (let c = 0; c < 3; c++) s[i + c] = Math.round(s[i + c] * 0.25 + 8);
   const quantized = await sharp(s, { raw: { width: px, height: px, channels: 4 } }).png({ palette: true, colors: set.colors, dither: 0 }).toBuffer();
-  return sharp(quantized).resize(px * set.scale, px * set.scale, { kernel: 'nearest' }).webp({ lossless: true }).toBuffer();
+  return sharp(quantized).resize(px * shape.scale, px * shape.scale, { kernel: 'nearest' }).webp({ lossless: true }).toBuffer();
 }
 
 /** `build` with names (groups or keys, like `gen`) only builds those. */

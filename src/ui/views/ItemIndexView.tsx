@@ -33,7 +33,7 @@ function BaseName({ b, tier, found }: { b: BaseDef; tier: number; found: boolean
   );
 }
 
-const damageText = (w: WeaponValues) => `${fmt(w.hit)} ${w.damageType === 'Physical' ? 'phys' : 'magic'}`;
+const damageText = (w: WeaponValues) => `${fmt(w.hit)} ${w.damageType === 'Physical' ? 'phys' : w.damageType === 'Magic' ? 'magic' : 'split (½ phys, ½ magic)'}`;
 const healText = (w: WeaponValues) => (w.heal > 0 ? `${fmt(w.heal)}${w.healTarget === 'All' ? ' (all)' : ''}` : '');
 
 function WeaponTable({ bases, tier, found }: { bases: BaseDef[]; tier: number; found: (b: BaseDef) => boolean }) {

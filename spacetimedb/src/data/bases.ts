@@ -18,6 +18,8 @@ export type Slot = (typeof SLOTS)[number];
 export const SLOT_COUNT = SLOTS.length;
 
 export type DamageType = 'Physical' | 'Magic';
+/** What a weapon's hit deals: one damage type, or Split, half physical and half magic (bases.md). */
+export type WeaponDamage = DamageType | 'Split';
 export type HealTarget = 'Single' | 'All';
 export type BaseKind = 'weapon' | 'offhand' | 'armor' | 'jewelry';
 
@@ -29,7 +31,7 @@ export interface Implicit {
 }
 
 export interface WeaponTemplate {
-  damageType: DamageType;
+  damageType: WeaponDamage;
   /** T1 hit, offense curve. */
   hit: number;
   /** Attacks per second (doesn't scale). */
@@ -295,6 +297,57 @@ const VARIANTS: BaseDef[] = [
     implicits: [pct(Stat.MagicDamagePct, 20), pct(Stat.ResistancePct, 20)],
     raidId: 1,
   }),
+  // The Drowned Moon (raid 2, T4): named Umbral <type>, half silver and half void like Umbriel.
+  // The weapons are their type with a Split hit (half physical, half magic): half of every swing lands on
+  // the soft side of either Lunar Phase, but against a one-weakness enemy half always lands on its strong side.
+  variant(1007, 6, {
+    name: () => 'Umbral Katana',
+    weapon: { damageType: 'Split', hit: 9.5, speed: 1.4, baseCrit: 10, twoHanded: true, ranged: false },
+    implicits: [pct(Stat.CritDamage, 40)],
+    raidId: 2,
+  }),
+  variant(1008, 9, {
+    name: () => 'Umbral Fire Staff',
+    weapon: { damageType: 'Split', hit: 18.75, speed: 0.8, baseCrit: 5, twoHanded: true, ranged: true },
+    implicits: [],
+    raidId: 2,
+  }),
+  variant(1009, 4, {
+    name: () => 'Umbral Scepter',
+    weapon: { damageType: 'Split', hit: 7.5, speed: 0.8, baseCrit: 5, heal: 10, healTarget: 'Single', twoHanded: false, ranged: false },
+    implicits: [],
+    raidId: 2,
+  }),
+  variant(1010, 11, {
+    name: () => 'Umbral Crossbow',
+    weapon: { damageType: 'Split', hit: 18, speed: 0.7, baseCrit: 12, twoHanded: true, ranged: true },
+    implicits: [pct(Stat.CritDamage, 40), lin(Stat.Accuracy, 10)],
+    raidId: 2,
+  }),
+  // The armor split evenly with resistance; same HP, threat and attack speed cost.
+  variant(1011, 22, {
+    name: () => 'Umbral Greatshield',
+    implicits: [
+      lin(Stat.Armor, 6),
+      lin(Stat.Resistance, 6),
+      { stat: Stat.MaxHp, value: 7, curve: 'life' },
+      pct(Stat.ThreatPct, 25),
+      { stat: Stat.AttackSpeedPct, value: -10, curve: 'fixed' },
+    ],
+    raidId: 2,
+  }),
+  // An Amber ring with armor and resistance instead of Vitality.
+  variant(1012, 53, {
+    name: () => 'Umbral Ring',
+    implicits: [pct(Stat.ArmorPct, 10), pct(Stat.ResistancePct, 10)],
+    raidId: 2,
+  }),
+  // A Ruby amulet with both damage types instead of Might: made for a Split weapon.
+  variant(1013, 54, {
+    name: () => 'Umbral Amulet',
+    implicits: [pct(Stat.PhysDamagePct, 15), pct(Stat.MagicDamagePct, 15)],
+    raidId: 2,
+  }),
 ];
 
 export const BASE_LIST: BaseDef[] = [...CORE.map(({ icon: _icon, group: _group, ...c }) => ({ ...c, typeId: c.id })), ...VARIANTS];
@@ -328,7 +381,7 @@ export function implicitValue(imp: Implicit, t: number): number {
 }
 
 export interface WeaponValues {
-  damageType: DamageType;
+  damageType: WeaponDamage;
   hit: number;
   speed: number;
   baseCrit: number;

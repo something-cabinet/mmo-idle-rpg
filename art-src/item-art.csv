@@ -312,6 +312,13 @@ b-1003,Rime Bow,variants-wyrm-hollow,3
 b-1004,Rime Shield,variants-wyrm-hollow,3
 b-1005,Rime Ring,variants-wyrm-hollow,3
 b-1006,Rime Amulet,variants-wyrm-hollow,3
+b-1007,Umbral Katana,variants-the-drowned-moon,4
+b-1008,Umbral Fire Staff,variants-the-drowned-moon,4
+b-1009,Umbral Scepter,variants-the-drowned-moon,4
+b-1010,Umbral Crossbow,variants-the-drowned-moon,4
+b-1011,Umbral Greatshield,variants-the-drowned-moon,4
+b-1012,Umbral Ring,variants-the-drowned-moon,4
+b-1013,Umbral Amulet,variants-the-drowned-moon,4
 u-1,Grubnak's Cleaver,uniques,1
 u-2,Gilded Signet,uniques,1
 u-3,Tutor's Pendant,uniques,1
@@ -326,6 +333,9 @@ u-10,Avalanche Staff,uniques,3
 u-12,Wyrmscale Aegis,uniques,3
 u-13,Hoardkeeper's Censer,uniques,3
 u-14,Skaldrith's Fang,uniques,3
+u-20,Eclipse Aegis,uniques,4
+u-21,Lantern of the Drowned Moon,uniques,4
+u-22,Umbriel's Edge,uniques,4
 u-15,Moonlight Greatsword,uniques,4
 u-16,Waxing Crescent,uniques,4
 u-17,Moonshadow Jerkin,uniques,4

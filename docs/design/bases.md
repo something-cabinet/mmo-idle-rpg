@@ -128,16 +128,37 @@ from it at the raid's tier. Variant base IDs start at 1000.
 | Rime Greatsword | Greatsword | Wyrm Hollow (T3) | Physical | 20 / 88 | 0.6 | 53 | 5% | +40 Vitality (P), +4T resistance |
 | Rime Healing Staff | Healing Staff | Wyrm Hollow (T3) | Magic | 5 / 22 | 1.1 | 24 | 5% | Heal 11.25 per hit (T3: 20), single target; +4T resistance |
 | Rime Bow | Bow | Wyrm Hollow (T3) | Magic | 12.5 / 55 | 1.0 | 55 | 6% | +4T resistance |
+| Umbral Katana | Katana | The Drowned Moon (T4) | **Split** | 9.5 / 67 (T4) | 1.4 | 94 (T4) | 10% | +40% crit damage (P), as a katana |
+| Umbral Fire Staff | Fire Staff | The Drowned Moon (T4) | **Split** | 18.75 / 132 (T4) | 0.8 | 106 (T4) | 5% | None, as a fire staff |
+| Umbral Scepter | Scepter | The Drowned Moon (T4) | **Split** | 7.5 / 53 (T4) | 0.8 | 42 (T4) | 5% | Heal 10 per hit (T4: 24), single target, as a scepter |
+| Umbral Crossbow | Crossbow | The Drowned Moon (T4) | **Split** | 18 / 127 (T4) | 0.7 | 89 (T4) | 12% | +40% crit damage (P), +10T accuracy, as a crossbow |
 
 | Variant | Type | Source | Implicits (T1 template; T3) |
 |---|---|---|---|
 | Rime Shield | Shield | Wyrm Hollow (T3) | 4T armor, 8T resistance, 5 max HP (life), +15% threat (P); T3: 12, 24, 13, 8% |
 | Rime Ring | Ring · Amber | Wyrm Hollow (T3) | +20% resistance (P); T3: 10% |
 | Rime Amulet | Amulet · Sapphire | Wyrm Hollow (T3) | +20% magic damage (P), +20% resistance (P); T3: 10%, 10% |
+| Umbral Greatshield | Greatshield | The Drowned Moon (T4) | 6T armor, 6T resistance, 7 max HP (life), +25% threat (P), −10% attack speed; T4: 24, 24, 29, 17% |
+| Umbral Ring | Ring · Amber | The Drowned Moon (T4) | +10% armor (P), +10% resistance (P); T4: 7%, 7% |
+| Umbral Amulet | Amulet · Ruby | The Drowned Moon (T4) | +15% physical damage (P), +15% magic damage (P); T4: 10%, 10% |
 
 Each Rime variant trades something its type has for resistance against Frost Breath, so
 none is a straight upgrade. Named "Rime", apart from the Wyrmscale leather track and the
 Wyrmscale Aegis.
+
+**Split damage** (Umbral weapons, `damageType: 'Split'`): the weapon's hit is half
+physical and half magic. Each half takes its own damage % (physical damage % and Might
+for one, magic damage % and Mind for the other) and its own mitigation (armor or
+resistance). Flat added damage keeps its own type. Moonlight still turns the whole hit
+magic; Spellblade swaps the halves, which changes nothing.
+
+The Umbral weapons are their type's stats with a Split hit: a sidegrade, never an
+upgrade. Against a Balanced enemy it deals the same; against an enemy with one weakness,
+half of every hit lands on its strong side, so it is worse; it needs both damage groups to
+scale. Against Umbriel it deals about the same total as a one-type weapon (the phases are
+mirror images and damage is linear) but **steadily**: a plain T4 katana does 59 / 109
+DPS in the Full / New Moon, an Umbral one 83 / 83. The other Umbral pieces carry both
+defenses (greatshield, ring) or both damage groups (amulet, made for a Split weapon).
 
 ## Off-hands (*illustrative*)
 

@@ -5,16 +5,16 @@ import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Item, RaidLog, RaidMember, RaidParty } from '../../module_bindings/types';
 import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src/combat';
 import { Effect, effectAmount } from '../../../spacetimedb/src/data/legendary';
-import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from '../../../spacetimedb/src/data/raids';
+import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, bossPhases, phaseAt, type RaidDef } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
 import { BASE_LIST } from '../../../spacetimedb/src/data/bases';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
 import { aggroShares, clearsToday, decodeSetup, lockoutEnd, npcStats, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
-import { call } from '../../store';
+import { call, useSticky } from '../../store';
 import { nowMicros } from '../clock';
 import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
 import { DefTag, DmgTag, EnemyStats } from '../enemy';
-import { EnemyArt } from '../enemyArt';
+import { EnemyArt, RaidBanner } from '../enemyArt';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
 import { ItemCard, rarityCls, rarityLabel } from '../items';
@@ -28,8 +28,8 @@ const byJoin = (a: RaidMember, b: RaidMember) => (a.joinedAt.microsSinceUnixEpoc
 const fightingNow = (p: RaidParty) => !!p.fight && !p.fight.finished;
 /** Seconds the frost flash and damage numbers stay up after the special attack. */
 const BREATH_FLASH = 1.4;
-/** How long a floating number stays up, s (the `float-up` animation). */
-const FLOAT_SECONDS = 0.9;
+/** How long a floating number stays up, s (the `raid-float-up` animation). */
+const FLOAT_SECONDS = 1.8;
 /** Most floating numbers on one bar at a time. */
 const MAX_FLOATS = 5;
 
@@ -112,12 +112,26 @@ export const RaidsView = memo(function RaidsView({ s }: { s: Snapshot }) {
           <strong>{fmtBig(s.row.raidTokens)}</strong> tokens
         </span>
       </ViewHeader>
-      {RAIDS.map(raid => <Raid key={raid.id} s={s} raid={raid} />)}
+      <RaidList s={s} />
     </>
   );
 });
 
-function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
+/** Every raid as a banner; one opens at a time (the one you're in a party for, to start with). */
+function RaidList({ s }: { s: Snapshot }) {
+  const mine = [...s.conn.db.raidMember.iter()].find(m => m.characterId === s.row.id);
+  const inParty = mine && [...s.conn.db.raidParty.iter()].find(p => p.id === mine.partyId)?.raidId;
+  const [open, setOpen] = useSticky<number | undefined>('raidOpen', inParty ?? (RAIDS.length === 1 ? RAIDS[0].id : undefined));
+  return (
+    <ul className="raid-list">
+      {RAIDS.map(raid => (
+        <Raid key={raid.id} s={s} raid={raid} open={open === raid.id} toggle={() => setOpen(open === raid.id ? undefined : raid.id)} />
+      ))}
+    </ul>
+  );
+}
+
+function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boolean; toggle: () => void }) {
   const conn = s.conn;
   const zone = ZONES_BY_ID.get(raid.unlockZoneId)!;
   const unlocked = s.killedZones.has(zone.id);
@@ -134,115 +148,153 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
   const beaten = (s.kills.get(boss.id) ?? 0) > 0 || [...conn.db.myRaidLog.iter()].some(l => l.raidId === raid.id && l.won);
 
   return (
-    <>
-      <div className="card">
-        <div className="zone-head">
-          <div>
-            <h2>{raid.name} <span className="muted">T{raid.tier} · {RAID_PARTY_SIZE} players · online only</span></h2>
-            <p className="muted">{raid.blurb}</p>
-          </div>
-          {!unlocked && <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} to unlock</div>}
-        </div>
-        <div className="raid-boss">
-          <EnemyArt enemyId={boss.id} className="raid-boss-art" />
-          <div className="foe-name"><Icon name="skull" className="boss" />{boss.name}</div>
-          <div className="tags">
+    <li className={`raid-entry${open ? ' open' : ''}${unlocked ? '' : ' locked'}${raid.phases ? ' raid-moon' : ''}`}>
+      <button className="raid-head" aria-expanded={open} onClick={toggle}>
+        <RaidBanner raidId={raid.id} fallback={<EnemyArt enemyId={boss.id} className="raid-head-sprite" />} />
+        <div className="raid-head-text">
+          <div className="raid-head-name">{raid.name}</div>
+          <div className="raid-head-boss"><Icon name="skull" className="boss" />{boss.name}</div>
+          <div className="raid-head-tags">
+            <span className="tag">T{raid.tier}</span>
             <span className="tag">Lv {boss.level}</span>
-            <DmgTag magic={boss.damageType === 'Magic'} />
-            <DefTag defense={boss.defense} />
+            {!unlocked ? (
+              <span className="tag"><Icon name="lock" />Defeat {bossOf(zone)?.name.split(',')[0]}</span>
+            ) : party ? (
+              <span className="tag raid-head-party"><Icon name="users" />{fightingNow(party) ? 'Fighting' : 'In a party'}</span>
+            ) : (
+              parties.length > 0 && <span className="tag"><Icon name="users" />{parties.length} {parties.length === 1 ? 'party' : 'parties'}</span>
+            )}
+            {unlocked && <span className={`tag${left > 0 ? '' : ' muted'}`} title="Rewarded wins today">{Math.min(clears, raid.clearsPerDay)}/{raid.clearsPerDay} clears</span>}
           </div>
-          <div className="raid-stats">
-            <div><span>HP</span><strong>{boss.hp.toLocaleString()}</strong></div>
-            <div><span>DPS</span><strong>{fmt(boss.dps)}</strong></div>
-            <div title="The party wipes when the timer runs out"><span>Enrage</span><strong className="c-bad">{clock(raid.enrageSeconds)}</strong></div>
-          </div>
-          <div className="raid-special">
-            <Icon name="snowflake" className="raid-special-icon" />
-            <div>
-              <div className="raid-special-label">Special attack</div>
-              <div className="raid-special-name">{raid.aoe.name}</div>
-              <div className="raid-special-text">
-                Every <strong>{raid.aoe.every} s</strong>: <strong>{fmt(raid.aoe.damage)} {raid.aoe.damageType.toLowerCase()}</strong> damage to the whole party. Can't be dodged.
+        </div>
+        <Icon name="chevron" className="caret" />
+      </button>
+      {open && (
+        <div className="raid-body">
+          <p className="muted">{raid.blurb} {RAID_PARTY_SIZE} players, online only.</p>
+          {!unlocked && <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} to unlock</div>}
+          <div className="raid-boss">
+            <EnemyArt enemyId={boss.id} className="raid-boss-sprite" />
+            <div className="raid-boss-info">
+              <div className="tags">
+                <span className="tag">Lv {boss.level}</span>
+                <DmgTag magic={boss.damageType === 'Magic'} />
+                <DefTag defense={boss.defense} />
+                {raid.phases && <span className="tag" title="Its damage and defense change with its Lunar Phases">{raid.phases.list[0].name}</span>}
               </div>
+              <div className="raid-stats">
+                <div><span>HP</span><strong>{boss.hp.toLocaleString()}</strong></div>
+                <div><span>DPS</span><strong>{fmt(boss.dps)}</strong></div>
+                <div title="The party wipes when the timer runs out"><span>Enrage</span><strong className="c-bad">{clock(raid.enrageSeconds)}</strong></div>
+              </div>
+              <div className="raid-special">
+                <Icon name={raid.aoe.icon} className="raid-special-icon" />
+                <div>
+                  <div className="raid-special-label">Special attack</div>
+                  <div className="raid-special-name">{raid.aoe.name}</div>
+                  <div className="raid-special-text">
+                    Every <strong>{raid.aoe.every} s</strong>: <strong>{fmt(raid.aoe.damage)} {raid.aoe.damageType.toLowerCase()}</strong> damage{' '}
+                    {raid.aoe.split ? 'shared by the living: the fewer left standing, the harder each is hit' : 'to the whole party'}. Can't be dodged.
+                  </div>
+                </div>
+              </div>
+              {raid.phases && (
+                <div className="raid-special">
+                  <Icon name="sun" className="raid-special-icon" />
+                  <div>
+                    <div className="raid-special-label">Passive</div>
+                    <div className="raid-special-name">Lunar Phases</div>
+                    <div className="raid-special-text">
+                      It starts in <strong>{raid.phases.list[0].name}</strong> and keeps turning between its phases, each with its own defense and attack type:{' '}
+                      {raid.phases.list.map((p, i) => (
+                        <span key={p.name}>
+                          {i > 0 && '; '}
+                          <strong>{p.name}</strong>: {p.defense.toLowerCase()}, {p.damageType.toLowerCase()} attacks
+                        </span>
+                      ))}.
+                    </div>
+                  </div>
+                </div>
+              )}
+              {beaten ? (
+                <details className="raid-boss-stats">
+                  <summary>Boss stats</summary>
+                  <EnemyStats e={boss} m={matchup(s.stats, boss)} />
+                </details>
+              ) : (
+                <p className="muted"><Icon name="lock" />Beat {boss.name.split(',')[0]} once to reveal its full stats.</p>
+              )}
             </div>
           </div>
-          {beaten ? (
-            <details className="raid-boss-stats">
-              <summary>Boss stats</summary>
-              <EnemyStats e={boss} m={matchup(s.stats, boss)} />
-            </details>
-          ) : (
-            <p className="muted"><Icon name="lock" />Beat {boss.name.split(',')[0]} once to reveal its full stats.</p>
-          )}
-        </div>
-        <div className="raid-rewards">
-          <h3>Rewards <span className="muted">each player, for {raid.clearsPerDay} wins a day (losses don't count; resets 00:00 UTC)</span></h3>
-          <ul>
-            <li>
-              {raid.itemsPerClear} T{raid.tier} items, each <span className="c-epic">Epic</span> or better: <span className="c-legendary">Legendary</span> {pct(RAID_RARITY_ODDS.Legendary)},{' '}
-              <span className="c-unique">Unique</span> {pct(RAID_RARITY_ODDS.Unique)} from its own pool:{' '}
-              {raidUniques(raid.id).map((u, i) => (
-                <span key={u.id}>{i > 0 && ', '}<span className={uniqueFound(s, u) ? 'c-unique' : 'muted'}>{uniqueFound(s, u) ? u.name : UNKNOWN}</span></span>
-              ))}
-            </li>
-            {ownBases.length > 0 && (
+          <div className="raid-rewards">
+            <h3>Rewards <span className="muted">each player, for {raid.clearsPerDay} wins a day (losses don't count; resets 00:00 UTC)</span></h3>
+            <ul>
               <li>
-                Raid boss exclusive equipment bases:{' '}
-                {ownBases.map((b, i) => {
-                  const found = baseFound(s, b.id, raid.tier);
+                {raid.itemsPerClear} T{raid.tier} items, each <span className="c-epic">Epic</span> or better: <span className="c-legendary">Legendary</span> {pct(RAID_RARITY_ODDS.Legendary)},{' '}
+                <span className="c-unique">Unique</span> {pct(RAID_RARITY_ODDS.Unique)} from its own pool:{' '}
+                {raidUniques(raid.id).map((u, i) => (
+                  <span key={u.id}>{i > 0 && ', '}<span className={uniqueFound(s, u) ? 'c-unique' : 'muted'}>{uniqueFound(s, u) ? u.name : UNKNOWN}</span></span>
+                ))}
+              </li>
+              {ownBases.length > 0 && (
+                <li>
+                  Raid boss exclusive equipment bases:{' '}
+                  {ownBases.map((b, i) => {
+                    const found = baseFound(s, b.id, raid.tier);
+                    return (
+                      <span key={b.id}>{i > 0 && ', '}<span className={found ? '' : 'muted'} title={found ? b.family : `An undiscovered ${b.family.toLowerCase()}`}>{found ? b.name(raid.tier) : UNKNOWN}</span></span>
+                    );
+                  })}
+                </li>
+              )}
+              <li>{raid.tokens} raid tokens · {fmt(boss.gold)} gold · {fmt(boss.xp)} XP</li>
+            </ul>
+            <p className={left > 0 ? 'c-ok' : 'muted'}>
+              Clears today: {Math.min(clears, raid.clearsPerDay)}/{raid.clearsPerDay}.{' '}
+              {left > 0 ? `${left} rewarded win${left === 1 ? '' : 's'} left today.` : `Resets in ${duration(lockoutEnd(now) - now)}: you can still fight to help others.`}
+            </p>
+          </div>
+
+        {unlocked && (party ? (
+          <PartyPanel s={s} raid={raid} party={party} members={members.filter(m => m.partyId === party.id)} />
+        ) : (
+          <section className="raid-section">
+            <CardHead title="Raid parties">
+              <button className="btn small primary" onClick={() => call(conn.reducers.createRaidParty({ raidId: raid.id }))}>
+                <Icon name="users" />Form a party
+              </button>
+            </CardHead>
+            {parties.length ? (
+              <ul className="raid-parties">
+                {parties.map(p => {
+                  const ms = members.filter(m => m.partyId === p.id);
+                  const leader = ms.find(m => m.characterId === p.leaderId);
+                  const full = ms.length + p.hired >= RAID_PARTY_SIZE;
                   return (
-                    <span key={b.id}>{i > 0 && ', '}<span className={found ? '' : 'muted'} title={found ? b.family : `An undiscovered ${b.family.toLowerCase()}`}>{found ? b.name(raid.tier) : UNKNOWN}</span></span>
+                    <li key={String(p.id)}>
+                      <span>
+                        <strong>{leader?.name ?? '?'}'s party</strong>{' '}
+                        <span className="muted">{ms.length + p.hired}/{RAID_PARTY_SIZE}{p.hired ? ` (${p.hired} hired)` : ''} · {ms.map(m => m.name).join(', ')}</span>
+                      </span>
+                      {fightingNow(p) ? (
+                        <span className="tag">Fighting</span>
+                      ) : (
+                        <button className="btn small" disabled={full} onClick={() => call(conn.reducers.joinRaidParty({ partyId: p.id }))}>
+                          {full ? 'Full' : 'Join'}
+                        </button>
+                      )}
+                    </li>
                   );
                 })}
-              </li>
+              </ul>
+            ) : (
+              <p className="muted">No parties yet. Form one: other players can join it, and you can hire NPCs for the empty seats.</p>
             )}
-            <li>{raid.tokens} raid tokens · {fmt(boss.gold)} gold · {fmt(boss.xp)} XP</li>
-          </ul>
-          <p className={left > 0 ? 'c-ok' : 'muted'}>
-            Clears today: {Math.min(clears, raid.clearsPerDay)}/{raid.clearsPerDay}.{' '}
-            {left > 0 ? `${left} rewarded win${left === 1 ? '' : 's'} left today.` : `Resets in ${duration(lockoutEnd(now) - now)}: you can still fight to help others.`}
-          </p>
+          </section>
+        ))}
         </div>
-      </div>
-
-      {unlocked && (party ? (
-        <PartyPanel s={s} raid={raid} party={party} members={members.filter(m => m.partyId === party.id)} />
-      ) : (
-        <div className="card">
-          <CardHead title="Raid parties">
-            <button className="btn small primary" onClick={() => call(conn.reducers.createRaidParty({ raidId: raid.id }))}>
-              <Icon name="users" />Form a party
-            </button>
-          </CardHead>
-          {parties.length ? (
-            <ul className="raid-parties">
-              {parties.map(p => {
-                const ms = members.filter(m => m.partyId === p.id);
-                const leader = ms.find(m => m.characterId === p.leaderId);
-                const full = ms.length + p.hired >= RAID_PARTY_SIZE;
-                return (
-                  <li key={String(p.id)}>
-                    <span>
-                      <strong>{leader?.name ?? '?'}'s party</strong>{' '}
-                      <span className="muted">{ms.length + p.hired}/{RAID_PARTY_SIZE}{p.hired ? ` (${p.hired} hired)` : ''} · {ms.map(m => m.name).join(', ')}</span>
-                    </span>
-                    {fightingNow(p) ? (
-                      <span className="tag">Fighting</span>
-                    ) : (
-                      <button className="btn small" disabled={full} onClick={() => call(conn.reducers.joinRaidParty({ partyId: p.id }))}>
-                        {full ? 'Full' : 'Join'}
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="muted">No parties yet. Form one: other players can join it, and you can hire NPCs for the empty seats.</p>
-          )}
-        </div>
-      ))}
-    </>
+      )}
+    </li>
   );
 }
 
@@ -286,12 +338,19 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   const seat = (stats: CombatStats | undefined, i: number) => {
     if (!stats) return undefined;
     const m = matchup(stats, raid.boss);
+    // DPS against the boss, averaged over its Lunar Phases (each has its own armor and resistance).
+    const phases = bossPhases(raid);
+    const dps = phases.reduce((sum, b) => sum + matchup(stats, b).dps, 0) / phases.length;
     // Heal per second from the weapon (crits included), given to allies: split across the party or to the most hurt one.
     const hps = m.hps;
     const healAll = !!stats.sources[0]?.healAll;
     return (
       <div className="raid-seat-stats muted">
-        HP {fmt(stats.maxHp)} · DPS {fmt(m.dps)} ·{' '}
+        HP {fmt(stats.maxHp)} ·{' '}
+        <span title={raid.phases ? `Damage per second against the boss, averaged over its ${raid.phases.list.map(p => p.name).join(' and ')}` : 'Damage per second against the boss'}>
+          DPS {fmt(dps)}
+        </span>{' '}
+        ·{' '}
         <span title={hps > 0 ? (healAll ? 'Heal per second, split across the party' : 'Heal per second, to the most hurt ally') : 'Heal per second: no healing weapon'}>
           HPS {fmt(hps)}{hps > 0 ? (healAll ? ' (party)' : ' (one ally)') : ''}
         </span>{' '}
@@ -306,7 +365,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   };
 
   return (
-    <div className="card">
+    <section className="raid-section">
       <CardHead title={`${leader?.name ?? '?'}'s party`}>
         {!fighting && (
           <button className="btn small ghost" onClick={() => call(conn.reducers.leaveRaid({}))}>
@@ -422,7 +481,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           </div>
         </Modal>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -500,8 +559,23 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
               <strong>{clock(t)}</strong>
               <span className={raid.enrageSeconds - t < 30 ? 'c-bad' : 'muted'}>enrage in {clock(Math.max(0, raid.enrageSeconds - t))}</span>
             </span>
+            {raid.phases && (() => {
+              // Lunar Phases: the boss's current face, and how long until it turns.
+              const every = raid.phases.every;
+              const now = raid.phases.list[phaseAt(raid, t)];
+              const next = raid.phases.list[phaseAt(raid, t + every)];
+              const left = every - (t % every);
+              return (
+                <span className={`raid-breath-timer raid-phase-timer${left < 3 ? ' soon' : ''}`}
+                  title={`${now.name}: ${now.defense.toLowerCase()}, ${now.damageType.toLowerCase()} attacks`}>
+                  <Icon name={now.damageType === 'Magic' ? 'sun' : 'moon'} />
+                  {now.name} · {next.name} in {Math.ceil(left)} s
+                  <span className="raid-breath-charge"><span style={{ width: `${(1 - left / every) * 100}%` }} /></span>
+                </span>
+              );
+            })()}
             <span className={`raid-breath-timer${breath ? ' now' : nextAoe - t < 3 ? ' soon' : ''}`} title={`${raid.aoe.name} hits the whole party every ${raid.aoe.every} s`}>
-              <Icon name="snowflake" />
+              <Icon name={raid.aoe.icon} />
               {breath ? `${raid.aoe.name}!` : `${raid.aoe.name} in ${Math.ceil(nextAoe - t)} s`}
               <span className="raid-breath-charge"><span style={{ width: `${(breath ? 1 : charge) * 100}%` }} /></span>
             </span>
@@ -513,8 +587,9 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
       {live && (
         <ul className="duel-log">
           {shown.slice(-6).reverse().map((e, i) => (
-            <li key={shown.length - i} className={`${e.by < 0 ? 'theirs' : 'mine'}${e.kind === 'crit' ? ' crit' : ''}${e.kind === 'aoe' ? ' aoe' : ''}`}>
-              {e.kind === 'aoe' && <Icon name="snowflake" />}
+            <li key={shown.length - i} className={`${e.by < 0 ? 'theirs' : 'mine'}${e.kind === 'crit' ? ' crit' : ''}${e.kind === 'aoe' || e.kind === 'phase' ? ' aoe' : ''}`}>
+              {e.kind === 'aoe' && <Icon name={raid.aoe.icon} />}
+              {e.kind === 'phase' && <Icon name={raid.phases?.list[e.phase ?? 0].damageType === 'Magic' ? 'sun' : 'moon'} />}
               {eventLine(e, names, raid)}
             </li>
           ))}
@@ -591,6 +666,10 @@ function RaidLoot({ log, loot }: { log: RaidLog; loot: Item[] }) {
 
 function eventLine(e: RaidEvent, names: string[], raid: RaidDef): string {
   const boss = raid.boss.name.split(',')[0];
+  if (e.kind === 'phase') {
+    const p = raid.phases?.list[e.phase ?? 0];
+    return p ? `${boss} turns to the ${p.name}: ${p.defense.toLowerCase()}, now striking with ${p.damageType.toLowerCase()} damage` : `${boss} changes`;
+  }
   if (e.kind === 'aoe') return `${boss} unleashes ${raid.aoe.name} on the whole party!${e.saved?.length ? ` (Second Wind: ${e.saved.map(i => names[i]).join(', ')})` : ''}`;
   if (e.by < 0) {
     if (e.kind === 'dodge') return `${names[e.target]} dodges ${boss}`;

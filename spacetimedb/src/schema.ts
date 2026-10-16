@@ -94,7 +94,8 @@ export const Rarity = t.enum('Rarity', {
   Anomaly: t.unit(),
 });
 
-export const DamageType = t.enum('DamageType', { Physical: t.unit(), Magic: t.unit() });
+// A weapon's damage. Split: half physical, half magic (bases.md). New variants go at the end.
+export const DamageType = t.enum('DamageType', { Physical: t.unit(), Magic: t.unit(), Split: t.unit() });
 export const HealTarget = t.enum('HealTarget', { Single: t.unit(), All: t.unit() });
 
 /** A stat on an item. Values are hundredths of the display unit (data/stats.ts). */

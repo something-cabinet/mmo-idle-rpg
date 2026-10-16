@@ -9,7 +9,7 @@ import { SLOTS } from './data/bases';
 import { Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingAttacks, type EffectCounts } from './data/legendary';
 import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, dodgeChance, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
-import type { DamageType } from './data/bases';
+import type { DamageType, WeaponDamage } from './data/bases';
 import type { Buffs } from './data/supplies';
 
 export const MAX_LEVEL = 100;
@@ -22,7 +22,7 @@ export interface GearStat {
   value: bigint;
 }
 export interface GearWeapon {
-  damageType: { tag: DamageType };
+  damageType: { tag: WeaponDamage };
   hit: bigint;
   speedMilli: number;
   baseCritBp: number;
@@ -187,7 +187,9 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
         continue;
       }
       const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
-      const base = w.damageType.tag === from ? fromStored(w.hit) : 0;
+      // A Split weapon's hit is half physical, half magic; each half takes its own damage % and mitigation.
+      const share = w.damageType.tag === 'Split' ? 0.5 : w.damageType.tag === from ? 1 : 0;
+      const base = share * fromStored(w.hit);
       // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
       // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
       hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * discipline * (buffs?.damage ?? 1));

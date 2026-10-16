@@ -5,9 +5,10 @@
 
 import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from './combat';
 import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingMult } from './data/legendary';
-import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, type RaidDef } from './data/raids';
+import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { base } from './data/bases';
+import type { EnemyDef } from './data/zones';
 import { accuracyAtLevel } from './data/stats';
 import { makeItem, makeUnique, seededRng, type NewItem, type Rng } from './loot';
 
@@ -33,8 +34,9 @@ export interface RaidEvent {
   t: number;
   /** Fighter index that swung, or -1: the boss. */
   by: number;
-  kind: 'hit' | 'crit' | 'dodge' | 'aoe';
-  /** The boss's target (fighter index); -1 when a fighter hits the boss or for the boss's AoE. */
+  /** 'phase': the boss turns to its next Lunar Phase (`phase`). */
+  kind: 'hit' | 'crit' | 'dodge' | 'aoe' | 'phase';
+  /** The boss's target (fighter index); -1 when a fighter hits the boss, for the boss's AoE and a phase change. */
   target: number;
   /** Damage dealt (to the boss by a fighter; to the target, or to each fighter for an AoE, before their own mitigation is shown). */
   damage: number;
@@ -49,6 +51,8 @@ export interface RaidEvent {
   blocked?: boolean;
   /** Every fighter's Second Skin shield after the event, when anyone in the party has one. */
   shield?: number[];
+  /** A phase change: the phase the boss is now in (its index in `RaidDef.phases.list`). */
+  phase?: number;
 }
 
 export interface RaidResult {
@@ -73,11 +77,10 @@ export function aggroShares(threats: readonly number[]): number[] {
   return w.map(x => x / total);
 }
 
-/** What one fighter's swings do to the boss, per swing before crits, variance and effects that need HP. */
-function offense(s: CombatStats, raid: RaidDef) {
+/** What one fighter's swings do to the boss (`boss`: as it is in the current phase), per swing before crits, variance and effects that need HP. */
+function offense(s: CombatStats, boss: EnemyDef) {
   const src = s.sources[0];
   const amount = (id: number) => effectAmount(s.effects, id);
-  const boss = raid.boss;
   const voidtouched = s.effects.has(Effect.Voidtouched);
   const mitP = voidtouched ? 0 : mitigation(boss.armor, s.armorPen, boss.level) * (1 - amount(Effect.Rending));
   const mitM = voidtouched ? 0 : mitigation(boss.resistance, s.magicPen, boss.level) * (1 - amount(Effect.Spellbreaker));
@@ -101,7 +104,9 @@ function offense(s: CombatStats, raid: RaidDef) {
  * formulas per swing: mitigation, penetration, crits, ±10% variance). Each boss attack
  * picks a living fighter weighted by threat (`threatWeight`): the more threat, the more
  * of the attacks, but anyone can be hit. It is dodged at the target's evasion. Every
- * `aoe.every` seconds hits every living fighter (no dodge). Heals go to the most hurt
+ * `aoe.every` seconds hits every living fighter (no dodge), or with `aoe.split` shares its damage
+ * among them. With Lunar Phases (`raid.phases`) the boss turns to its next phase every
+ * `phases.every` seconds and takes that phase's armor, resistance and damage type. Heals go to the most hurt
  * living ally ("single") or are split across the living party ("all"); lifesteal and
  * regen heal yourself. The highest Frostbite chill in the party shrinks all the boss's
  * damage. Executioner, Bully, Berserker, Ambush, Riposte, Second Wind, Second Skin,
@@ -113,7 +118,13 @@ function offense(s: CombatStats, raid: RaidDef) {
 export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record = true): RaidResult {
   const fighters = setup.fighters.map(f => f.stats);
   const n = fighters.length;
-  const off = fighters.map(s => offense(s, raid));
+  // Per phase (one without phases): each fighter's offense, and their defense against the boss's attacks.
+  const phases = bossPhases(raid);
+  const offs = phases.map(p => fighters.map(s => offense(s, p)));
+  const defenses = phases.map(p => fighters.map(s => defenseAgainst(s, p.damageType, p.level)));
+  let phase = 0;
+  let off = offs[0];
+  let defense = defenses[0];
   const maxHp = fighters.map(s => s.maxHp);
   const hp = [...maxHp];
   const boss = raid.boss;
@@ -129,7 +140,6 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const chill = Math.max(0, ...fighters.map(s => s.chill));
   const bossPeriod = 1 / boss.speed;
   const bossHit = (boss.dps / boss.speed) * (1 - chill);
-  const defense = fighters.map(s => defenseAgainst(s, boss.damageType, boss.level));
   const weight = fighters.map(s => threatWeight(s.threat));
   const aoeMit = fighters.map(s => defenseAgainst(s, raid.aoe.damageType, boss.level).mitigation);
   const aoeHit = raid.aoe.damage * (1 - chill);
@@ -138,6 +148,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const next = off.map(o => first(o.period));
   let nextBoss = first(bossPeriod);
   let nextAoe = raid.aoe.every;
+  let nextPhase = raid.phases?.every ?? Infinity;
   const events: RaidEvent[] = [];
   let now = 0;
   const alive = (i: number) => hp[i] > 0;
@@ -180,16 +191,24 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
 
   for (;;) {
     const fighterAt = Math.min(...next);
-    const t = Math.min(fighterAt, nextBoss, nextAoe);
+    const t = Math.min(fighterAt, nextBoss, nextAoe, nextPhase);
     if (t > raid.enrageSeconds) return done(raid.enrageSeconds, false, true);
     for (let i = 0; i < n; i++) heal(i, fighters[i].regen * (t - now));
     now = t;
 
-    if (t === nextAoe) {
+    if (t === nextPhase) {
+      nextPhase += raid.phases!.every;
+      phase = (phase + 1) % phases.length;
+      off = offs[phase];
+      defense = defenses[phase];
+      push({ t, by: -1, kind: 'phase', target: -1, damage: 0, phase });
+    } else if (t === nextAoe) {
       nextAoe += raid.aoe.every;
+      // A split AoE (Moonfall) is shared by the living: the fewer left, the harder each is hit.
+      const share = raid.aoe.split ? aoeHit / hp.filter(h => h > 0).length : aoeHit;
       const saved: number[] = [];
-      for (let i = 0; i < n; i++) if (alive(i) && hurt(i, aoeHit * (1 - aoeMit[i]) * (0.9 + 0.2 * rng()))) saved.push(i);
-      push({ t, by: -1, kind: 'aoe', target: -1, damage: aoeHit, ...(saved.length && { saved }) });
+      for (let i = 0; i < n; i++) if (alive(i) && hurt(i, share * (1 - aoeMit[i]) * (0.9 + 0.2 * rng()))) saved.push(i);
+      push({ t, by: -1, kind: 'aoe', target: -1, damage: share, ...(saved.length && { saved }) });
     } else if (t === nextBoss) {
       nextBoss += bossPeriod;
       // The boss picks a living fighter, weighted by threat (`threatWeight`).

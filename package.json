@@ -34,7 +34,11 @@
     "art:enemy:list": "tsx scripts/enemy-art.ts list",
     "art:enemy:cut": "tsx scripts/enemy-art.ts cut",
     "art:enemy:build": "tsx scripts/enemy-art.ts build",
-    "art:enemy:gen": "tsx scripts/enemy-art.ts gen"
+    "art:enemy:gen": "tsx scripts/enemy-art.ts gen",
+    "art:banner:list": "tsx scripts/banner-art.ts list",
+    "art:banner:cut": "tsx scripts/banner-art.ts cut",
+    "art:banner:build": "tsx scripts/banner-art.ts build",
+    "art:banner:gen": "tsx scripts/banner-art.ts gen"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

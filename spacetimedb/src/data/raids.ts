@@ -28,6 +28,15 @@ export interface ReferencePlayer {
   magicPen: number;
 }
 
+/** One face of a raid boss with Lunar Phases (`RaidDef.phases`): its defenses and the damage of its attacks. */
+export interface RaidPhase {
+  name: string;
+  armor: number;
+  resistance: number;
+  defense: EnemyDef['defense'];
+  damageType: 'Physical' | 'Magic';
+}
+
 export interface RaidDef {
   id: number;
   name: string;
@@ -38,8 +47,16 @@ export interface RaidDef {
   unlockZoneId: number;
   /** Its `drops` are the bases its Epic and Legendary drops pick from. XP and gold are per kill. */
   boss: EnemyDef;
-  /** Every `every` seconds the boss hits every living fighter for `damage` (before their mitigation). It can't be dodged. */
-  aoe: { every: number; damage: number; damageType: 'Physical' | 'Magic'; name: string };
+  /**
+   * Every `every` seconds the boss hits every living fighter for `damage` (before their mitigation), or with
+   * `split`, `damage` shared evenly by the living. It can't be dodged. `icon` names its UI icon.
+   */
+  aoe: { every: number; damage: number; damageType: 'Physical' | 'Magic'; name: string; icon: string; split?: boolean };
+  /**
+   * Lunar Phases: the boss cycles through `list` from the first, `every` seconds each, and takes each phase's
+   * defenses and damage type in turn (its `boss` stats are the first phase's).
+   */
+  phases?: { every: number; list: RaidPhase[] };
   /** The boss enrages after this many seconds: the party wipes. */
   enrageSeconds: number;
   /** Rewarded kills (clears) per character per day (raid.ts `lockoutStart`); losses don't count. */
@@ -80,9 +97,9 @@ export const RAIDS: RaidDef[] = [
     unlockZoneId: 3,
     boss: {
       id: 9001, name: 'Skaldrith, the Rime Wyrm', level: 40, damageType: 'Physical', defense: 'Armored', speed: 0.7,
-      hp: 18000, dps: 72, armor: 250, resistance: 100, xp: 4000, gold: 3000, drops: raidDrops(1), materials: [], boss: true,
+      hp: 18000, dps: 72, armor: 250, resistance: 100, xp: 40000, gold: 30000, drops: raidDrops(1), materials: [], boss: true,
     },
-    aoe: { every: 12, damage: 40, damageType: 'Magic', name: 'Frost Breath' },
+    aoe: { every: 12, damage: 40, damageType: 'Magic', name: 'Frost Breath', icon: 'snowflake' },
     enrageSeconds: 240,
     clearsPerDay: 3,
     itemsPerClear: 3,
@@ -95,6 +112,46 @@ export const RAIDS: RaidDef[] = [
       attacksPerSec: 1.25, physicalPerSec: 54, magicPerSec: 42, critChance: 0.09, critMult: 1.05, armorPen: 0.02, magicPen: 0.02,
     },
   },
+  {
+    id: 2,
+    name: 'The Drowned Moon',
+    blurb: 'Beneath the Moonless Throne the great moonwell runs deep. Something fell into it the night the moon went out, and it is still breathing.',
+    tier: 4,
+    unlockZoneId: 4,
+    boss: {
+      id: 9002, name: 'Umbriel, the Eclipse', level: 50, damageType: 'Magic', defense: 'Armored', speed: 0.8,
+      hp: 38000, dps: 140, armor: 320, resistance: 60, xp: 110000, gold: 80000, drops: raidDrops(2), materials: [], boss: true,
+    },
+    // Moonfall: a shard of the moon shared by the living, so every death makes the next one hit harder.
+    aoe: { every: 15, damage: 440, damageType: 'Magic', name: 'Moonfall', icon: 'moon', split: true },
+    // Silver light behind plate, then void behind wards: a party of one damage type has a slow half of every cycle.
+    phases: {
+      every: 20,
+      list: [
+        { name: 'Full Moon', armor: 320, resistance: 60, defense: 'Armored', damageType: 'Magic' },
+        { name: 'New Moon', armor: 60, resistance: 320, defense: 'Warded', damageType: 'Physical' },
+      ],
+    },
+    enrageSeconds: 270,
+    clearsPerDay: 3,
+    itemsPerClear: 3,
+    ownBaseShare: 1 / 2,
+    tokens: 15,
+    hireCost: 5000,
+    // The average of level-48 characters with random T4 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
+    reference: {
+      level: 48, maxHp: 815, regen: 2.6, armor: 72, resistance: 87, evasionRating: 31, threat: 0.28,
+      attacksPerSec: 1.16, physicalPerSec: 80, magicPerSec: 80, critChance: 0.1, critMult: 1.09, armorPen: 0.06, magicPen: 0.04,
+    },
+  },
 ];
 
 export const RAIDS_BY_ID: ReadonlyMap<number, RaidDef> = new Map(RAIDS.map(r => [r.id, r]));
+
+/** The phase the boss is in at `t` seconds (its index in `phases.list`); 0 without phases. */
+export const phaseAt = (raid: RaidDef, t: number): number =>
+  raid.phases ? Math.floor(t / raid.phases.every) % raid.phases.list.length : 0;
+
+/** The boss as it is in each phase (just `boss` without phases): what DPS against it is measured on. */
+export const bossPhases = (raid: RaidDef): EnemyDef[] =>
+  raid.phases ? raid.phases.list.map(({ name: _name, ...p }) => ({ ...raid.boss, ...p })) : [raid.boss];

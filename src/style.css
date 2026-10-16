@@ -19,6 +19,7 @@
   --phys: #e8a15a;
   --magicdmg: #8f7dff;
   --frost: #6fd3ff;
+  --moon: #c9a8ff;
   /* Raid party members: their floating numbers and the swatch by their name. */
   --party-0: #5b8cff;
   --party-1: #ff8a5b;
@@ -58,6 +59,7 @@
   --phys: #c26a17;
   --magicdmg: #6a55e6;
   --frost: #1593c9;
+  --moon: #7a3fc8;
   --party-0: #2f62e0;
   --party-1: #d4572a;
   --party-2: #8a3fd1;
@@ -998,7 +1000,6 @@ select:focus,
 }
 .enemy-art {
   object-fit: contain;
-  image-rendering: pixelated;
 }
 .portrait .enemy-art {
   width: 96px;
@@ -1009,11 +1010,10 @@ select:focus,
   width: 44px;
   height: 44px;
 }
-.raid-boss-art {
+.raid-banner {
   display: block;
-  width: 96px;
-  height: 96px;
-  margin-bottom: 6px;
+  width: 100%;
+  object-fit: cover;
 }
 .portrait.you {
   color: var(--info);
@@ -2919,6 +2919,10 @@ fieldset.affix-pick legend {
 }
 
 /* The raid boss's special attack (Frost Breath): a callout on the boss card; in the fight a countdown, a frost flash and damage numbers. */
+/* The Drowned Moon: its Moonfall and Lunar Phases (special panels, timers, flash, floats) in moon purple. */
+.raid-moon {
+  --frost: var(--moon);
+}
 .raid-special {
   display: flex;
   align-items: center;
@@ -3006,6 +3010,13 @@ fieldset.affix-pick legend {
   white-space: nowrap;
   z-index: 1;
   text-shadow: 0 0 2px var(--surface), 0 0 4px var(--surface), 0 1px 3px rgba(0, 0, 0, 0.35);
+  animation: raid-float-up 1.8s ease-out forwards;
+}
+/* Slower than `float-up`: holds full opacity, then fades. Its length is RaidsView's FLOAT_SECONDS. */
+@keyframes raid-float-up {
+  0% { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
+  45% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -36px) scale(1); }
 }
 .float.raid-float.hit,
 .float.raid-float.crit {
@@ -3612,4 +3623,162 @@ fieldset.affix-pick legend {
 .skill-tab.active {
   color: var(--text);
   border-bottom-color: var(--accent);
+}
+
+/* Raids: one collapsible banner per raid (RaidsView). The banner is the middle strip of a 4:1
+   scene; text sits on a dark fade at the left, where the art leaves room for it. */
+.raid-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.raid-entry {
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.raid-head {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: clamp(96px, 11vw, 140px);
+  padding: 0;
+  border: 0;
+  background: linear-gradient(100deg, #10131c, #1d2a3d);
+  color: #f2f4f8;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.raid-head .raid-banner {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+.raid-head::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgb(8 10 16 / 0.85), rgb(8 10 16 / 0.45) 45%, transparent 75%);
+  transition: opacity 0.15s;
+}
+.raid-head-sprite {
+  position: absolute;
+  right: 44px;
+  top: 50%;
+  width: auto;
+  height: 92%;
+  transform: translateY(-50%);
+}
+.raid-head-text {
+  position: absolute;
+  left: 16px;
+  right: 48px;
+  top: 50%;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  transform: translateY(-50%);
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.8);
+}
+.raid-head-name {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.raid-head-boss {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: #d5dbe6;
+}
+.raid-head-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.raid-head .tag {
+  background: rgb(8 10 16 / 0.6);
+  border-color: rgb(255 255 255 / 0.18);
+  color: #e3e7ef;
+  text-shadow: none;
+}
+.raid-head .tag.raid-head-party {
+  border-color: #3ecf8e;
+  color: #3ecf8e;
+}
+.raid-head .caret {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  margin-top: -10px;
+  color: #f2f4f8;
+  transform: rotate(-90deg);
+  transition: transform 0.15s;
+}
+.raid-entry.open .raid-head .caret {
+  transform: none;
+}
+.raid-entry.locked .raid-head .raid-banner,
+.raid-entry.locked .raid-head-sprite {
+  filter: grayscale(0.75) brightness(0.6);
+}
+@media (hover: hover) {
+  .raid-head:hover .raid-banner {
+    filter: brightness(1.12);
+  }
+}
+.raid-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px 14px;
+}
+.raid-body > p {
+  margin: 0;
+}
+/* The boss's sprite left of its stats when there is art (EnemyArt renders nothing otherwise). */
+.raid-boss:has(.raid-boss-sprite) {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+}
+.raid-boss-sprite {
+  width: 168px;
+  height: 168px;
+}
+.raid-boss-info {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .raid-boss:has(.raid-boss-sprite) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .raid-boss-sprite {
+    justify-self: center;
+    width: 120px;
+    height: 120px;
+  }
+}
+.raid-body .raid-boss,
+.raid-body .raid-rewards {
+  margin-top: 0;
+}
+.raid-section {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 600px) {
+  .raid-head-name {
+    font-size: 17px;
+  }
 }

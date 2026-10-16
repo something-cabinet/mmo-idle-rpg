@@ -5,7 +5,7 @@ import { SLOTS, STARTER_ARMOR, STARTER_WEAPONS, base, weaponValues, type Slot } 
 import { Stat, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, WALK_SECONDS } from '../spacetimedb/src/data/zones';
 import { Effect, LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
-import { simulateFight } from '../spacetimedb/src/sim';
+import { simulateFight } from '../spacetimedb/src/fight';
 import { MAX_LEVEL, bonusHp, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { scoreGear } from '../spacetimedb/src/equip';
 import { MAX_OFFLINE_MICROS, offlineCapMicros, project, xpToNext, type Progress } from '../spacetimedb/src/game';

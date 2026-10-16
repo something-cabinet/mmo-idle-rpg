@@ -3,7 +3,8 @@
 // function of the clock from its start, so leaving and reopening the view resumes
 // where it was.
 
-import { fightSpan, respawns, type Simulated } from '../../spacetimedb/src/sim';
+import { fightSpan, respawns } from '../../spacetimedb/src/fight';
+import type { Simulated } from '../../spacetimedb/src/sim';
 import { nowMicros } from './clock';
 import { fmt } from './format';
 
@@ -110,13 +111,13 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     const periods = { you: src && fight.matchup.dps > 0 ? 1 / src.attacksPerSec : Infinity, enemy: 1 / enemy.speed };
     for (const [who, hp, max] of [['you', youHp, s.maxHp], ['enemy', foeHp, enemy.hp]] as const) {
       const period = periods[who];
-      // Swings land half a period into the fight, then every period (sim.ts).
+      // Swings land half a period into the fight, then every period (server fight.ts).
       const swing = (((t - fight.walk - period / 2) % period) + period) % period;
       el(who, '.hp-fill').style.width = `${(hp / max) * 100}%`;
       el(who, '.hp-text').textContent = `${fmt(hp)} / ${fmt(max)}${who === 'you' && shield >= 0.5 ? ` +${fmt(shield)}` : ''}`;
       el(who, '.swing-fill').style.width = walking || over || !Number.isFinite(period) ? '0%' : `${(swing / period) * 100}%`;
     }
-    // Seconds left lying defeated before the next fight (sim.ts `respawns`).
+    // Seconds left lying defeated before the next fight (server fight.ts `respawns`).
     const rising = fightSpan(fight) - Number(now - startMicros) / 1e6;
     $('scene-status').textContent =
       over && respawns(fight)

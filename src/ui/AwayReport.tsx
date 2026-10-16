@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Presence, SettleLog } from '../module_bindings/types';
 import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
-import { RESPAWN_SECONDS } from '../../spacetimedb/src/sim';
+import { RESPAWN_SECONDS } from '../../spacetimedb/src/fight';
 import { SKILLS_BY_ID } from '../../spacetimedb/src/data/skills';
 import { recipeOf } from '../../spacetimedb/src/data/recipes';
 import { SUPPLIES_BY_ID } from '../../spacetimedb/src/data/supplies';

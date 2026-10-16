@@ -7,7 +7,8 @@ import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 import { combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { project, type Progress } from '../spacetimedb/src/game';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
-import { RESPAWN_SECONDS, fightRng, simulate, simulateFight } from '../spacetimedb/src/sim';
+import { RESPAWN_SECONDS, fightRng, simulateFight } from '../spacetimedb/src/fight';
+import { simulate } from '../spacetimedb/src/sim';
 import { Effect, LEGENDARIES_BY_ID, copiesToCap } from '../spacetimedb/src/data/legendary';
 
 let failed = 0;

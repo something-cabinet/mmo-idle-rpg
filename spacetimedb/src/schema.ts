@@ -394,7 +394,7 @@ export const settleLog = table(
     elixirEmpty: t.bool().default(false),
     /** Drops (or forged bases) scrapped instead of salvaged, per rarity in loot.ts RARITIES order. */
     scrapped: t.array(t.u32()).default([]),
-    /** Live fights lost to `enemyId` in a matchup won on average: each cost a respawn, not the target (sim.ts). */
+    /** Live fights lost to `enemyId` in a matchup won on average: each cost a respawn, not the target (fight.ts). */
     respawns: t.u32().default(0),
   }
 );

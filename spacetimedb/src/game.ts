@@ -5,7 +5,7 @@ import { BASE_OFFLINE_HOURS, MAX_LEVEL, combatStats, matchup, type CombatStats, 
 import { Effect, PATIENCE_HOURS, effectAmount } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { ELIXIR_KILLS, type Buffs } from './data/supplies';
-import { liveKillRate } from './sim';
+import { liveKillRate } from './fight';
 
 /** Offline progress is capped so a player can't come back to infinite loot. */
 export const MAX_OFFLINE_MICROS = BigInt(BASE_OFFLINE_HOURS) * 60n * 60n * 1_000_000n;
@@ -75,7 +75,7 @@ export interface Settled extends Progress {
   elixir?: ElixirLeft;
   /** Patience: extra kills' worth of drops and materials (fractional; offline only). */
   bonusKills?: number;
-  /** Lost fights the character got up from (sim.ts `respawns`), each followed by a respawn; offline, the expected number. */
+  /** Lost fights the character got up from (fight.ts `respawns`), each followed by a respawn; offline, the expected number. */
   respawns?: number;
 }
 
@@ -162,7 +162,7 @@ export class ElixirTracker {
  * (`defeatedAt`); until then nothing is settled, so the fight's clock keeps running
  * across settles. If neither side can ever win, time passes with no effect. A viable
  * matchup still loses some live fights to bad luck, each costing a respawn: the kill
- * rate is what live fights average out to (sim.ts `liveKillRate`), so online and
+ * rate is what live fights average out to (fight.ts `liveKillRate`), so online and
  * offline earn the same.
  *
  * An elixir's charges cap kills like a level-up does: the matchup is recomputed when it

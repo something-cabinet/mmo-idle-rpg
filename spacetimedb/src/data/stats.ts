@@ -112,7 +112,7 @@ export const STATS: Record<StatId, StatDef> = {
   14: s(14, 'Resistance', false, 'linear', 5),
   15: s(15, 'Resistance', true, 'percent', 25),
   16: s(16, 'Evasion rating', false, 'linear', 5),
-  17: s(17, 'HP regen', false, 'life', 0.5, undefined, true, 0.1),
+  17: s(17, 'HP regen', false, 'heal', 2, undefined, true, 0.4),
   18: s(18, 'Lifesteal', true, 'percent', 1.5, 25, true, 0.25),
   19: s(19, 'Heal', false, 'heal', 4),
   20: s(20, 'Heal', true, 'percent', 30),

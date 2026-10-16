@@ -157,8 +157,8 @@ where damage grows far more than HP:
 | Curve | Per tier | T1 → T9 | Used by |
 |---|---|---|---|
 | **Offense** | ×2.1 to T3, then ×1.6 | ×74 | Weapon damage, flat added damage, enemy HP |
-| **Life** | ×1.6 | ×43 | Gear HP, HP regen |
-| **Heal** | ×1.33 | ×10 | Weapon heal, flat added heal |
+| **Life** | ×1.6 | ×43 | Gear HP |
+| **Heal** | ×1.33 | ×10 | Weapon heal, flat added heal, HP regen |
 | **Linear** | ×T | ×9 | Armor, resistance, evasion rating (their formulas use level, which is linear) |
 | **Percent** | `√(N / 9)` (of T9) | ×3 | Percent stats and primaries |
 
@@ -177,7 +177,7 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 | Physical damage (added) | 2 | Offense | 756 | Straight bonus per hit: worth more on fast weapons |
 | Magic damage (added) | 2 | Offense | 756 | Same |
 | Max HP | 20 | Life | 860 | |
-| HP regen (/s) | 0.5 | Life | 21 | |
+| HP regen (/s) | 2 | Heal | 20 | Grows like enemy DPS; Vitality's +1%/point does the rest |
 | Heal (added) | 4 | Heal | 39 | Straight bonus per hit: worth more on fast weapons |
 | Armor | 5 | Linear | 45 | One best roll ≈ 9% mitigation vs a matching enemy |
 | Resistance | 5 | Linear | 45 | Same as armor |
@@ -187,7 +187,7 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 implicits, legendary bonuses, weapon hit and heal) is rounded to the nearest whole
 number, and never below 1 (a T1 flat damage roll is 1 or 2); affix tier 1 rolls from 1,
 not 0. Only the very small stats keep two decimals, each with its own tier-1 floor:
-**lifesteal** (affix tier 1 rolls 0.25–0.67%), **base crit chance** (0.5–2%) and **HP regen** (0.1–0.5/s). Values are still stored in hundredths, so those fit the same column.
+**lifesteal** (affix tier 1 rolls 0.25–0.67%), **base crit chance** (0.5–2%) and **HP regen** (0.4–2/s). Values are still stored in hundredths, so those fit the same column.
 
 ### Percent stats (*illustrative*)
 

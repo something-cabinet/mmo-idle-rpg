@@ -19,6 +19,11 @@
   --phys: #e8a15a;
   --magicdmg: #8f7dff;
   --frost: #6fd3ff;
+  /* Raid party members: their floating numbers and the swatch by their name. */
+  --party-0: #5b8cff;
+  --party-1: #ff8a5b;
+  --party-2: #c77dff;
+  --party-3: #e8d44d;
   --gold: #f5c542;
   --dust: #5fd4e8;
   --material: #d9a273;
@@ -53,6 +58,10 @@
   --phys: #c26a17;
   --magicdmg: #6a55e6;
   --frost: #1593c9;
+  --party-0: #2f62e0;
+  --party-1: #d4572a;
+  --party-2: #8a3fd1;
+  --party-3: #a68a00;
   --gold: #b88a00;
   --dust: #0e93ab;
   --material: #9a5a26;
@@ -1049,6 +1058,20 @@ select:focus,
 .float.taken { color: var(--bad); }
 .float.dodge { color: var(--muted); font-style: italic; }
 .float.heal { color: var(--ok); }
+.float.block { color: var(--frost); }
+.float.shielded { color: var(--frost); }
+.float.carry { color: var(--accent); }
+/* Second Skin's shield, over the top end of the HP bar (fight.ts). */
+.hp-shield {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: repeating-linear-gradient(135deg, rgba(111, 211, 255, 0.75) 0 4px, rgba(111, 211, 255, 0.45) 4px 8px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  transition: width 0.15s, left 0.15s;
+  pointer-events: none;
+}
 @keyframes float-up {
   from { opacity: 1; transform: translate(-50%, 0) scale(1.1); }
   to { opacity: 0; transform: translate(-50%, -36px) scale(1); }
@@ -2938,6 +2961,43 @@ fieldset.affix-pick legend {
   25% { transform: translateX(-3px); }
   75% { transform: translateX(3px); }
 }
+/* Raid floating numbers (RaidsView `raidFloats`): over the bar they concern, with the
+   dot of the fighter they come from. */
+.raid-boss-bar .hpbar {
+  overflow: visible;
+}
+.raid-boss-bar .hp-fill {
+  border-radius: 6px;
+}
+.float.raid-float {
+  top: -6px;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+  z-index: 1;
+  text-shadow: 0 0 2px var(--surface), 0 0 4px var(--surface), 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.float.raid-float.hit,
+.float.raid-float.crit {
+  color: var(--who, var(--text));
+}
+.float.raid-float.crit {
+  font-size: 20px;
+}
+.raid-who {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--who);
+  align-self: center;
+}
+.raid-party-bars .duelist-name .raid-who {
+  margin-right: 6px;
+  vertical-align: 1px;
+}
 .float.frost {
   top: -4px;
   left: 82%;
@@ -3471,6 +3531,11 @@ fieldset.affix-pick legend {
 .weight-stats > summary {
   cursor: pointer;
   font-weight: 600;
+}
+.raid-boss-stats > summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 6px;
 }
 
 /* Tempered items (life-skills.md, "Smithing: temper an item"): the raised base stats. */

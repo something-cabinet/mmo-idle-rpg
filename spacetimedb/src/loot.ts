@@ -4,7 +4,7 @@
 
 import { TYPE_LIST, base, baseType, implicitValue, weaponValues, type DamageType, type HealTarget } from './data/bases';
 import { LEGENDARIES } from './data/legendary';
-import { MAX_TIER, STATS, affixRange, affixRef, roundStat, toStored, type StatDef } from './data/stats';
+import { MAX_TIER, STATS, affixRange, affixRef, fromStored, roundStat, toStored, type StatDef, type StatId } from './data/stats';
 import { UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniquePool, type UniqueDef } from './data/uniques';
 import { MATERIAL_CHANCE, materialOf } from './data/materials';
 import { isScrapRarity, scrapMaterialId, type ScrapRarity } from './data/recipes';
@@ -247,6 +247,26 @@ export function raiseRarity<T extends RaisableItem>(rng: Rng, it: T, removeIndex
   };
 }
 
+/**
+ * Keen Eye: `it` with its lowest-tier regular affix moved up to the item's tier, keeping
+ * its place in the range (a top roll stays a top roll). Unchanged if every affix is
+ * already there; a unique's or an Anomaly's stats (affix tier 0) are never touched.
+ */
+export function raiseLowestAffix<T extends Pick<NewItem, 'tier' | 'affixes'>>(it: T): T {
+  let low = -1;
+  it.affixes.forEach((a, i) => {
+    if (a.tier > 0 && a.tier < it.tier && (low < 0 || a.tier < it.affixes[low].tier)) low = i;
+  });
+  if (low < 0) return it;
+  const a = it.affixes[low];
+  const stat = a.stat as StatId;
+  const [lo, hi] = affixRange(stat, a.tier);
+  const [lo2, hi2] = affixRange(stat, it.tier);
+  const at = hi > lo ? Math.min(1, Math.max(0, (fromStored(a.value) - lo) / (hi - lo))) : 1;
+  const raised = { stat: a.stat, tier: it.tier, value: toStored(roundStat(stat, lo2 + (hi2 - lo2) * at)) };
+  return { ...it, affixes: it.affixes.map((x, i) => (i === low ? raised : x)) };
+}
+
 // ---------------------------------------------------------------- drops
 
 export interface LootFilter {
@@ -334,6 +354,12 @@ export interface DropInput {
   bagFree: number;
   /** Fortune's Favor: chance per kept drop to be raised one rarity (max Legendary). */
   fortune?: number;
+  /** Bounty: extra Rares from these kills (they go through the filter like any drop). */
+  bounty?: number;
+  /** Keen Eye: chance per kept Rare or better drop to raise its lowest affix to the item's tier. */
+  keenEye?: number;
+  /** Salvager: chance per rejected drop to be salvaged (or scrapped) twice, with its own generator. */
+  salvager?: { chance: number; rng: Rng };
   /**
    * Scrap rejected drops instead of salvaging them (life-skills.md, "Scrap into materials"):
    * no Dust or gold. Needs `discoverRng` for the bases of drops salvaged unrolled.
@@ -358,15 +384,16 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
   let gold = 0n;
   /** Gets rid of a drop of `baseId` (unknown for drops salvaged unrolled without `discoverRng`). */
   const salvage = (r: RarityName, baseId: number | undefined, tier = d.tier) => {
+    const times = d.salvager && d.salvager.rng() < d.salvager.chance ? 2 : 1;
     const materialId = d.scrap && baseId !== undefined && isScrapRarity(r) ? scrapMaterialId(baseId, tier) : undefined;
     if (materialId !== undefined && isScrapRarity(r)) {
-      addScrap(scrapped, materialId, r);
+      addScrap(scrapped, materialId, r, times);
       return;
     }
     salvaged[r]++;
     const v = salvageValue(r, tier);
-    dust += v.dust;
-    gold += v.gold;
+    dust += v.dust * BigInt(times);
+    gold += v.gold * BigInt(times);
   };
 
   const scale = d.kills * d.rewardScale * (1 + d.itemFind);
@@ -404,6 +431,14 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
     }
   }
 
+  // Bounty: extra Rares, filtered like any drop.
+  for (let i = 0; i < (d.bounty ?? 0); i++) {
+    const item = makeItem(rng, pick(rng, d.enemy.drops), d.tier, 'Rare');
+    seen.push({ baseId: item.baseId });
+    if (passesFilter(item, d.filter)) kept.push(item);
+    else salvage('Rare', item.baseId);
+  }
+
   // Anomalies: from any enemy, always kept, and they skip the bag limit (added after it).
   const anomalies: NewItem[] = [];
   for (let i = samplePoisson(rng, d.kills * ANOMALY_CHANCE); i > 0; i--) {
@@ -419,6 +454,14 @@ export function rollDrops(rng: Rng, d: DropInput): DropResult {
       const it = kept[i];
       if (rarityRank(it.rarity.tag) >= rarityRank('Legendary') || rng() >= chance) continue;
       kept[i] = raiseRarity(rng, it, Math.floor(rng() * it.affixes.length));
+    }
+  }
+
+  // Keen Eye, after Fortune's Favor so an upgraded drop can benefit.
+  if (d.keenEye) {
+    for (let i = 0; i < kept.length; i++) {
+      if (rarityRank(kept[i].rarity.tag) < rarityRank('Rare') || rng() >= d.keenEye) continue;
+      kept[i] = raiseLowestAffix(kept[i]);
     }
   }
 

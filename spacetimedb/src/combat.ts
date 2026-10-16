@@ -6,7 +6,7 @@
 // hundredths, converted with `fromStored`.
 
 import { SLOTS } from './data/bases';
-import { Effect, effectAmount, type EffectCounts } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, effectAmount, type EffectCounts } from './data/legendary';
 import { CAPS, Stat, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType } from './data/bases';
@@ -157,7 +157,11 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const spellblade = has(Effect.Spellblade);
   if (spellblade) damagePct.Physical = damagePct.Magic = damagePct.Physical + damagePct.Magic;
   const damageMult = effectDamageMult(effects);
-  const addedFlat: Record<DamageType, number> = { Physical: flat(Stat.PhysDamage), Magic: flat(Stat.MagicDamage) };
+  // Honed Edge raises flat added damage; it never deepens an Anomaly's negative roll.
+  const honed = (x: number) => (x > 0 ? x * (1 + amount(Effect.HonedEdge)) : x);
+  const addedFlat: Record<DamageType, number> = { Physical: honed(flat(Stat.PhysDamage)), Magic: honed(flat(Stat.MagicDamage)) };
+  // Discipline: a "more" multiplier from the highest primary attribute.
+  const discipline = 1 + (amount(Effect.Discipline) * Math.max(0, might, finesse, mind, vitality)) / 100;
   const attackSpeedPct = pct(Stat.AttackSpeedPct) + 0.001 * finesse;
   const critIncreased = pct(Stat.CritChancePct) + 0.004 * finesse;
   const critDamage = 1.5 + pct(Stat.CritDamage);
@@ -175,7 +179,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
       const base = w.damageType.tag === from ? fromStored(w.hit) : 0;
       // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
       // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
-      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * (buffs?.damage ?? 1));
+      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * discipline * (buffs?.damage ?? 1));
     }
     const baseHeal = fromStored(w.heal);
     const heal = baseHeal > 0 ? Math.max(0, (baseHeal + flat(Stat.Heal)) * (1 + healPct)) : 0;
@@ -218,7 +222,8 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     armor: armor + amount(Effect.Runeguard) * resistance,
     resistance: resistance + amount(Effect.Ironclad) * armor,
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse),
-    lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100, pct(Stat.LifestealPct))),
+    // Bloodthirst raises the lifesteal cap.
+    lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst), pct(Stat.LifestealPct))),
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
     // At worst −100%: nothing found, never negative gold or XP. A buff multiplies the total.
     itemFind: more(Math.max(-1, pct(Stat.ItemFindPct)), buffs?.itemFind),
@@ -244,10 +249,27 @@ export function bonusHp(level: number, maxHp: number, glassCannon: boolean): num
 /** Bonus `x` (0.5 = +50%) times a "more" multiplier `mult`, as a bonus again. */
 const more = (x: number, mult = 1) => (1 + x) * mult - 1;
 
-/** Damage reduction from armor or resistance `def` (after penetration) at `level`. */
-export function mitigation(def: number, pen: number, level: number): number {
+/** Most damage armor or resistance can remove, before Unbreakable. */
+export const MITIGATION_CAP = 0.85;
+
+/** Damage reduction from armor or resistance `def` (after penetration) at `level`, up to `cap`. */
+export function mitigation(def: number, pen: number, level: number, cap = MITIGATION_CAP): number {
   const d = def * (1 - pen);
-  return d <= 0 ? 0 : Math.min(0.85, d / (d + 5 * level));
+  return d <= 0 ? 0 : Math.min(cap, d / (d + 5 * level));
+}
+
+/**
+ * Average damage multiplier from crits of `src` against `mit` (enemy mitigation by type),
+ * with Deadeye's share `deadeye` of that mitigation ignored by crits. `src.critMult`
+ * without Deadeye.
+ */
+export function critMultAgainst(src: AttackSource, mit: Record<DamageType, number>, deadeye: number): number {
+  const c = Math.min(1, src.critChance);
+  const normal = src.hit.Physical * (1 - mit.Physical) + src.hit.Magic * (1 - mit.Magic);
+  if (deadeye <= 0 || c <= 0 || normal <= 0) return src.critMult;
+  const pierced = src.hit.Physical * (1 - mit.Physical * (1 - deadeye)) + src.hit.Magic * (1 - mit.Magic * (1 - deadeye));
+  const critDmg = 1 + (src.critMult - 1) / c;
+  return 1 - c + c * critDmg * (pierced / normal);
 }
 
 /** Chance to avoid an attack from an enemy of `enemyLevel`. */
@@ -267,7 +289,7 @@ export function defenseAgainst(s: CombatStats, type: DamageType, enemyLevel: num
   const def = type === 'Physical' ? (spellward ? best : s.armor) : juggernaut ? best : s.resistance;
   const cap = CAPS.evasion / 100 + effectAmount(s.effects, Effect.PhantomStep);
   return {
-    mitigation: mitigation(def, 0, s.level),
+    mitigation: mitigation(def, 0, s.level, MITIGATION_CAP + effectAmount(s.effects, Effect.Unbreakable)),
     evasion: juggernaut || spellward ? 0 : evasionChance(s.evasionRating, enemyLevel, cap),
   };
 }
@@ -277,6 +299,12 @@ export interface Matchup {
   enemyMitigation: Record<DamageType, number>;
   playerMitigation: number;
   evasion: number;
+  /** The main weapon's average crit multiplier against this enemy (Deadeye included). */
+  critMult: number;
+  /** One enemy hit after your mitigation and Stoneskin, before evasion and Bulwark. */
+  enemyHit: number;
+  /** Second Skin's shield at the start of each fight, HP. */
+  shield: number;
   /** Your damage per second after the enemy's mitigation. */
   dps: number;
   /** Self-heal per second. */
@@ -308,14 +336,26 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
       };
   let dps = 0;
   let hps = 0;
+  let critMult = 1;
+  const deadeye = amount(Effect.Deadeye);
   for (const src of s.sources) {
     const perHit = src.hit.Physical * (1 - enemyMitigation.Physical) + src.hit.Magic * (1 - enemyMitigation.Magic);
-    dps += perHit * src.attacksPerSec * src.critMult;
+    const cm = critMultAgainst(src, enemyMitigation, deadeye);
+    if (src === s.sources[0]) critMult = cm;
+    dps += perHit * src.attacksPerSec * cm;
     hps += src.heal * src.attacksPerSec * src.critMult; // solo: heals land on yourself
   }
+  const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
 
   const { mitigation: playerMitigation, evasion } = defenseAgainst(s, e.damageType, e.level);
-  const incoming = e.dps * (1 - s.chill) * (1 - playerMitigation) * (1 - evasion);
+  // Stoneskin takes a share of max HP off each hit; Bulwark blocks half of a share of the hits.
+  const stoneskin = amount(Effect.Stoneskin) * s.maxHp;
+  const bulwark = amount(Effect.Bulwark);
+  const enemyHit = Math.max(0, (e.dps / e.speed) * (1 - s.chill) * (1 - playerMitigation) - stoneskin);
+  let incoming = stoneskin > 0 ? enemyHit * e.speed * (1 - evasion) : e.dps * (1 - s.chill) * (1 - playerMitigation) * (1 - evasion);
+  if (bulwark > 0) incoming *= 1 - bulwark / 2;
+  // Riposte: each evaded attack counters for a share of your average hit.
+  dps += amount(Effect.Riposte) * evasion * e.speed * dps * period;
   // Effect damage is your damage: Glass Cannon and Voidtouched apply to it too.
   const damageMult = effectDamageMult(s.effects);
   // Thornshell reflects a share of the damage taken as physical damage.
@@ -323,20 +363,52 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   // Zealot's Oath: heals also hit for a share of the heal (magic).
   dps += amount(Effect.ZealotsOath) * hps * damageMult * (1 - enemyMitigation.Magic);
   const netIncoming = incoming - s.regen - s.lifesteal * dps - hps;
+  // Second Skin: the shield takes the first hits. HP is full meanwhile, so sustain does nothing.
+  const shield = amount(Effect.SecondSkin) * s.maxHp;
+  const shieldTime = shield > 0 && incoming > 0 ? shield / incoming : 0;
 
-  // Executioner: the last `t` of the enemy's HP takes double damage, so it goes in half the time.
-  let timeToKill = dps > 0 ? (e.hp / dps) * (1 - amount(Effect.Executioner) / 2) : Infinity;
+  let timeToKill = dps > 0 ? e.hp / dps : Infinity;
+  // Berserker: damage × (1 + k × share of max HP missing). Missing HP grows at
+  // `netIncoming` once the shield is gone, so the enemy's HP falls as a quadratic in time.
+  const berserk = 10 * amount(Effect.Berserker);
+  if (berserk > 0 && dps > 0 && netIncoming > 0 && timeToKill > shieldTime) {
+    const alpha = (berserk * netIncoming) / (2 * s.maxHp);
+    const hpLeft = e.hp - dps * shieldTime;
+    timeToKill = shieldTime + (Math.sqrt(1 + (4 * alpha * hpLeft) / dps) - 1) / (2 * alpha);
+  }
+  // Executioner (the last share of the enemy's HP) and Bully (the first share) take
+  // double damage, so those parts go in half the time.
+  const doubled = amount(Effect.Executioner) + amount(Effect.Bully);
+  if (doubled > 0) timeToKill *= 1 - doubled / 2;
   // Ambush: the first swing (half a period in) deals 5 average hits, saving 4 periods;
   // a fight never ends before that first swing.
-  const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
   if (has(Effect.Ambush) && dps > 0 && period > 0) timeToKill = Math.max(timeToKill - 4 * period, period / 2);
-  // Second Wind: once per fight, a killing blow leaves you at a share of max HP.
-  const timeToDie = netIncoming <= 0 ? Infinity : (s.maxHp * (1 + amount(Effect.SecondWind))) / netIncoming;
+  // Follow-through: the killing hit overkills by half a hit on average; a share of that
+  // lands on the next enemy as it arrives.
+  const carry = amount(Effect.FollowThrough);
+  if (carry > 0 && dps > 0) timeToKill = Math.max(0, timeToKill - (carry / 2) * period);
+
+  // Second Wind: once per fight, a killing blow leaves you at a share of max HP. Last
+  // Stand slows the HP below its threshold, where sustain may hold you up for good.
+  const secondWind = amount(Effect.SecondWind);
+  const lastStand = amount(Effect.LastStand);
+  const lowNet = netIncoming - lastStand * incoming;
+  const low = LAST_STAND_BELOW * s.maxHp;
+  const drain = (h: number) => (lastStand > 0 ? Math.max(0, h - low) / netIncoming + Math.min(h, low) / lowNet : h / netIncoming);
+  const timeToDie =
+    netIncoming <= 0 || lowNet <= 0
+      ? Infinity
+      : lastStand > 0 || shield > 0
+        ? shieldTime + drain(s.maxHp) + (secondWind > 0 ? drain(secondWind * s.maxHp) : 0)
+        : (s.maxHp * (1 + secondWind)) / netIncoming;
   const viable = timeToKill < timeToDie;
   return {
     enemyMitigation,
     playerMitigation,
     evasion,
+    critMult,
+    enemyHit,
+    shield,
     dps,
     hps,
     incoming,

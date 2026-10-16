@@ -167,6 +167,7 @@ const FightScene = memo(
         <div className="fighter-name">{name}</div>
         <div className={`hpbar${who === 'enemy' ? ' enemy' : ''}`}>
           <div className="hp-fill" />
+          {who === 'you' && <div className="hp-shield" />}
           <span className="hp-text" />
         </div>
         <div className="swing">

@@ -4,8 +4,8 @@
 // on its own timer with the matchup formulas of combat.ts applied player against player
 // (penetration, evasion, crits, heals, lifesteal, regen and the effects).
 
-import { defenseAgainst, effectDamageMult, mitigation, type CombatStats } from '../../spacetimedb/src/combat';
-import { Effect, effectAmount } from '../../spacetimedb/src/data/legendary';
+import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from '../../spacetimedb/src/combat';
+import { Effect, LAST_STAND_BELOW, effectAmount } from '../../spacetimedb/src/data/legendary';
 import { seededRng, type Rng } from '../../spacetimedb/src/loot';
 
 /** A duel still going after this long is decided on points (share of HP left). */
@@ -57,7 +57,8 @@ function offense(a: CombatStats, b: CombatStats) {
     hit: (src.hit.Physical * (1 - mitP) + src.hit.Magic * (1 - mitM)) * (1 - b.chill),
     heal: src.heal,
     crit,
-    critX: crit > 0 ? 1 + (src.critMult - 1) / crit : 1,
+    // Deadeye: crits ignore a share of `b`'s mitigation.
+    critX: crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
     evasion: defenseAgainst(b, type, a.level).evasion,
     mitP,
     mitM,
@@ -72,6 +73,7 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
   const amount = (i: number, id: number) => effectAmount(sides[i].effects, id);
   const ambush = [sides[0].effects.has(Effect.Ambush) ? 5 : 1, sides[1].effects.has(Effect.Ambush) ? 5 : 1];
   const secondWind = [amount(0, Effect.SecondWind), amount(1, Effect.SecondWind)];
+  const shield = [amount(0, Effect.SecondSkin) * maxHp[0], amount(1, Effect.SecondSkin) * maxHp[1]];
   // Each side's first swing lands at a random point of its first period (half a period on
   // average, like `simulateFight`), so neither seat always strikes first.
   const first = (period: number) => (Number.isFinite(period) ? rng() * period : Infinity);
@@ -81,7 +83,14 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
 
   /** `i` takes `damage`; Second Wind may save them. Returns whether it did. */
   const hurt = (i: number, damage: number) => {
-    hp[i] = Math.max(0, hp[i] - damage);
+    // Stoneskin, Bulwark and Last Stand shrink the hit; Second Skin's shield takes it first.
+    damage = Math.max(0, damage - amount(i, Effect.Stoneskin) * maxHp[i]);
+    const bulwark = amount(i, Effect.Bulwark);
+    if (bulwark > 0 && rng() < bulwark) damage /= 2;
+    if (hp[i] < LAST_STAND_BELOW * maxHp[i]) damage *= 1 - amount(i, Effect.LastStand);
+    const absorbed = Math.min(shield[i], damage);
+    shield[i] -= absorbed;
+    hp[i] = Math.max(0, hp[i] - (damage - absorbed));
     if (hp[i] > 0 || secondWind[i] <= 0) return false;
     hp[i] = secondWind[i] * maxHp[i];
     secondWind[i] = 0;
@@ -103,14 +112,19 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
     next[a] += o.period;
     if (rng() < o.evasion) {
       ambush[a] = 1;
-      events.push({ t, by: a, kind: 'dodge', damage: 0, hp: [...hp] });
+      // Riposte: `b` counters for a share of an average hit.
+      const counter = amount(b, Effect.Riposte) * off[b].hit * (1 + off[b].crit * (off[b].critX - 1));
+      const saved = counter > 0 && hurt(a, counter);
+      events.push({ t, by: a, kind: 'dodge', damage: 0, hp: [...hp], ...(saved && { secondWind: true }) });
+      if (hp[a] <= 0) return done(t, b, 'ko');
       continue;
     }
     const isCrit = rng() < o.crit;
     const critX = isCrit ? o.critX : 1;
-    // Executioner: double damage once the target is below its threshold.
-    const execute = hp[b] < amount(a, Effect.Executioner) * maxHp[b] ? 2 : 1;
-    let damage = o.hit * critX * (0.9 + 0.2 * rng()) * execute * ambush[a];
+    // Executioner and Bully: double damage below / above their thresholds. Berserker: more the more HP `a` is missing.
+    const execute = hp[b] < amount(a, Effect.Executioner) * maxHp[b] || hp[b] > (1 - amount(a, Effect.Bully)) * maxHp[b] ? 2 : 1;
+    const rage = 1 + (10 * amount(a, Effect.Berserker) * (maxHp[a] - hp[a])) / maxHp[a];
+    let damage = o.hit * critX * (0.9 + 0.2 * rng()) * execute * ambush[a] * rage;
     ambush[a] = 1;
     const heal = o.heal * critX;
     // Zealot's Oath: heals also hit for a share of the heal (magic).

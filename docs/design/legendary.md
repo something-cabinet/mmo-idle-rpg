@@ -49,18 +49,36 @@ Effects come in two kinds:
 | 14 | **Executioner** | Physical damage % | Enemies below **30%** HP take double damage | 50% |
 | 15 | **Rending** | Armor penetration % | Your physical damage ignores **40%** of the enemy's armor mitigation left after penetration | 70% |
 | 21 | **Spellbreaker** | Magic penetration % | Your magic damage ignores **40%** of the enemy's resistance mitigation left after penetration | 70% |
+| 25 | **Follow-through** | Crit damage | **60%** of your overkill damage hits the next enemy as it arrives | 120% |
+| 26 | **Riposte** | Evasion rating % | Each attack you evade counters for **50%** of your average hit | 100% |
+| 27 | **Deadeye** | Increased crit chance | Your crits ignore **50%** of the enemy's armor and resistance mitigation left after penetration | 100% |
+| 28 | **Bully** | Magic damage % | Enemies above **70%** HP take double damage | 50% (above 50%) |
+| 29 | **Honed Edge** | Attack speed % | Flat added damage **+50%** (a negative flat roll is left as it is) | +100% |
+| 30 | **Bloodthirst** | Lifesteal % | Lifesteal cap **+3%** (5% → 8%) | +5% (10%) |
+| 31 | **Discipline** | Vitality | Damage **× (1 + 10% per 100 points of your highest attribute)** | 20% per 100 |
 
 ```
-Overcrit:     critDamage += a × max(0, critChance − 1)            a = 2 per copy
-Zealot:       DPS_you += a × HPS_self      (magic, uses enemy resistance)
-Executioner:  timeToKill × (1 − a / 2)     (the last a of the HP goes twice as fast)
-Rending:      enemy mitigation vs physical × (1 − a)
-Spellbreaker: enemy mitigation vs magic × (1 − a)
+Overcrit:       critDamage += a × max(0, critChance − 1)            a = 2 per copy
+Zealot:         DPS_you += a × HPS_self      (magic, uses enemy resistance)
+Executioner:    timeToKill × (1 − a / 2)     (the last a of the HP goes twice as fast)
+Rending:        enemy mitigation vs physical × (1 − a)
+Spellbreaker:   enemy mitigation vs magic × (1 − a)
+Follow-through: timeToKill −= a × 0.5 / attacksPerSec   (the kill overkills by half an average hit)
+Riposte:        DPS_you += a × evasion × enemySpeed × averageHit
+Deadeye:        crits use enemy mitigation × (1 − a): critMult = 1 − c + c × critDamage × pierced / normal
+Bully:          timeToKill × (1 − (aExecutioner + aBully) / 2)
+Honed Edge:     addedFlat_t × (1 + a)        (only when addedFlat_t > 0)
+Bloodthirst:    lifesteal cap = 5% + a
+Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   ("more", after damage %)
 ```
 
 - Zealot's Oath runs one way only (heal → damage), so it can't loop.
-- Executioner doesn't change DPS: live fights double each hit once the enemy is below the
-  threshold.
+- Executioner and Bully don't change DPS: live fights double each hit while the enemy is
+  below (above) the threshold. Their caps keep the two ranges apart.
+- Follow-through: each live fight starts with the **average** overkill landing as the
+  enemy arrives (shown as a hit), so every fight stays self-contained and replays the
+  same. It does nothing in raids (there is no next enemy).
+- Riposte damage is your damage: like Thornshell it folds into your hits in live fights.
 
 ## Defense (armor, shield)
 
@@ -71,6 +89,12 @@ Spellbreaker: enemy mitigation vs magic × (1 − a)
 | 16 | **Second Wind** | HP regen | Once per fight, a killing blow leaves you at **50%** HP instead | 100% |
 | 17 | **Ironclad** | Armor % | **30%** of your armor is added to your resistance | 100% |
 | 18 | **Runeguard** | Resistance % | **30%** of your resistance is added to your armor | 100% |
+| 32 | **Unbreakable** | Resistance | Armor and resistance cap **+2%** (85% → 87%) | +6% (91%) |
+| 33 | **Stoneskin** | Armor | Each enemy hit deals **1%** of your max HP less (after mitigation) | 3% |
+| 34 | **Last Stand** | Vitality | Below 30% HP, you take **20%** less damage | 50% |
+| 35 | **Berserker** | Might | **+3%** damage per 10% of your max HP missing | +9% |
+| 36 | **Bulwark** | Evasion rating | **15%** chance to block half of each enemy hit | 50% |
+| 37 | **Second Skin** | Max HP | Each fight starts with a shield of **15%** of your max HP | 50% |
 
 ```
 Phantom Step: evasion = min(0.60 + a, r / (r + 10 × enemyLevel))
@@ -78,7 +102,23 @@ Thornshell:   DPS_you += a × DPS_enemy_after_mitigation   (physical, uses enemy
 Second Wind:  timeToDie = maxHp × (1 + a) / netIncoming
 Ironclad:     resistance += a × armor        (both from the values before conversion,
 Runeguard:    armor      += a × resistance    so wearing both doesn't loop)
+Unbreakable:  your mitigation = min(0.85 + a, d / (d + 5 × level))
+Stoneskin:    enemyHit = max(0, hit after mitigation − a × maxHp)
+Bulwark:      incoming × (1 − a / 2)
+Second Skin:  shield S = a × maxHp, gone after S / incoming seconds (HP stays full meanwhile,
+              so sustain does nothing)
+Last Stand:   below L = 30% × maxHp the drain is netLow = netIncoming − a × incoming
+              drain(h) = max(0, h − L) / netIncoming + min(h, L) / netLow
+              timeToDie = S / incoming + drain(maxHp) + drain(aSecondWind × maxHp)
+              (∞ if netLow ≤ 0: sustain holds you below 30%)
+Berserker:    damage × (1 + 10a × missing / maxHp). Missing HP grows at netIncoming after
+              the shield, so enemyHP = DPS × (T + α (T − tS)²), α = 10a × netIncoming / (2 maxHp):
+              timeToKill = tS + (√(1 + 4α × hpLeft / DPS) − 1) / (2α)
 ```
+
+- Last Stand, Second Skin and Second Wind combine as above: the shield goes first, then
+  HP, then Second Wind's second life.
+- Berserker's closed form ignores Last Stand and Second Wind (live fights include them).
 
 ## Utility (rings, amulet)
 
@@ -88,6 +128,13 @@ Runeguard:    armor      += a × resistance    so wearing both doesn't loop)
 | 9 | **Fortune's Favor** | Item find % | Each **kept** drop has a **15%** chance to be upgraded one rarity (max Legendary) | 30% |
 | 19 | **Seasoned** | XP gain % | Offline progress cap **+4h** (8h → 12h) | +8h (16h) |
 | 20 | **Prosperity** | Gold find % | Gold **× 1.4** | × 1.6 |
+| 38 | **Salvager** | Gold find % | Each drop the loot filter or a full bag rejects has a **25%** chance to be salvaged (or scrapped) twice | 50% |
+| 39 | **Bounty** | Item find % | Every **200** kills of an enemy, an extra Rare drops | every 67 |
+| 40 | **Prospector** | Max HP | Kills drop **0.1** Ore of the zone's tier on average | 0.3 |
+| 41 | **Patience** | XP gain % | Offline fighting past the first 4h earns **+15%** XP, gold, drops and materials | +30% |
+| 42 | **Keen Eye** | Item find % | Kept Rare or better drops have a **20%** chance to raise their lowest affix to the item's top affix tier | 40% |
+| 43 | **Savor** | Max HP % | Each kill has a **15%** chance not to use a charge of your elixir | 30% |
+| 44 | **Raid Favor** | Threat % | Each rewarded raid clear has a **15%** chance to give one more item | 30% |
 
 ```
 Swift Hunter:    killRate = 1 / (timeToKill + walkTime × (1 − a))
@@ -96,10 +143,22 @@ Fortune's Favor: after the loot filter, each kept item rolls a: rarity + 1
                  removes one random regular affix and adds a legendary affix)
 Seasoned:        offline cap = 8h + a      (the gear worn at login decides)
 Prosperity:      gold × (1 + a)
+Salvager:        each rejected drop rolls a (own generator): Dust, gold or scrap × 2
+Bounty:          extra Rares = ⌊(before + kills) × a⌋ − ⌊before × a⌋   (before = kills of
+                 this enemy so far, so the count carries across settles)
+Prospector:      Ore ~ Poisson(kills × a)   (own generator; enemies otherwise never drop Ore)
+Patience:        login settle only: kills after 4h of the time away earn × (1 + a) XP and
+                 gold, and add a × kills to the kills drops and materials are rolled from
+Keen Eye:        after Fortune's Favor, each kept Rare+ rolls a: the lowest-tier regular
+                 affix moves to the item's tier, at the same place in the range
+Savor:           offline: charges used = round(kills × (1 − a)); online: each kill rolls a
+Raid Favor:      after the clear's items, one roll of a for one more
 ```
 
 - Fortune's Favor upgrades only kept items, so it costs the server a few rolls per
   settle, not one per kill.
+- These effects draw random numbers only when worn, so items,
+  drops and fights without these effects come out the same as before.
 
 ## Unique effects
 

@@ -2,6 +2,7 @@
 // client can import this file too and show/validate exactly what the server does.
 
 import { BASE_OFFLINE_HOURS, MAX_LEVEL, combatStats, matchup, type CombatStats, type Gear } from './combat';
+import { Effect, PATIENCE_HOURS, effectAmount } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { ELIXIR_KILLS, type Buffs } from './data/supplies';
 
@@ -71,6 +72,8 @@ export interface Settled extends Progress {
   defeatedAt?: bigint;
   /** The elixir after this time; set when the activity had one. */
   elixir?: ElixirLeft;
+  /** Patience: extra kills' worth of drops and materials (fractional; offline only). */
+  bonusKills?: number;
 }
 
 /**
@@ -98,27 +101,39 @@ export interface Activity {
   elixir?: ElixirRun;
 }
 
-/** Tracks an elixir's charges through a settle: one per kill, renewed from stock when spent. */
+/**
+ * Tracks an elixir's charges through a settle: one per kill, renewed from stock when
+ * spent. Savor (`savor`, legendary.md) gives each kill a chance not to use a charge.
+ */
 export class ElixirTracker {
   killsLeft: number;
   stock: number;
   renewed = 0;
   buffedKills = 0;
   private run: ElixirRun | undefined;
-  constructor(run: ElixirRun | undefined) {
+  private savor: number;
+  constructor(run: ElixirRun | undefined, savor = 0) {
     this.run = run;
     this.killsLeft = run?.killsLeft ?? 0;
     this.stock = run?.stock ?? 0;
+    this.savor = savor;
   }
   /** The buffs now, or undefined once spent. */
   get buffs(): Buffs | undefined {
     return this.killsLeft > 0 ? this.run?.buffs : undefined;
   }
-  /** Uses `kills` charges (at most `killsLeft`). */
-  use(kills: number) {
+  /** Kills the charges left last for, on average. */
+  get killsCovered(): number {
+    return this.savor > 0 ? Math.floor(this.killsLeft / (1 - this.savor)) : this.killsLeft;
+  }
+  /**
+   * Makes `kills` kills (at most `killsCovered`) with the buff, using `spent` charges:
+   * by default the average share Savor leaves (online fights roll each kill instead).
+   */
+  use(kills: number, spent = this.savor > 0 ? Math.round(kills * (1 - this.savor)) : kills) {
     if (!this.buffs) return;
     this.buffedKills += kills;
-    this.killsLeft -= kills;
+    this.killsLeft -= spent;
     if (this.killsLeft <= 0 && this.stock > 0) {
       this.stock -= 1;
       this.renewed += 1;
@@ -149,7 +164,12 @@ export class ElixirTracker {
  */
 export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?: bigint): Settled {
   let elapsed = nowMicros - p.settledMicros;
-  const elixir = new ElixirTracker(a.elixir);
+  const effects = combatStats(p.level, a.gear).effects;
+  const elixir = new ElixirTracker(a.elixir, effectAmount(effects, Effect.Savor));
+  // Patience: offline fighting after PATIENCE_HOURS earns more (the login settle only).
+  const patience = capMicros !== undefined ? effectAmount(effects, Effect.Patience) : 0;
+  const patientFrom = BigInt(PATIENCE_HOURS * 3600) * 1_000_000n;
+  let bonusKills = 0;
   if (elapsed <= 0n) return { ...p, kills: 0, xpGained: 0n, elixir: elixir.left };
   const start = p.settledMicros;
   const capped = capMicros !== undefined && elapsed > capMicros;
@@ -179,22 +199,29 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
     }
     const available = Math.floor((Number(left) / 1e6) * m.killRate);
     if (available <= 0) break;
+    const at = elapsed - left;
+    const patient = patience > 0 && at >= patientFrom;
+    const reward = patient ? 1 + patience : 1;
+    const xpPerKill = m.xpPerKill * reward;
     // Stop at the next level-up: stats change there.
     const maxed = level >= MAX_LEVEL;
     let kills = available;
-    if (!maxed && m.xpPerKill > 0) {
-      kills = Math.min(kills, Math.ceil(Number(xpToNext(level) - xp) / m.xpPerKill));
+    if (!maxed && xpPerKill > 0) {
+      kills = Math.min(kills, Math.ceil(Number(xpToNext(level) - xp) / xpPerKill));
     }
     // And at the elixir's last charge: the buffs change there.
-    if (buffs) kills = Math.min(kills, elixir.killsLeft);
+    if (buffs) kills = Math.min(kills, Math.max(1, elixir.killsCovered));
+    // And where Patience starts.
+    if (patience > 0 && !patient) kills = Math.min(kills, Math.max(1, Math.ceil((Number(patientFrom - at) / 1e6) * m.killRate)));
     elixir.use(kills);
     total += kills;
+    if (patient) bonusKills += kills * patience;
     if (!maxed) {
-      const gained = BigInt(Math.floor(kills * m.xpPerKill));
+      const gained = BigInt(Math.floor(kills * xpPerKill));
       xp += gained;
       xpGained += gained;
     }
-    gold += BigInt(Math.floor(kills * m.goldPerKill));
+    gold += BigInt(Math.floor(kills * m.goldPerKill * reward));
     left -= BigInt(Math.ceil((kills / m.killRate) * 1e6));
     if (left < 0n) left = 0n;
     for (let need = xpToNext(level); level < MAX_LEVEL && xp >= need; need = xpToNext(level)) {
@@ -206,5 +233,5 @@ export function project(p: Progress, a: Activity, nowMicros: bigint, capMicros?:
   }
 
   const settledMicros = capped ? nowMicros : start + elapsed - left;
-  return { level, xp, gold, settledMicros, kills: total, xpGained, defeatedAt, elixir: elixir.left };
+  return { level, xp, gold, settledMicros, kills: total, xpGained, defeatedAt, elixir: elixir.left, ...(bonusKills > 0 && { bonusKills }) };
 }

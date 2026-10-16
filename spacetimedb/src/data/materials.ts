@@ -5,7 +5,7 @@
 // magical creatures only), Cloth (thread, silk), Wood (logs, planks), Reagent (herbs,
 // venom, fangs: potions) and Gem (rough to flawless stones; rare). An enemy drops the
 // kinds it lists, always of its zone's tier. Ore only comes from Mining and is smelted
-// into Metal (life-skills.md); enemies never drop it.
+// into Metal (life-skills.md); enemies never drop it, except for Prospector (legendary.md).
 //
 // PERMANENT IDS: material IDs are stored in `material` rows and settle logs; never
 // reuse or renumber them. IDs are kind ID × 100 + tier (Copper Ingot 101, Rough Gem 701),

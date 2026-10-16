@@ -4,7 +4,7 @@
 // auto-equip's reference enemy of the character's level (equip.ts `referenceDummy`).
 
 import type { Item } from '../module_bindings/types';
-import { bonusHp, defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
+import { MITIGATION_CAP, bonusHp, defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
 import { Effect, LEGENDARIES_BY_ID, effectAmount } from '../../spacetimedb/src/data/legendary';
 import { CAPS, Stat, fromStored } from '../../spacetimedb/src/data/stats';
 import { scoreGear } from '../../spacetimedb/src/equip';
@@ -81,6 +81,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   /** A worn legendary effect as a note: its name and stacked effect. */
   const leg = (e: number) => has(e) && `${LEGENDARIES_BY_ID.get(e)!.name}: ${LEGENDARIES_BY_ID.get(e)!.describe(effectAmount(st.effects, e))}`;
   const evasionCap = CAPS.evasion / 100 + effectAmount(st.effects, Effect.PhantomStep);
+  const mitCap = MITIGATION_CAP + effectAmount(st.effects, Effect.Unbreakable);
   const primary = (name: string, id: number) => row(name, fmt(prim(id)), from([id], `${level} from levels`));
 
   const offense: StatRow[] = src
@@ -116,15 +117,15 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     row('Max HP', fmt(st.maxHp), from([Stat.MaxHp, Stat.MaxHpPct], `Base ${100 + 10 * (level - 1)} (100 + 10 per level)`,
       `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
     row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
-    row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + ${5 * level}), cap 85%`,
+    row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + ${5 * level}), cap ${pct(mitCap)}`,
       leg(Effect.Runeguard), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
-      `Reduction: resistance / (resistance + ${5 * level}), cap 85%`,
+      `Reduction: resistance / (resistance + ${5 * level}), cap ${pct(mitCap)}`,
       leg(Effect.Ironclad), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
     row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs Lv ${level}: rating / (rating + ${10 * level})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade")),
-    row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], `Cap ${CAPS.lifesteal}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no lifesteal')),
+    row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], `Cap ${pct(CAPS.lifesteal / 100 + effectAmount(st.effects, Effect.Bloodthirst))}`, leg(Effect.Bloodthirst), has(Effect.FrozenBlood) && 'Frozen Blood: no lifesteal')),
   ];
 
   const utility: StatRow[] = [

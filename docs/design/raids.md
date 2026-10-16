@@ -13,9 +13,9 @@ Opens for a character once it has killed **Hrimvald, Frost Giant Jarl** (T3 boss
 | | |
 |---|---|
 | Boss | Skaldrith, the Rime Wyrm: Lv 40, physical, Armored (armor 250, resistance 100) |
-| HP | 20,000 |
-| Attack | 80 DPS (0.7 attacks/s), each attack at one fighter picked by threat |
-| Frost Breath | every 12 s, 45 magic damage to every living fighter; can't be dodged |
+| HP | 18,000 |
+| Attack | 72 DPS (0.7 attacks/s), each attack at one fighter picked by threat |
+| Frost Breath | every 12 s, 40 magic damage to every living fighter; can't be dodged |
 | Enrage | at 4:00 the party wipes |
 
 Tuned in `npm run test:raid` against random T3 characters at level 38 (60-item bags of
@@ -24,11 +24,11 @@ profile, Damage (phys) and Damage (magic) builds). A fight lasts about 1:25. Win
 
 | Party | Odds |
 |---|---|
-| 4 players | ~91% (random gear; a real tank with Threat gear and a healer do better) |
-| 3 players | ~77% |
-| 3 players + 1 NPC | ~85% |
-| 2 players + 2 NPCs | ~75% |
-| 2 players | ~19% |
+| 4 players | ~93% (random gear; a real tank with Threat gear and a healer do better) |
+| 3 players | ~89% |
+| 3 players + 1 NPC | ~91% |
+| 2 players + 2 NPCs | ~87% |
+| 2 players | ~25% |
 
 *Illustrative.* Outcomes are mostly decided by the stats, like solo fights: a given
 party tends to win nearly always or nearly never.
@@ -93,7 +93,7 @@ live fights (combat.md). The server's outcome is final.
 On a win, each player gets, for up to **3 clears per raid per day** (`clearsPerDay`; a clear is a rewarded win, losses don't count; resets 00:00 UTC):
 
 - **Three T3 items, each Epic or better** (`itemsPerClear`), each rolled on its own: Epic 75%, Legendary 22%, Unique 3%. Epic and Legendary
-  are any zone base or one of the raid's **own bases** (variants, bases.md; Wyrm Hollow: the Rime dagger, greatsword, healing staff, bow, shield, ring and amulet), one of the raid's own **1 time in 3** (`ownBaseShare`); a Unique comes from the raid's **own pool**, which drops nowhere else
+  are any zone base or one of the raid's **own bases** (variants, bases.md; Wyrm Hollow: the Rime dagger, greatsword, healing staff, bow, shield, ring and amulet), one of the raid's own **1 time in 2** (`ownBaseShare`); a Unique comes from the raid's **own pool**, which drops nowhere else
   (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). The items
   ignore the bag limit, like a first-kill reward.
 - **10 raid tokens** (`character.raidTokens`), 3,000 gold, 4,000 XP.

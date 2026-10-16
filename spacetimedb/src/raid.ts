@@ -3,8 +3,8 @@
 // fight when the leader starts it (that decides the outcome), and every client in the
 // party replays the very same fight from the stored setup and seed to animate it.
 
-import { defenseAgainst, effectDamageMult, mitigation, type CombatStats } from './combat';
-import { Effect, effectAmount } from './data/legendary';
+import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from './combat';
+import { Effect, LAST_STAND_BELOW, effectAmount } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { base } from './data/bases';
@@ -42,6 +42,12 @@ export interface RaidEvent {
   bossHp: number;
   /** Fighters Second Wind saved in this event. */
   saved?: number[];
+  /** A boss hit: what reached the target after Stoneskin, Bulwark and Last Stand (the shield's share included). */
+  dealt?: number;
+  /** A boss hit Bulwark blocked half of. */
+  blocked?: boolean;
+  /** Every fighter's Second Skin shield after the event, when anyone in the party has one. */
+  shield?: number[];
 }
 
 export interface RaidResult {
@@ -82,7 +88,8 @@ function offense(s: CombatStats, raid: RaidDef) {
     heal: src.heal,
     healAll: src.healAll,
     crit,
-    critX: crit > 0 ? 1 + (src.critMult - 1) / crit : 1,
+    // Deadeye: crits ignore a share of the boss's mitigation.
+    critX: crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
     mitP,
     mitM,
   };
@@ -96,8 +103,9 @@ function offense(s: CombatStats, raid: RaidDef) {
  * `aoe.every` seconds hits every living fighter (no dodge). Heals go to the most hurt
  * living ally ("single") or are split across the living party ("all"); lifesteal and
  * regen heal yourself. The highest Frostbite chill in the party shrinks all the boss's
- * damage. Executioner, Ambush, Second Wind, Thornshell and Zealot's Oath work as in a
- * duel. The party wins when the boss dies, and loses when everyone is dead or at the
+ * damage. Executioner, Bully, Berserker, Ambush, Riposte, Second Wind, Second Skin,
+ * Stoneskin, Bulwark, Last Stand, Thornshell and Zealot's Oath work as in a solo fight.
+ * Follow-through does nothing here: there is no next enemy. The party wins when the boss dies, and loses when everyone is dead or at the
  * enrage timer.
  */
 export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record = true): RaidResult {
@@ -112,6 +120,8 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const ambush = fighters.map(s => (s.effects.has(Effect.Ambush) ? 5 : 1));
   const secondWind = fighters.map((_, i) => amount(i, Effect.SecondWind));
   const executeBelow = fighters.map((_, i) => amount(i, Effect.Executioner) * boss.hp);
+  const bullyAbove = fighters.map((_, i) => (1 - amount(i, Effect.Bully)) * boss.hp);
+  const shield = fighters.map((s, i) => amount(i, Effect.SecondSkin) * s.maxHp);
   const chill = Math.max(0, ...fighters.map(s => s.chill));
   const bossPeriod = 1 / boss.speed;
   const bossHit = (boss.dps / boss.speed) * (1 - chill);
@@ -129,8 +139,23 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const alive = (i: number) => hp[i] > 0;
   const done = (end: number, won: boolean, enraged = false): RaidResult => ({ events, maxHp, end, won, enraged });
 
+  const shielded = shield.some(x => x > 0);
+  /** What the last `hurt` dealt and whether Bulwark blocked it (for the event). */
+  let dealt = 0;
+  let blocked = false;
+
   /** `i` takes `damage` from the boss; Thornshell reflects some. Returns whether Second Wind saved them. */
   const hurt = (i: number, damage: number): boolean => {
+    // Stoneskin, Bulwark and Last Stand shrink the hit; Second Skin's shield takes it first.
+    damage = Math.max(0, damage - amount(i, Effect.Stoneskin) * maxHp[i]);
+    const bulwark = amount(i, Effect.Bulwark);
+    blocked = bulwark > 0 && rng() < bulwark;
+    if (blocked) damage /= 2;
+    if (hp[i] < LAST_STAND_BELOW * maxHp[i]) damage *= 1 - amount(i, Effect.LastStand);
+    dealt = damage;
+    const absorbed = Math.min(shield[i], damage);
+    shield[i] -= absorbed;
+    damage -= absorbed;
     const thorns = amount(i, Effect.Thornshell) * damage * effectDamageMult(fighters[i].effects) * (1 - off[i].mitP);
     bossHp = Math.max(0, bossHp - thorns);
     hp[i] = Math.max(0, hp[i] - damage);
@@ -143,7 +168,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     if (alive(i)) hp[i] = Math.min(maxHp[i], hp[i] + amt);
   };
   const push = (e: Omit<RaidEvent, 'hp' | 'bossHp'>) => {
-    if (record) events.push({ ...e, hp: [...hp], bossHp });
+    if (record) events.push({ ...e, hp: [...hp], bossHp, ...(shielded && { shield: [...shield] }) });
   };
 
   for (;;) {
@@ -165,11 +190,14 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       let r = rng() * living.reduce((sum, i) => sum + weight[i], 0);
       const target = living.find(i => (r -= weight[i]) < 0) ?? living[living.length - 1];
       if (rng() < defense[target].evasion) {
+        // Riposte: the dodge counters for a share of an average hit.
+        const counter = amount(target, Effect.Riposte) * off[target].hit * (1 + off[target].crit * (off[target].critX - 1));
+        if (counter > 0) bossHp = Math.max(0, bossHp - counter);
         push({ t, by: -1, kind: 'dodge', target, damage: 0 });
       } else {
         const damage = bossHit * (1 - defense[target].mitigation) * (0.9 + 0.2 * rng());
         const saved = hurt(target, damage);
-        push({ t, by: -1, kind: 'hit', target, damage, ...(saved && { saved: [target] }) });
+        push({ t, by: -1, kind: 'hit', target, damage, dealt, ...(blocked ? { blocked: true } : {}), ...(saved && { saved: [target] }) });
       }
     } else {
       const a = next.indexOf(fighterAt);
@@ -177,7 +205,10 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       next[a] += o.period;
       const isCrit = rng() < o.crit;
       const critX = isCrit ? o.critX : 1;
-      let damage = o.hit * critX * (0.9 + 0.2 * rng()) * (bossHp < executeBelow[a] ? 2 : 1) * ambush[a];
+      const doubled = bossHp < executeBelow[a] || bossHp > bullyAbove[a] ? 2 : 1;
+      // Berserker: more damage the more of your max HP is missing.
+      const rage = 1 + (10 * amount(a, Effect.Berserker) * (maxHp[a] - hp[a])) / maxHp[a];
+      let damage = o.hit * critX * (0.9 + 0.2 * rng()) * doubled * ambush[a] * rage;
       ambush[a] = 1;
       const healed = o.heal * critX;
       // Zealot's Oath: heals also hit for a share of the heal (magic).

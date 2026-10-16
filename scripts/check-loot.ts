@@ -3,7 +3,7 @@
 //   npm run test:loot
 import { BASE_LIST, TYPE_LIST, base, implicitValue } from '../spacetimedb/src/data/bases';
 import { LEGENDARIES, LEGENDARIES_BY_ID, UNIQUE_EFFECTS } from '../spacetimedb/src/data/legendary';
-import { STATS, Stat, affixRange, affixRef, toStored } from '../spacetimedb/src/data/stats';
+import { STATS, Stat, affixRange, affixRef, roundStat, toStored } from '../spacetimedb/src/data/stats';
 import { UNIQUES, UNIQUES_BY_ID, UNIQUE_ROLL_MAX, UNIQUE_ROLL_MIN, uniqueWeight } from '../spacetimedb/src/data/uniques';
 import { MATERIAL_CHANCE, MATERIALS_BY_ID } from '../spacetimedb/src/data/materials';
 import { DROP_CHANCE, ENEMIES_BY_ID, ZONES_BY_ID, bossOf, rewardScale } from '../spacetimedb/src/data/zones';
@@ -22,6 +22,7 @@ import {
   REGULAR_AFFIXES,
   makeAnomaly,
   makeItem,
+  raiseLowestAffix,
   rarityRank,
   type RarityName,
   rollAffix,
@@ -363,6 +364,42 @@ for (const zone of ZONES_BY_ID.values()) {
     rewards.every(r => r.gold === BigInt(boss.gold * FIRST_KILL_GOLD_MULT) && r.item.rarity.tag === 'Rare' &&
       r.item.tier === zone.tier && r.item.affixes.length === 2 && boss.drops.includes(r.item.baseId)) &&
     new Set(rewards.map(r => r.item.baseId)).size > 10);
+}
+
+// ---------------------------------------------------------------- legendary loot effects
+
+{
+  // Bounty: extra Rares on top of the usual drops, filtered like them.
+  const plain = rollDrops(seededRng(11n), session({ kills: 500 }));
+  const bounty = rollDrops(seededRng(11n), session({ kills: 500, bounty: 3 }));
+  check('Bounty: 3 extra Rares on top of the usual drops', total(bounty) === total(plain) + 3 && bounty.seen.length === plain.seen.length + 3);
+  const picky = rollDrops(seededRng(11n), session({ kills: 0, bounty: 2, filter: { minRarity: 'Epic', keepAffixes: [], keepTypes: [], minAffixTier: 1 } }));
+  check('… a filter that rejects Rares salvages them', picky.kept.length === 0 && picky.salvaged.Rare === 2);
+
+  // Keen Eye: the lowest affix moves up to the item's tier, keeping its place in the range.
+  const it = { ...makeItem(seededRng(1n), 1, 5, 'Rare'), affixes: [
+    { stat: Stat.PhysDamagePct, tier: 2, value: toStored(affixRange(Stat.PhysDamagePct, 2)[1]) },
+    { stat: Stat.CritDamage, tier: 4, value: toStored(affixRange(Stat.CritDamage, 4)[0]) },
+  ] };
+  const raised = raiseLowestAffix(it);
+  check('Keen Eye: the lowest affix rises to the item tier, a top roll stays on top',
+    raised.affixes[0].tier === 5 && raised.affixes[0].value === toStored(roundStat(Stat.PhysDamagePct, affixRange(Stat.PhysDamagePct, 5)[1])) && raised.affixes[1] === it.affixes[1]);
+  const top = { ...it, affixes: it.affixes.map(a => ({ ...a, tier: 5 })) };
+  check('… unchanged when every affix is already at the item tier', raiseLowestAffix(top) === top);
+  const keen = rollDrops(seededRng(12n), session({ kills: 3000, keenEye: 1 }));
+  const raisedDrops = keen.kept.filter(i => i.rarity.tag !== 'Unique' && i.rarity.tag !== 'Anomaly');
+  check('… at 100%, every kept Rare+ drop has an affix at the item tier', raisedDrops.length > 0 && raisedDrops.every(i => i.affixes.some(a => a.tier === i.tier)));
+
+  // Salvager: rejected drops can count twice; with its own generator the item rolls don't change.
+  const reject = { minRarity: 'Legendary' as RarityName, keepAffixes: [], keepTypes: [], minAffixTier: 1 };
+  const base = rollDrops(seededRng(13n), session({ kills: 3000, filter: reject }));
+  const doubled = rollDrops(seededRng(13n), session({ kills: 3000, filter: reject, salvager: { chance: 1, rng: seededRng(1n) } }));
+  check('Salvager: at 100%, rejected drops give twice the Dust and gold, same drops',
+    doubled.dust === 2n * base.dust && doubled.gold === 2n * base.gold && doubled.kept.length === base.kept.length && base.dust > 0n);
+  const scrapBase = rollDrops(seededRng(13n), session({ kills: 3000, filter: reject, scrap: true, discoverRng: seededRng(2n) }));
+  const scrapDouble = rollDrops(seededRng(13n), session({ kills: 3000, filter: reject, scrap: true, discoverRng: seededRng(2n), salvager: { chance: 1, rng: seededRng(1n) } }));
+  const scrapCount = (r: ReturnType<typeof rollDrops>) => r.scrapped.reduce((n, x) => n + x.count, 0);
+  check('… and scrap counts twice', scrapCount(scrapDouble) === 2 * scrapCount(scrapBase) && scrapCount(scrapBase) > 0);
 }
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

@@ -7,10 +7,11 @@ import { Timestamp } from 'spacetimedb';
 import { raidTimer, spacetimedb } from '../schema';
 import { addXp } from '../game';
 import { MAX_LEVEL, combatStats } from '../combat';
+import { Effect, effectAmount } from '../data/legendary';
 import { RAIDS_BY_ID, RAID_PARTY_SIZE, type RaidDef } from '../data/raids';
 import { ZONES_BY_ID, bossOf } from '../data/zones';
 import { clearsToday, encodeSetup, decodeSetup, npcStats, raidLootRng, raidRng, rollRaidItem, simulateRaid, type RaidFighter } from '../raid';
-import { discover, gearOf, hasKilledBoss, leaveRaidParty, raidFighting, raidMembers, requireActive, settle, type Character, type Ctx } from '../helpers';
+import { addKills, discover, gearOf, hasKilledBoss, leaveRaidParty, raidFighting, raidMembers, requireActive, settle, type Character, type Ctx } from '../helpers';
 
 /** Raid log rows kept per character. */
 const RAID_LOG_KEEP = 20;
@@ -150,10 +151,14 @@ export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer
     const ch = ctx.db.character.id.find(f.characterId);
     if (!ch) continue;
     const rewarded = fight.won && clearsToday(ctx.db.raidLog.characterId.filter(ch.id), raid.id, now) < raid.clearsPerDay;
+    // A win counts as a kill of the boss, rewarded or not: it reveals the boss's stats (RaidsView).
+    if (fight.won) addKills(ctx, ch.id, raid.boss.id, 1);
     const itemIds: bigint[] = [];
     if (rewarded) {
       const rng = raidLootRng(party.id, start, ch.id);
-      for (let i = 0; i < raid.itemsPerClear; i++) {
+      // Raid Favor: a chance of one more item, decided after the others so they don't change.
+      const favor = effectAmount(f.stats.effects, Effect.RaidFavor);
+      for (let i = 0; i < raid.itemsPerClear || (i === raid.itemsPerClear && favor > 0 && rng() < favor); i++) {
         const item = rollRaidItem(rng, raid);
         itemIds.push(ctx.db.item.insert({ ...item, id: 0n, characterId: ch.id, locked: false, createdAt: ctx.timestamp }).id);
         discover(ctx, ch.id, item.tier, [{ baseId: item.baseId, uniqueId: item.uniqueId }]);

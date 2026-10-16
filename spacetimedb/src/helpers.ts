@@ -6,6 +6,7 @@ import { Encounter as EncounterType, Found as FoundType, account, character, ite
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project } from './game';
 import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
+import { materialAt } from './data/materials';
 import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
 import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, type ProductionSkillDef } from './data/skills';
 import { recipeOf, scrapMaterialId, type MaterialCost, type ScrapRarity } from './data/recipes';
@@ -23,6 +24,7 @@ import {
   rollDrops,
   rollMaterials,
   salvageValue,
+  samplePoisson,
   seededRng,
   type DropResult,
   type MaterialDrop,
@@ -127,11 +129,18 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   if (target && p.kills > 0) {
     const filter = ctx.db.lootFilter.characterId.find(ch.id);
     const stats = combatStats(ch.level, gear);
+    const amount = (id: number) => effectAmount(stats.effects, id);
+    // Bounty: one Rare every 1 / a kills of this enemy, counted across settles.
+    const bountyRate = amount(Effect.Bounty);
+    const killedBefore = bountyRate > 0 ? Number(killsOf(ctx, ch.id, target.enemy.id)) : 0;
+    const bounty = bountyRate > 0 ? Math.floor((killedBefore + p.kills) * bountyRate + 1e-9) - Math.floor(killedBefore * bountyRate + 1e-9) : 0;
+    // Patience adds kills' worth of drops and materials (offline only).
+    const dropKills = p.kills + (p.bonusKills ?? 0);
     // Fortune counts for the kills made with it: drops scale with (1 + item find) per kill.
     const itemFind = (stats.itemFind * (p.kills - buffedKills) + combatStats(ch.level, gear, buffs).itemFind * buffedKills) / p.kills;
     // Seeded by (character, settle start), so the result is reproducible.
     drops = rollDrops(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch), {
-      kills: p.kills,
+      kills: dropKills,
       enemy: target.enemy,
       tier: target.zone.tier,
       rewardScale: rewardScale(target.zone, target.enemy),
@@ -144,7 +153,12 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       },
       scrap: filter?.scrap ?? false,
       bagFree: ch.bagSize - bagCount(ctx, ch.id),
-      fortune: effectAmount(stats.effects, Effect.FortunesFavor),
+      fortune: amount(Effect.FortunesFavor),
+      bounty,
+      keenEye: amount(Effect.KeenEye),
+      salvager: amount(Effect.Salvager) > 0
+        ? { chance: amount(Effect.Salvager), rng: seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, SALVAGER_SALT) }
+        : undefined,
       discoverRng: seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, DISCOVER_SALT),
     });
     discovered.push(...discover(ctx, ch.id, target.zone.tier, drops.seen));
@@ -157,8 +171,14 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     salvageGold = drops.gold;
     addScrapRows(ctx, ch.id, drops.scrapped);
     // Own seed, so adding materials didn't change the item rolls above.
-    materials = rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, p.kills,
+    materials = rollMaterials(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, MATERIAL_SALT), target.enemy, target.zone.tier, dropKills,
       rewardScale(target.zone, target.enemy));
+    // Prospector: Ore, which enemies otherwise never drop.
+    const ore = materialAt(target.zone.tier, 'Ore');
+    const oreCount = ore && amount(Effect.Prospector) > 0
+      ? samplePoisson(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, PROSPECT_SALT), dropKills * amount(Effect.Prospector))
+      : 0;
+    if (ore && oreCount > 0) materials = mergeMaterials(materials, [{ materialId: ore.id, count: oreCount }]);
     addMaterials(ctx, ch.id, materials);
   }
 
@@ -643,6 +663,11 @@ export function grantStarterKit(ctx: Ctx, characterId: bigint, weaponBaseId: num
 }
 
 /** Adds `kills` to the character's lifetime kills of `enemyId`. */
+/** Kills of `enemyId` by the character so far. */
+export function killsOf(ctx: Ctx, characterId: bigint, enemyId: number): bigint {
+  return [...ctx.db.enemyKill.characterId.filter(characterId)].find(k => k.enemyId === enemyId)?.kills ?? 0n;
+}
+
 export function addKills(ctx: Ctx, characterId: bigint, enemyId: number, kills: number) {
   const row = [...ctx.db.enemyKill.characterId.filter(characterId)].find(k => k.enemyId === enemyId);
   if (row) ctx.db.enemyKill.id.update({ ...row, kills: row.kills + BigInt(kills) });
@@ -657,6 +682,8 @@ export const MAX_FRIENDS = 100;
 const MATERIAL_SALT = 0x6d6174n; // "mat"
 const DISCOVER_SALT = 0x6469736376n; // "discv"
 const ENCOUNTER_SALT = 0x656e636fn; // "enco"
+const SALVAGER_SALT = 0x73616c76n; // "salv"
+const PROSPECT_SALT = 0x70726f73n; // "pros"
 
 /** `a` plus `b`, one entry per material. */
 function mergeMaterials(a: readonly MaterialDrop[], b: readonly MaterialDrop[]): MaterialDrop[] {

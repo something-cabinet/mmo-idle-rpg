@@ -63,7 +63,7 @@ export function EnemyDetail({ s, z, e, m }: { s: Snapshot; z: ZoneDef; e: EnemyD
   );
 }
 
-function EnemyStats({ e, m }: { e: EnemyDef; m: Matchup }) {
+export function EnemyStats({ e, m }: { e: EnemyDef; m: Matchup }) {
   return (
     <div className="enemy-stats">
       <StatRows

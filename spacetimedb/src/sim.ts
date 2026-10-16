@@ -4,7 +4,7 @@
 // the fight's start time. Offline time still uses the expected-value `project`.
 
 import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from './combat';
-import { Effect, effectAmount } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, effectAmount } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { ElixirTracker, xpToNext, type Activity, type Progress, type Settled } from './game';
 import { seededRng, type Rng } from './loot';
@@ -14,6 +14,8 @@ export const MAX_FIGHT_SECONDS = 600;
 
 /** Mixed into fight seeds, so they never reuse a drop roll's seed. */
 const FIGHT_SALT = 0x6669676874n; // "fight"
+/** Mixed into Savor's per-kill roll, so it never changes a fight's own rolls. */
+const SAVOR_SALT = 0x7361766f72n; // "savor"
 
 export const fightRng = (characterId: bigint, startMicros: bigint): Rng => seededRng(characterId, startMicros, FIGHT_SALT);
 
@@ -31,6 +33,12 @@ export interface FightEvent {
   foeHp: number;
   /** Second Wind saved you from this hit. */
   secondWind?: boolean;
+  /** Second Skin's shield left after this event, while it lasts. */
+  shield?: number;
+  /** Follow-through: the previous kill's overkill landing as the fight starts. */
+  carried?: boolean;
+  /** Bulwark blocked half of this hit. */
+  blocked?: boolean;
 }
 
 export interface Fight {
@@ -54,7 +62,12 @@ export interface Fight {
  * formulas, HP can't go above max (overhealing is lost) and damage varies ±10%.
  * Executioner doubles your hits once the enemy is below its threshold; Second Wind
  * turns the first killing blow into a drop to its share of max HP; Ambush makes your
- * first swing 5×; Frostbite's chill shrinks the enemy's hits.
+ * first swing 5×; Frostbite's chill shrinks the enemy's hits. Bully doubles your hits
+ * while the enemy is above its threshold; Berserker scales them with your missing HP;
+ * Follow-through lands the average overkill as the fight starts (so each fight stays
+ * on its own). Second Skin's shield takes hits first; Bulwark halves some hits; Last
+ * Stand shrinks hits while you are below its threshold. New effects draw from the
+ * generator only when worn, so fights without them replay as before.
  */
 export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng): Fight {
   const src = s.sources[0];
@@ -63,13 +76,20 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const foePeriod = 1 / enemy.speed;
   const crit = Math.min(1, src?.critChance ?? 0);
   // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = DPS.
-  const hit = src && m.dps > 0 ? m.dps / src.attacksPerSec / src.critMult : 0;
-  const critX = crit > 0 && src ? 1 + (src.critMult - 1) / crit : 1;
+  const hit = src && m.dps > 0 ? m.dps / src.attacksPerSec / m.critMult : 0;
+  const critX = crit > 0 && src ? 1 + (m.critMult - 1) / crit : 1;
   const healPerSwing = src && m.hps > 0 ? m.hps / src.attacksPerSec : 0;
-  const enemyHit = (enemy.dps / enemy.speed) * (1 - s.chill) * (1 - m.playerMitigation);
+  const enemyHit = m.enemyHit;
+  const amount = (id: number) => effectAmount(s.effects, id);
   let ambush = s.effects.has(Effect.Ambush) ? 5 : 1;
-  const executeBelow = effectAmount(s.effects, Effect.Executioner) * enemy.hp;
-  let secondWind = effectAmount(s.effects, Effect.SecondWind);
+  const executeBelow = amount(Effect.Executioner) * enemy.hp;
+  const bullyAbove = (1 - amount(Effect.Bully)) * enemy.hp;
+  const berserk = 10 * amount(Effect.Berserker);
+  const bulwark = amount(Effect.Bulwark);
+  const lastStand = amount(Effect.LastStand);
+  const lowHp = LAST_STAND_BELOW * s.maxHp;
+  let secondWind = amount(Effect.SecondWind);
+  let shield = m.shield;
 
   let youHp = s.maxHp;
   let foeHp = enemy.hp;
@@ -78,6 +98,15 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   let nextFoe = walk + foePeriod / 2;
   const events: FightEvent[] = [];
   const done = (end: number, outcome: Fight['outcome']): Fight => ({ stats: s, matchup: m, enemy, walk, events, end, outcome });
+  const shieldNote = () => (m.shield > 0 ? { shield } : {});
+
+  // Follow-through: half an average hit of overkill, a share of it carried in.
+  const carried = (amount(Effect.FollowThrough) / 2) * hit * m.critMult;
+  if (carried > 0) {
+    foeHp = Math.max(0, foeHp - carried);
+    events.push({ t: walk, by: 'you', kind: 'hit', damage: carried, healed: 0, youHp, foeHp, carried: true, ...shieldNote() });
+    if (foeHp <= 0) return done(walk, 'kill');
+  }
 
   for (;;) {
     const t = Math.min(nextYou, nextFoe);
@@ -88,24 +117,32 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     if (nextYou <= nextFoe) {
       nextYou += yourPeriod;
       const isCrit = rng() < crit;
-      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * (foeHp < executeBelow ? 2 : 1) * ambush;
+      const doubled = foeHp < executeBelow || foeHp > bullyAbove ? 2 : 1;
+      const rage = berserk > 0 ? 1 + (berserk * (s.maxHp - youHp)) / s.maxHp : 1;
+      const damage = hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage;
       ambush = 1;
       foeHp = Math.max(0, foeHp - damage);
       youHp = Math.min(s.maxHp, youHp + healPerSwing + s.lifesteal * damage);
-      events.push({ t, by: 'you', kind: isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp });
+      events.push({ t, by: 'you', kind: isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp, ...shieldNote() });
       if (foeHp <= 0) return done(t, 'kill');
     } else {
       nextFoe += foePeriod;
       const dodged = rng() < m.evasion;
-      const damage = dodged ? 0 : enemyHit * (0.9 + 0.2 * rng());
+      let damage = dodged ? 0 : enemyHit * (0.9 + 0.2 * rng());
+      const blocked = !dodged && bulwark > 0 && rng() < bulwark;
+      if (blocked) damage /= 2;
+      if (lastStand > 0 && youHp < lowHp) damage *= 1 - lastStand;
       const healed = youHp - before;
-      youHp = Math.max(0, youHp - damage);
+      const absorbed = Math.min(shield, damage);
+      shield -= absorbed;
+      youHp = Math.max(0, youHp - (damage - absorbed));
       const saved = youHp <= 0 && secondWind > 0;
       if (saved) {
         youHp = secondWind * s.maxHp;
         secondWind = 0;
       }
-      events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp, ...(saved && { secondWind: true }) });
+      events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp,
+        ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...shieldNote() });
       if (youHp <= 0) return done(t, 'defeat');
     }
   }
@@ -136,7 +173,8 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
   // Kills at the current level not yet turned into XP and gold.
   let batch = 0;
   let m: Matchup | undefined;
-  const elixir = new ElixirTracker(a.elixir);
+  const savor = effectAmount(combatStats(level, a.gear).effects, Effect.Savor);
+  const elixir = new ElixirTracker(a.elixir, savor);
   const commit = () => {
     if (!m || batch === 0) return;
     if (level < MAX_LEVEL) {
@@ -172,7 +210,8 @@ export function simulate(p: Progress, a: Activity, nowMicros: bigint, characterI
     if (fight.outcome === 'stalemate') return result(nowMicros, { current });
     total += 1;
     batch += 1;
-    elixir.use(1);
+    // Savor: this kill may keep its charge.
+    elixir.use(1, savor > 0 && seededRng(characterId, start, SAVOR_SALT)() < savor ? 0 : 1);
     // Level up as soon as this kill's XP gets there: the next fight uses the new stats.
     if (level < MAX_LEVEL && xp + BigInt(Math.floor(batch * fm.xpPerKill)) >= xpToNext(level)) commit();
     start = end;

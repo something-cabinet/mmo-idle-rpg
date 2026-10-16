@@ -35,6 +35,26 @@ export const Effect = {
   Frostbite: 22,
   FrozenBlood: 23,
   Ambush: 24,
+  FollowThrough: 25,
+  Riposte: 26,
+  Deadeye: 27,
+  Bully: 28,
+  HonedEdge: 29,
+  Bloodthirst: 30,
+  Discipline: 31,
+  Unbreakable: 32,
+  Stoneskin: 33,
+  LastStand: 34,
+  Berserker: 35,
+  Bulwark: 36,
+  SecondSkin: 37,
+  Salvager: 38,
+  Bounty: 39,
+  Prospector: 40,
+  Patience: 41,
+  KeenEye: 42,
+  Savor: 43,
+  RaidFavor: 44,
 } as const;
 
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
@@ -60,6 +80,11 @@ export interface LegendaryDef extends EffectDef {
 
 const pc = (x: number) => `${Math.round(x * 100)}%`;
 
+/** Patience counts offline fighting after this many hours. */
+export const PATIENCE_HOURS = 4;
+/** Last Stand applies below this share of max HP. */
+export const LAST_STAND_BELOW = 0.3;
+
 function legendary(def: Omit<LegendaryDef, 'text'>): LegendaryDef {
   return { ...def, text: def.describe(def.perCopy) };
 }
@@ -77,6 +102,20 @@ export const LEGENDARIES: LegendaryDef[] = [
     describe: a => `Your physical damage ignores ${pc(a)} of the enemy's armor left after penetration.` }),
   legendary({ id: 21, name: 'Spellbreaker', group: 'Offense', bonusStat: Stat.MagicPenPct, perCopy: 0.4, cap: 0.7,
     describe: a => `Your magic damage ignores ${pc(a)} of the enemy's resistance left after penetration.` }),
+  legendary({ id: 25, name: 'Follow-through', group: 'Offense', bonusStat: Stat.CritDamage, perCopy: 0.6, cap: 1.2,
+    describe: a => `${pc(a)} of your overkill damage hits the next enemy as it arrives.` }),
+  legendary({ id: 26, name: 'Riposte', group: 'Offense', bonusStat: Stat.EvasionRatingPct, perCopy: 0.5, cap: 1,
+    describe: a => `Each attack you evade counters for ${pc(a)} of your average hit.` }),
+  legendary({ id: 27, name: 'Deadeye', group: 'Offense', bonusStat: Stat.CritChancePct, perCopy: 0.5, cap: 1,
+    describe: a => `Your crits ignore ${pc(a)} of the enemy's armor and resistance left after penetration.` }),
+  legendary({ id: 28, name: 'Bully', group: 'Offense', bonusStat: Stat.MagicDamagePct, perCopy: 0.3, cap: 0.5,
+    describe: a => `Enemies above ${pc(1 - a)} HP take double damage.` }),
+  legendary({ id: 29, name: 'Honed Edge', group: 'Offense', bonusStat: Stat.AttackSpeedPct, perCopy: 0.5, cap: 1,
+    describe: a => `Flat added damage +${pc(a)}.` }),
+  legendary({ id: 30, name: 'Bloodthirst', group: 'Offense', bonusStat: Stat.LifestealPct, perCopy: 0.03, cap: 0.05,
+    describe: a => `Lifesteal cap rises from 5% to ${pc(0.05 + a)}.` }),
+  legendary({ id: 31, name: 'Discipline', group: 'Offense', bonusStat: Stat.Vitality, perCopy: 0.1, cap: 0.2,
+    describe: a => `Damage × (1 + ${pc(a)} per 100 points of your highest attribute).` }),
   // Defense
   legendary({ id: 5, name: 'Phantom Step', group: 'Defense', bonusStat: Stat.EvasionRatingPct, perCopy: 0.15, cap: 0.25,
     describe: a => `Evasion cap rises from 60% to ${pc(0.6 + a)}.` }),
@@ -88,6 +127,18 @@ export const LEGENDARIES: LegendaryDef[] = [
     describe: a => `${pc(a)} of your armor is added to your resistance.` }),
   legendary({ id: 18, name: 'Runeguard', group: 'Defense', bonusStat: Stat.ResistancePct, perCopy: 0.3, cap: 1,
     describe: a => `${pc(a)} of your resistance is added to your armor.` }),
+  legendary({ id: 32, name: 'Unbreakable', group: 'Defense', bonusStat: Stat.Resistance, perCopy: 0.02, cap: 0.06,
+    describe: a => `Armor and resistance cap rises from 85% to ${pc(0.85 + a)} damage reduction.` }),
+  legendary({ id: 33, name: 'Stoneskin', group: 'Defense', bonusStat: Stat.Armor, perCopy: 0.01, cap: 0.03,
+    describe: a => `Each enemy hit deals ${pc(a)} of your max HP less (after mitigation).` }),
+  legendary({ id: 34, name: 'Last Stand', group: 'Defense', bonusStat: Stat.Vitality, perCopy: 0.2, cap: 0.5,
+    describe: a => `Below 30% HP, you take ${pc(a)} less damage.` }),
+  legendary({ id: 35, name: 'Berserker', group: 'Defense', bonusStat: Stat.Might, perCopy: 0.03, cap: 0.09,
+    describe: a => `+${pc(a)} damage per 10% of your max HP missing.` }),
+  legendary({ id: 36, name: 'Bulwark', group: 'Defense', bonusStat: Stat.EvasionRating, perCopy: 0.15, cap: 0.5,
+    describe: a => `${pc(a)} chance to block half of each enemy hit.` }),
+  legendary({ id: 37, name: 'Second Skin', group: 'Defense', bonusStat: Stat.MaxHp, perCopy: 0.15, cap: 0.5,
+    describe: a => `Each fight starts with a shield of ${pc(a)} of your max HP.` }),
   // Utility
   legendary({ id: 7, name: 'Swift Hunter', group: 'Utility', bonusStat: Stat.AttackSpeedPct, perCopy: 0.4, cap: 0.8,
     describe: a => `Walk time between fights −${pc(a)}.` }),
@@ -97,6 +148,20 @@ export const LEGENDARIES: LegendaryDef[] = [
     describe: a => `Offline progress cap +${a}h.` }),
   legendary({ id: 20, name: 'Prosperity', group: 'Utility', bonusStat: Stat.GoldFindPct, perCopy: 0.4, cap: 0.6,
     describe: a => `Gold × ${Number((1 + a).toFixed(2))}.` }),
+  legendary({ id: 38, name: 'Salvager', group: 'Utility', bonusStat: Stat.GoldFindPct, perCopy: 0.25, cap: 0.5,
+    describe: a => `Each drop the loot filter or a full bag rejects has a ${pc(a)} chance to be salvaged or scrapped twice.` }),
+  legendary({ id: 39, name: 'Bounty', group: 'Utility', bonusStat: Stat.ItemFindPct, perCopy: 0.005, cap: 0.015,
+    describe: a => `Every ${Math.round(1 / a)} kills of an enemy, an extra Rare drops.` }),
+  legendary({ id: 40, name: 'Prospector', group: 'Utility', bonusStat: Stat.MaxHp, perCopy: 0.1, cap: 0.3,
+    describe: a => `Kills drop ${Number(a.toFixed(2))} Ore of the zone's tier on average.` }),
+  legendary({ id: 41, name: 'Patience', group: 'Utility', bonusStat: Stat.XpGainPct, perCopy: 0.15, cap: 0.3,
+    describe: a => `Offline fighting past the first ${PATIENCE_HOURS}h earns +${pc(a)} XP, gold, drops and materials.` }),
+  legendary({ id: 42, name: 'Keen Eye', group: 'Utility', bonusStat: Stat.ItemFindPct, perCopy: 0.2, cap: 0.4,
+    describe: a => `Kept Rare or better drops have a ${pc(a)} chance to raise their lowest affix to the item's top affix tier.` }),
+  legendary({ id: 43, name: 'Savor', group: 'Utility', bonusStat: Stat.MaxHpPct, perCopy: 0.15, cap: 0.3,
+    describe: a => `Each kill has a ${pc(a)} chance not to use a charge of your elixir.` }),
+  legendary({ id: 44, name: 'Raid Favor', group: 'Utility', bonusStat: Stat.ThreatPct, perCopy: 0.15, cap: 0.3,
+    describe: a => `Each rewarded raid clear has a ${pc(a)} chance to give one more item.` }),
 ];
 
 /** Effects only handcrafted uniques carry: they may cost something, and don't stack. */

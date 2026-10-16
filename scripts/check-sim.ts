@@ -8,6 +8,7 @@ import { combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { project, type Progress } from '../spacetimedb/src/game';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
 import { fightRng, simulate, simulateFight } from '../spacetimedb/src/sim';
+import { Effect, LEGENDARIES_BY_ID, copiesToCap } from '../spacetimedb/src/data/legendary';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -111,6 +112,118 @@ const secs = (s: number) => BigInt(Math.round(s * 1e6));
   const a = simulate(fresh, { gear: starter, enemy: rat }, T0 + secs(600), ID);
   const b = simulate(fresh, { gear: rich, enemy: rat }, T0 + secs(600), ID);
   check('gold find: same fights, more gold', a.kills === b.kills && b.gold > a.gold, `${a.gold} → ${b.gold}`);
+}
+
+// ---------------------------------------------------------------- new legendary effects
+
+{
+  // Each effect at its cap: live fights average what the formulas say, and the effect
+  // never makes a matchup worse (legendary effects have no downside).
+  const main = item(1, 1, [[Stat.PhysDamage, 3], [Stat.CritChancePct, 100], [Stat.EvasionRating, 40]]);
+  const chest = item(35, 1, [[Stat.HpRegen, 0.5]]);
+  const COPY_SLOTS: Slot[] = ['Head', 'Hands', 'Neck', 'Ring1', 'Ring2'];
+  const kit = (effect: number | undefined, base: Partial<Record<Slot, GearItem>>) => {
+    const l = effect === undefined ? undefined : LEGENDARIES_BY_ID.get(effect)!;
+    const copies = l ? Math.min(COPY_SLOTS.length, copiesToCap(l)) : 0;
+    const extra: Partial<Record<Slot, GearItem>> = {};
+    COPY_SLOTS.forEach((slot, i) => {
+      const it = item(slot === 'Neck' || slot.startsWith('Ring') ? 50 : 36, 1);
+      extra[slot] = l && i < copies ? { ...it, legendary: { effect: l.id, stat: l.bonusStat, value: 0n } } : it;
+    });
+    return gear({ ...base, ...extra });
+  };
+  const fightKit = { MainHand: main, Chest: chest, Feet: item(37, 1) };
+  const COMBAT = [Effect.FollowThrough, Effect.Riposte, Effect.Deadeye, Effect.Bully, Effect.HonedEdge, Effect.Discipline, Effect.Berserker];
+  const DEFENSE = [Effect.Stoneskin, Effect.LastStand, Effect.Bulwark, Effect.SecondSkin];
+  for (const id of [104, 201]) {
+    const e = enemy(id);
+    const base = matchup(combatStats(5, kit(undefined, fightKit)), e);
+    for (const fx of COMBAT) {
+      const s = combatStats(5, kit(fx, fightKit));
+      const m = matchup(s, e);
+      const wins = Array.from({ length: 2000 }, (_, i) => simulateFight(s, m, e, fightRng(ID, BigInt(i * 7919)))).filter(x => x.outcome === 'kill');
+      const ttk = mean(wins.map(x => x.end - x.walk));
+      const name = LEGENDARIES_BY_ID.get(fx)!.name;
+      check(`${name} vs ${e.name}: live fight length matches the formula`, near(ttk, m.timeToKill, m.timeToKill * 0.12), `${f(ttk)} s vs ${f(m.timeToKill)} s`);
+      check(`… and fights are shorter than without it`, m.timeToKill < base.timeToKill, `${f(m.timeToKill)} vs ${f(base.timeToKill)}`);
+    }
+  }
+  // Defense: no weapon, so every fight ends in a defeat; compare the time to die.
+  const e = enemy(201);
+  const unarmed = { MainHand: item(1, 1, [[Stat.EvasionRating, 40]]), Chest: chest, Feet: item(37, 1) };
+  const ttdOf = (fx: number | undefined) => {
+    const s = { ...combatStats(5, kit(fx, unarmed)), sources: [] };
+    const m = matchup(s, e);
+    const fights = Array.from({ length: 2000 }, (_, i) => simulateFight(s, m, e, fightRng(ID, BigInt(i * 104729))));
+    return { m, live: mean(fights.filter(x => x.outcome === 'defeat').map(x => x.end - x.walk)) };
+  };
+  const bare = ttdOf(undefined);
+  for (const fx of DEFENSE) {
+    const { m, live } = ttdOf(fx);
+    const name = LEGENDARIES_BY_ID.get(fx)!.name;
+    check(`${name}: live time to die matches the formula`, near(live, m.timeToDie, m.timeToDie * 0.05), `${f(live)} s vs ${f(m.timeToDie)} s`);
+    check(`… and is longer than without it`, m.timeToDie > bare.m.timeToDie, `${f(m.timeToDie)} vs ${f(bare.m.timeToDie)}`);
+  }
+  {
+    const s = { ...combatStats(5, kit(Effect.SecondSkin, unarmed)), sources: [] };
+    const m = matchup(s, e);
+    const fight = simulateFight(s, m, e, fightRng(ID, T0));
+    const first = fight.events.find(x => x.by === 'enemy' && x.kind === 'hit')!;
+    check('Second Skin: the shield takes the first hit', first.youHp === s.maxHp && first.shield! < m.shield);
+  }
+  {
+    // Unbreakable: raises the mitigation cap once armor reaches it.
+    const tank = gear({ Chest: item(35, 1, [[Stat.Armor, 5000]]) });
+    const capped = matchup(combatStats(5, tank), e);
+    const s = combatStats(5, gear({ Chest: item(35, 1, [[Stat.Armor, 5000]]), Head: { ...item(36, 1), legendary: { effect: Effect.Unbreakable, stat: Stat.Resistance, value: 0n } } }));
+    check('Unbreakable: mitigation cap 85% + 2% per copy', near(capped.playerMitigation, 0.85, 1e-12) && near(matchup(s, e).playerMitigation, 0.87, 1e-12));
+  }
+  {
+    // Bloodthirst raises the lifesteal cap; Honed Edge never deepens a negative flat roll.
+    const leech = (fx?: number) => combatStats(5, gear({
+      MainHand: item(1, 1, [[Stat.LifestealPct, 20]]),
+      Head: fx ? { ...item(36, 1), legendary: { effect: fx, stat: Stat.LifestealPct, value: 0n } } : item(36, 1),
+    }));
+    check('Bloodthirst: lifesteal cap 5% → 8%', near(leech().lifesteal, 0.05, 1e-12) && near(leech(Effect.Bloodthirst).lifesteal, 0.08, 1e-12));
+    const cursed = (fx?: number) => combatStats(5, gear({
+      MainHand: fx ? { ...item(1, 1, [[Stat.PhysDamage, -2]]), legendary: { effect: fx, stat: Stat.AttackSpeedPct, value: 0n } } : item(1, 1, [[Stat.PhysDamage, -2]]),
+    })).sources[0].hit.Physical;
+    check('Honed Edge: a negative flat roll stays as it is', near(cursed(Effect.HonedEdge), cursed(), 1e-12));
+  }
+}
+
+{
+  // Savor: some kills keep their charge, online and offline.
+  const elixir = { buffs: { damage: 1.2 }, killsLeft: 240, stock: 0 };
+  const savor = gear({ MainHand: item(1, 1), Chest: item(35, 1), Feet: item(37, 1), Ring1: { ...item(50, 1), legendary: { effect: Effect.Savor, stat: Stat.MaxHpPct, value: 0n } } });
+  const hour = T0 + secs(3600);
+  const plain = project(fresh, { gear: starter, enemy: rat, elixir }, hour);
+  const off = project(fresh, { gear: savor, enemy: rat, elixir }, hour);
+  const on = simulate(fresh, { gear: savor, enemy: rat, elixir }, hour, ID);
+  const usedPlain = 240 - plain.elixir!.killsLeft;
+  const usedOff = 240 - off.elixir!.killsLeft;
+  const usedOn = 240 - on.elixir!.killsLeft;
+  check('Savor: offline, 15% of kills keep their charge', near(usedOff / off.elixir!.buffedKills, 0.85, 0.01), `${usedOff} charges for ${off.elixir!.buffedKills} kills (${usedPlain} without)`);
+  check('… online about the same', near(usedOn / on.elixir!.buffedKills, 0.85, 0.05), `${usedOn} charges for ${on.elixir!.buffedKills} kills`);
+}
+
+{
+  // Patience: offline kills after 4 h earn 15% more XP and gold and extra drop kills; before, nothing changes.
+  const patient = gear({ MainHand: item(1, 1), Chest: item(35, 1), Feet: item(37, 1), Ring1: { ...item(50, 1), legendary: { effect: Effect.Patience, stat: Stat.XpGainPct, value: 0n } } });
+  const plainRing = gear({ MainHand: item(1, 1), Chest: item(35, 1), Feet: item(37, 1), Ring1: item(50, 1) });
+  const lvl = { ...fresh, level: 30 };
+  const at = (h: number) => T0 + secs(h * 3600);
+  const cap = secs(8 * 3600);
+  const a3 = project(lvl, { gear: plainRing, enemy: rat }, at(3), cap);
+  const b3 = project(lvl, { gear: patient, enemy: rat }, at(3), cap);
+  check('Patience: no change in the first 4 h', a3.gold === b3.gold && a3.kills === b3.kills && b3.bonusKills === undefined);
+  const a8 = project(lvl, { gear: plainRing, enemy: rat }, at(8), cap);
+  const b8 = project(lvl, { gear: patient, enemy: rat }, at(8), cap);
+  const late = a8.kills / 2;
+  check('… then +15% gold and drops', b8.kills === a8.kills && near(Number(b8.gold - a8.gold) / Number(a8.gold / 2n), 0.15, 0.01) && near(b8.bonusKills!, late * 0.15, 2),
+    `gold ${a8.gold} → ${b8.gold}, bonus kills ${f(b8.bonusKills!)}`);
+  const online = project(lvl, { gear: patient, enemy: rat }, at(8));
+  check('… offline only', online.bonusKills === undefined);
 }
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

@@ -4,6 +4,7 @@
 import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Item, RaidLog, RaidMember, RaidParty } from '../../module_bindings/types';
 import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src/combat';
+import { Effect, effectAmount } from '../../../spacetimedb/src/data/legendary';
 import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, type RaidDef } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
 import { BASE_LIST } from '../../../spacetimedb/src/data/bases';
@@ -12,7 +13,7 @@ import { aggroShares, clearsToday, decodeSetup, lockoutEnd, npcStats, raidRng, s
 import { call } from '../../store';
 import { nowMicros } from '../clock';
 import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
-import { DefTag, DmgTag } from '../enemy';
+import { DefTag, DmgTag, EnemyStats } from '../enemy';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
 import { ItemCard, rarityCls, rarityLabel } from '../items';
@@ -26,6 +27,60 @@ const byJoin = (a: RaidMember, b: RaidMember) => (a.joinedAt.microsSinceUnixEpoc
 const fightingNow = (p: RaidParty) => !!p.fight && !p.fight.finished;
 /** Seconds the frost flash and damage numbers stay up after the special attack. */
 const BREATH_FLASH = 1.4;
+/** How long a floating number stays up, s (the `float-up` animation). */
+const FLOAT_SECONDS = 0.9;
+/** Most floating numbers on one bar at a time. */
+const MAX_FLOATS = 5;
+
+interface RaidFloat {
+  key: number;
+  text: string;
+  cls: string;
+  /** The fighter it comes from, when it isn't the bar's owner (a hit on the boss, a heal from an ally). */
+  from?: number;
+  left: number;
+}
+
+/**
+ * Floating numbers for the events of the last FLOAT_SECONDS: each fighter's hits over the
+ * boss's bar, marked with who dealt them; the boss's hits, blocks and dodges, and every
+ * heal (marked when from an ally), over the fighter's own bar. The Breath has its own.
+ */
+function raidFloats(events: readonly RaidEvent[], t: number, maxHp: readonly number[]): { boss: RaidFloat[]; party: RaidFloat[][] } {
+  const boss: RaidFloat[] = [];
+  const party: RaidFloat[][] = maxHp.map(() => []);
+  const left = (i: number) => 15 + ((i * 37) % 60);
+  for (let i = events.length - 1; i >= 0 && t - events[i].t < FLOAT_SECONDS; i--) {
+    const e = events[i];
+    const prev = events[i - 1];
+    if (e.by >= 0 && e.kind !== 'dodge') {
+      boss.push({ key: i, text: `${fmt(e.damage)}${e.kind === 'crit' ? '!' : ''}`, cls: e.kind, from: e.by, left: left(i) });
+      // Heals and lifesteal from this swing (regen since the last event is too small to show).
+      e.hp.forEach((h, j) => {
+        const gain = h - (prev?.hp[j] ?? maxHp[j]);
+        if (gain >= Math.max(1, 0.005 * maxHp[j])) party[j].push({ key: i, text: `+${fmt(gain)}`, cls: 'heal', from: j === e.by ? undefined : e.by, left: left(i + j) });
+      });
+    } else if (e.kind === 'dodge' && e.target >= 0) {
+      party[e.target].push({ key: i, text: 'Dodge', cls: 'dodge', left: left(i) });
+    } else if (e.kind === 'hit' && e.target >= 0) {
+      const hpLost = (prev?.hp[e.target] ?? maxHp[e.target]) - e.hp[e.target];
+      const cls = e.blocked ? 'block' : hpLost < 0.5 && e.shield ? 'shielded' : 'taken';
+      party[e.target].push({ key: i, text: `${e.blocked ? 'Block ' : ''}−${fmt(e.dealt ?? e.damage)}`, cls, left: left(i) });
+    }
+    for (const j of e.saved ?? []) party[j].push({ key: -i - 1, text: 'Second Wind', cls: 'heal', left: 50 });
+  }
+  return { boss: boss.slice(0, MAX_FLOATS), party: party.map(f => f.slice(0, MAX_FLOATS)) };
+}
+
+/** One floating number, with the dot of the fighter it comes from when that is not the bar's owner. */
+function FloatNumber({ f }: { f: RaidFloat }) {
+  return (
+    <span className={`float raid-float ${f.cls}`} style={{ left: `${f.left}%`, ...(f.from !== undefined && { '--who': `var(--party-${f.from % RAID_PARTY_SIZE})` }) } as CSSProperties}>
+      {f.from !== undefined && <i className="raid-who" />}
+      {f.text}
+    </span>
+  );
+}
 
 const CLOSED_KEY = 'raidFightsClosed';
 /** "partyId:startMicros" of a fight. */
@@ -74,6 +129,8 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
   const now = nowMicros();
   const clears = clearsToday(conn.db.myRaidLog.iter(), raid.id, now);
   const left = raid.clearsPerDay - clears;
+  // Its full stats show once you've beaten it (a win counts as a kill; older wins are in the raid log).
+  const beaten = (s.kills.get(boss.id) ?? 0) > 0 || [...conn.db.myRaidLog.iter()].some(l => l.raidId === raid.id && l.won);
 
   return (
     <>
@@ -107,6 +164,14 @@ function Raid({ s, raid }: { s: Snapshot; raid: RaidDef }) {
               </div>
             </div>
           </div>
+          {beaten ? (
+            <details className="raid-boss-stats">
+              <summary>Boss stats</summary>
+              <EnemyStats e={boss} m={matchup(s.stats, boss)} />
+            </details>
+          ) : (
+            <p className="muted"><Icon name="lock" />Beat {boss.name.split(',')[0]} once to reveal its full stats.</p>
+          )}
         </div>
         <div className="raid-rewards">
           <h3>Rewards <span className="muted">each player, for {raid.clearsPerDay} wins a day (losses don't count; resets 00:00 UTC)</span></h3>
@@ -369,7 +434,7 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
   const [t, setT] = useState(elapsed);
   useEffect(() => {
     if (t >= result.end) return;
-    const timer = window.setInterval(() => setT(elapsed()), 200);
+    const timer = window.setInterval(() => setT(elapsed()), 100);
     return () => window.clearInterval(timer);
   }, [result.end]); // eslint-disable-line react-hooks/exhaustive-deps -- runs until the end
 
@@ -379,6 +444,9 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
   const hp = last?.hp ?? result.maxHp;
   const bossHp = last?.bossHp ?? raid.boss.hp;
   const names = setup.fighters.map(f => f.name);
+  const floats = live ? raidFloats(shown, t, result.maxHp) : undefined;
+  // Second Skin: each fighter's shield left, drawn over the top end of their HP bar.
+  const shield = last?.shield ?? setup.fighters.map((f, i) => effectAmount(f.stats.effects, Effect.SecondSkin) * result.maxHp[i]);
   // The special attack: a frost flash with each fighter's damage for a moment after it lands, and a countdown to the next.
   const lastAoe = live ? [...shown].reverse().find(e => e.kind === 'aoe') : undefined;
   const breath = lastAoe && t - lastAoe.t < BREATH_FLASH ? lastAoe : undefined;
@@ -394,6 +462,7 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
       <div className="raid-boss-bar">
         <div className="duelist-name"><Icon name="skull" className="boss" />{raid.boss.name}</div>
         <div className="hpbar enemy">
+          {floats?.boss.map(f => <FloatNumber key={f.key} f={f} />)}
           <div className="hp-fill" style={{ width: `${(bossHp / raid.boss.hp) * 100}%` }} />
           <span className="hp-text">{fmt(bossHp)} / {fmt(raid.boss.hp)}</span>
         </div>
@@ -401,13 +470,23 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
       <div className="raid-party-bars">
         {names.map((name, i) => (
           <div key={i} className={`duelist${hp[i] <= 0 ? ' lost' : ''}`}>
-            <div className="duelist-name">{name}{setup.fighters[i].characterId === s.row.id ? ' (you)' : ''}</div>
+            <div className="duelist-name">
+              <i className="raid-who" style={{ '--who': `var(--party-${i % RAID_PARTY_SIZE})` } as CSSProperties} />
+              {name}{setup.fighters[i].characterId === s.row.id ? ' (you)' : ''}
+            </div>
             <div className="hpbar">
               {breath && beforeBreath && beforeBreath.hp[i] > 0 && (
                 <span key={breath.t} className="float frost">−{fmt(Math.max(0, beforeBreath.hp[i] - breath.hp[i]))}</span>
               )}
+              {floats?.party[i].map(f => <FloatNumber key={f.key} f={f} />)}
               <div className="hp-fill" style={{ width: `${(hp[i] / result.maxHp[i]) * 100}%` }} />
-              <span className="hp-text">{fmt(hp[i])} / {fmt(result.maxHp[i])}</span>
+              {shield[i] > 0 && hp[i] > 0 && (
+                <div className="hp-shield" style={{
+                  width: `${Math.min(100, (shield[i] / result.maxHp[i]) * 100)}%`,
+                  left: `${Math.max(0, ((hp[i] - shield[i]) / result.maxHp[i]) * 100)}%`,
+                }} />
+              )}
+              <span className="hp-text">{fmt(hp[i])} / {fmt(result.maxHp[i])}{shield[i] >= 0.5 && hp[i] > 0 ? ` +${fmt(shield[i])}` : ''}</span>
             </div>
           </div>
         ))}

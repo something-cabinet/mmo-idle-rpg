@@ -152,7 +152,7 @@ affix rolls tier 1 to N (N = item tier, 1–9).
 - **Value:** affix tier k has the **same range on every item tier**, and rolls uniformly
   in it (the exact value is saved). Tier 1 starts at a **floor** `f`, not 0, so even the
   worst roll counts: 1 for whole-number stats; the two-decimal stats set their own
-  (lifesteal 0.25%, base crit chance 0.5%, HP regen 0.1/s). How the range is set depends
+  (lifesteal 0.25%, base crit chance 0.5%, HP regen 0.4/s). How the range is set depends
   on the stat's curve:
   - Evenly growing stats (`linear`: armor, resistance, evasion rating) split the T9
     range `[f, ref(9)]` into 9 equal slices: tier k rolls in

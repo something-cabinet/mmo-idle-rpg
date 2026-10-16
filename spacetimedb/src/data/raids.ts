@@ -80,13 +80,13 @@ export const RAIDS: RaidDef[] = [
     unlockZoneId: 3,
     boss: {
       id: 9001, name: 'Skaldrith, the Rime Wyrm', level: 40, damageType: 'Physical', defense: 'Armored', speed: 0.7,
-      hp: 20000, dps: 80, armor: 250, resistance: 100, xp: 4000, gold: 3000, drops: raidDrops(1), materials: [], boss: true,
+      hp: 18000, dps: 72, armor: 250, resistance: 100, xp: 4000, gold: 3000, drops: raidDrops(1), materials: [], boss: true,
     },
-    aoe: { every: 12, damage: 45, damageType: 'Magic', name: 'Frost Breath' },
+    aoe: { every: 12, damage: 40, damageType: 'Magic', name: 'Frost Breath' },
     enrageSeconds: 240,
     clearsPerDay: 3,
     itemsPerClear: 3,
-    ownBaseShare: 1 / 3,
+    ownBaseShare: 1 / 2,
     tokens: 10,
     hireCost: 2000,
     // The average of level-38 characters with random T3 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).

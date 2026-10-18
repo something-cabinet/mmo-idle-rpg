@@ -295,7 +295,7 @@ const NEAR_TIE = 0.01;
  * falls through to the next one, so a sliver of DPS can't outweigh a big survival gain.
  * The last value decides on any real difference.
  */
-function better(a: number[], b: number[], nearTie: boolean): boolean {
+export function better(a: readonly number[], b: readonly number[], nearTie: boolean): boolean {
   for (let i = 0; i < a.length; i++) {
     if (a[i] === b[i]) continue;
     const tol = (nearTie && i < a.length - 1 ? NEAR_TIE : 1e-9) * Math.max(Math.abs(a[i]), Math.abs(b[i]));

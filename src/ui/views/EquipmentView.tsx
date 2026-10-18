@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import type { Item } from "../../module_bindings/types";
 import { combatStats } from "../../../spacetimedb/src/combat";
-import { PROFILES, PROFILE_LABEL, asProfile, fitsSlot, isCustomProfile, isProfile, placeItem, scoreGear, slotLocked, type Profile } from "../../../spacetimedb/src/equip";
+import { PROFILES, PROFILE_LABEL, asProfile, better, fitsSlot, isCustomProfile, isProfile, placeItem, ranking, scoreGear, slotLocked, type Profile } from "../../../spacetimedb/src/equip";
 import { rarityRank } from "../../../spacetimedb/src/loot";
 import { call, useSticky } from "../../store";
 import { getCustomWeights } from "../customProfiles";
@@ -50,32 +50,51 @@ function useLoadoutProfile(s: Snapshot, lo: Loadout): [Profile, (p: Profile) => 
   ];
 }
 
+/** What a profile's ranking puts first, for the change shown on a candidate. */
+function goalLabel(p: Profile): string {
+  if (isCustomProfile(p)) return "Score";
+  if (p === "Healing") return "Healing/s";
+  if (p.startsWith("Survival")) return "Time to die";
+  return "DPS";
+}
+
 interface Candidate {
   it: Item;
   /** The loadout's slots after the swap, or why it can't happen. */
   next: bigint[] | string;
-  /** DPS change against the reference enemy of your level; undefined if it can't be equipped. */
+  /** The profile's ranking after the swap; undefined if it can't be equipped. */
+  rank?: number[];
+  /** Compared with now: 1 better, -1 worse, 0 same, for the profile. */
+  dir: number;
+  /** Change in the profile's goal value (rank[0]); undefined if it can't be equipped. */
   delta?: number;
 }
 
-/** Items that can replace `slot`, best DPS gain against the reference enemy first. */
-function candidates(s: Snapshot, lo: Loadout, slot: number): Candidate[] {
-  const dps = (slots: readonly bigint[]) =>
-    scoreGear(s.level, gearFor(slots, s.items)).dps;
-  const now = dps(lo.slots);
+/** Items that can replace `slot`, best for `profile` against the reference enemy first. */
+function candidates(s: Snapshot, lo: Loadout, slot: number, profile: Profile): Candidate[] {
+  const weights = isCustomProfile(profile) ? getCustomWeights(profile) : undefined;
+  const rank = (slots: readonly bigint[]) =>
+    ranking(profile, scoreGear(s.level, gearFor(slots, s.items)), weights);
+  const now = rank(lo.slots);
   return [...s.items.values()]
     .filter((it) => fitsSlot(it.baseId, slot) && !lo.slots.includes(it.id))
-    .map((it) => {
+    .map((it): Candidate => {
       const next = placeItem(lo.slots, slot, it, (id) => s.items.get(id));
+      if (typeof next === "string") return { it, next, dir: 0 };
+      const r = rank(next);
       return {
         it,
         next,
-        delta: typeof next === "string" ? undefined : dps(next) - now,
+        rank: r,
+        dir: better(r, now, false) ? 1 : better(now, r, false) ? -1 : 0,
+        delta: r[0] - now[0],
       };
     })
     .sort(
       (a, b) =>
-        (b.delta ?? -1e18) - (a.delta ?? -1e18) ||
+        (a.rank && b.rank
+          ? better(b.rank, a.rank, false) ? 1 : better(a.rank, b.rank, false) ? -1 : 0
+          : (a.rank ? -1 : 0) + (b.rank ? 1 : 0)) ||
         b.it.tier - a.it.tier ||
         rarityRank(b.it.rarity.tag) - rarityRank(a.it.rarity.tag),
     );
@@ -84,8 +103,8 @@ function candidates(s: Snapshot, lo: Loadout, slot: number): Candidate[] {
 function DeltaBadge({ c }: { c: Candidate }) {
   if (typeof c.next === "string")
     return <span className="tile-badge muted">✖</span>;
-  if (c.delta === undefined || Math.abs(c.delta) < 1e-6) return null;
-  return c.delta > 0 ? (
+  if (c.dir === 0) return null;
+  return c.dir > 0 ? (
     <span className="tile-badge c-ok">▲</span>
   ) : (
     <span className="tile-badge c-bad">▼</span>
@@ -97,11 +116,13 @@ function SlotPopup({
   s,
   lo,
   slot,
+  profile,
   onClose,
 }: {
   s: Snapshot;
   lo: Loadout;
   slot: number;
+  profile: Profile;
   onClose: () => void;
 }) {
   const [changing, setChanging] = useState(false);
@@ -147,7 +168,7 @@ function SlotPopup({
       </>
     );
   } else {
-    const list = candidates(s, lo, slot);
+    const list = candidates(s, lo, slot, profile);
     const pick = list.find((c) => c.it.id === pickId);
     body = (
       <>
@@ -159,7 +180,7 @@ function SlotPopup({
                 it={c.it}
                 selected={c === pick}
                 badge={<DeltaBadge c={c} />}
-                title={`${rarityLabel(c.it.rarity.tag)} ${itemName(c.it)}${typeof c.next === "string" ? ` · ${c.next}` : c.delta !== undefined ? ` · DPS ${c.delta >= 0 ? "+" : ""}${fmt(c.delta)}` : ""}`}
+                title={`${rarityLabel(c.it.rarity.tag)} ${itemName(c.it)}${typeof c.next === "string" ? ` · ${c.next}` : c.delta !== undefined && Number.isFinite(c.delta) ? ` · ${goalLabel(profile)} ${c.delta >= 0 ? "+" : ""}${fmt(c.delta)}` : ""}`}
                 onClick={() => setPickId(c.it.id)}
               />
             ))
@@ -197,8 +218,8 @@ function SlotPopup({
           )}
         </div>
         <p className="muted hint">
-          ▲ / ▼: DPS against an average Lv {s.level} enemy goes up / down with{" "}
-          {lo.name}.
+          ▲ / ▼: better / worse for {lo.name} by its {PROFILE_LABEL[profile]} profile, against an
+          average Lv {s.level} enemy.
         </p>
       </>
     );
@@ -483,6 +504,7 @@ export const EquipmentView = memo(function EquipmentView({
           s={s}
           lo={lo}
           slot={openSlot}
+          profile={profile}
           onClose={() => setOpenSlot(undefined)}
         />
       )}

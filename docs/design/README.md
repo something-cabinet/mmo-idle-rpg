@@ -14,6 +14,7 @@ not decisions.
 | [life-skills.md](life-skills.md) | Gathering and production skills, tools, buffs, Essences, Hideout |
 | [zones.md](zones.md) | Zones, enemy levels, enemy stats, rewards, loot tables |
 | [trading.md](trading.md) | Async gold market (5 listings, 2% listing fee, 10% tax) and friend gifts (5/day); registered level 30+ only |
+| [abyss.md](abyss.md) | The Moonwell Deep (brainstorm, not built): endless solo gauntlet after Umbriel: each depth a basic, an Elite and the boss on one HP bar, with Elite and Boss affixes, infinite scaling, first-clear rewards, leaderboard |
 | [duels.md](duels.md) | Friendly duels against a friend's character (client-only, no rewards) |
 | [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass, T4 Moonveil Vale: enemies, bosses, drops, starter kit |
 | [legendary.md](legendary.md) | Legendary affixes: effects, slot pools, formulas |

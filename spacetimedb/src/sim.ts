@@ -4,7 +4,7 @@
 // the fight's start time. Offline time still uses the expected-value `project`.
 
 import { MAX_LEVEL, combatStats, matchup, type CombatStats, type Matchup } from './combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONLIGHT_MULT, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingMult } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONLIGHT_MULT, effectAmount, waxingMult } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { ElixirTracker, xpToNext, type Activity, type Progress, type Settled } from './game';
 import { seededRng, type Rng } from './loot';
@@ -73,8 +73,8 @@ export interface Fight {
  * Follow-through lands the average overkill as the fight starts (so each fight stays
  * on its own). Second Skin's shield takes hits first; Bulwark halves some hits; Last
  * Stand shrinks hits while you are below its threshold. Moonlight doubles every 3rd
- * swing; Waxing Moon scales swing k by `waxingMult(k)`; Moonshadow halves the enemy's
- * hit after a dodge and raises landed hits × 1.1. New effects draw from the
+ * swing; Waxing Moon scales swing k by `waxingMult(k)`; Afterimage shrinks the enemy's
+ * hit after a dodge. New effects draw from the
  * generator only when worn, so fights without them replay as before.
  */
 export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng): Fight {
@@ -104,7 +104,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const lowHp = LAST_STAND_BELOW * s.maxHp;
   let secondWind = amount(Effect.SecondWind);
   let shield = m.shield;
-  const moonshadow = s.effects.has(Effect.Moonshadow);
+  const afterimage = amount(Effect.Afterimage);
   let lastDodged = false;
   /** Enemy regen since its last swing, shown on its next one. */
   let foeRegained = 0;
@@ -158,7 +158,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const blocked = !dodged && bulwark > 0 && rng() < bulwark;
       if (blocked) damage /= 2;
       if (lastStand > 0 && youHp < lowHp) damage *= 1 - lastStand;
-      if (moonshadow && !dodged) damage *= (lastDodged ? MOONSHADOW_AFTER_DODGE : 1) * MOONSHADOW_TAKEN;
+      if (lastDodged) damage *= 1 - afterimage;
       lastDodged = dodged;
       const healed = youHp - before;
       const absorbed = Math.min(shield, damage);

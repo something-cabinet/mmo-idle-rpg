@@ -5,7 +5,7 @@
 // (penetration, evasion, crits, heals, lifesteal, regen and the effects).
 
 import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from '../../spacetimedb/src/combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingMult } from '../../spacetimedb/src/data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, waxingMult } from '../../spacetimedb/src/data/legendary';
 import { seededRng, type Rng } from '../../spacetimedb/src/loot';
 
 /** A duel still going after this long is decided on points (share of HP left). */
@@ -91,8 +91,8 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
     const bulwark = amount(i, Effect.Bulwark);
     if (bulwark > 0 && rng() < bulwark) damage /= 2;
     if (hp[i] < LAST_STAND_BELOW * maxHp[i]) damage *= 1 - amount(i, Effect.LastStand);
-    // Moonshadow: halved right after a dodge, × 1.1 otherwise.
-    if (sides[i].effects.has(Effect.Moonshadow)) damage *= (lastDodged[i] ? MOONSHADOW_AFTER_DODGE : 1) * MOONSHADOW_TAKEN;
+    // Afterimage: the hit right after a dodge deals a share less.
+    if (lastDodged[i]) damage *= 1 - amount(i, Effect.Afterimage);
     lastDodged[i] = false;
     const absorbed = Math.min(shield[i], damage);
     shield[i] -= absorbed;

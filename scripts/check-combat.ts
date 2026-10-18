@@ -312,18 +312,26 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const wxLen = wxFights.reduce((a, x) => a + x.end - x.walk, 0) / wxFights.length;
   check('Waxing Moon in live fights: average length matches the formula', near(wxLen, wxM.timeToKill, wxM.timeToKill * 0.06), `${f(wxLen)} s vs ${f(wxM.timeToKill)} s`);
 
-  // Moonshadow: incoming × (1 − 0.5 × evasion) × 1.1.
+  // Moonshadow: armor and resistance become evasion rating.
+  const acChest = item(35, 1, [[Stat.Armor, 200], [Stat.Resistance, 100], [Stat.EvasionRating, 50]]);
+  const msh = combatStats(10, kit(sword, { Chest: withEffect(acChest, Effect.Moonshadow) }));
+  const noMsh = combatStats(10, kit(sword, { Chest: acChest }));
+  check('Moonshadow: no armor or resistance left', msh.armor === 0 && msh.resistance === 0);
+  check('Moonshadow: evasion rating + armor + resistance', near(msh.evasionRating, noMsh.evasionRating + noMsh.armor + noMsh.resistance, 1e-9),
+    `${f(msh.evasionRating)} vs ${f(noMsh.evasionRating)} + ${f(noMsh.armor)} + ${f(noMsh.resistance)}`);
+
+  // Afterimage: incoming × (1 − a × evasion); the hit after a dodge is cut by a.
   const evChest = item(35, 1, [[Stat.EvasionRating, 400]]);
-  const msh = combatStats(10, kit(sword, { Chest: withEffect(evChest, Effect.Moonshadow) }));
-  const noMsh = combatStats(10, kit(sword, { Chest: evChest }));
-  const mshFoe = { ...rat, dps: 3, hp: 1e9 };
-  const mshM = matchup(msh, mshFoe);
-  check('Moonshadow: incoming × (1 − 0.5 × evasion) × 1.1', mshM.evasion > 0.2 && near(mshM.incoming, matchup(noMsh, mshFoe).incoming * (1 - 0.5 * mshM.evasion) * 1.1, 1e-9),
-    `evasion ${f(mshM.evasion)}`);
-  const mshFight = simulateFight(msh, mshM, mshFoe, seededRng(5n)).events.filter(e => e.by === 'enemy');
-  const afterDodge = mshFight.filter((e, i) => i > 0 && e.kind === 'hit' && mshFight[i - 1].kind === 'dodge');
-  check('Moonshadow in a live fight: the hit after a dodge is halved', afterDodge.length > 0 &&
-    afterDodge.every(e => e.damage <= mshM.enemyHit * 1.1 * 0.5 * 1.1 + 1e-9));
+  const aim = combatStats(10, kit(sword, { Chest: withEffect(evChest, Effect.Afterimage) }));
+  const noAim = combatStats(10, kit(sword, { Chest: evChest }));
+  const aimFoe = { ...rat, dps: 3, hp: 1e9 };
+  const aimM = matchup(aim, aimFoe);
+  check('Afterimage: incoming × (1 − 0.5 × evasion)', aimM.evasion > 0.2 && near(aimM.incoming, matchup(noAim, aimFoe).incoming * (1 - 0.5 * aimM.evasion), 1e-9),
+    `evasion ${f(aimM.evasion)}`);
+  const aimFight = simulateFight(aim, aimM, aimFoe, seededRng(5n)).events.filter(e => e.by === 'enemy');
+  const afterDodge = aimFight.filter((e, i) => i > 0 && e.kind === 'hit' && aimFight[i - 1].kind === 'dodge');
+  check('Afterimage in a live fight: the hit after a dodge is halved', afterDodge.length > 0 &&
+    afterDodge.every(e => e.damage <= aimM.enemyHit * 1.1 * 0.5 + 1e-9));
 
   // Lunar Insight: Might gives nothing; Mind gives max HP and resistance.
   const amulet = item(56, 1, [[Stat.Mind, 40], [Stat.Might, 40], [Stat.Resistance, 100]]);

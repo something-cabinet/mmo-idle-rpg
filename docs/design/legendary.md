@@ -94,6 +94,7 @@ Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   ("
 | 34 | **Last Stand** | Vitality | Below 30% HP, you take **20%** less damage | 50% |
 | 35 | **Berserker** | Might | **+3%** damage per 10% of your max HP missing | +9% |
 | 36 | **Bulwark** | Evasion rating | **15%** chance to block half of each enemy hit | 50% |
+| 49 | **Afterimage** | Evasion rating | After you evade, the enemy's **next hit deals 50% less** | 75% |
 | 37 | **Second Skin** | Max HP | Each fight starts with a shield of **15%** of your max HP | 50% |
 
 ```
@@ -105,6 +106,7 @@ Runeguard:    armor      += a × resistance    so wearing both doesn't loop)
 Unbreakable:  your mitigation = min(0.85 + a, d / (d + 5 × level))
 Stoneskin:    enemyHit = max(0, hit after mitigation − a × maxHp)
 Bulwark:      incoming × (1 − a / 2)
+Afterimage:   incoming × (1 − a × evasion)   // P(previous attack was evaded) = evasion
 Second Skin:  shield S = a × maxHp, gone after S / incoming seconds (HP stays full meanwhile,
               so sustain does nothing)
 Last Stand:   below L = 30% × maxHp the drain is netLow = netIncoming − a × incoming
@@ -180,7 +182,7 @@ this split keep working.
 | 24 | **Ambush** | Your **first attack each fight deals 5×** damage, but attack speed × 0.7. `timeToKill = max(TTK − 4 / attacksPerSec, 0.5 / attacksPerSec)` (the first swing lands half a period in). |
 | 45 | **Moonlight** | **All your damage is magic**: the weapon's hit and flat physical convert, only the magic %-group applies (magic damage %, Mind), and armor penetration counts as magic penetration. **Every 3rd attack hits twice.** |
 | 46 | **Waxing Moon** | Your hits start at **−40%** damage and grow **+10%** per attack, up to **+60%** from the 11th attack on. Resets each fight. |
-| 47 | **Moonshadow** | After you evade, the enemy's **next hit deals 50% less**. But hits that land deal **10% more**. |
+| 47 | **Moonshadow** | **All your armor and resistance become evasion rating**: you keep none, but each point adds 1 evasion rating. |
 | 48 | **Lunar Insight** | Each point of Mind also gives **+0.25% max HP** and **+0.5% resistance**, but **Might gives nothing**. |
 
 ```
@@ -199,8 +201,9 @@ Waxing Moon:  attack k (from 1) deals × w(k) = min(1.6, 0.5 + 0.1k);
               cumulative W(n) = 0.5n + 0.05n(n+1) for n ≤ 11, then W(11) + 1.6(n − 11)
               x = enemyHP / (weapon DPS × period);  DPS_you × x / n(x), n solving W(n) = x
               (quadratic, then linear), so timeToKill = n periods and lifesteal etc. see the average
-Moonshadow:   landed hits × (1 − 0.5 × evasion) × 1.1   // P(previous attack was evaded) = evasion
-              netIncoming uses DPS_enemy × (1 − evasion) × (1 − 0.5 × evasion) × 1.1
+Moonshadow:   evasionRating += armor + resistance;  armor = resistance = 0
+              (final values: after their %, Frozen Blood, Ironclad and Runeguard; added after
+              evasion rating % and Finesse, so they don't multiply it)
 Lunar Insight: might = 0 for its bonuses;  maxHP% += 0.25% × mind;  resistance% += 0.5% × mind
 ```
 
@@ -211,8 +214,9 @@ Lunar Insight: might = 0 for its bonuses;  maxHP% += 0.25% × mind;  resistance%
   enemies loses damage; hard targets and bosses gain the most.
 - **Moonlight with Spellblade:** Moonlight's all-magic wins over the swap; Spellblade still
   merges the %-groups.
-- **Moonshadow** vs plain: 20% evasion × 0.99 damage taken, 40% × 0.88, 60% × 0.77,
-  85% × 0.63. Multiplicative, so it never makes you immune.
+- **Moonshadow** trades all mitigation for evasion: strong against many small hits, but
+  every hit that lands is taken in full. Juggernaut and Spellward stop evasion, so they
+  leave you with no defense at all.
 - Midas Touch + Scholar's Focus together: both apply (xp × 0 = 0, gold × 1.25). The
   effects card points this out.
 

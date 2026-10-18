@@ -4,7 +4,7 @@
 // party replays the very same fight from the stored setup and seed to animate it.
 
 import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from './combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingMult } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, waxingMult } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { base } from './data/bases';
@@ -111,7 +111,7 @@ function offense(s: CombatStats, boss: EnemyDef) {
  * regen heal yourself. The highest Frostbite chill in the party shrinks all the boss's
  * damage. Executioner, Bully, Berserker, Ambush, Riposte, Second Wind, Second Skin,
  * Stoneskin, Bulwark, Last Stand, Thornshell, Zealot's Oath, Moonlight, Waxing Moon and
- * Moonshadow work as in a solo fight.
+ * Afterimage work as in a solo fight.
  * Follow-through does nothing here: there is no next enemy. The party wins when the boss dies, and loses when everyone is dead or at the
  * enrage timer.
  */
@@ -167,8 +167,8 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     blocked = bulwark > 0 && rng() < bulwark;
     if (blocked) damage /= 2;
     if (hp[i] < LAST_STAND_BELOW * maxHp[i]) damage *= 1 - amount(i, Effect.LastStand);
-    // Moonshadow: halved right after a dodge, × 1.1 otherwise.
-    if (fighters[i].effects.has(Effect.Moonshadow)) damage *= (lastDodged[i] ? MOONSHADOW_AFTER_DODGE : 1) * MOONSHADOW_TAKEN;
+    // Afterimage: the hit right after a dodge deals a share less.
+    if (lastDodged[i]) damage *= 1 - amount(i, Effect.Afterimage);
     lastDodged[i] = false;
     dealt = damage;
     const absorbed = Math.min(shield[i], damage);

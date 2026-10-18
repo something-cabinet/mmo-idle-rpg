@@ -65,7 +65,7 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 22 | T4 | **Umbriel's Edge** | Umbral Katana (Split) | Rending, Spellbreaker | Armor pen %, magic pen %, crit damage. *Raid only: The Drowned Moon.* |
 | 15 | T4 | **Moonlight Greatsword** | Greatsword | Moonlight | Magic damage %, Mind, crit damage. *Only from the Moonlit Champion (Moonlight Garden).* |
 | 16 | T4 | **Waxing Crescent** | Katana | Waxing Moon | Physical damage %, attack speed %, crit damage |
-| 17 | T4 | **Moonshadow Jerkin** | Leather chest | Moonshadow | Evasion rating, evasion rating %, Finesse |
+| 17 | T4 | **Moonshadow Jerkin** | Leather chest | Moonshadow | Max HP, evasion rating %, Finesse |
 | 18 | T4 | **Tear of the Moon** | Sapphire (Moonstone) amulet | Lunar Insight | Mind, magic damage %, resistance % |
 | 19 | T4 | **Lunatic's Wager** | Sapphire (Moonstone) ring | None | Max HP %, attack speed %, item find %, XP gain %, gold find %, each rolled **−3 to +3** × value |
 
@@ -81,7 +81,7 @@ one per build style, and Lunatic's Wager with none:
 - **Waxing Crescent** (physical, katana): grows through each fight like the moon. Weak for
   the first few swings, strong in long fights: a boss and hard-target weapon, poor for
   over-farming easy enemies.
-- **Moonshadow Jerkin** (evasion, leather): every dodge softens the next hit that lands.
+- **Moonshadow Jerkin** (evasion, leather): all armor and resistance turn into evasion rating.
   Pays off for real evasion builds, a small loss below ~20% evasion.
 - **Tear of the Moon** (caster defence, amulet): Mind also gives max HP and resistance;
   Might gives nothing. Pairs with the Moonlight Greatsword.

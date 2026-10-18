@@ -6,7 +6,7 @@
 // hundredths, converted with `fromStored`.
 
 import { SLOTS } from './data/bases';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, MOONSHADOW_AFTER_DODGE, MOONSHADOW_TAKEN, effectAmount, waxingAttacks, type EffectCounts } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, effectAmount, waxingAttacks, type EffectCounts } from './data/legendary';
 import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, dodgeChance, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType, WeaponDamage } from './data/bases';
@@ -223,6 +223,10 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const fromHp = frozenBlood ? bonusHp(level, maxHp, has(Effect.GlassCannon)) / 10 : 0;
   const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct)) + fromHp;
   const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct) + (lunar ? 0.005 * mind : 0)) + fromHp;
+  const armorTotal = armor + amount(Effect.Runeguard) * resistance;
+  const resistanceTotal = resistance + amount(Effect.Ironclad) * armor;
+  // Moonshadow: every point of armor and resistance (after the conversions above) becomes evasion rating.
+  const moonshadow = has(Effect.Moonshadow);
 
   return {
     level,
@@ -233,9 +237,9 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     magicPen: Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct) + (moonlight ? pct(Stat.ArmorPenPct) : 0)),
     maxHp,
     regen: frozenBlood ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.01 * vitality)),
-    armor: armor + amount(Effect.Runeguard) * resistance,
-    resistance: resistance + amount(Effect.Ironclad) * armor,
-    evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse),
+    armor: moonshadow ? 0 : armorTotal,
+    resistance: moonshadow ? 0 : resistanceTotal,
+    evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse) + (moonshadow ? armorTotal + resistanceTotal : 0),
     accuracy: (accuracyAtLevel(level) + flat(Stat.Accuracy)) * (1 + pct(Stat.AccuracyPct) + MIGHT_ACCURACY * might),
     // Bloodthirst raises the lifesteal cap.
     lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst), pct(Stat.LifestealPct))),
@@ -384,8 +388,8 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   const enemyHit = Math.max(0, (e.dps / e.speed) * (1 - s.chill) * (1 - playerMitigation) - stoneskin);
   let incoming = stoneskin > 0 ? enemyHit * e.speed * (1 - evasion) : e.dps * (1 - s.chill) * (1 - playerMitigation) * (1 - evasion);
   if (bulwark > 0) incoming *= 1 - bulwark / 2;
-  // Moonshadow: a hit right after a dodge (chance = evasion) is halved; landed hits × 1.1.
-  if (has(Effect.Moonshadow)) incoming *= (1 - (1 - MOONSHADOW_AFTER_DODGE) * evasion) * MOONSHADOW_TAKEN;
+  // Afterimage: a hit right after a dodge (chance = evasion) deals a share less.
+  incoming *= 1 - amount(Effect.Afterimage) * evasion;
   // Riposte: each evaded attack counters for a share of your average hit.
   dps += amount(Effect.Riposte) * evasion * e.speed * dps * period;
   // Effect damage is your damage: Glass Cannon and Voidtouched apply to it too.

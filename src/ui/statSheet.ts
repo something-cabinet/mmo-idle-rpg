@@ -127,14 +127,14 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
       `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.25 * mind)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
     row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
     row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + 5 × enemy level); vs Lv ${level}: / (armor + ${5 * level}), cap ${pct(mitCap)}`,
-      leg(Effect.Runeguard), has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
+      leg(Effect.Runeguard), has(Effect.Moonshadow) && 'Moonshadow: all of it becomes evasion rating', has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
       `Reduction: resistance / (resistance + 5 × enemy level); vs Lv ${level}: / (resistance + ${5 * level}), cap ${pct(mitCap)}`,
-      leg(Effect.Ironclad), lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.5 * mind)}%`, has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
+      leg(Effect.Ironclad), has(Effect.Moonshadow) && 'Moonshadow: all of it becomes evasion rating', lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.5 * mind)}%`, has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),
     row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs a Lv ${level} enemy's accuracy: rating / (rating + ${accuracyAtLevel(level)})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade",
-      has(Effect.Moonshadow) && "Moonshadow: the enemy's hit after a dodge deals 50% less; landed hits deal 10% more")),
+      has(Effect.Moonshadow) && 'Moonshadow: + 1 rating per point of armor and resistance', leg(Effect.Afterimage))),
     row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], `Cap ${pct(CAPS.lifesteal / 100 + effectAmount(st.effects, Effect.Bloodthirst))}`, leg(Effect.Bloodthirst), has(Effect.FrozenBlood) && 'Frozen Blood: no lifesteal')),
   ];
 

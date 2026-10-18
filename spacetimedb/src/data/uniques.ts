@@ -87,7 +87,7 @@ export const UNIQUES: UniqueDef[] = [
   { id: 16, name: 'Waxing Crescent', tier: 4, baseId: 6, effects: [Effect.WaxingMoon],
     stats: [{ stat: Stat.PhysDamagePct }, { stat: Stat.AttackSpeedPct }, { stat: Stat.CritDamage }] },
   { id: 17, name: 'Moonshadow Jerkin', tier: 4, baseId: 35, effects: [Effect.Moonshadow],
-    stats: [{ stat: Stat.EvasionRating }, { stat: Stat.EvasionRatingPct }, { stat: Stat.Finesse }] },
+    stats: [{ stat: Stat.MaxHp }, { stat: Stat.EvasionRatingPct }, { stat: Stat.Finesse }] },
   { id: 18, name: 'Tear of the Moon', tier: 4, baseId: 56, effects: [Effect.LunarInsight],
     stats: [{ stat: Stat.Mind }, { stat: Stat.MagicDamagePct }, { stat: Stat.ResistancePct }] },
   // No effect: five stats that each roll anywhere from a deep curse to a huge blessing (after Ventor's Gamble).

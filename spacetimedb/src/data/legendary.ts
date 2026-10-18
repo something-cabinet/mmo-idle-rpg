@@ -59,6 +59,7 @@ export const Effect = {
   WaxingMoon: 46,
   Moonshadow: 47,
   LunarInsight: 48,
+  Afterimage: 49,
 } as const;
 
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
@@ -141,6 +142,8 @@ export const LEGENDARIES: LegendaryDef[] = [
     describe: a => `+${pc(a)} damage per 10% of your max HP missing.` }),
   legendary({ id: 36, name: 'Bulwark', group: 'Defense', bonusStat: Stat.EvasionRating, perCopy: 0.15, cap: 0.5,
     describe: a => `${pc(a)} chance to block half of each enemy hit.` }),
+  legendary({ id: 49, name: 'Afterimage', group: 'Defense', bonusStat: Stat.EvasionRating, perCopy: 0.5, cap: 0.75,
+    describe: a => `After you evade, the enemy's next hit deals ${pc(a)} less.` }),
   legendary({ id: 37, name: 'Second Skin', group: 'Defense', bonusStat: Stat.MaxHp, perCopy: 0.15, cap: 0.5,
     describe: a => `Each fight starts with a shield of ${pc(a)} of your max HP.` }),
   // Utility
@@ -182,7 +185,7 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 24, name: 'Ambush', text: 'Your first attack each fight deals 5× damage, but attack speed × 0.7.' },
   { id: 45, name: 'Moonlight', text: 'All your damage is magic (only magic damage % and Mind boost it; armor penetration counts as magic penetration). Every 3rd attack hits twice.' },
   { id: 46, name: 'Waxing Moon', text: 'Your hits start at −40% damage and grow +10% per attack, up to +60% from the 11th attack on. Resets each fight.' },
-  { id: 47, name: 'Moonshadow', text: "After you evade, the enemy's next hit deals 50% less. But hits that land deal 10% more." },
+  { id: 47, name: 'Moonshadow', text: 'All your armor and resistance become evasion rating: you keep none, but every point adds 1 evasion rating.' },
   { id: 48, name: 'Lunar Insight', text: 'Each point of Mind also gives +0.25% max HP and +0.5% resistance, but Might gives nothing.' },
 ];
 
@@ -201,9 +204,6 @@ export function waxingAttacks(x: number): number {
   if (x <= 12.1) return (Math.sqrt(0.3025 + 0.2 * x) - 0.55) / 0.1;
   return 11 + (x - 12.1) / 1.6;
 }
-/** Moonshadow: an attack right after a dodge deals × MOONSHADOW_AFTER_DODGE; every landed hit × MOONSHADOW_TAKEN. */
-export const MOONSHADOW_AFTER_DODGE = 0.5;
-export const MOONSHADOW_TAKEN = 1.1;
 
 export const LEGENDARIES_BY_ID: ReadonlyMap<number, LegendaryDef> = new Map(LEGENDARIES.map(l => [l.id, l]));
 export const EFFECTS_BY_ID: ReadonlyMap<number, EffectDef> = new Map([...LEGENDARIES, ...UNIQUE_EFFECTS].map(e => [e.id, e]));

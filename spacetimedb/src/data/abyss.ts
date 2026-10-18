@@ -107,13 +107,14 @@ export const DEEP_WARDEN: AbyssKind = {
 
 /**
  * Art ID of the Deep Warden's look for its first Boss affix (abyss.md, "The boss"): one
- * variant per affix, `e-<id>.webp` like enemy art (91501–91508); the plain Deep Warden
+ * variant per affix, `e-<id>.webp` like enemy art (91501–91508, 91503 unused); the plain Deep Warden
  * (9150) stands in while a variant is missing.
  */
 export const wardenArtId = (firstAffix: number) => DEEP_WARDEN.id * 10 + firstAffix;
 
 export const EliteAffix = { Vampiric: 1, WardedShell: 2, Swift: 3, Thorned: 4, Unyielding: 5, Ravenous: 6 } as const;
-export const BossAffix = { Hungering: 1, Mirrored: 2, LunarPhases: 3, Moonfall: 4, Starless: 5, Tidal: 6, Veiled: 7, Eclipse: 8 } as const;
+/** Boss affix IDs; 3 (Lunar Phases) was removed and stays retired. */
+export const BossAffix = { Hungering: 1, Mirrored: 2, Moonfall: 4, Starless: 5, Tidal: 6, Veiled: 7, Eclipse: 8 } as const;
 
 export interface AffixDef {
   id: number;
@@ -132,7 +133,6 @@ export const ELITE_AFFIXES: AffixDef[] = [
 export const BOSS_AFFIXES: AffixDef[] = [
   { id: BossAffix.Hungering, name: 'Hungering', text: 'Its damage grows 10% every 10 s' },
   { id: BossAffix.Mirrored, name: 'Mirrored', text: 'Resists your main damage type and attacks your weaker defense' },
-  { id: BossAffix.LunarPhases, name: 'Lunar', text: 'Every 15 s flips between armored with magic attacks and warded with physical attacks' },
   { id: BossAffix.Moonfall, name: 'Moonfall', text: "Every 12 s, a burst of 3× its hit that can't be dodged" },
   { id: BossAffix.Starless, name: 'Starless', text: 'Your heals, regen and lifesteal are halved' },
   { id: BossAffix.Tidal, name: 'Tidal', text: 'Each attack is half physical, half magic' },
@@ -142,11 +142,9 @@ export const BOSS_AFFIXES: AffixDef[] = [
 export const ELITE_AFFIXES_BY_ID: ReadonlyMap<number, AffixDef> = new Map(ELITE_AFFIXES.map(a => [a.id, a]));
 export const BOSS_AFFIXES_BY_ID: ReadonlyMap<number, AffixDef> = new Map(BOSS_AFFIXES.map(a => [a.id, a]));
 
-/** Boss affixes that can't share a boss: both set its defenses or its damage type. */
+/** Boss affixes that can't share a boss: both set its damage type. */
 const CLASHES: [number, number][] = [
-  [BossAffix.Mirrored, BossAffix.LunarPhases],
   [BossAffix.Mirrored, BossAffix.Tidal],
-  [BossAffix.LunarPhases, BossAffix.Tidal],
 ];
 export const bossAffixesClash = (a: number, b: number) => CLASHES.some(([x, y]) => (x === a && y === b) || (x === b && y === a));
 

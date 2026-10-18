@@ -81,8 +81,6 @@ export interface FightMods {
   healMult?: number;
   /** Share of each of your hits that comes back to you as damage (after your mitigation). */
   reflect?: number;
-  /** The enemy turns to the next matchup in `list` every `every` seconds, from the first (= the fight's `m`). */
-  phases?: { every: number; list: Matchup[] };
 }
 
 export interface Fight {
@@ -95,6 +93,8 @@ export interface Fight {
   /** Seconds from the fight's start to its end (the kill, the defeat or the stalemate). */
   end: number;
   outcome: 'kill' | 'defeat' | 'stalemate';
+  /** Your HP when the fight started (max HP, or `FightMods.startHp`). */
+  startHp: number;
   /** Your HP when the fight ended. */
   hpLeft: number;
   /** Second Wind left after the fight (0 once it triggered). */
@@ -130,7 +130,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const foeRegen = enemy.regen ?? 0;
   // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = DPS.
   // Moonlight's wave, Waxing Moon's average and the enemy's evasion are in `m.dps`; take
-  // them out, then apply them per swing. Recomputed when the enemy changes phase.
+  // them out, then apply them per swing.
   const moonlight = s.effects.has(Effect.Moonlight);
   const waxing = s.effects.has(Effect.WaxingMoon);
   const healMult = mods.healMult ?? 1;
@@ -175,17 +175,16 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     into(t) < (mods.immuneUntil ?? 0) || (!!mods.eclipse && into(t) >= mods.eclipse.every && into(t) % mods.eclipse.every < mods.eclipse.length);
   const ramp = (t: number) => (mods.ramp ? 1 + mods.ramp.step * Math.floor(into(t) / mods.ramp.every) : 1);
 
-  let youHp = Math.min(s.maxHp, mods.startHp ?? s.maxHp);
+  const startHp = Math.min(s.maxHp, mods.startHp ?? s.maxHp);
+  let youHp = startHp;
   let foeHp = enemy.hp;
   let now = walk;
   let nextYou = walk + yourPeriod / 2;
   let nextFoe = walk + foePeriod / 2;
   let nextBurst = mods.burst ? walk + mods.burst.every : Infinity;
-  let phase = 0;
-  let nextPhase = mods.phases ? walk + mods.phases.every : Infinity;
   const events: FightEvent[] = [];
   const done = (end: number, outcome: Fight['outcome']): Fight =>
-    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, hpLeft: youHp, secondWindLeft: secondWind });
+    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, startHp, hpLeft: youHp, secondWindLeft: secondWind });
   const shieldNote = () => (m.shield > 0 ? { shield } : {});
   /** You take `damage` (after the shield); Second Wind may save you. Returns whether it did. */
   const take = (damage: number): boolean => {
@@ -205,7 +204,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   }
 
   for (;;) {
-    const t = Math.min(nextYou, nextFoe, nextBurst, nextPhase);
+    const t = Math.min(nextYou, nextFoe, nextBurst);
     if (t > walk + limit) return done(walk + limit, 'stalemate');
     const before = youHp;
     youHp = Math.min(s.maxHp, youHp + regen * (t - now));
@@ -213,12 +212,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     foeHp = Math.min(enemy.hp, foeHp + foeRegen * (t - now));
     foeRegained += foeHp - foeBefore;
     now = t;
-    if (t === nextPhase) {
-      const list = mods.phases!.list;
-      nextPhase += mods.phases!.every;
-      phase = (phase + 1) % list.length;
-      face(list[phase]);
-    } else if (t === nextBurst) {
+    if (t === nextBurst) {
       nextBurst += mods.burst!.every;
       // Can't be dodged or blocked; the shield still takes it first.
       const damage = mods.burst!.mult * enemyHit * ramp(t) * (0.9 + 0.2 * rng());

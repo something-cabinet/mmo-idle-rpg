@@ -34,12 +34,22 @@ export function stopFight() {
   timer = 0;
 }
 
+/** Options for fights that aren't zone farming (the Moonwell Deep). */
+export interface FightSceneOptions {
+  /** A lost fight is never followed by a respawn (default: as in zones, `respawns`). */
+  noRespawn?: boolean;
+  /** Status line for a fight that ran out of time (default: a stalemate's). */
+  stalemate?: string;
+}
+
 /**
  * Animates `first`, then each following fight from `next(now)` (a fresh projection
  * once the current fight is over; undefined when idle or defeated). `caption` gives
  * each fight's flavour line, shown from its walk until the next fight.
  */
-export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFight | undefined, caption?: (c: CurrentFight) => string | undefined) {
+export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFight | undefined, caption?: (c: CurrentFight) => string | undefined, opts: FightSceneOptions = {}) {
+  const respawning = (f: CurrentFight['fight']) => !opts.noRespawn && respawns(f);
+  const span = (f: CurrentFight['fight']) => (opts.noRespawn ? f.end : fightSpan(f));
   stopFight();
   let cur = first;
   const showCaption = () => {
@@ -68,7 +78,7 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
   /** Your HP before event `e` of the current fight. */
   const prevHp = (e: CurrentFight['fight']['events'][number]) => {
     const events = cur.fight.events;
-    return events[events.indexOf(e) - 1]?.youHp ?? cur.fight.stats.maxHp;
+    return events[events.indexOf(e) - 1]?.youHp ?? cur.fight.startHp;
   };
 
   /** Draws `cur` at `now`, with floating numbers for the events since the last frame. */
@@ -85,11 +95,14 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     // New events since the last frame; after a pause, only the latest few.
     if (lastT >= 0 && t > lastT) {
       for (const e of fight.events.slice(0, i).filter(e => e.t > lastT).slice(-4)) {
-        if (e.kind === 'miss') float('enemy', 'Miss', 'dodge');
+        if (e.immune) float('enemy', 'Immune', 'dodge');
+        else if (e.kind === 'miss') float('enemy', 'Miss', 'dodge');
         else if (e.by === 'you') float('enemy', e.kind === 'crit' ? `${fmt(e.damage)}!` : fmt(e.damage), e.carried ? 'hit carry' : e.kind);
         else if (e.kind === 'dodge') float('you', 'Dodge', 'dodge');
         // Bulwark: a blocked hit; Second Skin: a hit the shield took (HP unchanged shows as "Shield").
-        else float('you', `${e.blocked ? 'Block ' : ''}-${fmt(e.damage)}`, e.blocked ? 'block' : e.shield !== undefined && e.youHp === prevHp(e) ? 'shielded' : 'taken');
+        else float('you', `${e.burst ? 'Moonfall ' : e.blocked ? 'Block ' : ''}-${fmt(e.damage)}`, e.blocked ? 'block' : e.shield !== undefined && e.youHp === prevHp(e) ? 'shielded' : 'taken');
+        if ((e.reflected ?? 0) >= 0.5) float('you', `Thorns -${fmt(e.reflected!)}`, 'taken');
+        if ((e.drained ?? 0) >= 0.5) float('enemy', `+${fmt(e.drained!)}`, 'heal');
         if (e.secondWind) float('you', 'Second Wind', 'heal');
         if (e.healed >= 0.5) float('you', `+${fmt(e.healed)}`, 'heal');
         if ((e.foeHealed ?? 0) >= 0.5) float('enemy', `+${fmt(e.foeHealed!)}`, 'heal');
@@ -98,7 +111,7 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     }
     lastT = t;
 
-    const youHp = last?.youHp ?? s.maxHp;
+    const youHp = last?.youHp ?? fight.startHp;
     const foeHp = last?.foeHp ?? enemy.hp;
     // Second Skin: the shield left, drawn over the top end of the HP bar.
     const shield = last?.shield ?? fight.matchup.shield;
@@ -117,14 +130,14 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
       el(who, '.swing-fill').style.width = walking || over || !Number.isFinite(period) ? '0%' : `${(swing / period) * 100}%`;
     }
     // Seconds left lying defeated before the next fight (sim.ts `respawns`).
-    const rising = fightSpan(fight) - Number(now - startMicros) / 1e6;
+    const rising = span(fight) - Number(now - startMicros) / 1e6;
     $('scene-status').textContent =
-      over && respawns(fight)
+      over && respawning(fight)
         ? `Defeated · back up in ${Math.max(0, Math.ceil(rising))} s`
         : over && fight.outcome === 'defeat'
         ? 'Defeated'
         : over && fight.outcome === 'stalemate'
-          ? 'Neither side can win'
+          ? (opts.stalemate ?? 'Neither side can win')
           : !src
             ? 'No weapon equipped'
             : walking
@@ -139,8 +152,8 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     draw(cur, now);
     // A kill, or a defeat after its respawn: on to the next fight, which starts with the
     // walk. A defeat without a respawn stays on screen.
-    const endsAt = cur.startMicros + BigInt(Math.ceil(fightSpan(cur.fight) * 1e6));
-    if ((cur.fight.outcome !== 'defeat' || respawns(cur.fight)) && now >= endsAt) {
+    const endsAt = cur.startMicros + BigInt(Math.ceil(span(cur.fight) * 1e6));
+    if ((cur.fight.outcome !== 'defeat' || respawning(cur.fight)) && now >= endsAt) {
       const n = next(now);
       if (n && n.startMicros > cur.startMicros) {
         cur = n;

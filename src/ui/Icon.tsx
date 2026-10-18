@@ -90,6 +90,7 @@ const PATHS: Record<string, string> = {
   'm-herb': 'M12 21v-8M12 13c-3 0-5-2-5-5 3 0 5 2 5 5zM12 13c3 0 5-2 5-5-3 0-5 2-5 5zM12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z',
   'm-meteor': 'M14 10a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM3 3l8 8M7 3l5 5M3 7l5 5',
   'm-tear': 'M12 3c3 4 6 7.5 6 11a6 6 0 0 1-12 0c0-3.5 3-7 6-11z',
+  'm-voidglass': 'M12 2l5 7-2 13H9L7 9l5-7zM7 9h10M12 2l-2 7 2 13 2-13-2-7',
 };
 
 export function Icon({ name, className = '' }: { name: string; className?: string }) {

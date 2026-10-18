@@ -10,6 +10,7 @@ import { nowMicros } from '../clock';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
 import { EnemyArt } from '../enemyArt';
 import { startFight, stopFight } from '../fight';
+import { FightStage } from '../FightStage';
 import { walkLine } from '../flavor';
 import { foundName } from '../discovery';
 import { encounterText } from '../encounters';
@@ -170,29 +171,11 @@ const FightScene = memo(
         stopFight();
       };
     }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once per fight (keyed by the parent)
-    const fighter = (who: 'you' | 'enemy', portrait: React.ReactNode, name: React.ReactNode) => (
-      <div className="fighter" id={`fighter-${who}`}>
-        <div className={`portrait ${who}`}>{portrait}</div>
-        <div className="fighter-name">{name}</div>
-        <div className={`hpbar${who === 'enemy' ? ' enemy' : ''}`}>
-          <div className="hp-fill" />
-          {who === 'you' && <div className="hp-shield" />}
-          <span className="hp-text" />
-        </div>
-        <div className="swing">
-          <div className="swing-fill" />
-        </div>
-        <div className="floats" />
-      </div>
-    );
     return (
-      <div className="scene card" id="scene">
-        {fighter('you', <Icon name="user" />, <>{s.row.name} <span className="muted">Lv {s.level}</span></>)}
-        <div className="versus">VS</div>
-        {fighter('enemy', <EnemyArt enemyId={e.id} fallback={<Icon name={e.boss ? 'skull' : 'swords'} />} />, <>{e.name} <span className="muted">Lv {e.level}</span></>)}
-        <div className="scene-flavor" id="scene-flavor" />
-        <div className="scene-status" id="scene-status" />
-      </div>
+      <FightStage
+        you={{ portrait: <Icon name="user" />, name: <>{s.row.name} <span className="muted">Lv {s.level}</span></> }}
+        enemy={{ portrait: <EnemyArt enemyId={e.id} fallback={<Icon name={e.boss ? 'skull' : 'swords'} />} />, name: <>{e.name} <span className="muted">Lv {e.level}</span></> }}
+      />
     );
   },
   () => true

@@ -3813,7 +3813,6 @@ fieldset.affix-pick legend {
 }
 .deep-next,
 .deep-replay,
-.deep-attempts,
 .deep-board {
   margin-bottom: 14px;
 }
@@ -3954,45 +3953,9 @@ fieldset.affix-pick legend {
   align-items: center;
   gap: 4px;
 }
-.deep-attempts ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 4px;
-}
-.deep-attempts li {
-  display: grid;
-  grid-template-columns: 90px 80px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-}
-.deep-arena {
-  display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
-  gap: 14px;
-  align-items: center;
-}
-.deep-arena-foe {
-  display: grid;
-  place-items: center;
-}
-.deep-replay-sprite {
-  width: 120px;
-  height: 120px;
-}
-.deep-arena-foe .deep-foe-glyph {
-  width: 56px;
-  height: 56px;
-}
-.deep-arena-bars {
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-}
 .deep-steps {
   list-style: none;
-  margin: 0;
+  margin: 10px 0 0;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
@@ -4026,11 +3989,26 @@ fieldset.affix-pick legend {
 }
 .deep-ranks li {
   display: grid;
-  grid-template-columns: 36px minmax(0, 1fr) auto 48px auto;
+  grid-template-columns: 36px minmax(0, 1fr) 48px 52px 96px;
   align-items: center;
   gap: 8px;
   padding: 4px 6px;
   border-radius: 6px;
+}
+.deep-ranks li.deep-ranks-head {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding-bottom: 6px;
+  margin-bottom: 2px;
+}
+.deep-level {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .deep-ranks li.me {
   background: var(--accent-soft);
@@ -4057,18 +4035,121 @@ fieldset.affix-pick legend {
   color: var(--moon);
 }
 @media (max-width: 600px) {
-  .deep-arena {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .deep-replay-sprite {
-    width: 88px;
-    height: 88px;
-  }
-  .deep-attempts li {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
   .btn.deep-go {
     justify-self: stretch;
     min-width: 0;
+  }
+}
+.btn.deep-view-build {
+  justify-content: center;
+}
+.deep-ranks-head .deep-depth {
+  color: inherit;
+}
+
+/* Moonwell Deep result: a smaller banner than a raid's, and the reward as a list. */
+.raid-result.deep-result {
+  max-width: 440px;
+  width: 100%;
+  margin: 12px auto 0;
+  padding: 14px 16px 12px;
+  text-align: center;
+}
+.deep-result .raid-result-title {
+  font-size: 26px;
+  letter-spacing: 0.04em;
+}
+.deep-result .raid-result-sub {
+  font-size: 14px;
+}
+.c-voidglass { color: var(--moon); }
+.deep-loot {
+  display: grid;
+  gap: 8px;
+  max-width: 440px;
+  width: 100%;
+  margin: 14px auto 0;
+}
+.deep-loot ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.deep-loot li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px 7px 7px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  animation: pop-in 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) var(--delay) both;
+}
+.deep-loot li.special {
+  border-color: color-mix(in srgb, var(--moon) 55%, var(--border));
+  background: linear-gradient(90deg, color-mix(in srgb, var(--moon) 16%, var(--surface-2)), var(--surface-2) 70%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--moon) 25%, transparent);
+}
+.deep-loot-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--surface-3);
+}
+.deep-loot-icon .ico {
+  width: 20px;
+  height: 20px;
+}
+.deep-loot-name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.deep-loot-amount {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--ok);
+}
+.deep-loot li.special .deep-loot-amount {
+  color: var(--moon);
+}
+@media (max-width: 600px) {
+  .deep-result .raid-result-title {
+    font-size: 21px;
+  }
+  .deep-loot li {
+    padding: 6px 10px 6px 6px;
+    gap: 8px;
+  }
+}
+.deep-replay-actions.center {
+  justify-content: center;
+  margin-top: 14px;
+}
+.deep-loot ul.deep-loot-mats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+.deep-loot-mats li {
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  gap: 6px;
+  padding: 5px 9px;
+  font-size: 13px;
+}
+.deep-loot-mats .ico {
+  width: 16px;
+  height: 16px;
+}
+.deep-loot-mats .deep-loot-amount {
+  font-size: 13px;
+}
+@media (max-width: 380px) {
+  .deep-loot ul.deep-loot-mats {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

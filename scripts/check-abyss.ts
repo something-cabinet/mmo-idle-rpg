@@ -125,9 +125,6 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
   check('Hungering: hits after 20 s are bigger', mean(hung.filter(e => e.t >= 20).map(e => e.damage)) > 1.15 * mean(hung.filter(e => e.t < 10).map(e => e.damage)));
   const mir = boss(hero, [BossAffix.Mirrored]).foe.enemy;
   check('Mirrored: resists your main damage, attacks your weaker defense', mir.defense === 'Armored' && mir.damageType === weakerDefense(hero, mir.level));
-  const lunar = boss(hero, [BossAffix.LunarPhases]);
-  check('Lunar: two phases every 15 s, Armored + magic then Warded + physical', lunar.foe.mods.phases?.every === 15 && lunar.foe.mods.phases.list.length === 2 &&
-    lunar.foe.enemy.defense === 'Armored' && lunar.foe.enemy.damageType === 'Magic');
   const fall = boss(dummy, [BossAffix.Moonfall], 3).fight.events.filter(e => e.burst);
   check('Moonfall: an undodgeable burst every 12 s', fall.length > 0 && fall.every(e => Math.abs(e.t / 12 - Math.round(e.t / 12)) < 1e-9 && e.kind === 'hit'));
   const healerStats = character(3, 'Healing');

@@ -11,8 +11,8 @@ import { elixirBuffs } from '../data/supplies';
 import { depthRng, encodeBuild, encodeStats, simulateDepth } from '../abyss';
 import { addMaterials, addSupply, killsOf, requireActive, settle, supplyCount, takeSupply, type Character, type Ctx } from '../helpers';
 
-/** Deep log rows kept per character. */
-const ABYSS_LOG_KEEP = 20;
+/** Deep log rows kept per character: only the latest attempt, which the client replays. */
+const ABYSS_LOG_KEEP = 1;
 
 /** The Deep opens with the first win against The Drowned Moon (a win records a kill of its boss). */
 function abyssUnlocked(ctx: Ctx, characterId: bigint): boolean {

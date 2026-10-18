@@ -2,7 +2,7 @@
 // chosen loadout, the attempt replayed from the log row (abyss.ts), and the leaderboard.
 // Solo and online only.
 
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { AbyssLog, AbyssRecord, Item } from '../../module_bindings/types';
 import { combatStats, type CombatStats } from '../../../spacetimedb/src/combat';
 import {
@@ -11,15 +11,17 @@ import {
 } from '../../../spacetimedb/src/data/abyss';
 import { RAIDS_BY_ID } from '../../../spacetimedb/src/data/raids';
 import { SUPPLIES_BY_ID, elixirBuffs } from '../../../spacetimedb/src/data/supplies';
-import { decodeBuild, decodeStats, depthFoes, depthOdds, depthRng, simulateDepth, type DepthFoe } from '../../../spacetimedb/src/abyss';
-import type { FightEvent } from '../../../spacetimedb/src/sim';
+import { decodeBuild, decodeStats, depthFoes, depthOdds, depthRng, simulateDepth, type DepthFoe, type DepthResult } from '../../../spacetimedb/src/abyss';
 import { call, useSticky, useTick } from '../../store';
+import { startFight, stopFight } from '../fight';
+import { FightStage } from '../FightStage';
 import { nowMicros } from '../clock';
 import { DefTag, DmgTag } from '../enemy';
 import { EnemyArt } from '../enemyArt';
-import { duration, fmt, fmtBig, pct } from '../format';
+import { fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
-import { ItemCard, materialName } from '../items';
+import { ItemCard, materialIconName, materialName } from '../items';
+import { untieredMaterial } from '../../../spacetimedb/src/data/materials';
 import { CardHead, EffectsCard, Modal, StatBoard, ViewHeader } from '../shared';
 import { gearFor, type Snapshot } from '../snapshot';
 import { statSheet } from '../statSheet';
@@ -99,14 +101,13 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
     setPending(false);
   }, [latest?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const shown = logs.find(l => l.id === watching);
-  // Attempts whose replay has reached its result (skipped or played out): until then the outcome stays hidden.
+  // Attempts whose replay has reached its result (skipped or played out): the wait after a loss starts then.
   const [ended, setEnded] = useState<{ id: bigint; at: bigint }[]>([]);
   const endedAt = (id: bigint) => ended.find(e => e.id === id)?.at;
   const latestLength = useMemo(() => (latest && !latest.won ? replayLength(latest) : 0), [latest?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   // The wait runs from when the loss was seen: its replay's result, or (not watched here) when the replay would have ended.
   const lossSeen = latest && !latest.won && (endedAt(latest.id) ?? latest.startedAt.microsSinceUnixEpoch + BigInt(Math.ceil(latestLength * 1e6)));
   const waitLeft = lossSeen ? LOSS_WAIT - Number(now - lossSeen) / 1e6 : 0;
-  const hidden = (l: AbyssLog) => l.id === watching && endedAt(l.id) === undefined;
   const empty = !gear.some(Boolean);
   const block = pending ? 'Descending…' : shown ? undefined : empty ? 'That loadout is empty' : waitLeft > 0 ? `Catch your breath: ${Math.ceil(waitLeft)} s` : undefined;
 
@@ -166,21 +167,6 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
           </div>
         </section>
       )}
-      {logs.length > 0 && (
-        <section className="card deep-attempts">
-          <CardHead title="Recent attempts" />
-          <ul>
-            {logs.slice(0, 8).map(l => (
-              <li key={String(l.id)}>
-                {hidden(l) ? <span className="muted">Fighting…</span> : <span className={l.won ? 'c-ok' : 'c-bad'}>{l.won ? 'Cleared' : l.timedOut ? 'Out of time' : 'Fell'}</span>}
-                <span>Depth {l.depth}</span>
-                <span className="muted">{duration(now - l.startedAt.microsSinceUnixEpoch)} ago</span>
-                <button className="btn small ghost" onClick={() => setWatching(l.id)}>Watch</button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </>
   );
 }
@@ -229,6 +215,49 @@ function RewardLine({ gold, xp, dust, materials, elixir }: { gold: bigint; xp: b
   );
 }
 
+/**
+ * A cleared depth's reward: the headline gains as big rows (Voidglass and elixirs shine),
+ * then the ordinary materials in a compact grid, each popping in after the last.
+ */
+function DeepLoot({ log }: { log: AbyssLog }) {
+  const supply = SUPPLIES_BY_ID.get(log.elixir);
+  const voidglass = log.materials.find(m => m.materialId === untieredMaterial('Voidglass').id);
+  const rows: { key: string; icon: string; cls: string; name: string; amount: string; special?: boolean }[] = [
+    { key: 'gold', icon: 'coins', cls: 'c-gold', name: 'Gold', amount: fmtBig(log.gold) },
+    ...(log.xp > 0n ? [{ key: 'xp', icon: 'star', cls: 'c-ok', name: 'Experience', amount: fmtBig(log.xp) }] : []),
+    { key: 'dust', icon: 'gem', cls: 'c-dust', name: 'Dust', amount: fmtBig(log.dust) },
+    ...(supply ? [{ key: 'elixir', icon: 'flask', cls: 'c-magic', name: `${supply.name} (T${supply.tier})`, amount: '1', special: true }] : []),
+    ...(voidglass ? [{ key: 'voidglass', icon: materialIconName(voidglass.materialId), cls: 'c-voidglass', name: materialName(voidglass.materialId), amount: fmt(voidglass.count), special: true }] : []),
+  ];
+  const mats = log.materials.filter(m => m !== voidglass);
+  const delay = (i: number) => ({ '--delay': `${0.25 + i * 0.09}s` }) as CSSProperties;
+  return (
+    <div className="deep-loot">
+      <div className="raid-loot-head">Your reward</div>
+      <ul>
+        {rows.map((r, i) => (
+          <li key={r.key} className={r.special ? 'special' : ''} style={delay(i)}>
+            <span className="deep-loot-icon"><Icon name={r.icon} className={r.cls} /></span>
+            <span className="deep-loot-name">{r.name}</span>
+            <strong className="deep-loot-amount">+{r.amount}</strong>
+          </li>
+        ))}
+      </ul>
+      {mats.length > 0 && (
+        <ul className="deep-loot-mats">
+          {mats.map((m, i) => (
+            <li key={m.materialId} style={delay(rows.length + i)}>
+              <Icon name={materialIconName(m.materialId)} className="c-material" />
+              <span className="deep-loot-name">{materialName(m.materialId)}</span>
+              <strong className="deep-loot-amount">+{fmt(m.count)}</strong>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /** One attempt replayed in real time from its log row, then its result. */
 function DepthReplay({ s, log, onClose, onEnd }: { s: Snapshot; log: AbyssLog; onClose: () => void; onEnd: () => void }) {
   const start = log.startedAt.microsSinceUnixEpoch;
@@ -254,15 +283,7 @@ function DepthReplay({ s, log, onClose, onEnd }: { s: Snapshot; log: AbyssLog; o
   // The fight on screen and the time into it.
   let k = 0;
   while (k + 1 < result.starts.length && result.starts[k + 1] <= at) k++;
-  const fight = result.fights[k];
   const foe = result.foes[k];
-  const into = at - result.starts[k];
-  const shown = live ? fight.events.filter(e => e.t <= into) : fight.events;
-  const last = shown.at(-1);
-  const prevHp = k > 0 ? result.fights[k - 1].hpLeft : fight.stats.maxHp;
-  const youHp = last?.youHp ?? prevHp;
-  const foeHp = last?.foeHp ?? foe.enemy.hp;
-  const maxHp = fight.stats.maxHp;
   const lost = result.foes[result.fights.length - 1];
 
   return (
@@ -271,46 +292,19 @@ function DepthReplay({ s, log, onClose, onEnd }: { s: Snapshot; log: AbyssLog; o
         <span className="tag">{k + 1}/3 · {SLOT_LABEL[foe.slot]}</span>
         <span className={`tag${DEPTH_TIME_LIMIT - at < 30 ? ' c-bad' : ''}`} title="Time left for the depth">{clock(Math.max(0, DEPTH_TIME_LIMIT - at))}</span>
       </CardHead>
-      <div className="deep-arena">
-        <div className="deep-arena-foe"><FoeArt foe={foe} className="deep-replay-sprite" /></div>
-        <div className="deep-arena-bars">
-          <div className="duelist">
-            <div className="duelist-name">{foe.enemy.name}</div>
-            <div className="hpbar enemy">
-              <div className="hp-fill" style={{ width: `${(foeHp / foe.enemy.hp) * 100}%` }} />
-              <span className="hp-text">{fmt(foeHp)} / {fmt(foe.enemy.hp)}</span>
-            </div>
-          </div>
-          <div className={`duelist${youHp <= 0 ? ' lost' : ''}`}>
-            <div className="duelist-name">{s.row.name} (you)</div>
-            <div className="hpbar">
-              <div className="hp-fill" style={{ width: `${(youHp / maxHp) * 100}%` }} />
-              <span className="hp-text">{fmt(youHp)} / {fmt(maxHp)}</span>
-            </div>
-          </div>
-          <ol className="deep-steps">
-            {result.foes.map((f, i) => (
-              <li key={f.slot} className={i < k || (!live && i === k && result.won) ? 'done' : i === k ? 'now' : ''}>{f.enemy.name}</li>
-            ))}
-          </ol>
-        </div>
-      </div>
+      {!skipped && <DeepScene key={k} s={s} result={result} k={k} origin={origin} />}
+      <ol className="deep-steps">
+        {result.foes.map((f, i) => (
+          <li key={f.slot} className={i < k || (!live && i === k && result.won) ? 'done' : i === k ? 'now' : ''}>{f.enemy.name}</li>
+        ))}
+      </ol>
       {live ? (
-        <>
-          <ul className="duel-log">
-            {shown.slice(-6).reverse().map((e, i) => (
-              <li key={shown.length - i} className={`${e.by === 'you' ? 'mine' : 'theirs'}${e.kind === 'crit' ? ' crit' : ''}${e.burst ? ' aoe' : ''}`}>
-                {eventLine(e, foe.enemy.name)}
-              </li>
-            ))}
-          </ul>
-          <div className="row deep-replay-actions">
-            <button className="btn small ghost" onClick={() => setSkipped(true)}>Skip</button>
-          </div>
-        </>
+        <div className="row deep-replay-actions">
+          <button className="btn small ghost" onClick={() => setSkipped(true)}>Skip</button>
+        </div>
       ) : (
         <>
-          <div className={`raid-result ${result.won ? 'victory' : 'defeat'}`}>
+          <div className={`raid-result deep-result ${result.won ? 'victory' : 'defeat'}`}>
             <div className="raid-result-title">{result.won ? `Depth ${log.depth} cleared!` : 'Defeat'}</div>
             <div className="raid-result-sub">
               {result.won ? `Cleared in ${clock(result.end)}`
@@ -318,13 +312,8 @@ function DepthReplay({ s, log, onClose, onEnd }: { s: Snapshot; log: AbyssLog; o
                   : `${lost.enemy.name} brings you down at ${clock(result.end)}`}
             </div>
           </div>
-          {log.won && (
-            <div className="deep-reward">
-              <h3>Your reward</h3>
-              <RewardLine gold={log.gold} xp={log.xp} dust={log.dust} materials={log.materials} elixir={log.elixir} />
-            </div>
-          )}
-          <div className="row deep-replay-actions">
+          {log.won && <DeepLoot log={log} />}
+          <div className="row deep-replay-actions center">
             <button className="btn" onClick={onClose}>Continue</button>
           </div>
         </>
@@ -333,16 +322,36 @@ function DepthReplay({ s, log, onClose, onEnd }: { s: Snapshot; log: AbyssLog; o
   );
 }
 
-function eventLine(e: FightEvent, foe: string): string {
-  if (e.by === 'you') {
-    if (e.immune) return `${foe} can't be hurt right now`;
-    if (e.kind === 'miss') return `${foe} dodges`;
-    return `You ${e.kind === 'crit' ? 'crit' : 'hit'} for ${fmt(e.damage)}${e.reflected ? ` (${fmt(e.reflected)} reflected)` : ''}${e.secondWind ? ' (Second Wind!)' : ''}`;
-  }
-  if (e.burst) return `${foe} unleashes Moonfall for ${fmt(e.damage)}!${e.secondWind ? ' (Second Wind!)' : ''}`;
-  if (e.kind === 'dodge') return `You dodge ${foe}`;
-  return `${foe} hits you for ${fmt(e.damage)}${e.drained ? ` and drains ${fmt(e.drained)}` : ''}${e.secondWind ? ' (Second Wind!)' : ''}`;
+/** What the enemy on screen does differently: its affixes, or a basic's twist (the scene's caption). */
+function foeCaption(foe: DepthFoe): string {
+  if (!foe.affixes.length) return ABYSS_KINDS_BY_ID.get(foe.kindId)?.twist ?? '';
+  const table = foe.slot === 'boss' ? BOSS_AFFIXES_BY_ID : ELITE_AFFIXES_BY_ID;
+  return foe.affixes.map(a => `${table.get(a)!.name}: ${table.get(a)!.text}`).join(' · ');
 }
+
+/**
+ * Fight `k` of a depth on the Combat page's stage (fight.ts): you on the left, the enemy on
+ * the right, attack-speed bars and floating numbers, in step with the replay's clock. Keyed
+ * by `k`, so each enemy gets its own stage; no respawn after the last fight.
+ */
+const DeepScene = memo(
+  function DeepScene({ s, result, k, origin }: { s: Snapshot; result: DepthResult; k: number; origin: number }) {
+    const foe = result.foes[k];
+    const fight = result.fights[k];
+    useEffect(() => {
+      const cur = { startMicros: BigInt(origin) + BigInt(Math.round(result.starts[k] * 1e6)), fight };
+      startFight(cur, () => undefined, () => foeCaption(foe), { noRespawn: true, stalemate: 'Out of time' });
+      return stopFight;
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps -- once per fight (keyed by the parent)
+    return (
+      <FightStage
+        you={{ portrait: <Icon name="user" />, name: <>{s.row.name} <span className="muted">Lv {fight.stats.level}</span></> }}
+        enemy={{ portrait: <FoeArt foe={foe} />, name: <>{foe.enemy.name} <span className="muted">Lv {foe.enemy.level}</span></> }}
+      />
+    );
+  },
+  () => true,
+);
 
 /** Deepest depth first; ties to whoever cleared it first. */
 const byRank = (a: AbyssRecord, b: AbyssRecord) =>
@@ -363,9 +372,9 @@ function Leaderboard({ s }: { s: Snapshot }) {
     <li key={String(r.characterId)} className={r.characterId === s.row.id ? 'me' : ''}>
       <span className="deep-rank">{rank.get(r.characterId)}</span>
       <span className="deep-name">{r.name}</span>
-      <span className="muted">Lv {r.level}</span>
+      <span className="muted deep-level">{r.level}</span>
       <strong className="deep-depth">{r.deepest}</strong>
-      <button className="btn small ghost" disabled={!r.build} onClick={() => setOpen(r)}>Build</button>
+      <button className="btn small deep-view-build" disabled={!r.build} onClick={() => setOpen(r)}>View build</button>
     </li>
   );
   return (
@@ -378,6 +387,13 @@ function Leaderboard({ s }: { s: Snapshot }) {
       </CardHead>
       {rows.length ? (
         <ol className="deep-ranks">
+          <li className="deep-ranks-head" aria-hidden="true">
+            <span>#</span>
+            <span>Player</span>
+            <span className="deep-level">Level</span>
+            <span className="deep-depth" title="Deepest depth cleared">Depth</span>
+            <span />
+          </li>
           {rows.map(row)}
           {pinned && <li className="deep-gap" aria-hidden="true">…</li>}
           {pinned && row(pinned)}
@@ -385,7 +401,6 @@ function Leaderboard({ s }: { s: Snapshot }) {
       ) : (
         <p className="muted">{tab === 'friends' ? 'No friend has cleared a depth yet.' : 'Nobody has cleared a depth yet.'}</p>
       )}
-      <p className="muted hint">Deepest depth cleared; ties go to whoever got there first. Rank gives no rewards, only bragging rights.</p>
       {open && <BuildPopup record={open} rank={rank.get(open.characterId)} onClose={() => setOpen(undefined)} />}
     </section>
   );

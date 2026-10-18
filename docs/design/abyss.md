@@ -191,9 +191,9 @@ make each depth's version different, and the UI names it by them ("Mirrored Deep
 - **1 affix at depths 1–50, 2 from depth 51 on**, forever. Picked by the depth's seed, no
   repeats on one boss. The second affix lands around T9 strength, where deep runs would
   otherwise become just bigger numbers.
-- **Sprite: one Deep Warden, with a variant per first affix** (8 variants, one per Boss
-  affix: e.g. Hungering gaunt with a gaping maw, Mirrored with a glassy silver sheen, Lunar
-  Phases half light and half dark). The player fights it every depth, so the variant keeps
+- **Sprite: one Deep Warden, with a variant per first affix** (7 variants, one per Boss
+  affix: e.g. Hungering gaunt with a gaping maw, Mirrored with a glassy silver sheen,
+  Eclipse half swallowed by shadow). The player fights it every depth, so the variant keeps
   it from being the same sprite each time, and it shows the main affix at a glance. The
   second affix (from depth 51) doesn't change the sprite.
 - Boss affixes are bigger than Elite affixes: each is a mechanic the build has to answer.
@@ -204,7 +204,6 @@ make each depth's version different, and the UI names it by them ("Mirrored Deep
 |---|---|---|
 | **Hungering** | Its damage grows +10% every 10 s of its fight | Damage (a soft enrage) |
 | **Mirrored** | Takes the defense profile that resists your larger damage type, and deals the type you defend worse against | Holes in the build |
-| **Lunar Phases** | Flips between Armored + magic attacks and Warded + physical attacks every 15 s, like Umbriel | Split damage and both defenses |
 | **Moonfall** | Every 12 s, a magic burst of 3× its hit that can't be dodged | Raw HP and resistance |
 | **Starless** | Your heals −50% during its fight (heal weapons, regen, lifesteal) | Sustain vs HP pool |
 | **Tidal** | Each attack deals half physical, half magic | Both defenses |
@@ -295,7 +294,7 @@ portrait frames later, with the same unlock list.
 | `data/abyss.ts` | Pool enemies and the boss (permanent IDs, 9100+), Elite and Boss affixes, `GAUNTLET`, slot multipliers, growth factors, reward table |
 | `abyss.ts` (pure, shared) | `depthLineup(season, depth)` (basic, Elite + affix, Boss affixes), `depthStats(depth, kind, slot)`, `simulateDepth(stats, lineup, seed)`: `simulateFight` with a starting HP, per-depth Second Wind and the affix hooks |
 | `sim.ts` | `simulateFight` takes a starting HP (default: max) and returns the HP left |
-| Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: each attempt with the stats fought with, for the replay, and the reward; newest 20 kept). The unlock reads `enemy_kill`: a raid win records a kill of its boss, and those rows are never pruned |
+| Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: the latest attempt only, with the stats fought with, for the replay, and the reward). The unlock reads `enemy_kill`: a raid win records a kill of its boss, and those rows are never pruned |
 | Reducer | `descend(loadout)`: unlocked, settle, simulate, pay on a win. The dev cheat "Unlock all zones" also opens the Deep |
 | Client | A **Moonwell Deep** page under Adventure next to Raids: the next depth's line-up and affixes, loadout picker, Scout odds, replay, leaderboard |
 | Check | `npm run test:abyss`: the reference player's wall depth, GAUNTLET tuning, win odds per Elite and Boss affix, every depth's line-up is valid |

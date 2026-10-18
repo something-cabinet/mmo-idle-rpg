@@ -28,7 +28,7 @@ export interface DepthFoe {
   /** The Elite's one affix, or the boss's Boss affixes; none for the basic. */
   affixes: number[];
   enemy: EnemyDef;
-  /** Your matchup against it (the first phase for a Lunar boss). */
+  /** Your matchup against it. */
   matchup: Matchup;
   mods: FightMods;
 }
@@ -105,16 +105,7 @@ export function depthFoes(s: CombatStats, lineup: DepthLineup): DepthFoe[] {
     if (has(BossAffix.Starless)) mods.healMult = 0.5;
     if (has(BossAffix.Veiled)) enemy = { ...enemy, evasionRating: evasiveRating(enemy.level) };
     if (has(BossAffix.Eclipse)) mods.eclipse = { every: 20, length: 4 };
-    let m: Matchup;
-    if (has(BossAffix.LunarPhases)) {
-      const full = { ...withProfile(enemy, 'Armored'), damageType: 'Magic' as const };
-      const dark = { ...withProfile(enemy, 'Warded'), damageType: 'Physical' as const };
-      enemy = full;
-      m = matchup(s, full);
-      mods.phases = { every: 15, list: [m, matchup(s, dark)] };
-    } else {
-      m = has(BossAffix.Tidal) ? tidalMatchup(s, enemy) : matchup(s, enemy);
-    }
+    const m = has(BossAffix.Tidal) ? tidalMatchup(s, enemy) : matchup(s, enemy);
     foes.push({ slot: 'boss', kindId: DEEP_WARDEN.id, affixes: [...affixes], enemy, matchup: m, mods });
   }
   return foes;

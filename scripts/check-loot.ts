@@ -74,8 +74,12 @@ const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   }));
   check('Finesse T1 is 1–14 on any item (a third of the way to T9: percent tiers are front-loaded)',
     affixRange(Stat.Finesse, 1).every((x, i) => near(x, [1, 1 + 39 / 3][i], 1e-9)));
-  check('lifesteal T1 is 0.25–0.67, T9 ends at 1.5', near(affixRange(Stat.LifestealPct, 1)[0], 0.25, 1e-9) &&
-    near(affixRange(Stat.LifestealPct, 1)[1], 0.25 + 1.25 / 3, 1e-9) && near(affixRange(Stat.LifestealPct, 9)[1], 1.5, 1e-9));
+  check('lifesteal T1 is 0.5–1.33, T9 ends at 3', near(affixRange(Stat.LifestealPct, 1)[0], 0.5, 1e-9) &&
+    near(affixRange(Stat.LifestealPct, 1)[1], 0.5 + 2.5 / 3, 1e-9) && near(affixRange(Stat.LifestealPct, 9)[1], 3, 1e-9));
+  check('HP regen tiers start and end on whole numbers: T1 1–6, T9 44–59',
+    [1, 2, 3, 4, 5, 6, 7, 8, 9].every(k => affixRange(Stat.HpRegen, k).every(Number.isInteger)) &&
+    affixRange(Stat.HpRegen, 1).join() === '1,6' && affixRange(Stat.HpRegen, 9).join() === '44,59' &&
+    [1, 2, 3, 4, 5, 6, 7, 8].every(k => affixRange(Stat.HpRegen, k)[1] === affixRange(Stat.HpRegen, k + 1)[0]));
   check('base crit T1 is 0.5–2, T9 ends at 5', near(affixRange(Stat.BaseCritChance, 1)[0], 0.5, 1e-9) && near(affixRange(Stat.BaseCritChance, 1)[1], 2, 1e-9) &&
     near(affixRange(Stat.BaseCritChance, 9)[1], 5, 1e-9));
   check('Finesse T9 is 37.8–40', near(affixRange(Stat.Finesse, 9)[0], 1 + 39 * Math.sqrt(8 / 9), 1e-9) && near(affixRange(Stat.Finesse, 9)[1], 40, 1e-9));

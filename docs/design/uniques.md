@@ -65,7 +65,7 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 22 | T4 | **Umbriel's Edge** | Umbral Katana (Split) | Rending, Spellbreaker | Armor pen %, magic pen %, crit damage. *Raid only: The Drowned Moon.* |
 | 15 | T4 | **Moonlight Greatsword** | Greatsword | Moonlight | Magic damage %, Mind, crit damage. *Only from the Moonlit Champion (Moonlight Garden).* |
 | 16 | T4 | **Waxing Crescent** | Katana | Waxing Moon | Physical damage %, attack speed %, crit damage |
-| 17 | T4 | **Moonshadow Jerkin** | Leather chest | Moonshadow | Evasion rating %, Finesse, max HP % |
+| 17 | T4 | **Moonshadow Jerkin** | Leather chest | Moonshadow | Evasion rating, evasion rating %, Finesse |
 | 18 | T4 | **Tear of the Moon** | Sapphire (Moonstone) amulet | Lunar Insight | Mind, magic damage %, resistance % |
 | 19 | T4 | **Lunatic's Wager** | Sapphire (Moonstone) ring | None | Max HP %, attack speed %, item find %, XP gain %, gold find %, each rolled **−3 to +3** × value |
 

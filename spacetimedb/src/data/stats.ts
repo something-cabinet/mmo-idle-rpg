@@ -84,6 +84,8 @@ export interface StatDef {
   decimals?: boolean;
   /** Lowest roll of affix tier 1, so even the worst roll counts (default 1, or 0 for `decimals` stats). */
   floor?: number;
+  /** Affix tier ranges start and end on whole numbers (`affixRange`). */
+  roundTiers?: boolean;
 }
 
 const s = (id: StatId, name: string, percent: boolean, c: Curve, ref?: number, weight?: number, decimals?: boolean, floor?: number): StatDef => ({
@@ -114,14 +116,14 @@ export const STATS: Record<StatId, StatDef> = {
   14: s(14, 'Resistance', false, 'linear', 5),
   15: s(15, 'Resistance', true, 'percent', 25),
   16: s(16, 'Evasion rating', false, 'linear', 5),
-  17: s(17, 'HP regen', false, 'heal', 2, undefined, true, 0.4),
-  18: s(18, 'Lifesteal', true, 'percent', 1.5, 25, true, 0.25),
+  17: { ...s(17, 'HP regen', false, 'heal', 6, undefined, true, 1), roundTiers: true },
+  18: s(18, 'Lifesteal', true, 'percent', 3, 25, true, 0.5),
   19: s(19, 'Heal', false, 'heal', 4),
   20: s(20, 'Heal', true, 'percent', 30),
   21: s(21, 'Threat', true, 'percent', 30),
   22: s(22, 'Item find', true, 'percent', 15),
   23: s(23, 'Gold find', true, 'percent', 20),
-  24: s(24, 'XP gain', true, 'percent', 10),
+  24: s(24, 'XP gain', true, 'percent', 25),
   25: s(25, 'Might', false, 'percent', 40),
   26: s(26, 'Finesse', false, 'percent', 40),
   27: s(27, 'Mind', false, 'percent', 40),
@@ -136,7 +138,7 @@ export const STATS: Record<StatId, StatDef> = {
 export const CAPS = {
   evasion: 60,
   penetration: 75,
-  lifesteal: 5,
+  lifesteal: 10,
 } as const;
 
 /** Accuracy rating every attacker gets from its level: players before gear, enemies in full. */
@@ -182,9 +184,16 @@ export function affixRef(stat: StatId, tier: number): number {
  * Value range of affix tier `k` (1..MAX_TIER), the same on every item tier (equipment.md).
  * 'linear' stats split the T9 range (from `floor`) into MAX_TIER equal slices; every other
  * curve is followed: tier k rolls from the best roll at tier k−1 (`floor` for k = 1) to the
- * best roll at tier k. 'percent' tiers thus start wide and narrow.
+ * best roll at tier k. 'percent' tiers thus start wide and narrow. `roundTiers` stats
+ * round both ends to whole numbers.
  */
 export function affixRange(stat: StatId, k: number): [number, number] {
+  const d = STATS[stat];
+  const [lo, hi] = rawAffixRange(stat, k);
+  return d.roundTiers ? [Math.round(lo), Math.round(hi)] : [lo, hi];
+}
+
+function rawAffixRange(stat: StatId, k: number): [number, number] {
   const d = STATS[stat];
   const top = affixRef(stat, MAX_TIER);
   const lo = d.floor ?? (d.decimals ? 0 : 1);

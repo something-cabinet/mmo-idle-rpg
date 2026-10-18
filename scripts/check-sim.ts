@@ -225,7 +225,7 @@ const secs = (s: number) => BigInt(Math.round(s * 1e6));
     const tank = gear({ Chest: item(35, 1, [[Stat.Armor, 5000]]) });
     const capped = matchup(combatStats(5, tank), e);
     const s = combatStats(5, gear({ Chest: item(35, 1, [[Stat.Armor, 5000]]), Head: { ...item(36, 1), legendary: { effect: Effect.Unbreakable, stat: Stat.Resistance, value: 0n } } }));
-    check('Unbreakable: mitigation cap 85% + 2% per copy', near(capped.playerMitigation, 0.85, 1e-12) && near(matchup(s, e).playerMitigation, 0.87, 1e-12));
+    check('Unbreakable: mitigation cap 85% + 5% per copy', near(capped.playerMitigation, 0.85, 1e-12) && near(matchup(s, e).playerMitigation, 0.9, 1e-12));
   }
   {
     // Bloodthirst raises the lifesteal cap; Honed Edge never deepens a negative flat roll.
@@ -233,7 +233,7 @@ const secs = (s: number) => BigInt(Math.round(s * 1e6));
       MainHand: item(1, 1, [[Stat.LifestealPct, 20]]),
       Head: fx ? { ...item(36, 1), legendary: { effect: fx, stat: Stat.LifestealPct, value: 0n } } : item(36, 1),
     }));
-    check('Bloodthirst: lifesteal cap 5% → 8%', near(leech().lifesteal, 0.05, 1e-12) && near(leech(Effect.Bloodthirst).lifesteal, 0.08, 1e-12));
+    check('Bloodthirst: lifesteal cap 10% → 15%', near(leech().lifesteal, 0.1, 1e-12) && near(leech(Effect.Bloodthirst).lifesteal, 0.15, 1e-12));
     const cursed = (fx?: number) => combatStats(5, gear({
       MainHand: fx ? { ...item(1, 1, [[Stat.PhysDamage, -2]]), legendary: { effect: fx, stat: Stat.AttackSpeedPct, value: 0n } } : item(1, 1, [[Stat.PhysDamage, -2]]),
     })).sources[0].hit.Physical;

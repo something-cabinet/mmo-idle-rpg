@@ -128,7 +128,7 @@ and existing IDs are never reused, renumbered or redefined.
 | 15 | Resistance | % | | Survival vs magic |
 | 16 | Evasion rating | flat | final chance cap 60% | Survival |
 | 17 | HP regen | flat /s | | Survival |
-| 18 | Lifesteal | % | cap 5%, rare affix | Survival |
+| 18 | Lifesteal | % | cap 10%, rare affix | Survival |
 | 19 | Heal | flat | | Heal power |
 | 20 | Heal | % | | Heal power |
 | 21 | Threat | % | | Raid tanking |
@@ -148,8 +148,8 @@ and existing IDs are never reused, renumbered or redefined.
   adds half per hit and a 0.55/s greatsword adds ~1.8×.
 - **Heal (19, 20)** only scales heal effects on a weapon. A weapon without a heal
   effect gets nothing from it.
-- **Lifesteal** is rare and capped: low drop weight and a 5% cap, so it can't make every
-  zone viable on its own, but even one T1 roll (0.25–0.67%) is noticeable.
+- **Lifesteal** is rare and capped: low drop weight and a 10% cap, so it can't make every
+  zone viable on its own, but even one T1 roll (0.5–1.33%) is noticeable.
 - **Penetration cap (75%)** is needed because percent affixes can stack across ~27
   affix slots.
 
@@ -184,7 +184,7 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 | Physical damage (added) | 2 | Offense | 756 | Straight bonus per hit: worth more on fast weapons |
 | Magic damage (added) | 2 | Offense | 756 | Same |
 | Max HP | 20 | Life | 860 | |
-| HP regen (/s) | 2 | Heal | 20 | Grows like enemy DPS; Vitality's +1%/point does the rest |
+| HP regen (/s) | 6 | Heal | 59 | Grows like enemy DPS; Vitality's +1%/point does the rest. Tier ranges start and end on whole numbers |
 | Heal (added) | 4 | Heal | 39 | Straight bonus per hit: worth more on fast weapons |
 | Armor | 5 | Linear | 45 | One best roll ≈ 9% mitigation vs a matching enemy |
 | Resistance | 5 | Linear | 45 | Same as armor |
@@ -195,7 +195,7 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 implicits, legendary bonuses, weapon hit and heal) is rounded to the nearest whole
 number, and never below 1 (a T1 flat damage roll is 1 or 2); affix tier 1 rolls from 1,
 not 0. Only the very small stats keep two decimals, each with its own tier-1 floor:
-**lifesteal** (affix tier 1 rolls 0.25–0.67%), **base crit chance** (0.5–2%) and **HP regen** (0.4–2/s). Values are still stored in hundredths, so those fit the same column.
+**lifesteal** (affix tier 1 rolls 0.5–1.33%), **base crit chance** (0.5–2%) and **HP regen** (1–6/s). Values are still stored in hundredths, so those fit the same column.
 
 ### Percent stats (*illustrative*)
 
@@ -214,10 +214,10 @@ output, after the bonus from level primaries.
 | Armor / resistance / evasion % | 25% | |
 | Heal % | 30% | |
 | Threat % | 30% | |
-| Lifesteal % | 1.5% | Weight 25 (rare), cap 5%; affix tier 1 rolls 0.25–0.67% |
+| Lifesteal % | 3% | Weight 25 (rare), cap 10%; affix tier 1 rolls 0.5–1.33% |
 | Item find % | 15% | |
 | Gold find % | 20% | |
-| XP gain % | 10% | |
+| XP gain % | 25% | |
 | Might / Finesse / Mind / Vitality | 40 points | ≈ 1.2 affixes, see primaries |
 
 ## Roles

@@ -54,7 +54,7 @@ Effects come in two kinds:
 | 27 | **Deadeye** | Increased crit chance | Your crits ignore **50%** of the enemy's armor and resistance mitigation left after penetration | 100% |
 | 28 | **Bully** | Magic damage % | Enemies above **70%** HP take double damage | 50% (above 50%) |
 | 29 | **Honed Edge** | Attack speed % | Flat added damage **+50%** (a negative flat roll is left as it is) | +100% |
-| 30 | **Bloodthirst** | Lifesteal % | Lifesteal cap **+3%** (5% → 8%) | +5% (10%) |
+| 30 | **Bloodthirst** | Lifesteal % | Lifesteal cap **+5%** (10% → 15%) | +10% (20%) |
 | 31 | **Discipline** | Vitality | Damage **× (1 + 10% per 100 points of your highest attribute)** | 20% per 100 |
 
 ```
@@ -68,7 +68,7 @@ Riposte:        DPS_you += a × evasion × enemySpeed × averageHit
 Deadeye:        crits use enemy mitigation × (1 − a): critMult = 1 − c + c × critDamage × pierced / normal
 Bully:          timeToKill × (1 − (aExecutioner + aBully) / 2)
 Honed Edge:     addedFlat_t × (1 + a)        (only when addedFlat_t > 0)
-Bloodthirst:    lifesteal cap = 5% + a
+Bloodthirst:    lifesteal cap = 10% + a
 Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   ("more", after damage %)
 ```
 
@@ -89,7 +89,7 @@ Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   ("
 | 16 | **Second Wind** | HP regen | Once per fight, a killing blow leaves you at **50%** HP instead | 100% |
 | 17 | **Ironclad** | Armor % | **30%** of your armor is added to your resistance | 100% |
 | 18 | **Runeguard** | Resistance % | **30%** of your resistance is added to your armor | 100% |
-| 32 | **Unbreakable** | Resistance | Armor and resistance cap **+2%** (85% → 87%) | +6% (91%) |
+| 32 | **Unbreakable** | Resistance | Armor and resistance cap **+5%** (85% → 90%) | +10% (95%) |
 | 33 | **Stoneskin** | Armor | Each enemy hit deals **1%** of your max HP less (after mitigation) | 3% |
 | 34 | **Last Stand** | Vitality | Below 30% HP, you take **20%** less damage | 50% |
 | 35 | **Berserker** | Might | **+3%** damage per 10% of your max HP missing | +9% |

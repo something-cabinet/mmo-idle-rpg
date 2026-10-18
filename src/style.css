@@ -1639,6 +1639,8 @@ select:focus,
   box-shadow: var(--shadow);
   font-size: 12.5px;
   min-width: 0;
+  /* One column that never grows past the card, so a long name ellipsizes instead of widening it. */
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
 }
 .r-common { --rc: var(--r-common); }
@@ -1782,6 +1784,19 @@ select:focus,
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 12px;
   align-items: start;
+}
+/* Nothing to hover for the full name here: long names and base names wrap instead of cutting off. */
+.index-uniques .item-name {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.index-uniques .item-head {
+  align-items: start;
+}
+.index-uniques .item-sub {
+  flex-wrap: wrap;
+  column-gap: 8px;
+  row-gap: 2px;
 }
 /* A card whose header button shows or hides its body. */
 .collapse-head {

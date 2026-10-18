@@ -64,7 +64,7 @@ function candidates(s: Snapshot, lo: Loadout, slot: number): Candidate[] {
     scoreGear(s.level, gearFor(slots, s.items)).dps;
   const now = dps(lo.slots);
   return [...s.items.values()]
-    .filter((it) => fitsSlot(it.baseId, slot) && it.id !== lo.slots[slot])
+    .filter((it) => fitsSlot(it.baseId, slot) && !lo.slots.includes(it.id))
     .map((it) => {
       const next = placeItem(lo.slots, slot, it, (id) => s.items.get(id));
       return {

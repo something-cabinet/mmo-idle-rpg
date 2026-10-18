@@ -40,6 +40,7 @@ import AutoEquipReducer from "./auto_equip_reducer";
 import CopyLoadoutReducer from "./copy_loadout_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import CreateRaidPartyReducer from "./create_raid_party_reducer";
+import DescendReducer from "./descend_reducer";
 import DevGiveItemReducer from "./dev_give_item_reducer";
 import DevGiveUniqueReducer from "./dev_give_unique_reducer";
 import DevGrantReducer from "./dev_grant_reducer";
@@ -88,11 +89,13 @@ import UpgradeRarityReducer from "./upgrade_rarity_reducer";
 // Import all procedure arg schemas
 
 // Import all table schema definitions
+import AbyssRecordRow from "./abyss_record_table";
 import CharacterRow from "./character_table";
 import ChatMessageRow from "./chat_message_table";
 import InspectedCharacterRow from "./inspected_character_table";
 import InspectedItemsRow from "./inspected_items_table";
 import InspectedLoadoutRow from "./inspected_loadout_table";
+import MyAbyssLogRow from "./my_abyss_log_table";
 import MyAccountRow from "./my_account_table";
 import MyBossKillsRow from "./my_boss_kills_table";
 import MyDiscoveriesRow from "./my_discoveries_table";
@@ -121,6 +124,17 @@ import RaidPartyLoadoutsRow from "./raid_party_loadouts_table";
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
+  abyssRecord: __table({
+    name: 'abyss_record',
+    indexes: [
+      { accessor: 'characterId', name: 'abyss_record_character_id_idx_btree', algorithm: 'btree', columns: [
+        'characterId',
+      ] },
+    ],
+    constraints: [
+      { name: 'abyss_record_character_id_key', constraint: 'unique', columns: ['characterId'] },
+    ],
+  }, AbyssRecordRow),
   character: __table({
     name: 'character',
     indexes: [
@@ -212,6 +226,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, InspectedLoadoutRow),
+  myAbyssLog: __table({
+    name: 'my_abyss_log',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyAbyssLogRow),
   myAccount: __table({
     name: 'my_account',
     indexes: [
@@ -362,6 +383,7 @@ const reducersSchema = __reducers(
   __reducerSchema("copy_loadout", CopyLoadoutReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("create_raid_party", CreateRaidPartyReducer),
+  __reducerSchema("descend", DescendReducer),
   __reducerSchema("dev_give_item", DevGiveItemReducer),
   __reducerSchema("dev_give_unique", DevGiveUniqueReducer),
   __reducerSchema("dev_grant", DevGrantReducer),
@@ -420,6 +442,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "inspected_items": Omit<typeof tablesSchema.schemaType.tables["inspectedItems"], "accessorName"> & { readonly accessorName: "inspected_items" };
     /** @deprecated Use `inspectedLoadout` instead. This alias will be removed in the next major version. */
     readonly "inspected_loadout": Omit<typeof tablesSchema.schemaType.tables["inspectedLoadout"], "accessorName"> & { readonly accessorName: "inspected_loadout" };
+    /** @deprecated Use `myAbyssLog` instead. This alias will be removed in the next major version. */
+    readonly "my_abyss_log": Omit<typeof tablesSchema.schemaType.tables["myAbyssLog"], "accessorName"> & { readonly accessorName: "my_abyss_log" };
     /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
     readonly "my_account": Omit<typeof tablesSchema.schemaType.tables["myAccount"], "accessorName"> & { readonly accessorName: "my_account" };
     /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
@@ -481,6 +505,7 @@ const tableAccessorAliases = {
   "inspected_character": "inspectedCharacter",
   "inspected_items": "inspectedItems",
   "inspected_loadout": "inspectedLoadout",
+  "my_abyss_log": "myAbyssLog",
   "my_account": "myAccount",
   "my_boss_kills": "myBossKills",
   "my_discoveries": "myDiscoveries",
@@ -527,6 +552,8 @@ export type DbView = __DbViewBase & {
   readonly "inspected_items": __DbViewBase["inspectedItems"];
   /** @deprecated Use `inspectedLoadout` instead. This alias will be removed in the next major version. */
   readonly "inspected_loadout": __DbViewBase["inspectedLoadout"];
+  /** @deprecated Use `myAbyssLog` instead. This alias will be removed in the next major version. */
+  readonly "my_abyss_log": __DbViewBase["myAbyssLog"];
   /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
   readonly "my_account": __DbViewBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
@@ -577,6 +604,8 @@ export type Tables = __TablesBase & {
   readonly "inspected_items": __TablesBase["inspectedItems"];
   /** @deprecated Use `inspectedLoadout` instead. This alias will be removed in the next major version. */
   readonly "inspected_loadout": __TablesBase["inspectedLoadout"];
+  /** @deprecated Use `myAbyssLog` instead. This alias will be removed in the next major version. */
+  readonly "my_abyss_log": __TablesBase["myAbyssLog"];
   /** @deprecated Use `myAccount` instead. This alias will be removed in the next major version. */
   readonly "my_account": __TablesBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */

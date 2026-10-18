@@ -735,6 +735,8 @@ export const raidFighting = (party: { fight?: { finished: boolean } }) => !!part
 export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   leaveRaidParty(ctx, characterId);
   ctx.db.raidLog.characterId.delete(characterId);
+  ctx.db.abyssLog.characterId.delete(characterId);
+  ctx.db.abyssRecord.characterId.delete(characterId);
   ctx.db.item.characterId.delete(characterId);
   ctx.db.loadout.characterId.delete(characterId);
   ctx.db.bossKill.characterId.delete(characterId);

@@ -10,6 +10,37 @@ import {
   type Infer as __Infer,
 } from "spacetimedb";
 
+export const AbyssLog = __t.object("AbyssLog", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  season: __t.u16(),
+  depth: __t.u32(),
+  startedAt: __t.timestamp(),
+  loadout: __t.u8(),
+  stats: __t.string(),
+  won: __t.bool(),
+  timedOut: __t.bool(),
+  gold: __t.u64(),
+  xp: __t.u64(),
+  dust: __t.u64(),
+  get materials() {
+    return __t.array(MaterialCount);
+  },
+  elixir: __t.u16(),
+});
+export type AbyssLog = __Infer<typeof AbyssLog>;
+
+export const AbyssRecord = __t.object("AbyssRecord", {
+  characterId: __t.u64(),
+  name: __t.string(),
+  season: __t.u16(),
+  deepest: __t.u32(),
+  clearedAt: __t.timestamp(),
+  level: __t.u8(),
+  build: __t.string(),
+});
+export type AbyssRecord = __Infer<typeof AbyssRecord>;
+
 export const Account = __t.object("Account", {
   identity: __t.identity(),
   get kind() {
@@ -272,6 +303,9 @@ export const Migration = __t.object("Migration", {
   ranAt: __t.timestamp(),
 });
 export type Migration = __Infer<typeof Migration>;
+
+export const MyAbyssLog = __t.object("MyAbyssLog", {});
+export type MyAbyssLog = __Infer<typeof MyAbyssLog>;
 
 export const MyAccount = __t.object("MyAccount", {});
 export type MyAccount = __Infer<typeof MyAccount>;

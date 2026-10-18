@@ -1,6 +1,6 @@
 // Per-player views over private tables: each client sees only its own rows.
 import { t } from 'spacetimedb/server';
-import { bossKill, character, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, material, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
+import { abyssLog, bossKill, character, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, material, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
 
 export const my_items = spacetimedb.view({ name: 'my_items', public: true }, t.array(item.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
@@ -126,6 +126,11 @@ export const inspected_items = spacetimedb.view({ name: 'inspected_items', publi
 export const my_raid_log = spacetimedb.view({ name: 'my_raid_log', public: true }, t.array(raidLog.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
   return ch ? [...ctx.db.raidLog.characterId.filter(ch.id)] : [];
+});
+
+export const my_abyss_log = spacetimedb.view({ name: 'my_abyss_log', public: true }, t.array(abyssLog.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.abyssLog.characterId.filter(ch.id)] : [];
 });
 
 // The caller's raid party (reducers/raid.ts): its members' rows, active loadouts and the items in them,

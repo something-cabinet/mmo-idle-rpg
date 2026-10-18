@@ -607,6 +607,56 @@ export const raidTimer = table(
   }
 );
 
+/**
+ * A character's Moonwell Deep progress and leaderboard entry (abyss.md): the deepest depth
+ * cleared this season, and the build that cleared it. Public: the leaderboard. Created on
+ * the first attempt; only a new deepest clear changes it.
+ */
+export const abyssRecord = table(
+  { name: 'abyss_record', public: true },
+  {
+    characterId: t.u64().primaryKey(),
+    /** Snapshot, so the board needs no character rows. */
+    name: t.string(),
+    /** Always 1 until seasons are turned on (data/abyss.ts `ABYSS_SEASON`). */
+    season: t.u16(),
+    /** Deepest depth cleared this season; 0 before the first clear. */
+    deepest: t.u32(),
+    /** When `deepest` was cleared: ties go to the first. */
+    clearedAt: t.timestamp(),
+    /** Level when `deepest` was cleared. */
+    level: t.u8(),
+    /** The loadout that cleared `deepest`, in slot order (abyss.ts `encodeBuild`); empty before the first clear. */
+    build: t.string(),
+  }
+);
+
+/** One Moonwell Deep attempt and what it got. Private; owners read theirs via `my_abyss_log`. */
+export const abyssLog = table(
+  { name: 'abyss_log' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    season: t.u16(),
+    depth: t.u32(),
+    /** The attempt's start: with the character it seeds the fight (abyss.ts `depthRng`). */
+    startedAt: t.timestamp(),
+    /** Loadout fought with. */
+    loadout: t.u8(),
+    /** abyss.ts `encodeStats`: the combat stats fought with (elixir included), so the client can replay it. */
+    stats: t.string(),
+    won: t.bool(),
+    /** Lost to the time limit. */
+    timedOut: t.bool(),
+    gold: t.u64(),
+    xp: t.u64(),
+    dust: t.u64(),
+    materials: t.array(MaterialCount),
+    /** A Greater elixir's supply ID granted, or 0. */
+    elixir: t.u16(),
+  }
+);
+
 export const spacetimedb = schema({
   account,
   character,
@@ -629,6 +679,8 @@ export const spacetimedb = schema({
   raidMember,
   raidLog,
   raidTimer,
+  abyssRecord,
+  abyssLog,
   skill,
   tool,
   supply,

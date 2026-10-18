@@ -7,6 +7,9 @@ import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
 import { RAIDS_BY_ID } from '../spacetimedb/src/data/raids';
 import { decodeSetup, raidRng, simulateRaid } from '../spacetimedb/src/raid';
 import { RARITIES } from '../spacetimedb/src/loot';
+import { decodeBuild, decodeStats, depthRng, simulateDepth } from '../spacetimedb/src/abyss';
+import { depthReward } from '../spacetimedb/src/data/abyss';
+import { untieredMaterial } from '../spacetimedb/src/data/materials';
 
 const HOST = process.env.SPACETIMEDB_HOST ?? 'ws://localhost:3000';
 const DB = process.env.SPACETIMEDB_DB_NAME ?? 'mmo-idle-rpg';
@@ -343,6 +346,8 @@ await b.conn.reducers.inspectCharacter({ characterId: 0n });
 await sleep(200);
 check('stop inspecting clears the views', b.conn.db.inspectedCharacter.count() === 0n && b.conn.db.inspectedItems.count() === 0n);
 
+await expectError('the Moonwell Deep is locked before Umbriel', a.conn.reducers.descend({ loadout: 0 }), 'open the Moonwell Deep');
+
 // Raids: party up, hire NPCs, start; the scheduled finish logs it. The dev cheats unlock the raid and pay for the hires.
 {
   const partyOf = (c: Client) => {
@@ -396,6 +401,41 @@ check('stop inspecting clears the views', b.conn.db.inspectedCharacter.count() =
   await b.conn.reducers.leaveRaid({});
   await sleep(200);
   check('an empty party disbands', !a.conn.db.raidParty.id.find(party.id));
+}
+
+// The Moonwell Deep (devUnlockZones above also records the raid boss kills that open it).
+{
+  const record = () => [...a.conn.db.abyssRecord.iter()].find(r => r.characterId === charOf(a)!.id);
+  const newest = () => [...a.conn.db.myAbyssLog.iter()].sort((x, y) => (x.id < y.id ? 1 : -1))[0];
+  await expectError('no such loadout', a.conn.reducers.descend({ loadout: 9 }), 'No such loadout');
+  const emptyLo = [...a.conn.db.myLoadouts.iter()].find(l => l.slots.every(id => id === 0n));
+  if (emptyLo) await expectError('an empty loadout is refused', a.conn.reducers.descend({ loadout: emptyLo.index }), 'loadout is empty');
+  // A level-1 character with starter gear falls on depth 1.
+  await a.conn.reducers.descend({ loadout: 0 });
+  await sleep(200);
+  const lost = newest();
+  check('a lost attempt is logged at depth 1 with no reward', lost?.depth === 1 && !lost.won && lost.gold === 0n && lost.materials.length === 0);
+  check('the leaderboard row exists, no depth cleared yet', record()?.deepest === 0 && record()?.build === '');
+  check('the client replays the depth the server played', simulateDepth(decodeStats(lost.stats), 1, depthRng(lost.characterId, lost.startedAt.microsSinceUnixEpoch)).won === lost.won);
+  // Level 100 with a T4 Legendary sword clears depth 1 (any roll, test:abyss-style check offline).
+  await a.conn.reducers.devSetLevel({ level: 100 });
+  const owned = new Set([...a.conn.db.myItems.iter()].map(i => i.id));
+  await a.conn.reducers.devGiveItem({ baseId: 1, tier: 4, rarity: 'Legendary' });
+  await sleep(200);
+  const sword = [...a.conn.db.myItems.iter()].find(i => !owned.has(i.id))!;
+  await a.conn.reducers.equip({ loadout: 0, slot: 0, itemId: sword.id });
+  await sleep(200);
+  const before = charOf(a)!;
+  await a.conn.reducers.descend({ loadout: 0 });
+  await sleep(300);
+  const won = newest();
+  const after = charOf(a)!;
+  const reward = depthReward(1);
+  check('a level-100 character clears depth 1', won?.depth === 1 && won.won, won && `won ${won.won}`);
+  check('the first clear pays the depth reward', !!won?.won && won.gold === reward.gold && after.gold >= before.gold + reward.gold && after.dust >= before.dust + reward.dust &&
+    [...a.conn.db.myMaterials.iter()].some(m => m.materialId === untieredMaterial('Voidglass').id));
+  check('the leaderboard records depth 1 and the build', record()?.deepest === 1 && decodeBuild(record()!.build).some(Boolean));
+  check('the next attempt is depth 2', (await a.conn.reducers.descend({ loadout: 0 }), await sleep(300), newest()?.depth === 2));
 }
 
 await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.me, banned: true }), 'Admins only');

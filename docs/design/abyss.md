@@ -1,6 +1,6 @@
 # The Moonwell Deep (endless delve)
 
-*Brainstorm, not built.* An endless solo gauntlet, deeper floor by deeper floor, with
+*First version built* (titles and seasons later; code: `spacetimedb/src/data/abyss.ts`, `abyss.ts`, `reducers/abyss.ts`, `src/ui/views/AbyssView.tsx`, checks in `npm run test:abyss`). An endless solo gauntlet, deeper floor by deeper floor, with
 enemies that keep getting stronger and a leaderboard for the deepest floor. It exists to
 **stress-test a build**: a fight that doesn't stop at the content's ceiling. Numbers are
 *illustrative*.
@@ -64,7 +64,7 @@ the zones can't have.
 |---|---|---|---|---|
 | Basic | 1 of 8 pool enemies | 1 | 1 | ~13% |
 | **Elite** | another of the 8 + 1 Elite affix (of 6) | 2.5 | 1.3 | ~33% |
-| **Boss** | The Hollow Moon, always, + its Boss affixes | 4 | 1.6 | ~53% |
+| **Boss** | The Deep Warden, always, + its Boss affixes | 4 | 1.6 | ~53% |
 
 Multipliers are on top of the depth's numbers (Scaling).
 
@@ -77,7 +77,7 @@ counting the boss.
 
 **Line-ups are fixed per depth and the same for everyone**, picked from a seed of (season,
 depth). Everyone faces the same Depth 37, so the leaderboard is fair and players can talk
-about "the Depth 37 Vampiric Moonguard into a Mirrored, Starless Moon". Only the fight's own
+about "the Depth 37 Vampiric Moonguard into a Mirrored Warden". Only the fight's own
 rolls (crits, dodges, variance) are seeded per character and start time.
 
 Before starting, the player sees the depth's line-up: names, damage types, defense profiles,
@@ -98,8 +98,9 @@ Depth 1 is a T4 enemy, and every 10 depths is one tier:
 ```
 tier(d)   = 4 + (d − 1) / 10                    // depth 1 = T4, 11 = T5, 51 = T9
 level(d)  = min(100, 40 + (d − 1))              // capped: see below
-HP(d)     = 915  × 1.06^(d − 1) × kind.hp × slot.hp
-DPS(d)    = 53   × 1.04^(d − 1) × kind.dps × slot.dps × GAUNTLET
+HP(d)     = 915  × 1.06^(min(d, 101) − 1) × 1.09^max(0, d − 101) × ease(d) × kind.hp × slot.hp
+DPS(d)    = 53   × 1.04^(min(d, 101) − 1) × 1.06^max(0, d − 101) × ease(d) × kind.dps × slot.dps × GAUNTLET
+ease(d)   = min(1, 0.6 + 0.08 × (d − 1))         // depth 1 at 0.6, full from depth 6
 armor/res = 2.5 × level(d) × profile             // as zones
 GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) on one HP bar
 ```
@@ -111,9 +112,20 @@ GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) 
 - **Difficulty per depth ≈ 1.06 × 1.04 ≈ 1.10, so it doubles about every 7 depths.** The
   leaderboard therefore reads on a log scale: a build twice as strong goes ~7 depths deeper,
   not twice as deep. Gaps at the top stay readable instead of exploding.
+- **Faster from depth 101: HP × 1.09 and DPS × 1.06 per depth, ≈ 1.155, doubling about
+  every 5 depths.** Depth 51 is T9 strength, the top gear tier; past it, gear stops
+  growing and only its quality counts. Depths 51–100 keep the normal rate, so very good
+  T9 builds have 50 depths to spread out over (difficulty × ~128 by depth 101). Only the
+  strongest builds get past 100. From there, the old rate would mean a long, slow slog of
+  depths for the few at the top. The faster rate makes each depth past 100 a real step, and
+  the board still separates them: twice as strong is ~5 depths deeper.
+- **A gentle start (`ease`).** Depth 1 is on the easy side of T4: HP and DPS × 0.6 (about
+  0.36× the difficulty), back to the full curve by depth 6. Anyone who beat Umbriel gets a
+  few free depths and a feel for the format before it bites. The ease only touches the start,
+  so depth 51 still lines up with T9.
 - **GAUNTLET** keeps a depth at about one hard fight's worth of damage taken. Target: a
   reference player at the unlock (Lv 48, random T4 Rare+ gear, as in `test:raid`) clears
-  depth 1 with about a third of its HP left and walls around depth 8–12. Tuned in a
+  depths 1–5 comfortably and walls around depth 8–12. Tuned in a
   `npm run test:abyss` like `test:raid`. A depth takes ~1:30 for that player at depth 1.
 - **Level cap 100.** Your armor, resistance and evasion scale with the attacker's level
   (combat.md). An uncapped enemy level would make every defense decay on top of the HP/DPS
@@ -121,12 +133,15 @@ GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) 
 
 | Depth | Like | Level | HP × | DPS × | Boss affixes |
 |---|---|---|---|---|---|
-| 1 | T4 | 40 | 1 | 1 | 1 |
+| 1 | easy T4 | 40 | 0.6 | 0.6 | 1 |
+| 6 | T4+ | 45 | 1.34 | 1.22 | 1 |
 | 11 | T5 | 50 | 1.8 | 1.5 | 1 |
-| 21 | T6 | 60 | 3.2 | 2.2 | 2 |
-| 31 | T7 | 70 | 5.7 | 3.2 | 2 |
-| 51 | T9 | 90 | 18.4 | 7.1 | 3 |
-| 101 | past T9 | 100 | 339 | 50.5 | 3 |
+| 21 | T6 | 60 | 3.2 | 2.2 | 1 |
+| 31 | T7 | 70 | 5.7 | 3.2 | 1 |
+| 51 | T9 | 90 | 18.4 | 7.1 | 2 |
+| 101 | past T9 | 100 | 339 | 50.5 | 2 |
+| 111 | past T9 (faster) | 100 | 803 | 90.4 | 2 |
+| 121 | past T9 (faster) | 100 | 1,900 | 162 | 2 |
 
 Zones only go to T4 for now, so today the wall sits a few depths past T4 gear. Each new tier
 pushes everyone deeper, which is one reason for seasons (below).
@@ -165,14 +180,22 @@ Elite is easy to read and to balance on its own.
 | Unyielding | Regenerates 2% max HP per second |
 | Ravenous | Its damage grows +5% every 5 s of its fight |
 
-### The boss: The Hollow Moon
+### The boss: the Deep Warden
 
-**One boss, every depth**: what's left of the drowned moon, its void half, which sank
-further than Umbriel did. HP × 4, DPS × 1.6, magic damage, Balanced defenses. On its own it
-is a plain stat check; its **Boss affixes** make each depth's version different.
+**One boss, every depth.** It's fought on every single depth, so it gets a plain, common
+name rather than a grand one: the thing that guards each way further down. HP × 4, DPS × 1.6,
+magic damage, Balanced defenses. On its own it is a plain stat check; its **Boss affixes**
+make each depth's version different, and the UI names it by them ("Mirrored Deep Warden",
+"Hungering, Starless Deep Warden").
 
-- **1 affix at depths 1–20, 2 at 21–50, 3 from 51.** Picked by the depth's seed, no repeats
-  on one boss. More affixes deeper keeps deep runs from being just bigger numbers.
+- **1 affix at depths 1–50, 2 from depth 51 on**, forever. Picked by the depth's seed, no
+  repeats on one boss. The second affix lands around T9 strength, where deep runs would
+  otherwise become just bigger numbers.
+- **Sprite: one Deep Warden, with a variant per first affix** (8 variants, one per Boss
+  affix: e.g. Hungering gaunt with a gaping maw, Mirrored with a glassy silver sheen, Lunar
+  Phases half light and half dark). The player fights it every depth, so the variant keeps
+  it from being the same sprite each time, and it shows the main affix at a glance. The
+  second affix (from depth 51) doesn't change the sprite.
 - Boss affixes are bigger than Elite affixes: each is a mechanic the build has to answer.
 - Each is tuned on its own in `test:abyss` (win odds with and without it), and an affix
   that swings the odds far more than the others gets toned down.
@@ -202,10 +225,26 @@ attempt.
 |---|---|---|
 | Gold + XP | Every depth | ~30 min of farming at the depth's tier (`tier(d)`, rounded down to an existing zone) |
 | Dust + materials | Every depth | Materials of the depth's tier, all kinds |
-| **Voidglass** | Every depth, a bigger batch every 10 | New Deep-only material: the "precious material" raids.md plans, used later for high-end crafting |
+| **Voidglass** | Every depth, a bigger batch every 10 | New Deep-only material: the "precious material" raids.md plans. Paid out and stored from the first version; what it crafts is decided later |
 | Rare / Greater elixirs | Every 5 depths | Fuel for the next push |
-| Essences | Every 10 depths | Once Essence drops ship; rare Essences from depth 30 |
-| **Title** | Depths 10, 25, 50, 75, 100, then every 50 | Cosmetic, see below |
+| Essences | Every 10 depths | **Once Essence drops ship**: left out until then; rare Essences from depth 30 |
+| **Title** | Depths 10, 25, 50, 75, 100 | Cosmetic, see below. **Later**: not in the first version |
+
+**Past depth 100: formula only.** From depth 101 there are no more milestones: no titles,
+elixirs or Essences on set depths. Every depth gives the same bundle from one formula,
+growing slowly with depth:
+
+```
+g(d)       = 1.03^(d − 101)
+gold, XP   = 30 min of T9 farming × g(d)
+Dust       = 30 min of T9 salvage × g(d)
+materials  = T9 materials, all kinds, 30 min's worth × g(d)
+Voidglass  = 3 + floor((d − 101) / 10)
+```
+
+The few players this deep play for the leaderboard, not for one-off prizes, and an endless
+list of handmade rewards would never end either. The rewards still grow (× 1.03 a depth),
+but far slower than the difficulty (× 1.155), so they never become a reason to grind.
 
 - **Rank gives no power, only titles.** Rewards come from depths reached, never from
   leaderboard position, so a top rank can't snowball and the board stays bragging only.
@@ -216,7 +255,7 @@ attempt.
 There's no cosmetic system yet. **A title is the cheapest one**: a string shown next to the
 name in chat, the friend list, inspect and parties. One column on `character`
 (`titleId`, 0 = none) plus a list of unlocked titles. *"of the Deep"* (10), *"Moonless"*
-(25), *"Lightless"* (50), *"Who Fell With the Moon"* (100), *"Depthwalker 150"* …. The
+(25), *"Lightless"* (50), *"Who Fell With the Moon"* (100, the last one). The
 season's top 10 get a gold title for the next season. It could grow into name colors or
 portrait frames later, with the same unlock list.
 
@@ -224,12 +263,16 @@ portrait frames later, with the same unlock list.
 
 - **Ranks the deepest depth cleared.** Ties go to whoever cleared it **first** (stored time),
   so pushing early is rewarded and nobody gets passed by an equal score.
-- Tabs: **Global** and **Friends**.
+- **Two tabs:**
+  - **Global:** the top 100 of all characters, plus your own rank pinned at the bottom if
+    you're not in it.
+  - **Friends:** you and your friend list, ranked the same way.
 - Each entry keeps a **snapshot of the build** that set it: level, the loadout's items and
   the clear time. Clicking an entry inspects it like a friend's gear. That's half the fun of a
   stress-test board: see what the top builds wear. Snapshots are taken at the record, so a
   player can't hide a build by changing gear afterwards.
-- **Seasons** (recommended, not at launch): every ~8 weeks the board resets and depth
+- **Seasons** (not at launch; the tables carry a `season` column, always 1 for now, so
+  turning them on needs no migration): every ~8 weeks the board resets and depth
   rewards can be earned again. To skip the boring part, the new season starts each player at
   **half their last season's best** (rewards for the skipped depths are not paid). New tiers
   shipping mid-season shift everyone up, and a season reset keeps the board fresh.
@@ -238,10 +281,10 @@ portrait frames later, with the same unlock list.
 
 - One reducer call per attempt; the server plays one 3-fight gauntlet (well under 1 ms, as
   for raids). The client replays it from the stored setup. No tick, no schedule.
-- **Attempts are free but rate-limited**: a **60 s cooldown after a loss**. Fight rolls
-  are seeded by start time, so without a limit a player could re-roll a close depth hundreds
-  of times. The cooldown, plus the Scout odds showing it's ~10%, makes grinding a bad
-  matchup pointless rather than forbidden.
+- **Attempts are free**, with a **10 s wait after a loss, in the client only** (the server
+  doesn't enforce it). Fight rolls are seeded by start time, so a player can re-roll a
+  close depth; that's accepted. Outcomes are mostly decided by the stats, the Scout odds
+  show when a depth is a long shot, and each attempt is one cheap reducer call.
 - The leaderboard is **one public row per character** (`abyss_record`), updated only on a
   new best, so subscribing to the top 100 is cheap.
 
@@ -252,21 +295,18 @@ portrait frames later, with the same unlock list.
 | `data/abyss.ts` | Pool enemies and the boss (permanent IDs, 9100+), Elite and Boss affixes, `GAUNTLET`, slot multipliers, growth factors, reward table |
 | `abyss.ts` (pure, shared) | `depthLineup(season, depth)` (basic, Elite + affix, Boss affixes), `depthStats(depth, kind, slot)`, `simulateDepth(stats, lineup, seed)`: `simulateFight` with a starting HP, per-depth Second Wind and the affix hooks |
 | `sim.ts` | `simulateFight` takes a starting HP (default: max) and returns the HP left |
-| Tables | `abyss_progress` (private: deepest depth, season, last loss time), `abyss_record` (public: deepest, clearedAt, build snapshot), `abyss_log` (private: each attempt, like `raid_log`) |
-| Reducer | `descend(loadoutIndex)`: unlocked, cooldown, settle, simulate, pay on a win |
+| Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: each attempt with the stats fought with, for the replay, and the reward; newest 20 kept). The unlock reads `enemy_kill`: a raid win records a kill of its boss, and those rows are never pruned |
+| Reducer | `descend(loadout)`: unlocked, settle, simulate, pay on a win. The dev cheat "Unlock all zones" also opens the Deep |
 | Client | A **Moonwell Deep** page under Adventure next to Raids: the next depth's line-up and affixes, loadout picker, Scout odds, replay, leaderboard |
 | Check | `npm run test:abyss`: the reference player's wall depth, GAUNTLET tuning, win odds per Elite and Boss affix, every depth's line-up is valid |
 
 ## Open questions
 
-- **Name.** The Moonwell Deep or another. The boss's name too.
-- **Seasons at launch or later?** Recommendation: later, once the board stagnates.
-- **GAUNTLET and depth-1 strength:** needs `test:abyss`. Should depth 1 be easy (a
-  warm-up) or should a fresh Umbriel clearer already feel the pressure?
-- **Boss affix count:** 1 / 2 / 3 at the depths above, or a 4th very deep (e.g. from 101)?
-- **Line-up per depth:** shared by everyone (fair board, recommended) or per character
-  (more variety, unfair board)?
-- **Loss cooldown** 60 s, or a daily attempt count instead?
+- **Name.** The Moonwell Deep or another. The boss: Deep Warden, or another plain one
+  (Well Keeper, Depth Guardian, Gatekeeper).
+- **When to start seasons:** later, once the board stagnates.
+- **GAUNTLET, Elite and boss multipliers, affix strength:** tuned with `test:abyss`.
 - **Voidglass:** what it crafts. Could share the answer with the raid token shop.
+- **Titles:** the system itself, later.
 - **Party mode later?** A 4-player Deep with its own board would reuse the raid fight;
   out of scope for the first version.

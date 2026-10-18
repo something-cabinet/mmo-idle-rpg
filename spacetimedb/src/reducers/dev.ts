@@ -9,6 +9,7 @@ import { MAX_SKILL_LEVEL, SKILLS } from '../data/skills';
 import { MAX_TIER } from '../data/stats';
 import { UNIQUES, UNIQUES_BY_ID } from '../data/uniques';
 import { ZONES } from '../data/zones';
+import { RAIDS } from '../data/raids';
 import { MATERIALS } from '../data/materials';
 import { SUPPLIES } from '../data/supplies';
 import { DEV_RARITIES, makeItem, makeUnique, seededRng, type RarityName } from '../loot';
@@ -41,11 +42,15 @@ export const devRevealAll = spacetimedb.reducer(ctx => {
   }
 });
 
-/** Opens every zone by recording its boss as killed (without the first-kill reward). */
+/**
+ * Opens every zone by recording its boss as killed (without the first-kill reward), and
+ * the Moonwell Deep by recording a kill of every raid boss (a raid win counts as one).
+ */
 export const devUnlockZones = spacetimedb.reducer(ctx => {
   const { ch } = requireCheats(ctx);
   const killed = new Set([...ctx.db.bossKill.characterId.filter(ch.id)].map(k => k.zoneId));
   for (const zone of ZONES) if (!killed.has(zone.id)) ctx.db.bossKill.insert({ id: 0n, characterId: ch.id, zoneId: zone.id, killedAt: ctx.timestamp });
+  for (const raid of RAIDS) atLeastKills(ctx, ch.id, raid.boss.id, 1);
 });
 
 /** Adds gold and Dust. */

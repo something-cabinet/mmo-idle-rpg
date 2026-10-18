@@ -44,6 +44,45 @@ export interface FightEvent {
   blocked?: boolean;
   /** Moonlight: this swing hit twice. */
   wave?: boolean;
+  /** The enemy couldn't be damaged when this swing landed (`FightMods.immuneUntil`, `eclipse`). */
+  immune?: boolean;
+  /** An undodgeable burst (`FightMods.burst`), not a regular swing. */
+  burst?: boolean;
+  /** Damage your swing reflected back at you (`FightMods.reflect`). */
+  reflected?: number;
+  /** HP the enemy drained from this hit (`FightMods.drain`). */
+  drained?: number;
+}
+
+/**
+ * Optional changes to a fight, for Moonwell Deep fights (abyss.ts, abyss.md). None of them
+ * exist in zone fights, so without mods a fight replays exactly as before.
+ */
+export interface FightMods {
+  /** Seconds of walking before the first swing (default: the character's walk time). */
+  walk?: number;
+  /** HP at the start (default: max HP). */
+  startHp?: number;
+  /** Second Wind left, as a share of max HP (default: the worn amount): once per Deep depth, not per fight. */
+  secondWind?: number;
+  /** Seconds after the walk before the fight ends as a stalemate (default MAX_FIGHT_SECONDS). */
+  timeLimit?: number;
+  /** The enemy heals this share of the damage it deals to your HP. */
+  drain?: number;
+  /** The enemy takes no damage before this many seconds after the walk. */
+  immuneUntil?: number;
+  /** The enemy takes no damage for `length` seconds every `every` seconds (from `every` on). */
+  eclipse?: { every: number; length: number };
+  /** The enemy's hits grow by `step` (+10% = 0.1) every `every` seconds. */
+  ramp?: { every: number; step: number };
+  /** Every `every` seconds the enemy also hits for `mult` × its hit; it can't be dodged. */
+  burst?: { every: number; mult: number };
+  /** × your heals, regen and lifesteal. */
+  healMult?: number;
+  /** Share of each of your hits that comes back to you as damage (after your mitigation). */
+  reflect?: number;
+  /** The enemy turns to the next matchup in `list` every `every` seconds, from the first (= the fight's `m`). */
+  phases?: { every: number; list: Matchup[] };
 }
 
 export interface Fight {
@@ -56,6 +95,10 @@ export interface Fight {
   /** Seconds from the fight's start to its end (the kill, the defeat or the stalemate). */
   end: number;
   outcome: 'kill' | 'defeat' | 'stalemate';
+  /** Your HP when the fight ended. */
+  hpLeft: number;
+  /** Second Wind left after the fight (0 once it triggered). */
+  secondWindLeft: number;
 }
 
 /**
@@ -75,25 +118,39 @@ export interface Fight {
  * Stand shrinks hits while you are below its threshold. Moonlight doubles every 3rd
  * swing; Waxing Moon scales swing k by `waxingMult(k)`; Afterimage shrinks the enemy's
  * hit after a dodge. New effects draw from the
- * generator only when worn, so fights without them replay as before.
+ * generator only when worn, so fights without them replay as before. `mods` (Moonwell Deep
+ * fights only) change the start, the time limit and the enemy; see FightMods.
  */
-export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng): Fight {
+export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng, mods: FightMods = {}): Fight {
   const src = s.sources[0];
-  const walk = s.walkTime;
+  const walk = mods.walk ?? s.walkTime;
   const yourPeriod = src && m.dps > 0 ? 1 / src.attacksPerSec : Infinity;
   const foePeriod = 1 / enemy.speed;
   const crit = Math.min(1, src?.critChance ?? 0);
-  const evade = m.enemyEvasion;
   const foeRegen = enemy.regen ?? 0;
   // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = DPS.
   // Moonlight's wave, Waxing Moon's average and the enemy's evasion are in `m.dps`; take
-  // them out, then apply them per swing.
+  // them out, then apply them per swing. Recomputed when the enemy changes phase.
   const moonlight = s.effects.has(Effect.Moonlight);
   const waxing = s.effects.has(Effect.WaxingMoon);
-  const hit = src && m.dps > 0 ? m.dps / (1 - evade) / src.attacksPerSec / m.critMult / m.waxing / (moonlight ? MOONLIGHT_MULT : 1) : 0;
-  const critX = crit > 0 && src ? 1 + (m.critMult - 1) / crit : 1;
-  const healPerSwing = src && m.hps > 0 ? m.hps / src.attacksPerSec : 0;
-  const enemyHit = m.enemyHit;
+  const healMult = mods.healMult ?? 1;
+  const regen = s.regen * healMult;
+  const lifesteal = s.lifesteal * healMult;
+  let cur = m;
+  let evade = 0;
+  let hit = 0;
+  let critX = 1;
+  let healPerSwing = 0;
+  let enemyHit = 0;
+  const face = (x: Matchup) => {
+    cur = x;
+    evade = x.enemyEvasion;
+    hit = src && x.dps > 0 ? x.dps / (1 - evade) / src.attacksPerSec / x.critMult / x.waxing / (moonlight ? MOONLIGHT_MULT : 1) : 0;
+    critX = crit > 0 && src ? 1 + (x.critMult - 1) / crit : 1;
+    healPerSwing = src && x.hps > 0 ? (x.hps / src.attacksPerSec) * healMult : 0;
+    enemyHit = x.enemyHit;
+  };
+  face(m);
   const amount = (id: number) => effectAmount(s.effects, id);
   let ambush = s.effects.has(Effect.Ambush) ? 5 : 1;
   const executeBelow = amount(Effect.Executioner) * enemy.hp;
@@ -102,25 +159,45 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const bulwark = amount(Effect.Bulwark);
   const lastStand = amount(Effect.LastStand);
   const lowHp = LAST_STAND_BELOW * s.maxHp;
-  let secondWind = amount(Effect.SecondWind);
+  let secondWind = mods.secondWind ?? amount(Effect.SecondWind);
   let shield = m.shield;
   const afterimage = amount(Effect.Afterimage);
   let lastDodged = false;
   /** Enemy regen since its last swing, shown on its next one. */
   let foeRegained = 0;
   let swings = 0;
+  const limit = mods.timeLimit ?? MAX_FIGHT_SECONDS;
+  const drain = mods.drain ?? 0;
+  const reflect = mods.reflect ?? 0;
+  /** Seconds into the fight (after the walk) at `t`. */
+  const into = (t: number) => t - walk;
+  const immune = (t: number) =>
+    into(t) < (mods.immuneUntil ?? 0) || (!!mods.eclipse && into(t) >= mods.eclipse.every && into(t) % mods.eclipse.every < mods.eclipse.length);
+  const ramp = (t: number) => (mods.ramp ? 1 + mods.ramp.step * Math.floor(into(t) / mods.ramp.every) : 1);
 
-  let youHp = s.maxHp;
+  let youHp = Math.min(s.maxHp, mods.startHp ?? s.maxHp);
   let foeHp = enemy.hp;
   let now = walk;
   let nextYou = walk + yourPeriod / 2;
   let nextFoe = walk + foePeriod / 2;
+  let nextBurst = mods.burst ? walk + mods.burst.every : Infinity;
+  let phase = 0;
+  let nextPhase = mods.phases ? walk + mods.phases.every : Infinity;
   const events: FightEvent[] = [];
-  const done = (end: number, outcome: Fight['outcome']): Fight => ({ stats: s, matchup: m, enemy, walk, events, end, outcome });
+  const done = (end: number, outcome: Fight['outcome']): Fight =>
+    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, hpLeft: youHp, secondWindLeft: secondWind });
   const shieldNote = () => (m.shield > 0 ? { shield } : {});
+  /** You take `damage` (after the shield); Second Wind may save you. Returns whether it did. */
+  const take = (damage: number): boolean => {
+    youHp = Math.max(0, youHp - damage);
+    if (youHp > 0 || secondWind <= 0) return false;
+    youHp = secondWind * s.maxHp;
+    secondWind = 0;
+    return true;
+  };
 
   // Follow-through: half an average hit of overkill, a share of it carried in.
-  const carried = (amount(Effect.FollowThrough) / 2) * hit * m.critMult;
+  const carried = immune(walk) ? 0 : (amount(Effect.FollowThrough) / 2) * hit * m.critMult;
   if (carried > 0) {
     foeHp = Math.max(0, foeHp - carried);
     events.push({ t: walk, by: 'you', kind: 'hit', damage: carried, healed: 0, youHp, foeHp, carried: true, ...shieldNote() });
@@ -128,15 +205,30 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   }
 
   for (;;) {
-    const t = Math.min(nextYou, nextFoe);
-    if (t > walk + MAX_FIGHT_SECONDS) return done(walk + MAX_FIGHT_SECONDS, 'stalemate');
+    const t = Math.min(nextYou, nextFoe, nextBurst, nextPhase);
+    if (t > walk + limit) return done(walk + limit, 'stalemate');
     const before = youHp;
-    youHp = Math.min(s.maxHp, youHp + s.regen * (t - now));
+    youHp = Math.min(s.maxHp, youHp + regen * (t - now));
     const foeBefore = foeHp;
     foeHp = Math.min(enemy.hp, foeHp + foeRegen * (t - now));
     foeRegained += foeHp - foeBefore;
     now = t;
-    if (nextYou <= nextFoe) {
+    if (t === nextPhase) {
+      const list = mods.phases!.list;
+      nextPhase += mods.phases!.every;
+      phase = (phase + 1) % list.length;
+      face(list[phase]);
+    } else if (t === nextBurst) {
+      nextBurst += mods.burst!.every;
+      // Can't be dodged or blocked; the shield still takes it first.
+      const damage = mods.burst!.mult * enemyHit * ramp(t) * (0.9 + 0.2 * rng());
+      const healed = youHp - before;
+      const absorbed = Math.min(shield, damage);
+      shield -= absorbed;
+      const saved = take(damage - absorbed);
+      events.push({ t, by: 'enemy', kind: 'hit', damage, healed, youHp, foeHp, burst: true, ...(saved && { secondWind: true }), ...shieldNote() });
+      if (youHp <= 0) return done(t, 'defeat');
+    } else if (nextYou <= nextFoe) {
       nextYou += yourPeriod;
       // Rolled only against an evasive enemy, so other fights replay as before.
       const missed = evade > 0 && rng() < evade;
@@ -145,16 +237,23 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const rage = berserk > 0 ? 1 + (berserk * (s.maxHp - youHp)) / s.maxHp : 1;
       swings += 1;
       const wave = moonlight && swings % MOONLIGHT_EVERY === 0;
-      const damage = missed ? 0 : hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1);
-      ambush = 1;
+      const shielded = !missed && immune(t);
+      const damage = missed || shielded ? 0 : hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1);
+      // Ambush is spent on the first swing that can land.
+      if (!shielded) ambush = 1;
       foeHp = Math.max(0, foeHp - damage);
-      youHp = Math.min(s.maxHp, youHp + healPerSwing + s.lifesteal * damage);
-      events.push({ t, by: 'you', kind: missed ? 'miss' : isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp, ...(wave && !missed && { wave: true }), ...shieldNote() });
+      youHp = Math.min(s.maxHp, youHp + healPerSwing + lifesteal * damage);
+      const reflected = reflect * damage;
+      const saved = reflected > 0 && take(reflected);
+      events.push({ t, by: 'you', kind: missed || shielded ? 'miss' : isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp,
+        ...(wave && !missed && !shielded && { wave: true }), ...(shielded && { immune: true }), ...(reflected > 0 && { reflected }),
+        ...(saved && { secondWind: true }), ...shieldNote() });
       if (foeHp <= 0) return done(t, 'kill');
+      if (youHp <= 0) return done(t, 'defeat');
     } else {
       nextFoe += foePeriod;
-      const dodged = rng() < m.evasion;
-      let damage = dodged ? 0 : enemyHit * (0.9 + 0.2 * rng());
+      const dodged = rng() < cur.evasion;
+      let damage = dodged ? 0 : enemyHit * (0.9 + 0.2 * rng()) * ramp(t);
       const blocked = !dodged && bulwark > 0 && rng() < bulwark;
       if (blocked) damage /= 2;
       if (lastStand > 0 && youHp < lowHp) damage *= 1 - lastStand;
@@ -163,14 +262,14 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const healed = youHp - before;
       const absorbed = Math.min(shield, damage);
       shield -= absorbed;
-      youHp = Math.max(0, youHp - (damage - absorbed));
-      const saved = youHp <= 0 && secondWind > 0;
-      if (saved) {
-        youHp = secondWind * s.maxHp;
-        secondWind = 0;
-      }
+      const hpBefore = youHp;
+      const saved = take(damage - absorbed);
+      // Drain: the enemy heals a share of what reached your HP.
+      const drained = drain > 0 ? Math.min(enemy.hp - foeHp, drain * Math.min(hpBefore, damage - absorbed)) : 0;
+      foeHp += drained;
       events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp,
-        ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...(foeRegen > 0 && { foeHealed: foeRegained }), ...shieldNote() });
+        ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...(foeRegen > 0 && { foeHealed: foeRegained }),
+        ...(drained > 0 && { drained }), ...shieldNote() });
       foeRegained = 0;
       if (youHp <= 0) return done(t, 'defeat');
     }

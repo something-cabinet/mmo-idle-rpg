@@ -13,6 +13,7 @@ export * from './reducers/crafting';
 export * from './reducers/inspect';
 export * from './reducers/friends';
 export * from './reducers/raid';
+export * from './reducers/abyss';
 export * from './reducers/skills';
 export * from './reducers/views';
 export * from './reducers/dev';

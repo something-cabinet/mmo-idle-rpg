@@ -1,4 +1,4 @@
-import { Fragment, memo } from 'react';
+import { Fragment, memo, useState } from 'react';
 import { TYPE_LIST, type BaseKind } from '../../../spacetimedb/src/data/bases';
 import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS, RARITIES } from '../../../spacetimedb/src/loot';
@@ -10,6 +10,13 @@ import { CardHead, StatRows, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
 
 type LootFilterArgs = Parameters<Snapshot['conn']['reducers']['setLootFilter']>[0];
+
+/** Whether two filters keep the same drops (checklist order doesn't matter). */
+const sameFilter = (a: LootFilterArgs, b: LootFilterArgs) => {
+  const key = (f: LootFilterArgs) =>
+    JSON.stringify([f.minRarity.tag, f.minAffixTier, f.scrap, [...f.keepAffixes].sort(), [...f.keepTypes].sort()]);
+  return key(a) === key(b);
+};
 
 export const AFFIX_ENTRIES = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) }));
 const KIND_GROUP: Record<BaseKind, string> = { weapon: 'Weapons', offhand: 'Off-hands', armor: 'Armor', jewelry: 'Jewelry' };
@@ -91,18 +98,36 @@ export function KeepList({ title, what = 'Drops', one, many, entries, keep, sear
 
 export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
   const search = useSticky('affixSearch', '');
-  const f: LootFilterArgs = {
+  const saved: LootFilterArgs = {
     minRarity: s.filter?.minRarity ?? { tag: 'Magic' },
     keepAffixes: s.filter?.keepAffixes ?? [],
     keepTypes: s.filter?.keepTypes ?? [],
     minAffixTier: s.filter?.minAffixTier ?? 1,
     scrap: s.filter?.scrap ?? false,
   };
-  const setFilter = (patch: Partial<LootFilterArgs>) => call(s.conn.reducers.setLootFilter({ ...f, ...patch }));
+  // Edits stay local until Save, so quick clicks can't overwrite each other.
+  const [draft, setDraft] = useState<LootFilterArgs>();
+  const f = draft ?? saved;
+  const dirty = !!draft && !sameFilter(draft, saved);
+  const setFilter = (patch: Partial<LootFilterArgs>) => setDraft({ ...f, ...patch });
 
   return (
     <>
-      <ViewHeader title="Loot filter" icon="filter" />
+      <ViewHeader title="Loot filter" icon="filter">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {dirty && <span className="tag">Unsaved changes</span>}
+          <button className="btn small ghost" disabled={!dirty} onClick={() => setDraft(undefined)}>
+            Discard
+          </button>
+          <button
+            className="btn small primary"
+            disabled={!dirty}
+            onClick={() => draft && call(s.conn.reducers.setLootFilter(draft).then(() => setDraft(undefined)))}
+          >
+            Save
+          </button>
+        </div>
+      </ViewHeader>
       <div className="grid-2">
         <div className="card">
           <CardHead title="Keep rarity" />

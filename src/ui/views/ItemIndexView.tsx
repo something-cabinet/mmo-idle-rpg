@@ -11,7 +11,7 @@ import { useSticky } from '../../store';
 import { fmt } from '../format';
 import { Icon } from '../Icon';
 import { affixLabel, statText } from '../items';
-import { ItemIcon } from '../itemArt';
+import { ItemArt, ItemIcon, itemArtUrl } from '../itemArt';
 import { CardHead, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
@@ -131,7 +131,7 @@ function AffixTable() {
   );
 }
 
-const GROUP_SLOTS: Record<LegendaryGroup, string> = { Offense: 'Weapons and tome', Defense: 'Armor and shield', Utility: 'Rings and amulet' };
+const GROUP_SLOTS: Record<LegendaryGroup, string> = { Offense: 'Weapons, tome, war horn and main gauche', Defense: 'Armor and shield', Utility: 'Rings and amulet' };
 
 /** Every legendary affix by group: its stat bonus, what one copy does and its stacking cap. */
 function LegendaryTable() {
@@ -204,8 +204,9 @@ function UniqueCard({ u }: { u: UniqueDef }) {
     ...(w ? [`${w.twoHanded ? 'Two-handed' : 'One-handed'}${w.ranged ? ', ranged' : ''}`, `Damage ${damageText(w)} · ${w.speed}/s`, `Crit ${w.baseCrit}%`, ...(w.heal > 0 ? [`Heal ${healText(w)}`] : [])] : []),
     ...implicitLines(b, u.tier),
   ];
-  return (
-    <div className="item-card r-unique">
+  const art = { baseId: u.baseId, tier: u.tier, uniqueId: u.id };
+  const top = (
+    <>
       <div className="item-head">
         <span className="item-name">{u.name}</span>
         <span className="badge r-unique">T{u.tier}</span>
@@ -214,6 +215,18 @@ function UniqueCard({ u }: { u: UniqueDef }) {
         <span>Unique</span>
         <span>{b.name(u.tier)}</span>
       </div>
+    </>
+  );
+  return (
+    <div className="item-card r-unique">
+      {itemArtUrl(art) ? (
+        <div className="item-top">
+          <ItemArt it={art} className="card-art" />
+          <div className="item-top-text">{top}</div>
+        </div>
+      ) : (
+        top
+      )}
       <div className="item-implicits">
         {baseLines.map((t, i) => <span key={i}>{t}</span>)}
       </div>

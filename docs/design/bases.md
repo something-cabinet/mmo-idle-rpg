@@ -168,6 +168,8 @@ defenses (greatshield, ring) or both damage groups (amulet, made for a Split wea
 | Shield | 8T armor, 5 max HP (life curve, T9: 215), +15% threat (P) |
 | Greatshield | 10T armor, 7 max HP (life curve), +25% threat (P), −10% attack speed (fixed) |
 | Tome | +30 Mind (P), +15% magic damage (P) |
+| War Horn | +30 Might (P), +12% attack speed (P) |
+| Main Gauche | +30 Finesse (P), 6T evasion rating |
 
 ## Armor (*illustrative*)
 

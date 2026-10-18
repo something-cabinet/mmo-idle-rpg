@@ -224,6 +224,23 @@ const CORE: CoreDef[] = [
     name: tracked('tome', 'Tome'),
     implicits: [pct(Stat.Mind, 30), pct(Stat.MagicDamagePct, 15)],
   },
+  // The Tome's counterparts for physical builds: a primary attribute and something it wants.
+  {
+    id: 23,
+    kind: 'offhand',
+    family: 'War Horn',
+    slots: ['OffHand'],
+    name: tracked('metal', 'War Horn'),
+    implicits: [pct(Stat.Might, 30), pct(Stat.AttackSpeedPct, 12)],
+  },
+  {
+    id: 24,
+    kind: 'offhand',
+    family: 'Main Gauche',
+    slots: ['OffHand'],
+    name: tracked('metal', 'Main Gauche'),
+    implicits: [pct(Stat.Finesse, 30), lin(Stat.EvasionRating, 6)],
+  },
   ...armorBases(),
   ...jewelryBases(),
 ];

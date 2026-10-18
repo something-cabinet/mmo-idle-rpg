@@ -11,6 +11,8 @@ Main hand, off-hand, head, chest, hands, feet, **two rings**, amulet: 9 slots, s
 - **One-handed weapon + off-hand**, where the off-hand is:
   - **Shield:** armor, HP, threat. No block.
   - **Focus / tome:** Mind, magic damage % or heal %.
+  - **War horn:** Might, attack speed %.
+  - **Main gauche:** Finesse, evasion rating. A parrying blade: it never attacks.
 - **No dual wield** for now: an off-hand is never a weapon. The main-hand weapon is the
   only source of attacks.
 

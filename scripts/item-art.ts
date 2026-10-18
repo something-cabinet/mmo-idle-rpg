@@ -173,6 +173,8 @@ const TYPES: Record<string, string> = {
   Shield: 'a heater shield',
   Greatshield: 'a tall rectangular tower shield',
   Tome: 'a thick closed spellbook, cover facing the viewer',
+  'War Horn': 'a curved war horn (a large animal horn) with metal bands and a mouthpiece, hung on a short strap',
+  'Main Gauche': 'a parrying dagger (main gauche) with a straight slim blade and a large curved hand guard, held point up',
   Hood: 'a cloth hood with a short shoulder cape, empty',
   Robe: 'a long mage robe with wide sleeves, laid flat, empty',
   Gloves: 'a pair of cloth gloves, side by side',

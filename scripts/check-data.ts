@@ -18,7 +18,7 @@ const unique = (xs: number[]) => new Set(xs).size === xs.length;
 const near = (a: number, b: number) => Math.abs(a - b) < 0.01;
 
 check('base IDs unique', unique(BASE_LIST.map(b => b.id)));
-check('34 types', TYPE_LIST.length === 34, String(TYPE_LIST.length));
+check('36 types', TYPE_LIST.length === 36, String(TYPE_LIST.length));
 check('type IDs unique', unique(TYPE_LIST.map(t => t.id)));
 check('every type has a core base of its ID; the core bases are the zone bases', TYPE_LIST.every(t => base(t.id).typeId === t.id) &&
   ZONE_BASES.length === TYPE_LIST.length);

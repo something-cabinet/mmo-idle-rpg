@@ -69,6 +69,8 @@ const PATHS: Record<string, string> = {
   'i-shield': 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 2v20M4 10h16',
   'i-greatshield': 'M5 2h14v12c0 4-7 8-7 8s-7-4-7-8V2zM12 2v20M5 9h14',
   'i-tome': 'M5 4h11a3 3 0 0 1 3 3v14H8a3 3 0 0 1-3-3V4zM5 18a3 3 0 0 1 3-3h11M10 8h5',
+  'i-war-horn': 'M4 8c6 0 12 3 16 10l-3 2C14 15 9 12 4 12V8zM4 8v4M8 9v3.5M2 5c4-1 9 0 13 3',
+  'i-main-gauche': 'M18 3l3 3-9 9-3-3 9-9zM6 11l7 7M8 13c-3 0-5 2-5 5 3 0 5-2 5-5zM5 19l-2 2',
   'i-head': 'M4 17a8 8 0 0 1 16 0v3h-5v-4H9v4H4v-3zM12 9v5',
   'i-chest': 'M9 3 4 6v5h3v10h10V11h3V6l-5-3a3 3 0 0 1-6 0z',
   'i-hands': 'M8 21v-6l-3-4 1.5-1.5L9 12V4.5a1.5 1.5 0 0 1 3 0V11V3.5a1.5 1.5 0 0 1 3 0V11V5.5a1.5 1.5 0 0 1 3 0V15l-2 6H8z',

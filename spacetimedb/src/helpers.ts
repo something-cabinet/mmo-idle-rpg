@@ -102,7 +102,7 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
  * Online time is played as live fights (sim.ts `simulate`, the fights the client
  * animates); offline time uses the expected-value formulas (game.ts `project`). A
  * boss's first kill grants its reward and unlocks the next zone (zone-content.md); a
- * lost fight in a matchup won on average costs a respawn (sim.ts), any other lost fight
+ * lost fight in a matchup won on average costs a respawn (fight.ts), any other lost fight
  * clears the target (idle). Call before anything that changes gear or
  * target. `capMicros` is only passed for the login settle, which covers the time
  * away and is always logged.

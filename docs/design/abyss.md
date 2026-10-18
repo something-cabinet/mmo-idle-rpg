@@ -41,7 +41,7 @@ the stored setup, like a raid (raids.md, "The fight"). The server's outcome is f
 closed form is needed, since it's never settled offline. That leaves room for mechanics
 the zones can't have.
 
-- **Order:** basic, Elite, boss. Each is a normal solo fight (`simulateFight` in sim.ts),
+- **Order:** basic, Elite, boss. Each is a normal solo fight (`simulateFight` in fight.ts),
   except that it **starts at the HP you had when the last one died**. Swing timers restart
   for each enemy.
 - **Between enemies:** nothing. Regen, lifesteal and heals work only inside fights, as
@@ -290,7 +290,7 @@ portrait frames later, with the same unlock list.
 |---|---|
 | `data/abyss.ts` | Pool enemies and the boss (permanent IDs, 9100+), Elite and Boss affixes, `GAUNTLET`, slot multipliers, growth factors, reward table |
 | `abyss.ts` (pure, shared) | `depthLineup(season, depth)` (basic, Elite + affix, Boss affixes), `depthStats(depth, kind, slot)`, `simulateDepth(stats, lineup, seed)`: `simulateFight` with a starting HP, per-depth Second Wind and the affix hooks |
-| `sim.ts` | `simulateFight` takes a starting HP (default: max) and returns the HP left |
+| `fight.ts` | `simulateFight` takes a starting HP (default: max) and returns the HP left |
 | Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: the latest attempt only, with the stats fought with, for the replay, and the reward). The unlock reads `enemy_kill`: a raid win records a kill of its boss, and those rows are never pruned |
 | Reducer | `descend(loadout)`: unlocked, settle, simulate, pay on a win. The dev cheat "Unlock all zones" also opens the Deep |
 | Client | A **Moonwell Deep** page under Adventure next to Raids: the next depth's line-up and affixes, loadout picker, replay, leaderboard |

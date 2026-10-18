@@ -1,6 +1,6 @@
 // Friendly duels (docs/design/duels.md): your character against a friend's, as of their
 // last settle. Client only: no reward and nothing stored, so there is nothing to trust
-// the server with. Like sim.ts `simulateFight`, but both sides are players: each swings
+// the server with. Like fight.ts `simulateFight`, but both sides are players: each swings
 // on its own timer with the matchup formulas of combat.ts applied player against player
 // (penetration, evasion, crits, heals, lifesteal, regen and the effects).
 

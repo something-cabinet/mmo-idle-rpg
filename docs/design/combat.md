@@ -7,7 +7,7 @@
 - **One enemy at a time.** Each fight starts at full HP; recovering between fights is
   part of the walk time.
 - **One model, two evaluations:**
-  - **Online: live fights** (`sim.ts`). Fights are played hit by hit: swings on each
+  - **Online: live fights** (`sim.ts`, one fight in `fight.ts`). Fights are played hit by hit: swings on each
     side's timer, crits, dodges, heals, regen, lifesteal, ±10% damage. Each fight's rolls
     come from a generator seeded by (character, fight start), so a fight is fully
     determined by when it starts. The server settles online time by playing the fights
@@ -32,11 +32,11 @@
   offline; online, when its HP reaches 0. The character then goes **idle** (no target, no gains) until the
   player picks a new target, so a bad pick before logging off wastes the time away.
 - **Respawn:** online, a fight lost to bad luck in a matchup that *is* viable doesn't end
-  farming: the character lies defeated for `RESPAWN_SECONDS` (30 s, sim.ts), then fights
+  farming: the character lies defeated for `RESPAWN_SECONDS` (30 s, fight.ts), then fights
   the same target again. Each one is logged (`respawns`), so a 99% matchup no longer
   stops within half an hour.
 - **Offline losses:** offline settles a viable matchup at the kill rate live fights
-  average out to (`liveKillRate`, sim.ts): 400 fights sampled with fixed seeds give the
+  average out to (`liveKillRate`, fight.ts): 400 fights sampled with fixed seeds give the
   share lost and how long a lost fight plus its respawn takes; won fights take the
   formula's time. A matchup that never loses settles exactly by the formulas; a close
   one earns what it would online (e.g. time to die 1.1× time to kill loses ~55% of live
@@ -55,7 +55,7 @@ walk time, rewards, offline cap). Legendary effects stack up to a cap
 ### Rule for new mechanics
 
 Every mechanic needs a closed-form expected value for offline settling, and a per-hit
-version in `sim.ts` for live fights whose average matches it. Avoid chained procs,
+version in `fight.ts` for live fights whose average matches it. Avoid chained procs,
 on-kill stacking buffs and conditional triggers unless they have an averaged formula.
 
 ## Stat aggregation

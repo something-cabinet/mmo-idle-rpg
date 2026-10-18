@@ -2,7 +2,7 @@
 // fought back to back on one HP bar. Pure and deterministic, like raid.ts: the server plays
 // the whole depth when the player starts it (that decides the outcome), and the client
 // replays the very same depth from the stored stats and seed to animate it. Each enemy is a
-// solo fight (sim.ts `simulateFight`) with `FightMods` for the HP carried in and the affixes.
+// solo fight (fight.ts `simulateFight`) with `FightMods` for the HP carried in and the affixes.
 
 import { defenseAgainst, matchup, type CombatStats, type Matchup } from './combat';
 import {
@@ -12,7 +12,7 @@ import {
 import { Effect, effectAmount } from './data/legendary';
 import type { Defense, EnemyDef } from './data/zones';
 import { seededRng, type Rng } from './loot';
-import { simulateFight, type Fight, type FightMods } from './sim';
+import { simulateFight, type Fight, type FightMods } from './fight';
 
 const ABYSS_SALT = 0x64656570n; // "deep"
 /** Depths behind the Scout odds. */

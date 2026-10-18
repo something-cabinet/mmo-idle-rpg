@@ -11,7 +11,7 @@ import { untieredMaterial } from '../spacetimedb/src/data/materials';
 import { SUPPLIES_BY_ID } from '../spacetimedb/src/data/supplies';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
 import { decodeStats, depthFoes, depthOdds, depthRng, encodeStats, mainDamageType, simulateDepth, weakerDefense } from '../spacetimedb/src/abyss';
-import { simulateFight } from '../spacetimedb/src/sim';
+import { simulateFight } from '../spacetimedb/src/fight';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {

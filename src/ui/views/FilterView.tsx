@@ -1,4 +1,4 @@
-import { Fragment, memo, useState } from 'react';
+import { Fragment, memo, useEffect, useRef, useState } from 'react';
 import { TYPE_LIST, type BaseKind } from '../../../spacetimedb/src/data/bases';
 import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
 import { AFFIX_STAT_IDS, RARITIES } from '../../../spacetimedb/src/loot';
@@ -96,6 +96,32 @@ export function KeepList({ title, what = 'Drops', one, many, entries, keep, sear
   );
 }
 
+/**
+ * While `dirty`, asks before leaving this view: another view (hash navigation, put back
+ * if the player stays, before the view switch renders) or the page (reload, close).
+ */
+function useLeaveGuard(dirty: boolean, message: string) {
+  const ref = useRef(dirty);
+  ref.current = dirty;
+  useEffect(() => {
+    const here = location.hash;
+    const onHash = () => {
+      if (!ref.current || location.hash === here) return;
+      if (confirm(message)) ref.current = false;
+      else history.replaceState(null, '', here);
+    };
+    const onUnload = (e: BeforeUnloadEvent) => {
+      if (ref.current) e.preventDefault();
+    };
+    window.addEventListener('hashchange', onHash);
+    window.addEventListener('beforeunload', onUnload);
+    return () => {
+      window.removeEventListener('hashchange', onHash);
+      window.removeEventListener('beforeunload', onUnload);
+    };
+  }, [message]);
+}
+
 export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
   const search = useSticky('affixSearch', '');
   const saved: LootFilterArgs = {
@@ -110,6 +136,7 @@ export const FilterView = memo(function FilterView({ s }: { s: Snapshot }) {
   const f = draft ?? saved;
   const dirty = !!draft && !sameFilter(draft, saved);
   const setFilter = (patch: Partial<LootFilterArgs>) => setDraft({ ...f, ...patch });
+  useLeaveGuard(dirty, 'You have unsaved loot filter changes. Leave without saving?');
 
   return (
     <>

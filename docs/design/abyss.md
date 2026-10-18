@@ -83,12 +83,10 @@ rolls (crits, dodges, variance) are seeded per character and start time.
 Before starting, the player sees the depth's line-up: names, damage types, defense profiles,
 traits, affixes, HP and DPS at this depth.
 
-### Win odds (Scout)
+### Win odds
 
-The Deep page shows **your odds** for the next depth with a chosen loadout: the share of
-200 gauntlets you would win, simulated **in the browser** like duels (duels.md). It costs the
-server nothing, and it is the stress test itself: swap a piece, see the odds move, without
-spending an attempt. Raids hide odds to avoid blaming teammates; solo, there's no one to blame.
+The page shows **no win odds**: you find out by descending. `depthOdds` (the share of 200
+simulated depths a build wins) stays for balancing in `test:abyss` only.
 
 ## Scaling
 
@@ -282,8 +280,7 @@ portrait frames later, with the same unlock list.
   for raids). The client replays it from the stored setup. No tick, no schedule.
 - **Attempts are free**, with a **10 s wait after a loss, in the client only** (the server
   doesn't enforce it). Fight rolls are seeded by start time, so a player can re-roll a
-  close depth; that's accepted. Outcomes are mostly decided by the stats, the Scout odds
-  show when a depth is a long shot, and each attempt is one cheap reducer call.
+  close depth; that's accepted. Outcomes are mostly decided by the stats, and each attempt is one cheap reducer call.
 - The leaderboard is **one public row per character** (`abyss_record`), updated only on a
   new best, so subscribing to the top 100 is cheap.
 
@@ -296,7 +293,7 @@ portrait frames later, with the same unlock list.
 | `sim.ts` | `simulateFight` takes a starting HP (default: max) and returns the HP left |
 | Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: the latest attempt only, with the stats fought with, for the replay, and the reward). The unlock reads `enemy_kill`: a raid win records a kill of its boss, and those rows are never pruned |
 | Reducer | `descend(loadout)`: unlocked, settle, simulate, pay on a win. The dev cheat "Unlock all zones" also opens the Deep |
-| Client | A **Moonwell Deep** page under Adventure next to Raids: the next depth's line-up and affixes, loadout picker, Scout odds, replay, leaderboard |
+| Client | A **Moonwell Deep** page under Adventure next to Raids: the next depth's line-up and affixes, loadout picker, replay, leaderboard |
 | Check | `npm run test:abyss`: the reference player's wall depth, GAUNTLET tuning, win odds per Elite and Boss affix, every depth's line-up is valid |
 
 ## Open questions

@@ -11,14 +11,14 @@ import {
 } from '../../../spacetimedb/src/data/abyss';
 import { RAIDS_BY_ID } from '../../../spacetimedb/src/data/raids';
 import { SUPPLIES_BY_ID, elixirBuffs } from '../../../spacetimedb/src/data/supplies';
-import { decodeBuild, decodeStats, depthFoes, depthOdds, depthRng, simulateDepth, type DepthFoe, type DepthResult } from '../../../spacetimedb/src/abyss';
+import { decodeBuild, decodeStats, depthFoes, depthRng, simulateDepth, type DepthFoe, type DepthResult } from '../../../spacetimedb/src/abyss';
 import { call, useSticky, useTick } from '../../store';
 import { startFight, stopFight } from '../fight';
 import { FightStage } from '../FightStage';
 import { nowMicros } from '../clock';
 import { DefTag, DmgTag } from '../enemy';
 import { EnemyArt } from '../enemyArt';
-import { fmt, fmtBig, pct } from '../format';
+import { fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { ItemCard, materialIconName, materialName } from '../items';
 import { untieredMaterial } from '../../../spacetimedb/src/data/materials';
@@ -85,7 +85,6 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
   const stats = useMemo(() => combatStats(s.level, gear, buffs), [s.level, gear.map(i => String(i?.id ?? 0n)).join(), buffs?.damage, buffs?.attackSpeed]); // eslint-disable-line react-hooks/exhaustive-deps
   const lineup = depthLineup(depth);
   const foes = useMemo(() => depthFoes(stats, lineup), [stats, depth]); // eslint-disable-line react-hooks/exhaustive-deps
-  const odds = useMemo(() => depthOdds(stats, depth), [stats, depth]);
   const reward = depthReward(depth);
 
   const logs = [...conn.db.myAbyssLog.iter()].sort(byNewest);
@@ -142,14 +141,11 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
                 ))}
               </div>
             </div>
-            <div className="deep-facts">
-              <div title="The share of 200 depths with these stats you would win (Scout)">
-                <span>Your odds</span>
-                <strong className={odds >= 0.8 ? 'c-ok' : odds >= 0.4 ? '' : 'c-bad'}>{pct(odds)}</strong>
+            {s.elixir && (
+              <div className="deep-facts">
+                <div title="Your elixir applies to every fight and uses a charge per kill"><span>Elixir</span><strong>{s.elixir.supply.name}</strong></div>
               </div>
-              <div><span>HP</span><strong>{fmt(stats.maxHp)}</strong></div>
-              {s.elixir && <div title="Your elixir applies to every fight and uses a charge per kill"><span>Elixir</span><strong>{s.elixir.supply.name}</strong></div>}
-            </div>
+            )}
             <button className="btn primary deep-go" disabled={!!block} onClick={() => {
               setPending(true);
               const p = conn.reducers.descend({ loadout: lo?.index ?? 0 });
@@ -216,44 +212,34 @@ function RewardLine({ gold, xp, dust, materials, elixir }: { gold: bigint; xp: b
 }
 
 /**
- * A cleared depth's reward: the headline gains as big rows (Voidglass and elixirs shine),
- * then the ordinary materials in a compact grid, each popping in after the last.
+ * A cleared depth's reward on one line (wrapping on narrow screens): an icon and an amount
+ * per gain, popping in one after another; Voidglass and elixirs shine.
  */
 function DeepLoot({ log }: { log: AbyssLog }) {
   const supply = SUPPLIES_BY_ID.get(log.elixir);
-  const voidglass = log.materials.find(m => m.materialId === untieredMaterial('Voidglass').id);
-  const rows: { key: string; icon: string; cls: string; name: string; amount: string; special?: boolean }[] = [
-    { key: 'gold', icon: 'coins', cls: 'c-gold', name: 'Gold', amount: fmtBig(log.gold) },
-    ...(log.xp > 0n ? [{ key: 'xp', icon: 'star', cls: 'c-ok', name: 'Experience', amount: fmtBig(log.xp) }] : []),
-    { key: 'dust', icon: 'gem', cls: 'c-dust', name: 'Dust', amount: fmtBig(log.dust) },
-    ...(supply ? [{ key: 'elixir', icon: 'flask', cls: 'c-magic', name: `${supply.name} (T${supply.tier})`, amount: '1', special: true }] : []),
-    ...(voidglass ? [{ key: 'voidglass', icon: materialIconName(voidglass.materialId), cls: 'c-voidglass', name: materialName(voidglass.materialId), amount: fmt(voidglass.count), special: true }] : []),
+  const voidglass = untieredMaterial('Voidglass').id;
+  const gains: { key: string; icon: string; cls: string; text: string; title: string; special?: boolean }[] = [
+    { key: 'gold', icon: 'coins', cls: 'c-gold', text: `+${fmtBig(log.gold)} gold`, title: 'Gold' },
+    ...(log.xp > 0n ? [{ key: 'xp', icon: 'star', cls: 'c-ok', text: `+${fmtBig(log.xp)} XP`, title: 'Experience' }] : []),
+    { key: 'dust', icon: 'gem', cls: 'c-dust', text: `+${fmtBig(log.dust)} Dust`, title: 'Dust' },
+    ...(supply ? [{ key: 'elixir', icon: 'flask', cls: 'c-voidglass', text: supply.name, title: `${supply.name} (T${supply.tier})`, special: true }] : []),
+    // Voidglass first among the materials: it only comes from the Deep.
+    ...[...log.materials].sort((x, y) => Number(y.materialId === voidglass) - Number(x.materialId === voidglass)).map(m => ({
+      key: `m${m.materialId}`, icon: materialIconName(m.materialId), cls: m.materialId === voidglass ? 'c-voidglass' : 'c-material',
+      text: `+${fmt(m.count)} ${materialName(m.materialId)}`, title: materialName(m.materialId), special: m.materialId === voidglass,
+    })),
   ];
-  const mats = log.materials.filter(m => m !== voidglass);
-  const delay = (i: number) => ({ '--delay': `${0.25 + i * 0.09}s` }) as CSSProperties;
   return (
     <div className="deep-loot">
       <div className="raid-loot-head">Your reward</div>
-      <ul>
-        {rows.map((r, i) => (
-          <li key={r.key} className={r.special ? 'special' : ''} style={delay(i)}>
-            <span className="deep-loot-icon"><Icon name={r.icon} className={r.cls} /></span>
-            <span className="deep-loot-name">{r.name}</span>
-            <strong className="deep-loot-amount">+{r.amount}</strong>
-          </li>
+      <div className="deep-loot-line">
+        {gains.map((g, i) => (
+          <span key={g.key} className={`${g.cls}${g.special ? ' special' : ''}`} title={g.title} style={{ '--delay': `${0.25 + i * 0.07}s` } as CSSProperties}>
+            <Icon name={g.icon} />
+            {g.text}
+          </span>
         ))}
-      </ul>
-      {mats.length > 0 && (
-        <ul className="deep-loot-mats">
-          {mats.map((m, i) => (
-            <li key={m.materialId} style={delay(rows.length + i)}>
-              <Icon name={materialIconName(m.materialId)} className="c-material" />
-              <span className="deep-loot-name">{materialName(m.materialId)}</span>
-              <strong className="deep-loot-amount">+{fmt(m.count)}</strong>
-            </li>
-          ))}
-        </ul>
-      )}
+      </div>
     </div>
   );
 }
@@ -283,21 +269,22 @@ function DepthReplay({ s, log, onClose, onEnd }: { s: Snapshot; log: AbyssLog; o
   // The fight on screen and the time into it.
   let k = 0;
   while (k + 1 < result.starts.length && result.starts[k + 1] <= at) k++;
-  const foe = result.foes[k];
   const lost = result.foes[result.fights.length - 1];
 
   return (
     <section className={`card deep-replay${live ? '' : result.won ? ' won' : ' lost'}`}>
       <CardHead title={`Depth ${log.depth}`}>
-        <span className="tag">{k + 1}/3 · {SLOT_LABEL[foe.slot]}</span>
         <span className={`tag${DEPTH_TIME_LIMIT - at < 30 ? ' c-bad' : ''}`} title="Time left for the depth">{clock(Math.max(0, DEPTH_TIME_LIMIT - at))}</span>
       </CardHead>
-      {!skipped && <DeepScene key={k} s={s} result={result} k={k} origin={origin} />}
-      <ol className="deep-steps">
+      {/* The three enemies in order: beaten ones crossed out and dimmed, the current one glowing. */}
+      <ol className="deep-trail">
         {result.foes.map((f, i) => (
-          <li key={f.slot} className={i < k || (!live && i === k && result.won) ? 'done' : i === k ? 'now' : ''}>{f.enemy.name}</li>
+          <li key={f.slot} className={i < k || (!live && i === k && result.won) ? 'done' : i === k ? 'now' : ''} title={SLOT_LABEL[f.slot]}>
+            {f.enemy.name}
+          </li>
         ))}
       </ol>
+      {!skipped && <DeepScene key={k} s={s} result={result} k={k} origin={origin} />}
       {live ? (
         <div className="row deep-replay-actions">
           <button className="btn small ghost" onClick={() => setSkipped(true)}>Skip</button>

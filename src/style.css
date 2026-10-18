@@ -3953,27 +3953,36 @@ fieldset.affix-pick legend {
   align-items: center;
   gap: 4px;
 }
-.deep-steps {
+.deep-trail {
   list-style: none;
-  margin: 10px 0 0;
+  margin: 0 0 10px;
   padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  font-size: 12px;
+  align-items: center;
+  gap: 2px 0;
+  font-size: 14px;
+  font-weight: 600;
 }
-.deep-steps li {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--surface-3);
+.deep-trail li {
   color: var(--muted);
+  transition: color 0.3s, opacity 0.3s, text-shadow 0.3s;
 }
-.deep-steps li.now {
-  color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--moon);
+.deep-trail li + li::before {
+  content: '›';
+  margin: 0 8px;
+  color: var(--muted);
+  opacity: 0.6;
+  text-decoration: none;
+  display: inline-block;
 }
-.deep-steps li.done {
-  color: var(--ok);
+.deep-trail li.now {
+  color: var(--moon);
+  font-weight: 800;
+  text-shadow: 0 0 10px color-mix(in srgb, var(--moon) 55%, transparent);
+}
+.deep-trail li.done {
+  opacity: 0.45;
   text-decoration: line-through;
 }
 .deep-replay-actions {
@@ -4066,90 +4075,40 @@ fieldset.affix-pick legend {
 .deep-loot {
   display: grid;
   gap: 8px;
-  max-width: 440px;
+  max-width: 560px;
   width: 100%;
-  margin: 14px auto 0;
+  margin: 12px auto 0;
 }
-.deep-loot ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
+.deep-loot-line {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
-.deep-loot li {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
+.deep-loot-line > span {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 12px 7px 7px;
-  border-radius: 10px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  gap: 4px;
+  white-space: nowrap;
   animation: pop-in 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) var(--delay) both;
 }
-.deep-loot li.special {
-  border-color: color-mix(in srgb, var(--moon) 55%, var(--border));
-  background: linear-gradient(90deg, color-mix(in srgb, var(--moon) 16%, var(--surface-2)), var(--surface-2) 70%);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--moon) 25%, transparent);
-}
-.deep-loot-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: var(--surface-3);
-}
-.deep-loot-icon .ico {
-  width: 20px;
-  height: 20px;
-}
-.deep-loot-name {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.deep-loot-amount {
-  font-size: 15px;
+.deep-loot-line > span.special {
   font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  color: var(--ok);
-}
-.deep-loot li.special .deep-loot-amount {
-  color: var(--moon);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--moon) 45%, transparent);
 }
 @media (max-width: 600px) {
   .deep-result .raid-result-title {
     font-size: 21px;
   }
-  .deep-loot li {
-    padding: 6px 10px 6px 6px;
-    gap: 8px;
+  .deep-loot-line {
+    font-size: 13px;
+    gap: 5px 10px;
   }
 }
 .deep-replay-actions.center {
   justify-content: center;
   margin-top: 14px;
-}
-.deep-loot ul.deep-loot-mats {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-.deep-loot-mats li {
-  grid-template-columns: 18px minmax(0, 1fr) auto;
-  gap: 6px;
-  padding: 5px 9px;
-  font-size: 13px;
-}
-.deep-loot-mats .ico {
-  width: 16px;
-  height: 16px;
-}
-.deep-loot-mats .deep-loot-amount {
-  font-size: 13px;
-}
-@media (max-width: 380px) {
-  .deep-loot ul.deep-loot-mats {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }

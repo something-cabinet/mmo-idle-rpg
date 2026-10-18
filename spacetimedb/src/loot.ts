@@ -216,9 +216,14 @@ export function makeAnomaly(rng: Rng, baseId: number, tier: number): NewItem {
   };
 }
 
-/** Per-kill chance of a `rarity` drop from `enemy` before `rewardScale` and item find: Rare and better × its `rareDropMult`. */
+/**
+ * Per-kill chance of a `rarity` drop from `enemy` before `rewardScale` and item find:
+ * Rare and better × its `rareDropMult`, Unique also × its `uniqueDropMult`.
+ */
 export const dropChance = (rarity: ListedRarity, enemy: EnemyDef) =>
-  DROP_CHANCE[rarity] * (rarityRank(rarity) >= rarityRank('Rare') ? (enemy.rareDropMult ?? 1) : 1);
+  DROP_CHANCE[rarity] *
+  (rarityRank(rarity) >= rarityRank('Rare') ? (enemy.rareDropMult ?? 1) : 1) *
+  (rarity === 'Unique' ? (enemy.uniqueDropMult ?? 1) : 1);
 
 /** A unique that `enemyId` can drop in a tier-`zoneTier` zone (data/uniques.ts `uniquePool`); undefined if none. */
 export function pickUnique(rng: Rng, zoneTier: number, enemyId?: number): UniqueDef | undefined {

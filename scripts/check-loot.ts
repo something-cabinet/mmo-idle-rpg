@@ -293,8 +293,10 @@ const total = (r: ReturnType<typeof rollDrops>) => r.kept.length + Object.values
     Array.from({ length: 200 }, () => pickUnique(rng, u.tier, u.enemyId)!).every(x => x.id === u.id)));
   const bell = ENEMIES_BY_ID.get(107)!.enemy;
   check('rareDropMult raises Rare and better only', near(dropChance('Rare', bell), DROP_CHANCE.Rare * 2.5, 1e-12) &&
-    near(dropChance('Unique', bell), DROP_CHANCE.Unique * 2.5, 1e-12) && dropChance('Magic', bell) === DROP_CHANCE.Magic &&
+    dropChance('Magic', bell) === DROP_CHANCE.Magic &&
     dropChance('Rare', ENEMIES_BY_ID.get(101)!.enemy) === DROP_CHANCE.Rare);
+  check('uniqueDropMult scales Unique on top of rareDropMult', near(dropChance('Unique', bell), DROP_CHANCE.Unique * 2.5 * 0.5, 1e-12) &&
+    near(dropChance('Legendary', bell), DROP_CHANCE.Legendary * 2.5, 1e-12));
   check('regular enemies drop from the global pool', pickUnique(rng, 1, 101)!.enemyId === undefined && hasUniques(1, 101));
 
   // A big session with a filter that keeps nothing else: every unique is kept, from any enemy.

@@ -148,9 +148,9 @@ export const RAIDS: RaidDef[] = [
 
 export const RAIDS_BY_ID: ReadonlyMap<number, RaidDef> = new Map(RAIDS.map(r => [r.id, r]));
 
-/** The phase the boss is in at `t` seconds (its index in `phases.list`); 0 without phases. */
+/** The phase the boss is in at `t` seconds (its index in `phases.list`); 0 without phases or before the fight. */
 export const phaseAt = (raid: RaidDef, t: number): number =>
-  raid.phases ? Math.floor(t / raid.phases.every) % raid.phases.list.length : 0;
+  raid.phases ? Math.floor(Math.max(0, t) / raid.phases.every) % raid.phases.list.length : 0;
 
 /** The boss as it is in each phase (just `boss` without phases): what DPS against it is measured on. */
 export const bossPhases = (raid: RaidDef): EnemyDef[] =>

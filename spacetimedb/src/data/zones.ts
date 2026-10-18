@@ -31,6 +31,8 @@ export interface EnemyDef {
   secret?: boolean;
   /** × the chance of Rare and better drops (Unique included), on top of `rewardScale`. Default 1. */
   rareDropMult?: number;
+  /** × the chance of a Unique drop, on top of `rareDropMult`. Default 1. */
+  uniqueDropMult?: number;
   /**
    * Trait: evasion rating, dodging your attacks at `dodgeChance` against your accuracy (an
    * enemy's own accuracy is its level's). Paid for with HP (`effectiveHp`).
@@ -145,7 +147,7 @@ export const ZONES: ZoneDef[] = [
       // Secret (Sunken Chapel): a T2-strength enemy (Ironbark Treant's level, HP and DPS) hidden in T1,
       // magic damage behind armor. Pays far above T1: XP and gold past a strong T2 enemy, so
       // ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
-      { id: 107, name: 'Drowned Bellringer', level: 22, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 261, dps: 31.1, armor: 132, resistance: 22, xp: 100, gold: 27, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5 },
+      { id: 107, name: 'Drowned Bellringer', level: 22, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 261, dps: 31.1, armor: 132, resistance: 22, xp: 100, gold: 27, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5, uniqueDropMult: 0.5 },
     ],
     areas: [
       { id: 11, name: 'Village Fields', blurb: 'Trampled wheat and gnawed fences just past the last houses.', enemies: [101, 102], x: 8, y: 90 },
@@ -214,7 +216,7 @@ export const ZONES: ZoneDef[] = [
       { id: 406, name: 'Selvara, the Moonless Queen', level: 45, damageType: 'Magic', defense: 'Armored', speed: 0.8, hp: 2494, dps: 111.2, armor: 270, resistance: 45, xp: 1310, gold: 328, drops: all(T4_DROPS), materials: ['Gem'], boss: true },
       // Secret (Moonlight Garden): T5 strength (a T5 +2 enemy, about as tough as Selvara) hidden in T4.
       // Pays like the Bellringer: ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
-      { id: 407, name: 'Moonlit Champion', level: 52, damageType: 'Magic', defense: 'Balanced', speed: 0.5, hp: 2189, dps: 103, armor: 130, resistance: 130, xp: 2435, gold: 651, drops: [1, 7, 5, 31, 39, 56], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5 },
+      { id: 407, name: 'Moonlit Champion', level: 52, damageType: 'Magic', defense: 'Balanced', speed: 0.5, hp: 2189, dps: 103, armor: 130, resistance: 130, xp: 2435, gold: 651, drops: [1, 7, 5, 31, 39, 56], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5, uniqueDropMult: 0.5 },
     ],
     areas: [
       { id: 41, name: 'Silverbark Glade', blurb: "Pale trees glow under a moon that isn't there.", enemies: [401, 402], x: 10, y: 90 },

@@ -37,7 +37,8 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 - If no unique exists at tier N or below, the Unique chance rolls Legendary instead.
 - **Enemy-bound uniques** (`enemyId`): a secret area's enemy (zones.md, "Secret areas")
   can have its own unique. It drops only from that enemy, at the usual Unique chance
-  (raised like any drop by the enemy's `rewardScale` and `rareDropMult`),
+  (raised like any drop by the enemy's `rewardScale` and `rareDropMult`, then × its
+  `uniqueDropMult`),
   and that enemy drops no other unique, so it can be target-farmed. Bound uniques
   never join the global pool.
 

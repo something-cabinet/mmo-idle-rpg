@@ -67,7 +67,7 @@ Farmland and woods at the edge of the starting village. Levels 1–15.
 The Bellringer is a T2-strength enemy hidden in T1 (Ironbark Treant's level, HP and
 DPS). Its XP and gold beat a strong T2 enemy, which also makes its drops ~4.5× a normal
 T1 enemy's (`rewardScale`), and Rare and better are × 2.5 more (`rareDropMult`): per
-kill ~12.7% Rare, ~2.5% Epic, ~0.25% Legendary and ~0.25% The Drowned Hymnal, before
+kill ~12.7% Rare, ~2.5% Epic, ~0.25% Legendary and ~0.125% The Drowned Hymnal (`uniqueDropMult` 0.5), before
 item find. *Illustrative.*
 
 **Checks** (simulated):
@@ -276,7 +276,7 @@ bound into his greatsword.
   thrown as moonlight, so magic damage.
 - **Pays like the Bellringer:** XP and gold ~1.23× / ~1.32× a T5 +2 enemy, so
   `rewardScale` ≈ 4.5 and drops ~4.5× a normal T4 enemy's, plus `rareDropMult` 2.5.
-  Per kill ~0.25% for the Moonlight Greatsword before item find.
+  With `uniqueDropMult` 0.5, per kill ~0.125% for the Moonlight Greatsword before item find.
 - **Bases** (6, still T4): Elven Sword, Elven Greatsword, Silverbark Wand, Mageweave Robe,
   Elven Breastplate, Rough Moonstone Amulet. IDs [1, 7, 5, 31, 39, 56].
 - **Materials:** Lunar Core, Moonsteel Ingot.

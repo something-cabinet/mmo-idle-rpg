@@ -130,6 +130,13 @@ function SlotPopup({
               >
                 Unequip
               </button>
+              <button
+                className="btn"
+                onClick={() => call(r.lockItem({ itemId: cur.id, locked: !cur.locked }))}
+              >
+                <Icon name="lock" />
+                {cur.locked ? "Unlock" : "Lock"}
+              </button>
               <button className="btn" onClick={() => openCraft(cur.id)}>
                 <Icon name="hammer" />
                 Craft

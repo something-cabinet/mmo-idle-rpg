@@ -52,7 +52,8 @@ of kills of one of the zone's regular enemies.
   found. It can have its own unique (uniques.md, "Enemy-bound uniques").
 - A secret enemy can be much stronger than its zone (the Bellringer is T2 strength in
   T1), paid for with higher XP and gold, which raise its drop rate too, and an optional
-  `rareDropMult` on Rare and better drops (Unique included).
+  `rareDropMult` on Rare and better drops (Unique included), and an optional
+  `uniqueDropMult` on Unique alone (both secret enemies: 0.5).
 
 | Zone | Secret area | Found by | Hint | Enemy | Unique |
 |---|---|---|---|---|---|

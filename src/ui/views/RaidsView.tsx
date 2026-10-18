@@ -491,7 +491,8 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
   const start = fight.startedAt.microsSinceUnixEpoch;
   const setup = useMemo(() => decodeSetup(fight.setup), [fight.setup]);
   const result = useMemo(() => simulateRaid(setup, raid, raidRng(party.id, start)), [setup, raid, party.id, start]);
-  const elapsed = () => Number(nowMicros() - start) / 1e6;
+  // The local clock can lag the server's start by a moment: the replay starts at 0, not before.
+  const elapsed = () => Math.max(0, Number(nowMicros() - start) / 1e6);
   const [t, setT] = useState(elapsed);
   useEffect(() => {
     if (t >= result.end) return;

@@ -32,20 +32,30 @@ Fight effects only: no gold, XP or item find, since those are farming stats.
 
 | Kind | Effect (grade 1) | Notes |
 |-|-|-|
-| **Wrath** | × 1.3 damage | |
-| **Haste** | × 1.2 attack speed | |
-| **Bulwark** | × 0.75 damage taken | Applied after armor, resistance and evasion |
+| **Wrath** | × 1.08 damage | |
+| **Haste** | × 1.06 attack speed | |
+| **Bulwark** | × 0.92 damage taken | Applied after armor, resistance and evasion |
 | **Renewal** | Once per fight, at 50% HP, heal 30% of max HP | In the Deep, once per depth, like Second Wind |
 
-Phials are stronger than elixirs (× 1.3 against × 1.2) because each lasts a single fight
-and costs Voidglass.
+**A Phial is the last little push, not a requirement.** It should turn a fight you lose
+narrowly into a win, not make a fight you lose badly winnable. If it were bigger, every
+Deep depth and raid would be balanced around having one, and going without would feel
+like a penalty. So Wrath, Haste and Bulwark stay below elixirs (× 1.08 against × 1.2).
+Renewal is the exception: a heal once per fight only matters when a fight is close.
 
 ### Grades
 
 The same grades as elixirs (supplies.ts `GRADES`), set by the tier of the herb and
 reagent used: Phial (T1–T3), Greater (T4–T6), Divine (T7–T9) at 1× / 1.5× / 2× the bonus.
-Greater Phial of Wrath is × 1.45 damage. Bulwark scales on the reduction (25% → 37.5% →
-50% less), Renewal on the heal (30% → 45% → 60%). No Infuse: the herb is already part of
+Greater Phial of Wrath is × 1.12 damage. Bulwark scales on the reduction (8% → 12% → 16%
+less), Renewal on the heal (30% → 45% → 60%).
+
+| Kind | Phial | Greater | Divine |
+|-|-|-|-|
+| Wrath | × 1.08 damage | × 1.12 | × 1.16 |
+| Haste | × 1.06 attack speed | × 1.09 | × 1.12 |
+| Bulwark | 8% less damage taken | 12% | 16% |
+| Renewal | Heal 30% max HP at 50% HP | 45% | 60% | No Infuse: the herb is already part of
 the recipe.
 
 ### Recipe (Alchemy)

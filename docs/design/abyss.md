@@ -301,6 +301,6 @@ title and plate for the next season.
   (Well Keeper, Depth Guardian, Gatekeeper).
 - **When to start seasons:** later, once the board stagnates.
 - **GAUNTLET, Elite and boss multipliers, affix strength:** tuned with `test:abyss`.
-- **Voidglass:** what it crafts. Could share the answer with the raid token shop.
+- **Voidglass:** crafts Phials (phials.md), which also lists its other sources.
 - **Party mode later?** A 4-player Deep with its own board would reuse the raid fight;
   out of scope for the first version.

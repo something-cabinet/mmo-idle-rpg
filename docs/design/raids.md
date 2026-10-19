@@ -163,8 +163,8 @@ player (`raid_log`): win, rewarded, item, tokens, gold, XP, hire cost.
 ## Planned
 
 - **Raid token shop:** trade tokens for things (not decided what).
-- **Precious material:** a rare raid-only material from raid kills, for high-end
-  crafting. Not added yet.
+- **Precious material:** Voidglass, paid per rewarded clear, for Phials (phials.md).
+  Not added yet.
 - More raids, one per later tier pair, each with a mechanic of its own (Wyrm Hollow: none
   beyond the breath; The Drowned Moon: Lunar Phases and a split Moonfall). Ideas kept for
   later: an Eclipse (a few seconds where heals fail and the boss ignores threat), a Tidal

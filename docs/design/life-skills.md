@@ -111,6 +111,7 @@ what only that skill gives, and each feeds something different. Numbers are illu
 | Skill | Find | Tier | Chance per action | Use |
 |-|-|-|-|-|
 | Mining | **Relic** (old coins, idols, tablets) | Tier of the node | 2% | Sold on the spot for gold |
+| Mining | **Void Geode** (planned, phials.md) | T4+ nodes | 0.1% × (T − 3) | Cracks into 2 Voidglass on the spot |
 | Mining | **Ancient Meteor Fragment** | Untiered | 0.1% × node tier | None yet (kept for a later sink) |
 | Woodcutting | **Dryad's Tear** (amber sap of the oldest trees) | Untiered | 0.1% × node tier | Smithing: an empowered forge |
 | Foraging | **Rare herb** (Bloodcap, Wraithbloom, Rimepetal …) | Tier of the node | 1% | Alchemy: Infuse elixirs |

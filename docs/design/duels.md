@@ -22,7 +22,7 @@ timer:
   dodge it. Crits, ±10% variance.
 - Heals land on the attacker, plus lifesteal; regen ticks between swings.
 - Effects: Executioner, Ambush (first swing ×5), Second Wind, Frostbite (the defender's
-  chill shrinks the attacker's hits), Thornshell (reflects as physical), Zealot's Oath.
+  chill shrinks the attacker's hits), Thornshell (reflects each part of a hit in its own damage type), Zealot's Oath.
 - Each side's first swing lands at a random point of its first period (half a period on
   average), so neither side always strikes first.
 - **90 s limit:** then the higher share of HP left wins on points (equal is a draw).

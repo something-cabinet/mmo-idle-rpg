@@ -193,6 +193,11 @@ function withEffect(it: GearItem, effect: number): GearItem {
   };
   const gcR = reflect(Effect.GlassCannon, armored);
   check('Thornshell + Glass Cannon: reflected damage × 2', near(gcR.reflected, 0.4 * gcR.incoming * 2 * (1 - gcR.mit), 1e-9));
+  const caster = { ...armored, resistance: 0, damageType: 'Magic' as const };
+  const plainR = reflect(Effect.Thornshell, caster);
+  const casterMit = matchup(plain, caster).enemyMitigation;
+  check('Thornshell: magic hits are reflected as magic (enemy resistance)', casterMit.Magic === 0 && casterMit.Physical > 0 &&
+    near(plainR.reflected, 0.4 * plainR.incoming * (1 - casterMit.Magic), 1e-9));
   const vtR = reflect(Effect.Voidtouched, armored);
   check('Thornshell + Voidtouched: reflected damage ignores armor for 25% less',
     vtR.mit === 0 && near(vtR.reflected, 0.4 * vtR.incoming * 0.75, 1e-9));

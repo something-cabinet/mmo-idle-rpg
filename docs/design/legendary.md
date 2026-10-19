@@ -99,7 +99,7 @@ Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   ("
 
 ```
 Phantom Step: evasion = min(0.60 + a, r / (r + 10 × enemyLevel))
-Thornshell:   DPS_you += a × DPS_enemy_after_mitigation   (physical, uses enemy armor)
+Thornshell:   DPS_you += a × DPS_enemy_after_mitigation   (in the type taken: enemy armor against physical, resistance against magic)
 Second Wind:  timeToDie = maxHp × (1 + a) / netIncoming
 Ironclad:     resistance += a × armor        (both from the values before conversion,
 Runeguard:    armor      += a × resistance    so wearing both doesn't loop)

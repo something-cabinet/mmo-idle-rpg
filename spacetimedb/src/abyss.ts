@@ -70,11 +70,11 @@ const withProfile = (e: EnemyDef, defense: Defense): EnemyDef => ({
   resistance: 2.5 * e.level * PROFILE[defense].resistance,
 });
 
-/** Your matchup against `e` when its attacks are half physical, half magic (Tidal): the average hit. */
+/** Your matchup against `e` when its attacks are half physical, half magic (Tidal): the average hit, and half of Thornshell's reflect in each type. */
 function tidalMatchup(s: CombatStats, e: EnemyDef): Matchup {
   const p = matchup(s, { ...e, damageType: 'Physical' });
   const m = matchup(s, { ...e, damageType: 'Magic' });
-  return { ...p, enemyHit: (p.enemyHit + m.enemyHit) / 2, incoming: (p.incoming + m.incoming) / 2 };
+  return { ...p, enemyHit: (p.enemyHit + m.enemyHit) / 2, incoming: (p.incoming + m.incoming) / 2, dps: (p.dps + m.dps) / 2 };
 }
 
 /** The three enemies of `lineup` as `s` fights them (abyss.md, "Enemies"). */

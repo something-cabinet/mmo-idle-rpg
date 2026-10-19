@@ -49,13 +49,17 @@ function offense(a: CombatStats, b: CombatStats) {
   // A player's armor and resistance scale with the attacker's level (`defenseAgainst`).
   const mitP = voidtouched ? 0 : mitigation(physDef, a.armorPen, a.level) * (1 - amount(Effect.Rending));
   const mitM = voidtouched ? 0 : mitigation(magicDef, a.magicPen, a.level) * (1 - amount(Effect.Spellbreaker));
-  if (!src) return { period: Infinity, hit: 0, heal: 0, crit: 0, critX: 1, evasion: 0, mitP, mitM };
+  if (!src) return { period: Infinity, hit: 0, physShare: 1, heal: 0, crit: 0, critX: 1, evasion: 0, mitP, mitM };
+  const phys = src.hit.Physical * (1 - mitP);
+  const magic = src.hit.Magic * (1 - mitM);
   const crit = Math.min(1, src.critChance);
   const type = src.hit.Physical >= src.hit.Magic ? 'Physical' : 'Magic';
   return {
     period: 1 / src.attacksPerSec,
     // Frostbite on `b` chills `a`'s hits.
-    hit: (src.hit.Physical * (1 - mitP) + src.hit.Magic * (1 - mitM)) * (1 - b.chill),
+    hit: (phys + magic) * (1 - b.chill),
+    /** The physical part of `hit` (Thornshell reflects each part in its own type). */
+    physShare: phys + magic > 0 ? phys / (phys + magic) : 1,
     heal: src.heal,
     crit,
     // Deadeye: crits ignore a share of `b`'s mitigation.
@@ -136,15 +140,18 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
     const fx = sides[a].effects;
     const wave = fx.has(Effect.Moonlight) && swings[a] % MOONLIGHT_EVERY === 0 ? 2 : 1;
     const wax = fx.has(Effect.WaxingMoon) ? waxingMult(swings[a]) : 1;
-    let damage = o.hit * critX * (0.9 + 0.2 * rng()) * execute * ambush[a] * rage * wave * wax;
+    const weapon = o.hit * critX * (0.9 + 0.2 * rng()) * execute * ambush[a] * rage * wave * wax;
     ambush[a] = 1;
     const heal = o.heal * critX;
     // Zealot's Oath: heals also hit for a share of the heal (magic).
-    damage += amount(a, Effect.ZealotsOath) * heal * effectDamageMult(sides[a].effects) * (1 - o.mitM);
+    const zealot = amount(a, Effect.ZealotsOath) * heal * effectDamageMult(sides[a].effects) * (1 - o.mitM);
+    const damage = weapon + zealot;
     const saved = hurt(b, damage);
     hp[a] = Math.min(maxHp[a], hp[a] + heal + sides[a].lifesteal * damage);
-    // Thornshell on the target reflects a share of what it took, as physical damage.
-    const thorns = amount(b, Effect.Thornshell) * damage * effectDamageMult(sides[b].effects) * (1 - off[b].mitP);
+    // Thornshell on the target reflects a share of what it took, each part in the type it was dealt in.
+    const physTaken = weapon * o.physShare;
+    const thorns = amount(b, Effect.Thornshell) * effectDamageMult(sides[b].effects) *
+      (physTaken * (1 - off[b].mitP) + (damage - physTaken) * (1 - off[b].mitM));
     const savedA = thorns > 0 && hurt(a, thorns);
     events.push({ t, by: a, kind: isCrit ? 'crit' : 'hit', damage, hp: [...hp], ...((saved || savedA) && { secondWind: true }) });
     if (hp[b] <= 0) return done(t, a, 'ko');

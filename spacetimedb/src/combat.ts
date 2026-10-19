@@ -403,8 +403,8 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   dps += amount(Effect.Riposte) * evasion * e.speed * dps * period;
   // Effect damage is your damage: Glass Cannon and Voidtouched apply to it too.
   const damageMult = effectDamageMult(s.effects);
-  // Thornshell reflects a share of the damage taken as physical damage.
-  dps += amount(Effect.Thornshell) * incoming * damageMult * (1 - enemyMitigation.Physical);
+  // Thornshell reflects a share of the damage taken, in the type it was dealt in.
+  dps += amount(Effect.Thornshell) * incoming * damageMult * (1 - enemyMitigation[e.damageType]);
   // Zealot's Oath: heals also hit for a share of the heal (magic).
   dps += amount(Effect.ZealotsOath) * hps * damageMult * (1 - enemyMitigation.Magic);
   const netIncoming = incoming - s.regen - s.lifesteal * dps - hps;

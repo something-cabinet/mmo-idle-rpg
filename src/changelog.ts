@@ -26,6 +26,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'new', text: 'Raid 2, The Drowned Moon, and the T4 zone Moonveil Vale.' },
       { tag: 'new', text: 'Life skills: Mining, Woodcutting, Foraging, Smithing and Alchemy.' },
       { tag: 'balance', text: 'Moonwell Deep first clears pay 5× the gold and Dust and 2× the XP.' },
+      { tag: 'balance', text: 'Thornshell reflects damage in the type you took it: magic hits come back as magic, physical as physical.' },
       { tag: 'balance', text: 'Raid Epic and Legendary drops roll every affix at the top tier.' },
       { tag: 'balance', text: 'Vitality gives +0.5% HP regen per point, down from +1%.' },
       { tag: 'balance', text: 'Thorned elites in the Deep reflect 10% of damage taken, down from 15%, in the damage types you hit them with: magic comes back as magic, physical as physical.' },

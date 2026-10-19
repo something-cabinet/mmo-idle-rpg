@@ -7,7 +7,7 @@ import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type Com
 import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, waxingMult } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
-import { base } from './data/bases';
+import { base, type DamageType } from './data/bases';
 import type { EnemyDef } from './data/zones';
 import { accuracyAtLevel } from './data/stats';
 import { makeItem, makeUnique, seededRng, type NewItem, type Rng } from './loot';
@@ -163,8 +163,8 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   let dealt = 0;
   let blocked = false;
 
-  /** `i` takes `damage` from the boss; Thornshell reflects some. Returns whether Second Wind saved them. */
-  const hurt = (i: number, damage: number): boolean => {
+  /** `i` takes `damage` of `type` from the boss; Thornshell reflects some in that type. Returns whether Second Wind saved them. */
+  const hurt = (i: number, damage: number, type: DamageType): boolean => {
     // A Phial of Warding, Stoneskin, Bulwark and Last Stand shrink the hit; Second Skin's shield takes it first.
     damage = Math.max(0, damage * (fighters[i].damageTaken ?? 1) - amount(i, Effect.Stoneskin) * maxHp[i]);
     const bulwark = amount(i, Effect.Bulwark);
@@ -178,7 +178,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     const absorbed = Math.min(shield[i], damage);
     shield[i] -= absorbed;
     damage -= absorbed;
-    const thorns = amount(i, Effect.Thornshell) * damage * effectDamageMult(fighters[i].effects) * (1 - off[i].mitP);
+    const thorns = amount(i, Effect.Thornshell) * damage * effectDamageMult(fighters[i].effects) * (1 - (type === 'Physical' ? off[i].mitP : off[i].mitM));
     bossHp = Math.max(0, bossHp - thorns);
     hp[i] = Math.max(0, hp[i] - damage);
     if (hp[i] > 0 && renewal[i] > 0 && hp[i] < maxHp[i] / 2) {
@@ -215,7 +215,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       // A split AoE (Moonfall) is shared by the living: the fewer left, the harder each is hit.
       const share = raid.aoe.split ? aoeHit / hp.filter(h => h > 0).length : aoeHit;
       const saved: number[] = [];
-      for (let i = 0; i < n; i++) if (alive(i) && hurt(i, share * (1 - aoeMit[i]) * (0.9 + 0.2 * rng()))) saved.push(i);
+      for (let i = 0; i < n; i++) if (alive(i) && hurt(i, share * (1 - aoeMit[i]) * (0.9 + 0.2 * rng()), raid.aoe.damageType)) saved.push(i);
       push({ t, by: -1, kind: 'aoe', target: -1, damage: share, ...(saved.length && { saved }) });
     } else if (t === nextBoss) {
       nextBoss += bossPeriod;
@@ -231,7 +231,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
         push({ t, by: -1, kind: 'dodge', target, damage: 0 });
       } else {
         const damage = bossHit * (1 - defense[target].mitigation) * (0.9 + 0.2 * rng());
-        const saved = hurt(target, damage);
+        const saved = hurt(target, damage, phases[phase].damageType);
         push({ t, by: -1, kind: 'hit', target, damage, dealt, ...(blocked ? { blocked: true } : {}), ...(saved && { saved: [target] }) });
       }
     } else {

@@ -8,7 +8,7 @@ import { MAX_LEVEL, combatStats } from '../combat';
 import { ABYSS_SEASON, ABYSS_UNLOCK_ZONE, depthReward, depthTier } from '../data/abyss';
 import { ZONES_BY_ID, bossOf } from '../data/zones';
 import { depthRng, encodeBuild, encodeStats, simulateDepth } from '../abyss';
-import { addMaterials, addSupply, elixirRunOf, hasKilledBoss, requireActive, settle, spendElixir, type Character, type Ctx } from '../helpers';
+import { addMaterials, addSupply, elixirRunOf, grantCosmetics, hasKilledBoss, requireActive, settle, spendElixir, type Character, type Ctx } from '../helpers';
 
 /** Deep log rows kept per character: only the latest attempt, which the client replays. */
 const ABYSS_LOG_KEEP = 1;
@@ -65,6 +65,7 @@ export const descend = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout 
     ctx.db.abyssRecord.insert({ characterId: ch.id, name: ch.name, season: ABYSS_SEASON, deepest: 0, clearedAt: ctx.timestamp, level: ch.level, build: '' });
   }
   ctx.db.character.id.update(ch);
+  if (reward) grantCosmetics(ctx, ch.id, ch.level);
 
   ctx.db.abyssLog.insert({
     id: 0n,

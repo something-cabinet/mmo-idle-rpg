@@ -15,5 +15,6 @@ export * from './reducers/friends';
 export * from './reducers/raid';
 export * from './reducers/abyss';
 export * from './reducers/skills';
+export * from './reducers/cosmetics';
 export * from './reducers/views';
 export * from './reducers/dev';

@@ -11,7 +11,7 @@ import { Effect, effectAmount } from '../data/legendary';
 import { RAIDS_BY_ID, RAID_PARTY_SIZE, type RaidDef } from '../data/raids';
 import { ZONES_BY_ID, bossOf } from '../data/zones';
 import { clearsToday, encodeSetup, decodeSetup, npcStats, raidLootRng, raidRng, rollRaidItem, simulateRaid, type RaidFighter } from '../raid';
-import { addKills, discover, gearOf, hasKilledBoss, leaveRaidParty, raidFighting, raidMembers, requireActive, settle, type Character, type Ctx } from '../helpers';
+import { addKills, discover, gearOf, grantCosmetics, hasKilledBoss, leaveRaidParty, raidFighting, raidMembers, requireActive, settle, type Character, type Ctx } from '../helpers';
 
 /** Raid log rows kept per character. */
 const RAID_LOG_KEEP = 20;
@@ -166,6 +166,7 @@ export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer
       const { level, xp } = addXp(ch.level, ch.xp, BigInt(raid.boss.xp));
       ctx.db.character.id.update({ ...ch, level, xp, gold: ch.gold + BigInt(raid.boss.gold), raidTokens: ch.raidTokens + BigInt(raid.tokens) });
     }
+    if (fight.won) grantCosmetics(ctx, ch.id, ctx.db.character.id.find(ch.id)!.level);
     ctx.db.raidLog.insert({
       id: 0n,
       characterId: ch.id,

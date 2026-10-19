@@ -22,6 +22,7 @@ export const sendChat = spacetimedb.reducer({ text: t.string() }, (ctx, { text }
     characterName: pres.characterName,
     text: trimmed,
     sentAt: ctx.timestamp,
+    characterId: pres.characterId,
   });
   // Keep only the newest CHAT_HISTORY messages (ids are increasing). A loop, not a
   // single delete, so lowering CHAT_HISTORY also clears the older backlog.

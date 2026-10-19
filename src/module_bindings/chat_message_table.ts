@@ -16,4 +16,5 @@ export default __t.row({
   characterName: __t.string().name("character_name"),
   text: __t.string(),
   sentAt: __t.timestamp().name("sent_at"),
+  characterId: __t.u64().name("character_id"),
 });

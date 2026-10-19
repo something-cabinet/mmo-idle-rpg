@@ -10,6 +10,7 @@ import { MAX_TIER } from '../data/stats';
 import { UNIQUES, UNIQUES_BY_ID } from '../data/uniques';
 import { ZONES } from '../data/zones';
 import { RAIDS } from '../data/raids';
+import { COSMETICS } from '../data/cosmetics';
 import { MATERIALS } from '../data/materials';
 import { SUPPLIES } from '../data/supplies';
 import { DEV_RARITIES, makeItem, makeUnique, seededRng, type RarityName } from '../loot';
@@ -51,6 +52,13 @@ export const devUnlockZones = spacetimedb.reducer(ctx => {
   const killed = new Set([...ctx.db.bossKill.characterId.filter(ch.id)].map(k => k.zoneId));
   for (const zone of ZONES) if (!killed.has(zone.id)) ctx.db.bossKill.insert({ id: 0n, characterId: ch.id, zoneId: zone.id, killedAt: ctx.timestamp });
   for (const raid of RAIDS) atLeastKills(ctx, ch.id, raid.boss.id, 1);
+});
+
+/** Unlocks every cosmetic (cosmetics.md), to try them on. */
+export const devUnlockCosmetics = spacetimedb.reducer(ctx => {
+  const { ch } = requireCheats(ctx);
+  const have = new Set([...ctx.db.cosmeticUnlock.characterId.filter(ch.id)].map(u => u.cosmeticId));
+  for (const c of COSMETICS) if (!have.has(c.id)) ctx.db.cosmeticUnlock.insert({ id: 0n, characterId: ch.id, cosmeticId: c.id, unlockedAt: ctx.timestamp });
 });
 
 /** Adds gold and Dust. */

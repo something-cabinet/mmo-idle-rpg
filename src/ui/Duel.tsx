@@ -7,6 +7,8 @@ import { DUEL_SAMPLES, DUEL_SECONDS, duelRng, simulateDuel, winRate } from './du
 import { useSticky } from '../store';
 import { fmt, pct } from './format';
 import { Icon } from './Icon';
+import { PlayerName } from './PlayerName';
+import type { DbConnection } from '../module_bindings';
 
 export interface Duelist {
   id: bigint;
@@ -18,7 +20,7 @@ export interface Duelist {
 /** Replay speed with the speed-up toggle on: duel seconds per real second (off: 1, real time like the Combat screen). */
 const FAST = 2;
 
-export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
+export function DuelPanel({ conn, me, foe }: { conn: DbConnection; me: Duelist; foe: Duelist }) {
   const [round, setRound] = useState(() => Math.floor(Math.random() * 1e9));
   const [t, setT] = useState(0);
   // The first duel waits for Start, so it doesn't spring on the player; Rematch starts at once.
@@ -68,7 +70,7 @@ export function DuelPanel({ me, foe }: { me: Duelist; foe: Duelist }) {
         {[0, 1].map(i => (
           <div key={i} className={`duelist${over && duel.winner === i ? ' won' : ''}${over && duel.winner === 1 - i ? ' lost' : ''}`}>
             <div className="duelist-name">
-              {names[i]} <span className="muted">Lv {i === 0 ? me.level : foe.level}</span>
+              <PlayerName conn={conn} id={i === 0 ? me.id : foe.id} name={names[i]} /> <span className="muted">Lv {i === 0 ? me.level : foe.level}</span>
             </div>
             <div className={`hpbar${i === 1 ? ' enemy' : ''}`}>
               <div className="hp-fill" style={{ width: `${(hp[i] / duel.maxHp[i]) * 100}%` }} />

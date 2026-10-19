@@ -1,6 +1,6 @@
 // Per-player views over private tables: each client sees only its own rows.
 import { t } from 'spacetimedb/server';
-import { abyssLog, bossKill, character, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, material, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
+import { abyssLog, bossKill, character, cosmeticUnlock, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, material, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
 
 export const my_items = spacetimedb.view({ name: 'my_items', public: true }, t.array(item.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
@@ -164,3 +164,8 @@ export const raid_party_items = spacetimedb.view({ name: 'raid_party_items', pub
     });
   })
 );
+
+export const my_cosmetics = spacetimedb.view({ name: 'my_cosmetics', public: true }, t.array(cosmeticUnlock.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.cosmeticUnlock.characterId.filter(ch.id)] : [];
+});

@@ -9,6 +9,7 @@ import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
 import { SKILLS_BY_ID } from '../../spacetimedb/src/data/skills';
 import { call } from '../store';
 import { Icon } from './Icon';
+import { PlayerName } from './PlayerName';
 import { ItemCard } from './items';
 import { CardHead, EffectsCard, Modal, StatBoard } from './shared';
 import { gearFor } from './snapshot';
@@ -53,7 +54,7 @@ export function InspectPopup({ conn, characterId, version, me, tab: initialTab =
 
   return (
     <Modal onClose={onClose} className="item-popup inspect-popup">
-      <CardHead title={view ? `${name} · Lv ${view.ch.level}` : name}>
+      <CardHead title={<><PlayerName conn={conn} id={characterId} name={name} />{view && ` · Lv ${view.ch.level}`}</>}>
         <button className="btn" onClick={onClose}>
           <Icon name="x" />
           Close
@@ -73,7 +74,7 @@ export function InspectPopup({ conn, characterId, version, me, tab: initialTab =
             </div>
           )}
           {tab === 'duel' ? (
-            <DuelPanel me={me} foe={{ id: characterId, name, level: view.ch.level, stats: view.stats }} />
+            <DuelPanel conn={conn} me={me} foe={{ id: characterId, name, level: view.ch.level, stats: view.stats }} />
           ) : (
           <>
           <div className="equip-layout">

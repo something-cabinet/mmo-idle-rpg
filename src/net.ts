@@ -84,6 +84,8 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
       tables.myTools,
       tables.mySupplies,
       tables.myForgeFilter,
+      tables.look,
+      tables.myCosmetics,
     ]);
 }
 
@@ -92,15 +94,15 @@ export function watchAll(conn: DbConnection, onChange: () => void) {
   const { myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog } = conn.db;
   const { inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters } = conn.db;
   const { raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter } = conn.db;
-  const { abyssRecord, myAbyssLog } = conn.db;
+  const { abyssRecord, myAbyssLog, look, myCosmetics } = conn.db;
   for (const table of [myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog,
-    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog]) {
+    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog, look, myCosmetics]) {
     table.onInsert(onChange);
     table.onDelete(onChange);
   }
   // Rows with a primary key (views included) change in place.
   for (const table of [character, presence, myItems, myMaterials, myLoadouts, myLootFilter, myEnemyKills, inspectedCharacter, inspectedLoadout, inspectedItems,
-    myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog])
+    myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog, look])
     table.onUpdate(onChange);
 }
 

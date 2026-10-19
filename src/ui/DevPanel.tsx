@@ -43,6 +43,7 @@ export function DevPanel({ s }: { s: Snapshot }) {
       <div className="dev-row">
         <button className="btn small" onClick={() => call(r.devRevealAll({}), 'Revealed every item, enemy and area')}>Reveal all items and locations</button>
         <button className="btn small" onClick={() => call(r.devUnlockZones({}), 'Every zone unlocked')}>Unlock all zones</button>
+        <button className="btn small" onClick={() => call(r.devUnlockCosmetics({}), 'Every title, name visual and nameplate unlocked')}>Unlock all cosmetics</button>
         <button className="btn small" onClick={() => call(r.devGrantMaterials({ count: 1000 }), '+1,000 of every material')}>+1k every material</button>
         <button className="btn small" onClick={() => call(r.devGrantSupplies({ count: 10 }), '+10 of every elixir')}>+10 every elixir</button>
         <button className={`btn small${enemyStats ? ' primary' : ''}`} onClick={() => setEnemyStats(!enemyStats)}>

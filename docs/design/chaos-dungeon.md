@@ -374,7 +374,7 @@ Paid in **hours of farming at the run's tier**, so it scales like everything els
 After a full clear on your highest tier, **Chaos Ranks 1–10** unlock: each adds a modifier
 (enemies +10% HP, one fewer boon offer, shops cost more, the boss Unravels twice…). They're
 for players who replay for fun and want a harder puzzle. Rank gives **no extra rewards**,
-only a Codex mark and, once titles exist (abyss.md), a title at Rank 10. Possibly a weekly
+only a Codex mark and, a title (cosmetics.md), a title at Rank 10. Possibly a weekly
 board for the highest rank cleared, with the build snapshot like the Deep.
 
 ## Cost (SpacetimeDB)

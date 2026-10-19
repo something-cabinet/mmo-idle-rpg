@@ -4,6 +4,7 @@
 
 import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { AbyssLog, AbyssRecord, Item } from '../../module_bindings/types';
+import type { DbConnection } from '../../module_bindings';
 import { combatStats, type CombatStats } from '../../../spacetimedb/src/combat';
 import {
   ABYSS_SEASON, ABYSS_UNLOCK_ZONE,BOSS_AFFIXES_BY_ID, DEPTH_TIME_LIMIT, ELITE_AFFIXES_BY_ID, ABYSS_KINDS_BY_ID, DEEP_WARDEN, FAST_FROM,
@@ -21,6 +22,7 @@ import { DefTag, DmgTag } from '../enemy';
 import { EnemyArt } from '../enemyArt';
 import { fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
+import { PlayerName } from '../PlayerName';
 import { ItemCard, materialIconName, materialName } from '../items';
 import { untieredMaterial } from '../../../spacetimedb/src/data/materials';
 import { CardHead, EffectsCard, Modal, StatBoard, ViewHeader } from '../shared';
@@ -360,7 +362,7 @@ function Leaderboard({ s }: { s: Snapshot }) {
   const row = (r: AbyssRecord) => (
     <li key={String(r.characterId)} className={r.characterId === s.row.id ? 'me' : ''}>
       <span className="deep-rank">{rank.get(r.characterId)}</span>
-      <span className="deep-name">{r.name}</span>
+      <span className="deep-name"><PlayerName conn={conn} id={r.characterId} name={r.name} /></span>
       <span className="muted deep-level">{r.level}</span>
       <strong className="deep-depth">{r.deepest}</strong>
       <button className="btn small deep-view-build" disabled={!r.build} onClick={() => setOpen(r)}>View build</button>
@@ -390,13 +392,13 @@ function Leaderboard({ s }: { s: Snapshot }) {
       ) : (
         <p className="muted">{tab === 'friends' ? 'No friend has cleared a depth yet.' : 'Nobody has cleared a depth yet.'}</p>
       )}
-      {open && <BuildPopup record={open} rank={rank.get(open.characterId)} onClose={() => setOpen(undefined)} />}
+      {open && <BuildPopup conn={conn} record={open} rank={rank.get(open.characterId)} onClose={() => setOpen(undefined)} />}
     </section>
   );
 }
 
 /** The build that set a leaderboard entry, as it was at the clear. */
-function BuildPopup({ record, rank, onClose }: { record: AbyssRecord; rank?: number; onClose: () => void }) {
+function BuildPopup({ conn, record, rank, onClose }: { conn: DbConnection; record: AbyssRecord; rank?: number; onClose: () => void }) {
   const [openSlot, setOpenSlot] = useState<number>();
   const view = useMemo(() => {
     const gear = decodeBuild<Item>(record.build);
@@ -406,7 +408,7 @@ function BuildPopup({ record, rank, onClose }: { record: AbyssRecord; rank?: num
   const opened = openSlot !== undefined ? view.gear[openSlot] : undefined;
   return (
     <Modal onClose={onClose} className="item-popup inspect-popup">
-      <CardHead title={`${record.name} · Lv ${record.level}`}>
+      <CardHead title={<><PlayerName conn={conn} id={record.characterId} name={record.name} /> · Lv {record.level}</>}>
         <button className="btn" onClick={onClose}><Icon name="x" />Close</button>
       </CardHead>
       <p className="muted">{rank ? `#${rank} · ` : ''}Depth {record.deepest}, cleared with this build.</p>

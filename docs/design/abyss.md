@@ -1,6 +1,6 @@
 # The Moonwell Deep (endless delve)
 
-*First version built* (titles and seasons later; code: `spacetimedb/src/data/abyss.ts`, `abyss.ts`, `reducers/abyss.ts`, `src/ui/views/AbyssView.tsx`, checks in `npm run test:abyss`). An endless solo gauntlet, deeper floor by deeper floor, with
+*First version built* (seasons later; titles in cosmetics.md; code: `spacetimedb/src/data/abyss.ts`, `abyss.ts`, `reducers/abyss.ts`, `src/ui/views/AbyssView.tsx`, checks in `npm run test:abyss`). An endless solo gauntlet, deeper floor by deeper floor, with
 enemies that keep getting stronger and a leaderboard for the deepest floor. It exists to
 **stress-test a build**: a fight that doesn't stop at the content's ceiling. Numbers are
 *illustrative*.
@@ -226,7 +226,7 @@ attempt.
 | **Voidglass** | Every depth, a bigger batch every 10 | New Deep-only material: the "precious material" raids.md plans. Paid out and stored from the first version; what it crafts is decided later |
 | A power elixir of the depth's grade + 1 rare herb | Every 5 depths | Fuel for the next push |
 | Essences | Every 10 depths | **Once Essence drops ship**: left out until then; rare Essences from depth 30 |
-| **Title** | Depths 10, 25, 50, 75, 100 | Cosmetic, see below. **Later**: not in the first version |
+| **Title** | Depths 10, 25, 50, 75, 100 | Cosmetic (cosmetics.md); a name visual at 50 and 100, a nameplate at 25 and 75 |
 
 **Past depth 100: formula only.** From depth 101 there are no more milestones: no titles,
 elixirs or Essences on set depths. Every depth gives the same bundle from one formula,
@@ -248,14 +248,12 @@ but far slower than the difficulty (× 1.155), so they never become a reason to 
   leaderboard position, so a top rank can't snowball and the board stays bragging only.
 - Items ignore the bag limit, like raid items.
 
-### Titles (the first cosmetic)
+### Titles
 
-There's no cosmetic system yet. **A title is the cheapest one**: a string shown next to the
-name in chat, the friend list, inspect and parties. One column on `character`
-(`titleId`, 0 = none) plus a list of unlocked titles. *"of the Deep"* (10), *"Moonless"*
-(25), *"Lightless"* (50), *"Who Fell With the Moon"* (100, the last one). The
-season's top 10 get a gold title for the next season. It could grow into name colors or
-portrait frames later, with the same unlock list.
+Built as part of cosmetics (cosmetics.md): *"of the Deep"* (10), *"Moonless"* (25),
+*"Lightless"* (50), *"Voidborn"* (75), *"Who Fell With the Moon"* (100, the last one), plus
+name visuals and nameplates. Later, once seasons are on: the season's top 10 get a gold
+title and plate for the next season.
 
 ## Leaderboard
 
@@ -304,6 +302,5 @@ portrait frames later, with the same unlock list.
 - **When to start seasons:** later, once the board stagnates.
 - **GAUNTLET, Elite and boss multipliers, affix strength:** tuned with `test:abyss`.
 - **Voidglass:** what it crafts. Could share the answer with the raid token shop.
-- **Titles:** the system itself, later.
 - **Party mode later?** A 4-player Deep with its own board would reuse the raid fight;
   out of scope for the first version.

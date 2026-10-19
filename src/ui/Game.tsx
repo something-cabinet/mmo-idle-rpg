@@ -14,6 +14,7 @@ import { revealedAreas, rumouredAreas } from './discovery';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
 import { Icon } from './Icon';
+import { PlayerName } from './PlayerName';
 import { FriendsTab } from './Friends';
 import { InspectPopup, type InspectTab } from './Inspect';
 import { AccountControls, Modal, perHour } from './shared';
@@ -50,7 +51,7 @@ function TopStats({ s }: { s: Snapshot }) {
   return (
     <div className="top-stats">
       <div className="top-char">
-        <span className="top-name">{s.row.name}</span>
+        <span className="top-name"><PlayerName conn={s.conn} id={s.row.id} name={s.row.name} /></span>
         <span className="chip">Lv <strong>{s.level}</strong></span>
         <div className="xp" title="Experience">
           <div className="bar"><div id="xp-bar" style={{ width: `${Number((s.xp * 100n) / need)}%` }} /></div>
@@ -213,7 +214,7 @@ function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnect
           >
             {messages.map(m => (
               <li key={String(m.id)}>
-                <strong>{m.characterName}</strong> {m.text}
+                <strong><PlayerName conn={conn} id={m.characterId} name={m.characterName} inline /></strong> {m.text}
               </li>
             ))}
           </ul>
@@ -236,10 +237,10 @@ function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnect
             {online.map(p => (
               <li key={String(p.characterId)} className={p.characterId === pres.characterId ? 'me' : ''}>
                 {p.characterId === pres.characterId ? (
-                  p.characterName
+                  <PlayerName conn={conn} id={p.characterId} name={p.characterName} />
                 ) : (
                   <button className="online-name" title="Inspect gear and stats" onClick={() => onInspect(p.characterId)}>
-                    {p.characterName}
+                    <PlayerName conn={conn} id={p.characterId} name={p.characterName} />
                   </button>
                 )}
               </li>

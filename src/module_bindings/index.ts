@@ -49,6 +49,7 @@ import DevGrantSuppliesReducer from "./dev_grant_supplies_reducer";
 import DevRevealAllReducer from "./dev_reveal_all_reducer";
 import DevSetLevelReducer from "./dev_set_level_reducer";
 import DevSetSkillLevelReducer from "./dev_set_skill_level_reducer";
+import DevUnlockCosmeticsReducer from "./dev_unlock_cosmetics_reducer";
 import DevUnlockZonesReducer from "./dev_unlock_zones_reducer";
 import DrinkElixirReducer from "./drink_elixir_reducer";
 import EquipReducer from "./equip_reducer";
@@ -72,6 +73,7 @@ import SetBannedReducer from "./set_banned_reducer";
 import SetElixirAutoRenewReducer from "./set_elixir_auto_renew_reducer";
 import SetElixirInfuseReducer from "./set_elixir_infuse_reducer";
 import SetForgeFilterReducer from "./set_forge_filter_reducer";
+import SetLookReducer from "./set_look_reducer";
 import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetProfileReducer from "./set_profile_reducer";
 import SetRaidHiresReducer from "./set_raid_hires_reducer";
@@ -96,9 +98,11 @@ import ChatMessageRow from "./chat_message_table";
 import InspectedCharacterRow from "./inspected_character_table";
 import InspectedItemsRow from "./inspected_items_table";
 import InspectedLoadoutRow from "./inspected_loadout_table";
+import LookRow from "./look_table";
 import MyAbyssLogRow from "./my_abyss_log_table";
 import MyAccountRow from "./my_account_table";
 import MyBossKillsRow from "./my_boss_kills_table";
+import MyCosmeticsRow from "./my_cosmetics_table";
 import MyDiscoveriesRow from "./my_discoveries_table";
 import MyEnemyKillsRow from "./my_enemy_kills_table";
 import MyForgeFilterRow from "./my_forge_filter_table";
@@ -166,6 +170,17 @@ const tablesSchema = __schema({
       { name: 'chat_message_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, ChatMessageRow),
+  look: __table({
+    name: 'look',
+    indexes: [
+      { accessor: 'characterId', name: 'look_character_id_idx_btree', algorithm: 'btree', columns: [
+        'characterId',
+      ] },
+    ],
+    constraints: [
+      { name: 'look_character_id_key', constraint: 'unique', columns: ['characterId'] },
+    ],
+  }, LookRow),
   presence: __table({
     name: 'presence',
     indexes: [
@@ -248,6 +263,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyBossKillsRow),
+  myCosmetics: __table({
+    name: 'my_cosmetics',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyCosmeticsRow),
   myDiscoveries: __table({
     name: 'my_discoveries',
     indexes: [
@@ -393,6 +415,7 @@ const reducersSchema = __reducers(
   __reducerSchema("dev_reveal_all", DevRevealAllReducer),
   __reducerSchema("dev_set_level", DevSetLevelReducer),
   __reducerSchema("dev_set_skill_level", DevSetSkillLevelReducer),
+  __reducerSchema("dev_unlock_cosmetics", DevUnlockCosmeticsReducer),
   __reducerSchema("dev_unlock_zones", DevUnlockZonesReducer),
   __reducerSchema("drink_elixir", DrinkElixirReducer),
   __reducerSchema("equip", EquipReducer),
@@ -416,6 +439,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_elixir_auto_renew", SetElixirAutoRenewReducer),
   __reducerSchema("set_elixir_infuse", SetElixirInfuseReducer),
   __reducerSchema("set_forge_filter", SetForgeFilterReducer),
+  __reducerSchema("set_look", SetLookReducer),
   __reducerSchema("set_loot_filter", SetLootFilterReducer),
   __reducerSchema("set_profile", SetProfileReducer),
   __reducerSchema("set_raid_hires", SetRaidHiresReducer),
@@ -450,6 +474,8 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_account": Omit<typeof tablesSchema.schemaType.tables["myAccount"], "accessorName"> & { readonly accessorName: "my_account" };
     /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
     readonly "my_boss_kills": Omit<typeof tablesSchema.schemaType.tables["myBossKills"], "accessorName"> & { readonly accessorName: "my_boss_kills" };
+    /** @deprecated Use `myCosmetics` instead. This alias will be removed in the next major version. */
+    readonly "my_cosmetics": Omit<typeof tablesSchema.schemaType.tables["myCosmetics"], "accessorName"> & { readonly accessorName: "my_cosmetics" };
     /** @deprecated Use `myDiscoveries` instead. This alias will be removed in the next major version. */
     readonly "my_discoveries": Omit<typeof tablesSchema.schemaType.tables["myDiscoveries"], "accessorName"> & { readonly accessorName: "my_discoveries" };
     /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
@@ -510,6 +536,7 @@ const tableAccessorAliases = {
   "my_abyss_log": "myAbyssLog",
   "my_account": "myAccount",
   "my_boss_kills": "myBossKills",
+  "my_cosmetics": "myCosmetics",
   "my_discoveries": "myDiscoveries",
   "my_enemy_kills": "myEnemyKills",
   "my_forge_filter": "myForgeFilter",
@@ -560,6 +587,8 @@ export type DbView = __DbViewBase & {
   readonly "my_account": __DbViewBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
   readonly "my_boss_kills": __DbViewBase["myBossKills"];
+  /** @deprecated Use `myCosmetics` instead. This alias will be removed in the next major version. */
+  readonly "my_cosmetics": __DbViewBase["myCosmetics"];
   /** @deprecated Use `myDiscoveries` instead. This alias will be removed in the next major version. */
   readonly "my_discoveries": __DbViewBase["myDiscoveries"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */
@@ -612,6 +641,8 @@ export type Tables = __TablesBase & {
   readonly "my_account": __TablesBase["myAccount"];
   /** @deprecated Use `myBossKills` instead. This alias will be removed in the next major version. */
   readonly "my_boss_kills": __TablesBase["myBossKills"];
+  /** @deprecated Use `myCosmetics` instead. This alias will be removed in the next major version. */
+  readonly "my_cosmetics": __TablesBase["myCosmetics"];
   /** @deprecated Use `myDiscoveries` instead. This alias will be removed in the next major version. */
   readonly "my_discoveries": __TablesBase["myDiscoveries"];
   /** @deprecated Use `myEnemyKills` instead. This alias will be removed in the next major version. */

@@ -531,6 +531,8 @@ export const chatMessage = table(
     characterName: t.string(),
     text: t.string(),
     sentAt: t.timestamp(),
+    /** The sender's character, to show its look (cosmetics.md); 0 on messages from before. */
+    characterId: t.u64().default(0n),
   }
 );
 
@@ -663,6 +665,31 @@ export const abyssLog = table(
   }
 );
 
+/** A cosmetic a character has unlocked (data/cosmetics.ts). Private; owners read theirs via `my_cosmetics`. */
+export const cosmeticUnlock = table(
+  { name: 'cosmetic_unlock' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    cosmeticId: t.u16(),
+    unlockedAt: t.timestamp(),
+  }
+);
+
+/**
+ * What a character wears (cosmetics.md): data/cosmetics.ts IDs, 0 = none. Public, so every
+ * client can draw every name. Only characters wearing something have a row.
+ */
+export const look = table(
+  { name: 'look', public: true },
+  {
+    characterId: t.u64().primaryKey(),
+    titleId: t.u16(),
+    visualId: t.u16(),
+    plateId: t.u16(),
+  }
+);
+
 export const spacetimedb = schema({
   account,
   character,
@@ -687,6 +714,8 @@ export const spacetimedb = schema({
   raidTimer,
   abyssRecord,
   abyssLog,
+  cosmeticUnlock,
+  look,
   skill,
   tool,
   supply,

@@ -346,6 +346,17 @@ await b.conn.reducers.inspectCharacter({ characterId: 0n });
 await sleep(200);
 check('stop inspecting clears the views', b.conn.db.inspectedCharacter.count() === 0n && b.conn.db.inspectedItems.count() === 0n);
 
+// Cosmetics: only unlocked ones can be worn, each in its own slot; the dev cheat unlocks them all.
+await expectError('a locked title is refused', a.conn.reducers.setLook({ titleId: 13, visualId: 0, plateId: 0 }), 'Not unlocked');
+await expectError('a title is not a plate', a.conn.reducers.setLook({ titleId: 0, visualId: 0, plateId: 13 }), 'No such plate');
+await a.conn.reducers.devUnlockCosmetics({});
+await a.conn.reducers.setLook({ titleId: 13, visualId: 1004, plateId: 2002 });
+await sleep(200);
+check('a worn look is public', b.conn.db.look.characterId.find(charOf(a)!.id)?.plateId === 2002);
+await a.conn.reducers.setLook({ titleId: 0, visualId: 0, plateId: 0 });
+await sleep(200);
+check('wearing nothing removes the look row', !b.conn.db.look.characterId.find(charOf(a)!.id));
+
 await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.descend({ loadout: 0 }), 'open the Moonwell Deep');
 
 // Raids: party up, hire NPCs, start; the scheduled finish logs it. The dev cheats unlock the raid and pay for the hires.

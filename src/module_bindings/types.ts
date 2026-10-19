@@ -119,8 +119,17 @@ export const ChatMessage = __t.object("ChatMessage", {
   characterName: __t.string(),
   text: __t.string(),
   sentAt: __t.timestamp(),
+  characterId: __t.u64(),
 });
 export type ChatMessage = __Infer<typeof ChatMessage>;
+
+export const CosmeticUnlock = __t.object("CosmeticUnlock", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  cosmeticId: __t.u16(),
+  unlockedAt: __t.timestamp(),
+});
+export type CosmeticUnlock = __Infer<typeof CosmeticUnlock>;
 
 // The tagged union or sum type for the algebraic type `DamageType`.
 export const DamageType = __t.enum("DamageType", {
@@ -273,6 +282,14 @@ export const Loadout = __t.object("Loadout", {
 });
 export type Loadout = __Infer<typeof Loadout>;
 
+export const Look = __t.object("Look", {
+  characterId: __t.u64(),
+  titleId: __t.u16(),
+  visualId: __t.u16(),
+  plateId: __t.u16(),
+});
+export type Look = __Infer<typeof Look>;
+
 export const LootFilter = __t.object("LootFilter", {
   characterId: __t.u64(),
   get minRarity() {
@@ -314,6 +331,9 @@ export type MyAccount = __Infer<typeof MyAccount>;
 
 export const MyBossKills = __t.object("MyBossKills", {});
 export type MyBossKills = __Infer<typeof MyBossKills>;
+
+export const MyCosmetics = __t.object("MyCosmetics", {});
+export type MyCosmetics = __Infer<typeof MyCosmetics>;
 
 export const MyDiscoveries = __t.object("MyDiscoveries", {});
 export type MyDiscoveries = __Infer<typeof MyDiscoveries>;

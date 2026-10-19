@@ -14,6 +14,7 @@ import { SUPPLIES_BY_ID, elixirBuffs, infuseHerbIds } from './data/supplies';
 import { GATHER_SALT, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from './gather';
 import { forged, productionCharacterXp, projectProduction, type ForgeFilter } from './produce';
 import { Effect, effectAmount } from './data/legendary';
+import { COSMETICS, COSMETIC_ENEMIES, type CosmeticUnlock } from './data/cosmetics';
 import { MAX_LEVEL, combatStats, matchup } from './combat';
 import {
   AFFIX_STAT_IDS,
@@ -108,7 +109,13 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
  * away and is always logged.
  */
 export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
-  if (ch.activitySkill !== 0) return settleSkill(ctx, ch, capMicros);
+  const out = ch.activitySkill !== 0 ? settleSkill(ctx, ch, capMicros) : settleCombat(ctx, ch, capMicros);
+  // Only what a settle can change: the level, a skill level, a kill of a boss or secret enemy.
+  if (out.level !== ch.level || ch.activitySkill !== 0 || COSMETIC_ENEMIES.has(ch.targetEnemyId)) grantCosmetics(ctx, out.id, out.level);
+  return out;
+}
+
+function settleCombat(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const gear = gearOf(ctx, ch);
   const target = ENEMIES_BY_ID.get(ch.targetEnemyId);
   const progress = { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch };
@@ -745,6 +752,40 @@ export function addMaterials(ctx: Ctx, characterId: bigint, drops: readonly Mate
   }
 }
 
+/**
+ * Records every cosmetic whose condition the character now meets (cosmetics.md,
+ * "Granting"). `level` is passed because callers may hold a newer row than the table.
+ */
+export function grantCosmetics(ctx: Ctx, characterId: bigint, level: number) {
+  const have = new Set([...ctx.db.cosmeticUnlock.characterId.filter(characterId)].map(u => u.cosmeticId));
+  const todo = COSMETICS.filter(c => !have.has(c.id));
+  if (!todo.length) return;
+  // Read each table at most once, and only if a condition needs it.
+  let bosses: Set<number> | undefined;
+  let kills: Map<number, bigint> | undefined;
+  let skills: { skillId: number; level: number }[] | undefined;
+  let deepest: number | undefined;
+  const met = (u: CosmeticUnlock): boolean => {
+    switch (u.kind) {
+      case 'zoneBoss':
+        bosses ??= new Set([...ctx.db.bossKill.characterId.filter(characterId)].map(k => k.zoneId));
+        return bosses.has(u.zoneId);
+      case 'kill':
+        kills ??= new Map([...ctx.db.enemyKill.characterId.filter(characterId)].map(k => [k.enemyId, k.kills]));
+        return (kills.get(u.enemyId) ?? 0n) > 0n;
+      case 'level':
+        return level >= u.level;
+      case 'skill':
+        skills ??= [...ctx.db.skill.characterId.filter(characterId)];
+        return skills.some(r => (u.skillId === undefined || r.skillId === u.skillId) && r.level >= u.level);
+      case 'depth':
+        deepest ??= ctx.db.abyssRecord.characterId.find(characterId)?.deepest ?? 0;
+        return deepest >= u.depth;
+    }
+  };
+  for (const c of todo) if (met(c.unlock)) ctx.db.cosmeticUnlock.insert({ id: 0n, characterId, cosmeticId: c.id, unlockedAt: ctx.timestamp });
+}
+
 /** `friendId` is on `characterId`'s friend list. */
 export function isFriend(ctx: Ctx, characterId: bigint, friendId: bigint): boolean {
   for (const f of ctx.db.friend.characterId.filter(characterId)) if (f.friendId === friendId) return true;
@@ -776,6 +817,8 @@ export const raidFighting = (party: { fight?: { finished: boolean } }) => !!part
 
 export function deleteCharacter(ctx: Ctx, characterId: bigint) {
   leaveRaidParty(ctx, characterId);
+  ctx.db.cosmeticUnlock.characterId.delete(characterId);
+  ctx.db.look.characterId.delete(characterId);
   ctx.db.raidLog.characterId.delete(characterId);
   ctx.db.abyssLog.characterId.delete(characterId);
   ctx.db.abyssRecord.characterId.delete(characterId);
@@ -810,6 +853,8 @@ export function enterWorld(ctx: Ctx) {
   // The cap comes from the gear worn while away (Seasoned).
   const settled = settle(ctx, ch, offlineCapMicros(combatStats(ch.level, gearOf(ctx, ch))));
   ctx.db.character.id.update(settled);
+  // Also backfills what was earned before a cosmetic existed.
+  grantCosmetics(ctx, ch.id, settled.level);
   ctx.db.presence.insert({
     identity: ctx.sender,
     connectionId: ctx.connectionId,

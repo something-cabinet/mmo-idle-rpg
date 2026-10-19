@@ -136,7 +136,7 @@ export const LEGENDARIES: LegendaryDef[] = [
   legendary({ id: 32, name: 'Unbreakable', group: 'Defense', bonusStat: Stat.Resistance, perCopy: 0.05, cap: 0.1,
     describe: a => `Armor and resistance cap rises from 85% to ${pc(0.85 + a)} damage reduction.` }),
   legendary({ id: 33, name: 'Stoneskin', group: 'Defense', bonusStat: Stat.Armor, perCopy: 0.01, cap: 0.03,
-    describe: a => `Each enemy hit deals ${pc(a)} of your max HP less (after mitigation).` }),
+    describe: a => `Each enemy hit is reduced by a flat ${pc(a)} of your max HP (after mitigation).` }),
   legendary({ id: 34, name: 'Last Stand', group: 'Defense', bonusStat: Stat.Vitality, perCopy: 0.2, cap: 0.5,
     describe: a => `Below 30% HP, you take ${pc(a)} less damage.` }),
   legendary({ id: 35, name: 'Berserker', group: 'Defense', bonusStat: Stat.Might, perCopy: 0.03, cap: 0.09,

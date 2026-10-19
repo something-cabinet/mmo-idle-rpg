@@ -14,6 +14,9 @@ Desktop first, mostly text and icons, placeholder art. Only the fight view anima
   unique (src/ui/itemArt.tsx; generated one by one from a tier look plus a type look, see scripts/item-art.ts). One image on a 48 px pixel grid, shown in
   tiles and lists with a rim in the rarity color. Missing art, or Settings › Item art
   off, shows the line glyph (src/ui/Icon.tsx).
+- **Zone art:** a painted pixel art map behind each zone's Zones map (one per zone, landmarks
+  where the area spots sit). Settings › Zone art off shows the plain map colors. How to make
+  one for a new zone: [docs/zone-art.md](../zone-art.md).
 - **Dark theme** by default.
 
 ### Rarity colors

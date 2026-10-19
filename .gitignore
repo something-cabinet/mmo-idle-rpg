@@ -13,3 +13,4 @@ art-src/*
 !art-src/item-art.csv
 !art-src/enemy-art.csv
 !art-src/banner-art.csv
+!art-src/zone-art.csv

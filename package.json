@@ -40,7 +40,11 @@
     "art:banner:list": "tsx scripts/banner-art.ts list",
     "art:banner:cut": "tsx scripts/banner-art.ts cut",
     "art:banner:build": "tsx scripts/banner-art.ts build",
-    "art:banner:gen": "tsx scripts/banner-art.ts gen"
+    "art:banner:gen": "tsx scripts/banner-art.ts gen",
+    "art:zone:list": "tsx scripts/zone-art.ts list",
+    "art:zone:cut": "tsx scripts/zone-art.ts cut",
+    "art:zone:build": "tsx scripts/zone-art.ts build",
+    "art:zone:gen": "tsx scripts/zone-art.ts gen"
   },
   "dependencies": {
     "oidc-client-ts": "^3.5.0",

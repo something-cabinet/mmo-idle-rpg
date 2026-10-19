@@ -5,6 +5,7 @@
 // one game. The pipeline itself (gen, cut, build) is scripts/art-lib.ts:
 //
 // Raid banners (wide scenes of a raid boss in its lair) reuse RAID_REGIONS and LOOKS: scripts/banner-art.ts.
+// Zone map backdrops reuse REGIONS: scripts/zone-art.ts.
 //
 //   npm run art:enemy:list   writes art-src/enemy-art.csv (every portrait the game expects, committed)
 //   npm run art:enemy:gen -- [group|key ...] [--cut] [--dry-run] [--model <id>] [--ref <key>[,<key>]]
@@ -58,7 +59,7 @@ export interface Region {
 }
 
 /** By zone ID (data/zones.ts). Typed by ID, so a new zone fails `art:enemy:list` until it has one. */
-const REGIONS: Record<number, Region> = {
+export const REGIONS: Record<number, Region> = {
   1: {
     setting: 'Greenhollow, sunny farmland, woods and a creeping bog at the edge of the starting village',
     palette: 'warm grass green, wheat gold, earthy brown, muddy olive',

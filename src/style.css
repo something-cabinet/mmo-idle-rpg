@@ -1222,6 +1222,26 @@ button.version:hover {
 .zmap-2 { --land: #3f6b4a; }
 .zmap-3 { --land: #8fb3d9; }
 .zmap-4 { --land: #6f74c9; }
+/* A painted map (assets/zones, enemyArt.tsx) in place of the colors, a little darker toward the edges. */
+.zmap.has-art {
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+}
+.zmap.has-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / 0.35));
+  pointer-events: none;
+}
+.zmap.has-art .zmap-paths line {
+  stroke: rgb(255 255 255 / 0.55);
+}
+.zmap.has-art .zmap-paths line.known {
+  stroke: color-mix(in srgb, var(--accent) 90%, white);
+}
 .zmap.locked {
   filter: grayscale(0.8);
   opacity: 0.7;

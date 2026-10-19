@@ -5,7 +5,7 @@ import { call, useSticky } from '../../store';
 import { fmt } from '../format';
 import { Icon } from '../Icon';
 import { DefTag, DmgTag, EnemyDetail } from '../enemy';
-import { EnemyArt } from '../enemyArt';
+import { EnemyArt, zoneArtUrl } from '../enemyArt';
 import { ViewHeader } from '../shared';
 import { UNKNOWN, areaRevealed, areaSecret, enemyKnown, threat, zoneDiscovery, zoneUnlocked } from '../discovery';
 import { statsIn, type Snapshot } from '../snapshot';
@@ -49,6 +49,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
   const revealed = new Set(z.areas.filter(a => areaRevealed(s, z, a)).map(a => a.id));
   const rumour = (a: AreaDef) => !!a.secret && !revealed.has(a.id);
   const byId = new Map(shown.map(a => [a.id, a]));
+  const art = zoneArtUrl(z.id);
 
   return (
     <>
@@ -85,7 +86,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
           </p>
         )}
         <div className="zones-layout">
-          <div className={`zmap zmap-${z.id}${unlocked ? '' : ' locked'}`}>
+          <div className={`zmap zmap-${z.id}${art ? ' has-art' : ''}${unlocked ? '' : ' locked'}`} style={art ? { backgroundImage: `url(${art})` } : undefined}>
             {/* Spots sit on an inset stage, so a marker and its label always fit inside the map. */}
             <div className="zmap-stage">
               <svg className="zmap-paths" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

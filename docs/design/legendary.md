@@ -90,7 +90,7 @@ Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   (a
 | 17 | **Ironclad** | Armor % | **30%** of your armor is added to your resistance | 100% |
 | 18 | **Runeguard** | Resistance % | **30%** of your resistance is added to your armor | 100% |
 | 32 | **Unbreakable** | Resistance | Armor and resistance cap **+5%** (85% → 90%) | +10% (95%) |
-| 33 | **Stoneskin** | Armor | Each enemy hit deals **1%** of your max HP less (after mitigation) | 3% |
+| 33 | **Stoneskin** | Armor | Each enemy hit is reduced by a flat **1%** of your max HP (after mitigation) | 3% |
 | 34 | **Last Stand** | Vitality | Below 30% HP, you take **20%** less damage | 50% |
 | 35 | **Berserker** | Might | **3% more damage** per 10% of your max HP missing | +9% |
 | 36 | **Bulwark** | Evasion rating | **15%** chance to block half of each enemy hit | 50% |

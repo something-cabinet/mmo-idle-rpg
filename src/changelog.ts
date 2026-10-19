@@ -15,6 +15,18 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.1',
+    date: '2026-10-20',
+    title: 'Instant tool upgrades and raid tuning',
+    changes: [
+      { tag: 'balance', text: 'Smithing: tool upgrades are instant, like tempering. Same cost and XP, and whatever you are doing carries on.' },
+      { tag: 'balance', text: 'The Drowned Moon: the enrage is at 4:00 (was 3:40), and Umbriel has more HP (37,000, was 35,000) and hits harder (150 DPS, was 140).' },
+      { tag: 'balance', text: 'Wyrm Hollow: Skaldrith has more HP (20,000, was 18,000). Hired NPCs in both raids deal more damage, to keep up with current gear.' },
+      { tag: 'balance', text: 'Lantern of the Drowned Moon: Drowned Hymn is renamed Moonlit Vigil, so it is not confused with The Drowned Hymnal. Same effect.' },
+      { tag: 'new', text: 'Crafting: Reroll, Upgrade and Temper are tabs. Alchemy: the Brew tab is now Elixirs.' },
+    ],
+  },
+  {
     version: '0.1.0',
     date: '2026-10-19',
     title: 'The Moonwell Deep, Phials and cosmetics',

@@ -11,10 +11,8 @@ export type CosmeticSlot = 'title' | 'visual' | 'plate';
 
 /** What unlocks a cosmetic. All are milestones that are never lost. */
 export type CosmeticUnlock =
-  /** The zone's boss killed once (`boss_kill`). */
-  | { kind: 'zoneBoss'; zoneId: number }
-  /** A lifetime kill of the enemy (`enemy_kill`): secret enemies, and raid bosses (a raid win records one). */
-  | { kind: 'kill'; enemyId: number }
+  /** `count` lifetime kills of the enemy (default 1; `enemy_kill`, offline kills too): zone bosses, secret enemies, raid bosses (a raid win records one). */
+  | { kind: 'kill'; enemyId: number; count?: number }
   | { kind: 'level'; level: number }
   /** A life skill at `level`; no `skillId`: any of them. */
   | { kind: 'skill'; skillId?: number; level: number }
@@ -40,13 +38,17 @@ const BELLRINGER = 107;
 const MOONLIT_CHAMPION = 407;
 
 const title = (id: number, name: string, how: string, unlock: CosmeticUnlock): CosmeticDef => ({ id, slot: 'title', name, how, unlock });
-const boss = (zoneId: number) => `Defeat ${bossOf(ZONES_BY_ID.get(zoneId)!)!.name}`;
+/** Zone boss titles take this many kills of the boss, not just the first. */
+export const BOSS_TITLE_KILLS = 5000;
+const zoneBoss = (zoneId: number) => bossOf(ZONES_BY_ID.get(zoneId)!)!;
+const bossTitle = (id: number, name: string, zoneId: number) =>
+  title(id, name, `Defeat ${zoneBoss(zoneId).name} ${BOSS_TITLE_KILLS.toLocaleString('en-US')} times`, { kind: 'kill', enemyId: zoneBoss(zoneId).id, count: BOSS_TITLE_KILLS });
 
 export const COSMETICS: readonly CosmeticDef[] = [
-  title(1, 'Goblin Bane', boss(1), { kind: 'zoneBoss', zoneId: 1 }),
-  title(2, 'Thornbreaker', boss(2), { kind: 'zoneBoss', zoneId: 2 }),
-  title(3, 'Jarlslayer', boss(3), { kind: 'zoneBoss', zoneId: 3 }),
-  title(4, 'Queenslayer', boss(4), { kind: 'zoneBoss', zoneId: 4 }),
+  bossTitle(1, 'Goblin Bane', 1),
+  bossTitle(2, 'Thornbreaker', 2),
+  bossTitle(3, 'Jarlslayer', 3),
+  bossTitle(4, 'Queenslayer', 4),
   title(5, 'Bellringer', 'Defeat the Drowned Bellringer (secret)', { kind: 'kill', enemyId: BELLRINGER }),
   title(6, 'Moonlit', 'Defeat the Moonlit Champion (secret)', { kind: 'kill', enemyId: MOONLIT_CHAMPION }),
   title(7, 'Wyrmslayer', 'Win Wyrm Hollow', { kind: 'kill', enemyId: WYRM }),
@@ -84,17 +86,5 @@ export function cosmeticOf(id: number, slot: CosmeticSlot): CosmeticDef | undefi
   return c?.slot === slot ? c : undefined;
 }
 
-/**
- * Enemies whose kill can unlock something, zone bosses included (their first kill is
- * recorded in a settle): a combat settle against one checks for new unlocks.
- */
-export const COSMETIC_ENEMIES: ReadonlySet<number> = new Set(
-  COSMETICS.flatMap(c => {
-    if (c.unlock.kind === 'kill') return [c.unlock.enemyId];
-    if (c.unlock.kind === 'zoneBoss') {
-      const b = bossOf(ZONES_BY_ID.get(c.unlock.zoneId)!);
-      return b ? [b.id] : [];
-    }
-    return [];
-  })
-);
+/** Enemies whose kills can unlock something: a combat settle against one checks for new unlocks. */
+export const COSMETIC_ENEMIES: ReadonlySet<number> = new Set(COSMETICS.flatMap(c => (c.unlock.kind === 'kill' ? [c.unlock.enemyId] : [])));

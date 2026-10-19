@@ -761,18 +761,14 @@ export function grantCosmetics(ctx: Ctx, characterId: bigint, level: number) {
   const todo = COSMETICS.filter(c => !have.has(c.id));
   if (!todo.length) return;
   // Read each table at most once, and only if a condition needs it.
-  let bosses: Set<number> | undefined;
   let kills: Map<number, bigint> | undefined;
   let skills: { skillId: number; level: number }[] | undefined;
   let deepest: number | undefined;
   const met = (u: CosmeticUnlock): boolean => {
     switch (u.kind) {
-      case 'zoneBoss':
-        bosses ??= new Set([...ctx.db.bossKill.characterId.filter(characterId)].map(k => k.zoneId));
-        return bosses.has(u.zoneId);
       case 'kill':
         kills ??= new Map([...ctx.db.enemyKill.characterId.filter(characterId)].map(k => [k.enemyId, k.kills]));
-        return (kills.get(u.enemyId) ?? 0n) > 0n;
+        return (kills.get(u.enemyId) ?? 0n) >= BigInt(u.count ?? 1);
       case 'level':
         return level >= u.level;
       case 'skill':

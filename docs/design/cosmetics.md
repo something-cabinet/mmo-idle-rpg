@@ -40,17 +40,19 @@ including on old chat messages: a message stores who sent it, not how they looke
 ## Unlocks
 
 Unlocks are **milestones that are never lost**, all from progress the game already
-records. Nothing needs repeated play or being online: no counts of clears, no streaks.
+records. Nothing needs being online: no counts of clears, no streaks. The zone boss
+titles take **5,000 kills** of the boss (`BOSS_TITLE_KILLS`), a farming goal that offline
+kills count toward like any other.
 Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 
 ### Titles
 
 | ID | Title | How |
 |---|---|---|
-| 1 | Goblin Bane | Defeat Grubnak, Goblin Chief (T1 boss) |
-| 2 | Thornbreaker | Defeat Morgra, the Thorn Witch (T2 boss) |
-| 3 | Jarlslayer | Defeat Hrimvald, Frost Giant Jarl (T3 boss) |
-| 4 | Queenslayer | Defeat Selvara, the Moonless Queen (T4 boss) |
+| 1 | Goblin Bane | Defeat Grubnak, Goblin Chief (T1 boss) 5,000 times |
+| 2 | Thornbreaker | Defeat Morgra, the Thorn Witch (T2 boss) 5,000 times |
+| 3 | Jarlslayer | Defeat Hrimvald, Frost Giant Jarl (T3 boss) 5,000 times |
+| 4 | Queenslayer | Defeat Selvara, the Moonless Queen (T4 boss) 5,000 times |
 | 5 | Bellringer | Defeat the Drowned Bellringer (T1 secret) |
 | 6 | Moonlit | Defeat the Moonlit Champion (T4 secret) |
 | 7 | Wyrmslayer | Win Wyrm Hollow |
@@ -88,9 +90,9 @@ IDs are permanent (stored in unlock and look rows): never reuse or renumber. Tit
 
 ### Granting
 
-Each cosmetic has a condition over data the game already keeps: a zone boss kill
-(`boss_kill`), an enemy's lifetime kills (`enemy_kill`: secret enemies, and raid bosses,
-whose kill a raid win records), the character's level, a skill level, the deepest Moonwell
+Each cosmetic has a condition over data the game already keeps: an enemy's lifetime
+kills (`enemy_kill`, online and offline: zone bosses, secret enemies, and raid bosses, whose
+kill a raid win records), the character's level, a skill level, the deepest Moonwell
 depth. `grantCosmetics` checks the ones not unlocked yet and records the new ones
 (`cosmetic_unlock`). It runs:
 

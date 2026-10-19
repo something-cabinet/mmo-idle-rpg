@@ -6,6 +6,7 @@ import { MATERIALS, MATERIALS_BY_ID } from '../../../spacetimedb/src/data/materi
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
 import { LISTED_RARITIES, rarityRank, salvageValue } from '../../../spacetimedb/src/loot';
+import { ELIXIR_KILLS, SUPPLIES } from '../../../spacetimedb/src/data/supplies';
 import { SCRAP_YIELD, isScrapRarity, scrapMaterialId } from '../../../spacetimedb/src/data/recipes';
 
 /** Common to Legendary items of a tier with materials can be scrapped. */
@@ -25,9 +26,11 @@ import { call, useSticky } from '../../store';
 import { fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { ItemTile, itemName, materialIconName, rarityCls } from '../items';
-import { CollapsibleCard, ItemFilterCard, useItemFilter, type ItemFilter } from '../itemFilter';
+import { ItemFilterCard, useItemFilter, type ItemFilter } from '../itemFilter';
 import { CardHead, Modal, SLOT_LABEL, SwapPreview, ViewHeader, openCraft } from '../shared';
+import { elixirText } from '../lifeSkills';
 import type { Snapshot } from '../snapshot';
+import { SkillTabs } from './SkillView';
 
 type BagSort = 'newest' | 'rarity' | 'tier' | 'slot';
 
@@ -44,12 +47,14 @@ function sortedBag(s: Snapshot, sort: BagSort, f: ItemFilter): Item[] {
 }
 
 /** Materials held, highest tier first, untiered ones last. */
-function MaterialsCard({ s }: { s: Snapshot }) {
-  const held = MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => (b.tier || -1) - (a.tier || -1));
-  const kinds = held.length;
+const heldMaterials = (s: Snapshot) =>
+  MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => (b.tier || -1) - (a.tier || -1));
+
+function MaterialsTab({ s }: { s: Snapshot }) {
+  const held = heldMaterials(s);
   return (
-    <CollapsibleCard storageKey="bag_materials_collapsed" title="Materials" summary={kinds ? `${kinds} kinds` : undefined}>
-      {kinds ? (
+    <div className="card">
+      {held.length ? (
         <div className="chips">
           {held.map(m => (
             <span key={m.id} className="chip" title={m.tier ? `T${m.tier} ${m.kind}` : 'Untiered'}>
@@ -60,7 +65,49 @@ function MaterialsCard({ s }: { s: Snapshot }) {
       ) : (
         <p className="muted">None yet. Enemies drop materials of their zone's tier: metal, hides, cloth, wood, reagents, gems and (magical ones) cores.</p>
       )}
-    </CollapsibleCard>
+    </div>
+  );
+}
+
+/** Elixirs in stock, best grade first. */
+const heldSupplies = (s: Snapshot) => SUPPLIES.filter(sup => (s.supplies.get(sup.id) ?? 0) > 0).sort((a, b) => b.grade - a.grade);
+
+function ConsumablesTab({ s }: { s: Snapshot }) {
+  const e = s.elixir;
+  const stock = heldSupplies(s);
+  return (
+    <div className="card">
+      <CardHead title="Elixirs">
+        <a className="btn small ghost" href="#alchemy">Alchemy</a>
+      </CardHead>
+      {e && (
+        <div className="stat-row">
+          <span><Icon name="flask" className={e.infused ? 'c-magic' : 'c-material'} /> Active: {e.infused ? 'Infused ' : ''}{e.supply.name}</span>
+          <strong>{e.killsLeft} / {ELIXIR_KILLS} kills</strong>
+        </div>
+      )}
+      {stock.length ? (
+        <ul className="foes">
+          {stock.map(sup => (
+            <li key={sup.id} className={`foe${e?.supply.id === sup.id ? ' active' : ''}`}>
+              <div className="foe-row">
+                <Icon name="flask" className="c-material" />
+                <div className="foe-info">
+                  <div className="foe-name">{sup.name} <span className="muted">×{s.supplies.get(sup.id)}</span></div>
+                  <div className="foe-meta muted">{elixirText(sup)}</div>
+                </div>
+                <button className="btn small" title={e ? 'Discards what is left of the active elixir' : undefined}
+                  onClick={() => call(s.conn.reducers.drinkElixir({ supplyId: sup.id }))}>
+                  Drink
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted">No elixirs. Brew them with Alchemy; each lasts {ELIXIR_KILLS} kills.</p>
+      )}
+    </div>
   );
 }
 
@@ -119,7 +166,7 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
   );
 }
 
-export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
+function GearTab({ s }: { s: Snapshot }) {
   const [sort, setSort] = useSticky<BagSort>('bagSort', 'newest');
   const filter = useItemFilter('bag');
   const [selectMode, setSelectMode] = useSticky('bagSelectMode', false);
@@ -161,7 +208,6 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
 
   return (
     <>
-      <ViewHeader title="Bag" icon="bag" />
       <div className="toolbar card">
         <span className="toolbar-label">Bag <strong>{s.bag.length}</strong> / {s.row.bagSize}</span>
         {cost === undefined ? (
@@ -184,7 +230,6 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
           <option value="slot">Sort: Slot</option>
         </select>
       </div>
-      <MaterialsCard s={s} />
       <ItemFilterCard f={filter} storageKey="bag_filters_collapsed" rarities={LISTED_RARITIES} shown={shown.length} total={s.bag.length} />
       <div className="bag-grid">
         {shown.length ? (
@@ -243,6 +288,23 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
         </button>
       </div>
       {open && <BagPopup key={String(open.id)} s={s} it={open} onClose={() => setOpenId(undefined)} />}
+    </>
+  );
+}
+
+export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
+  const elixirs = heldSupplies(s).reduce((n, sup) => n + (s.supplies.get(sup.id) ?? 0), 0);
+  return (
+    <>
+      <ViewHeader title="Bag" icon="bag" />
+      <SkillTabs
+        id="bag"
+        tabs={[
+          { key: 'gear', label: `Gear ${s.bag.length}/${s.row.bagSize}`, body: <GearTab s={s} /> },
+          { key: 'consumables', label: `Consumables${elixirs ? ` ${elixirs}` : ''}`, body: <ConsumablesTab s={s} /> },
+          { key: 'materials', label: 'Materials', body: <MaterialsTab s={s} /> },
+        ]}
+      />
     </>
   );
 });

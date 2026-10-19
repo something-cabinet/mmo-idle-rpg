@@ -157,8 +157,8 @@ export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullab
   return { effect: def.id, stat: def.bonusStat, value: toStored(roundStat(def.bonusStat, value)) };
 }
 
-/** An item of `baseId` at `tier`: base values computed and stored literally, affixes rolled (of affix tier `minAffixTier` or higher). */
-export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityName): NewItem {
+/** An item of `baseId` at `tier`: base values computed and stored literally, affixes rolled (all at affix tier `affixTier` if given). */
+export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityName, affixTier?: number): NewItem {
   if (rarity === 'Anomaly') return makeAnomaly(rng, baseId, tier);
   const b = base(baseId);
   const w = b.weapon && weaponValues(b.weapon, tier);
@@ -167,7 +167,7 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
     tier,
     rarity: { tag: rarity },
     implicits: b.implicits.map(i => ({ stat: i.stat, value: toStored(implicitValue(i, tier)) })),
-    affixes: Array.from({ length: REGULAR_AFFIXES[rarity] }, () => rollAffix(rng, tier)),
+    affixes: Array.from({ length: REGULAR_AFFIXES[rarity] }, () => rollAffix(rng, tier, affixTier)),
     legendary: rarity === 'Legendary' ? rollLegendary(rng, baseId, tier) : undefined,
     uniqueId: undefined,
     effects: [],

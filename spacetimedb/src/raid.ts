@@ -335,6 +335,7 @@ export function decodeSetup(json: string): RaidSetup {
 
 /**
  * One fighter's item for a rewarded kill: Epic or better of the raid's tier, a Unique from the raid's own pool.
+ * An Epic or Legendary has every affix at the top affix tier (the raid's tier).
  * An Epic or Legendary is one of the raid's own bases `ownBaseShare` of the time, else any zone base.
  */
 export function rollRaidItem(rng: Rng, raid: RaidDef): NewItem {
@@ -344,7 +345,7 @@ export function rollRaidItem(rng: Rng, raid: RaidDef): NewItem {
   const rarity = r < RAID_RARITY_ODDS.Unique + RAID_RARITY_ODDS.Legendary ? 'Legendary' : 'Epic';
   const own = raid.boss.drops.filter(id => base(id).raidId === raid.id);
   const drops = own.length && rng() < raid.ownBaseShare ? own : raid.boss.drops.filter(id => base(id).raidId === undefined);
-  return makeItem(rng, drops[Math.floor(rng() * drops.length)], raid.tier, rarity);
+  return makeItem(rng, drops[Math.floor(rng() * drops.length)], raid.tier, rarity, raid.tier);
 }
 
 export const raidLootRng = (partyId: bigint, startMicros: bigint, characterId: bigint): Rng => seededRng(partyId, startMicros, characterId, RAID_LOOT_SALT);

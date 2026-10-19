@@ -152,8 +152,9 @@ On a win, each player gets, for up to **3 clears per raid per day** (`clearsPerD
 
 - **Three T3 items, each Epic or better** (`itemsPerClear`), each rolled on its own: Epic 75%, Legendary 22%, Unique 3%. Epic and Legendary
   are any zone base or one of the raid's **own bases** (variants, bases.md; Wyrm Hollow: the Rime dagger, greatsword, healing staff, bow, shield, ring and amulet), one of the raid's own **1 time in 2** (`ownBaseShare`); a Unique comes from the raid's **own pool**, which drops nowhere else
-  (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). The items
-  ignore the bag limit, like a first-kill reward.
+  (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). An Epic or
+  Legendary rolls **every affix at the top affix tier** (the raid's tier), only the stat and
+  value within that tier are random. The items ignore the bag limit, like a first-kill reward.
 - **10 raid tokens** (`character.raidTokens`), 2 Voidglass, 30,000 gold, 40,000 XP (Wyrm Hollow; The Drowned Moon: 15 tokens, 4 Voidglass, 80,000 gold, 110,000 XP).
 - Each player may bring a **Phial** (phials.md), picked in the party and used up when the fight starts.
 

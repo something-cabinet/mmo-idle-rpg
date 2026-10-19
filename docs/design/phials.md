@@ -62,11 +62,22 @@ the recipe.
 
 | Input | Count |
 |-|-|
-| Voidglass | 5 |
+| Voidglass | 5 / 4 / 3 by the tier's place in its grade |
 | Rare herb of the tier | 1 |
 | Reagent of the tier | 10 |
 
+| Material tier | Makes | Voidglass |
+|-|-|-|
+| T1 / T2 / T3 | Phial | 5 / 4 / 3 |
+| T4 / T5 / T6 | Greater Phial | 5 / 4 / 3 |
+| T7 / T8 / T9 | Divine Phial | 5 / 4 / 3 |
+
 - Makes **1 Phial**, takes **2 min**, gives Alchemy XP like a brew of the tier.
+- **Higher tiers stretch Voidglass, not the effect.** Elixirs reward the top tier of a
+  grade with more per brew (2 / 3 / 4). For Phials, Voidglass is the scarce input, so the
+  top tier costs less of it: a T6 brew makes the same Greater Phial as T4 with 3 Voidglass
+  instead of 5, ~67% more Phials from the same Voidglass. Levelling Alchemy and gathering
+  higher herbs pays off, and Phials stay a small push.
 - Needs the Alchemy level for the tier (10(T−1)+1) and **the Moonwell Deep opened**
   (Selvara killed), so it shows up together with Voidglass.
 - Runs in the production queue like brews.
@@ -75,7 +86,7 @@ the recipe.
 
 **The Deep's first clears are the main source**, raised on 2026-10-19 because they pay
 only once: **3 per depth and 18 on every 10th** (was 1 and 6), ~450 for depths 1–100 in a
-season, enough for ~90 Phials. Past depth 100: 6 + 2 × floor((d − 101) / 10) (was
+season, enough for 90–150 Phials (5 to 3 Voidglass each). Past depth 100: 6 + 2 × floor((d − 101) / 10) (was
 3 + floor(…)).
 
 Four slow sources keep Phials coming after a push. They're kept small on purpose: the
@@ -119,6 +130,8 @@ Deep pays the bulk, and these stay a trickle.
 
 ### Totals
 
+Phials counted at 5 Voidglass (T4 brews); T6 brews make ~67% more.
+
 | Player | Raids | Boss | Salvage | Geodes | Per day | Phials |
 |-|-|-|-|-|-|-|
 | Idle T4 farmer, no raids | 0 | 0–1 | ~2.5 | 0 | ~3 | ~0.5 |
@@ -153,6 +166,6 @@ On top of that, the Deep's first clears: ~450 over depths 1–100, in bursts whi
 
 - **Haste and Renewal in raids:** Renewal on a tank may be stronger than a healer's NPC
   hire. Check it against raid odds once built.
-- **Cost of 5 Voidglass:** check it against how many attempts a Deep push really takes.
+- **Cost of 5 / 4 / 3 Voidglass:** check it against how many attempts a Deep push really takes.
 - **A Phial for the Chaos Dungeon** if it's ever built (chaos-dungeon.md keeps elixirs and
   meals out; Phials could stay out too, so the run is self-contained).

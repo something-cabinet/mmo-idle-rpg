@@ -1,4 +1,4 @@
-// How a player's name is drawn (docs/design/cosmetics.md): its name visual, title and
+// How a player's name is drawn (docs/design/cosmetics.md): its name effect, title and
 // nameplate. Full size shows all three; inline (chat) drops the plate and the animation.
 
 import type { DbConnection } from '../module_bindings';

@@ -1,8 +1,8 @@
-// Cosmetics (docs/design/cosmetics.md): titles, name visuals and nameplates. No power;
+// Cosmetics (docs/design/cosmetics.md): titles, name effects and nameplates. No power;
 // each is unlocked by a milestone the game already records (helpers.ts `grantCosmetics`).
 //
 // PERMANENT IDS: stored in `cosmetic_unlock` and `look` rows; never reuse or renumber.
-// Titles 1–999, name visuals 1001–1999, nameplates 2001–2999.
+// Titles 1–999, name effects 1001–1999, nameplates 2001–2999.
 
 import { SkillId } from './skills';
 import { ZONES_BY_ID, bossOf } from './zones';

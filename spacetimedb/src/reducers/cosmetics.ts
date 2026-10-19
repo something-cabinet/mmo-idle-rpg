@@ -4,7 +4,7 @@ import { spacetimedb } from '../schema';
 import { cosmeticOf, type CosmeticSlot } from '../data/cosmetics';
 import { requireActive } from '../helpers';
 
-/** Wears a title, name visual and nameplate (0 = none); each must be unlocked. */
+/** Wears a title, name effect and nameplate (0 = none); each must be unlocked. */
 export const setLook = spacetimedb.reducer(
   { titleId: t.u16(), visualId: t.u16(), plateId: t.u16() },
   (ctx, { titleId, visualId, plateId }) => {

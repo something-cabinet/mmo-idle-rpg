@@ -29,7 +29,7 @@ export function trackSettles(conn: DbConnection) {
     if (boss) toast(`${boss.name} defeated! The next zone is open.`, 'info');
   });
   // A new cosmetic (cosmetics.md): not the ones loaded on connect, nor the backfill on entering the world.
-  const SLOT_NAME = { title: 'Title', visual: 'Name visual', plate: 'Nameplate' } as const;
+  const SLOT_NAME = { title: 'Title', visual: 'Name effect', plate: 'Nameplate' } as const;
   conn.db.myCosmetics.onInsert((ctx, u) => {
     if (ctx.event.tag === 'SubscribeApplied') return;
     const c = COSMETICS_BY_ID.get(u.cosmeticId);

@@ -91,7 +91,7 @@ also builds the fighter, but no single skill is required.
 | Construction | Evasion rating % |
 
 Total skill level (sum of all skills) is shown on inspect and the friends list.
-Reaching 99 gives a title ("Master Smith", cosmetics.md); any skill at 99 also gives the Gilded name visual.
+Reaching 99 gives a title ("Master Smith", cosmetics.md); any skill at 99 also gives the Gilded name effect.
 
 ## Gathering
 

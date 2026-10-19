@@ -226,7 +226,7 @@ attempt.
 | **Voidglass** | Every depth, a bigger batch every 10 | New Deep-only material: the "precious material" raids.md plans. Paid out and stored from the first version; what it crafts is decided later |
 | A power elixir of the depth's grade + 1 rare herb | Every 5 depths | Fuel for the next push |
 | Essences | Every 10 depths | **Once Essence drops ship**: left out until then; rare Essences from depth 30 |
-| **Title** | Depths 10, 25, 50, 75, 100 | Cosmetic (cosmetics.md); a name visual at 50 and 100, a nameplate at 25 and 75 |
+| **Title** | Depths 10, 25, 50, 75, 100 | Cosmetic (cosmetics.md); a name effect at 50 and 100, a nameplate at 25 and 75 |
 
 **Past depth 100: formula only.** From depth 101 there are no more milestones: no titles,
 elixirs or Essences on set depths. Every depth gives the same bundle from one formula,
@@ -252,7 +252,7 @@ but far slower than the difficulty (× 1.155), so they never become a reason to 
 
 Built as part of cosmetics (cosmetics.md): *"of the Deep"* (10), *"Moonless"* (25),
 *"Lightless"* (50), *"Voidborn"* (75), *"Who Fell With the Moon"* (100, the last one), plus
-name visuals and nameplates. Later, once seasons are on: the season's top 10 get a gold
+name effects and nameplates. Later, once seasons are on: the season's top 10 get a gold
 title and plate for the next season.
 
 ## Leaderboard

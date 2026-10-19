@@ -1,9 +1,9 @@
-# Cosmetics: titles, name visuals, nameplates
+# Cosmetics: titles, name effects, nameplates
 
 *First version.* Code: `spacetimedb/src/data/cosmetics.ts` (the list and its unlock
 conditions), `helpers.ts` `grantCosmetics` (granting), `reducers/cosmetics.ts` (`setLook`),
 `src/ui/PlayerName.tsx` (how a name is drawn), `src/ui/views/LookCard.tsx` (the Character
-page), styles under "cosmetics" in `src/style.css`. Checks in `npm run test:smoke`; the dev
+page's Customize tab), styles under "cosmetics" in `src/style.css`. Checks in `npm run test:smoke`; the dev
 cheat "Unlock all cosmetics" unlocks everything to try on.
 
 Cosmetics give **no power**. They show what a character has done. All are **earned**:
@@ -14,13 +14,13 @@ none can be bought (a raid token or Voidglass shop may sell some later).
 | Slot | What it is | Example |
 |---|---|---|
 | **Title** | A short phrase after the name, in smaller text | "Lam · Moonless" |
-| **Name visual** | How the name text is drawn: a fixed colour and effect pair | Moonlight: silver shimmer |
+| **Name effect** | How the name text is drawn: a fixed colour and effect pair | Moonlight: silver shimmer |
 | **Nameplate** | A background plate behind the name and title | Moonwell: deep blue, silver rim |
 
-Each slot is chosen on its own from the ones unlocked, or left empty (plain name). A visual
+Each slot is chosen on its own from the ones unlocked, or left empty (plain name). An effect
 is one colour with one effect, not a colour picker plus an effect picker.
 
-- **No theme versions.** A plate looks the same in light and dark mode, and any visual can
+- **No theme versions.** A plate looks the same in light and dark mode, and any effect can
   sit on any plate. Players pick what they wear; an unreadable mix is their choice.
 - **Motion:** shimmer, flicker, glow and pulse are CSS animations. Under
   `prefers-reduced-motion` they stop and the name keeps its colour.
@@ -29,9 +29,9 @@ is one colour with one effect, not a colour picker plus an effect picker.
 
 One component draws every player name (`PlayerName`). Two sizes:
 
-- **Full** (visual, title and plate): the top bar, the Character page, inspect, the friend
+- **Full** (effect, title and plate): the top bar, the Character page, inspect, the friend
   and online lists, raid seats and the raid fight, duels, the Moonwell leaderboard.
-- **Inline** (visual and title, no plate, no animation): chat lines. A plate and an
+- **Inline** (effect and title, no plate, no animation): chat lines. A plate and an
   animation on every line would be noise.
 
 The look is always the character's current one (one public `look` row per character),
@@ -63,9 +63,9 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 | 14 | Centurion | Reach level 100 |
 | 20–24 | Master Miner, Master Woodcutter, Master Forager, Master Smith, Master Alchemist | That life skill at 99 (life-skills.md) |
 
-### Name visuals
+### Name effects
 
-| ID | Visual | Look | How |
+| ID | Effect | Look | How |
 |---|---|---|---|
 | 1001 | Rime | Ice blue, soft frost glow | Win Wyrm Hollow |
 | 1002 | Moonlight | Silver, a shimmer sweeping across | Win The Drowned Moon |
@@ -84,7 +84,7 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 | 2004 | Veteran | Dark leather, gold border | Reach level 100 |
 
 IDs are permanent (stored in unlock and look rows): never reuse or renumber. Titles
-1–999, visuals 1001–1999, plates 2001–2999.
+1–999, name effects 1001–1999, plates 2001–2999.
 
 ### Granting
 
@@ -108,16 +108,16 @@ reset of the Deep).
 | Part | What |
 |---|---|
 | `cosmetic_unlock` (private, view `my_cosmetics`) | One row per unlock: character, cosmetic ID, when |
-| `look` (public, everyone subscribes) | One row per character that wears anything: title, visual and plate IDs (0 = none). Deleted when all three are empty. Changes only on `setLook` |
+| `look` (public, everyone subscribes) | One row per character that wears anything: title, effect (`visualId`) and plate IDs (0 = none). Deleted when all three are empty. Changes only on `setLook` |
 | `chat_message.characterId` | The sender, to find its look (0 on messages from before) |
 | `setLook(titleId, visualId, plateId)` | Each must be 0 or an unlocked cosmetic of that slot |
 
 ## Character page
 
-A **Look** card: a preview of the name as others see it (full size), and one picker per
-slot listing every cosmetic of that slot, each drawn in its own look. Picking one wears it
-at once. Locked ones are greyed out with how to unlock them, so the list doubles as a goal
-list.
+The page has two tabs: **Status** (level, stats, effects) and **Customize**. Customize
+shows a preview of the name as others see it (full size) and one picker per slot with
+only the cosmetics unlocked so far, each drawn in its own look. Picking one wears it at
+once. Locked ones are hidden.
 
 ## Later
 

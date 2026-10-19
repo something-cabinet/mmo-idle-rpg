@@ -20,7 +20,7 @@ not decisions.
 | [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass, T4 Moonveil Vale: enemies, bosses, drops, starter kit |
 | [legendary.md](legendary.md) | Legendary affixes: effects, slot pools, formulas |
 | [uniques.md](uniques.md) | Uniques: rules, global drops, the list |
-| [cosmetics.md](cosmetics.md) | Titles, name visuals and nameplates: earned from milestones, worn from the Character page, shown wherever a player name is |
+| [cosmetics.md](cosmetics.md) | Titles, name effects and nameplates: earned from milestones, worn from the Character page, shown wherever a player name is |
 | [ui.md](ui.md) | Desktop layout and screens (wireframes) |
 
 ## Pillars
@@ -37,7 +37,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
-| 2026-10-19 | Cosmetics (cosmetics.md): three slots, each picked on the Character page: **title** (text after the name), **name visual** (fixed colour and effect: glow, shimmer, flicker) and **nameplate** (background plate, one look in both themes; any visual on any plate, readability is the player's call). All earned from milestones already recorded (bosses, secrets, raid wins, Moonwell depths, level 100, skills at 99), granted on entering the world and when a condition can change; none bought yet; seasonal rewards wait for seasons. Chat shows visual and title only, without motion. |
+| 2026-10-19 | Cosmetics (cosmetics.md): three slots, each picked on the Character page: **title** (text after the name), **name effect** (fixed colour and effect: glow, shimmer, flicker) and **nameplate** (background plate, one look in both themes; any effect on any plate, readability is the player's call). All earned from milestones already recorded (bosses, secrets, raid wins, Moonwell depths, level 100, skills at 99), granted on entering the world and when a condition can change; none bought yet; seasonal rewards wait for seasons. Chat shows effect and title only, without motion. |
 | 2026-10-19 | Elixirs reworked into **grades** (life-skills.md, "Alchemy"): Elixir (T1–T3 materials), Greater (T4–T6), Divine (T7–T9) at 1× / 1.5× / 2× the bonus, the same in every zone (no more half effect above the tier). The material's place in its grade sets the yield: 2 / 3 / 4 elixirs a brew. The old herb-brewed Greater elixir becomes **Infuse**, a slot toggle: each new elixir uses a rare herb of its grade (any tier) for 1.5× the bonus. 40 items become 15. Abyss milestones give a power elixir of the grade + a rare herb. No wipe: migrate.ts merges old stock into grades, refunds the herbs of old Greater stock, and rewrites the active elixir, running brews and logs. |
 | 2026-10-19 | The Moonwell Deep (abyss.md) opens with the first Selvara kill (T4 boss), alongside The Drowned Moon, instead of a Drowned Moon win. Lore: her death leaves the moonwell unsealed. |
 | 2026-10-18 | Moonshadow reworked (legendary.md): all armor and resistance become evasion rating (was: the hit after a dodge deals 50% less, landed hits 10% more). That old effect is now the Defense legendary **Afterimage** (49): 50% per copy, cap 75%, no downside. Moonshadow Jerkin rolls max HP instead of evasion rating. |

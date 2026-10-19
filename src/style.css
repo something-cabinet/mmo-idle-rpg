@@ -4284,19 +4284,12 @@ fieldset.affix-pick legend {
   cursor: pointer;
   min-width: 0;
 }
-.look-option:hover:not(:disabled) {
+.look-option:hover {
   border-color: var(--border-strong);
 }
 .look-option.on {
   border-color: var(--accent);
   background: var(--accent-soft);
-}
-.look-option.locked {
-  cursor: default;
-  opacity: 0.5;
-}
-.look-option.locked .look-sample {
-  filter: grayscale(1);
 }
 .look-sample {
   font-weight: 600;

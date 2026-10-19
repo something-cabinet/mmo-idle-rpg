@@ -22,6 +22,7 @@
 // The prompt still asks for a 64 px grid: it sets how chunky the model draws.
 import { ZONES } from '../spacetimedb/src/data/zones';
 import { RAIDS } from '../spacetimedb/src/data/raids';
+import { ABYSS_KINDS, BOSS_AFFIXES, DEEP_WARDEN, wardenArtId } from '../spacetimedb/src/data/abyss';
 import { runArt, type Art } from './art-lib';
 
 const PIXELS = 64;
@@ -103,6 +104,16 @@ export const RAID_REGIONS: Record<number, Region> = {
   },
 };
 
+/** The Moonwell Deep (data/abyss.ts): its pool enemies and the Deep Warden. */
+const DEEP_REGION: Region = {
+  setting: 'The Moonwell Deep, the endless dark below the flooded moonwell where the moon fell through: drowned elven stairs ' +
+    'and halls sinking into a black starless void with no bottom',
+  palette: 'abyssal black-blue, tarnished moonlight silver, cold dark teal, pale drowned blue-white',
+  motif: 'drowned and swallowed: wet surfaces with water running off them, tarnished silver and elven crescent filigree ' +
+    'half eaten by black void speckled with tiny white stars',
+  menace: 'endless-delve enemies that keep growing past tier 4: eerie, otherworldly and wrong, things from below the world',
+};
+
 /** What each enemy is, by enemy ID: the free part of the prompt. */
 export const LOOKS: Record<number, string> = {
   // Greenhollow
@@ -143,6 +154,26 @@ export const LOOKS: Record<number, string> = {
     'a crown shaped like an eclipsed black crescent moon, holding a black moon orb',
   407: 'the moonlit champion: the queen\'s last elven knight in pale silver-blue plate and a long cape, ' +
     'wielding a huge greatsword with a translucent pale blue crystal blade',
+  // The Moonwell Deep
+  9101: 'a moonless shade: a thin hunched elven silhouette of solid black-blue shadow with no legs, its body tapering into ' +
+    'ragged tatters, long clawed fingers, two pale silver pinprick eyes and nothing else on its face',
+  9102: 'a drowned acolyte: a drowned elven priestess in sodden silver-blue robes, pale grey-blue skin, wet black hair plastered ' +
+    'over her face, holding up a cracked silver crescent censer with water pouring from it',
+  9103: 'a tidebound husk: a hulking bloated drowned corpse crusted all over with barnacles, shells and black kelp, ' +
+    'rusted silver chains wrapped around it, one huge swollen arm hanging to the ground',
+  9104: 'a voidling swarm: six or seven small imps in one tight clump climbing over each other, black skin speckled with tiny white stars, ' +
+    'blank white eyes, needle teeth and little hooked claws',
+  9105: 'a fallen moonguard: an elven palace guard in dented water-stained silver plate streaked with dark teal algae, ' +
+    'a cracked crescent-crested helm with only darkness inside, a long spear and a tall crescent tower shield',
+  9106: 'a starless lamprey: a long eel-like lamprey reared up in an S-curve, slick black-blue skin with no stars at all, ' +
+    'a round open sucker mouth lined with rings of hooked silver teeth, small pale gill slits along its neck',
+  9107: 'a hollow choir: three elven choir singers fused into one figure of pale cracked stone, one robe shared below the waist, ' +
+    'three heads with empty black eyes and mouths wide open mid-song, hands clasped',
+  9108: 'an eclipse moth: one huge moth with its wings split, the upper pair bright moonlight silver, the lower pair black ' +
+    'speckled with white stars, a black disc ringed by a thin silver line on each upper wing, furry silver body and feathered antennae',
+  9150: 'the deep warden: a towering faceless guardian of black moonstone and tarnished silver plates, hunched under a heavy ' +
+    'hood of wet dark stone, a single pale silver crescent for an eye in its blank face, holding a huge ancient silver key ' +
+    'like a mace, its bow shaped like an elven crescent',
   // Raids
   9001: 'Skaldrith the rime wyrm: an ancient coiled ice dragon with pale blue-white scales, long frost-crusted horns, ' +
     'jagged icicle spines, half-folded wings, crouched over a heap of gold coins',
@@ -157,6 +188,27 @@ export const LOOKS: Record<number, string> = {
     'long webbed fins like torn crescent sails, a thick tail coiling below it; ' +
     'from its brow a long fleshy ridged dark teal stalk curves forward and dangles its lure: a bright white cracked shard of the stolen moon, ' +
     'water streaming from its jaws and fins',
+};
+
+/**
+ * The Deep Warden's variant per Boss affix (abyss.md, "The boss"), by affix ID: added to its
+ * own look, so every variant is the same Warden. Generate e-9150 first and --ref it for these.
+ */
+const WARDEN_VARIANTS: Record<number, string> = {
+  1: 'Hungering: gaunt and starved, its stone cracked thin over jutting ribs, its blank face split open down the middle into ' +
+    'a huge gaping maw lined with silver teeth',
+  2: 'Mirrored: its whole body polished to a glassy mirror-like silver sheen, flat bright facets like cut glass, ' +
+    'its key and crescent eye bright silver too',
+  4: 'Moonfall: chunks of pale cracked moon rock embedded across its shoulders and chest, its key raised high overhead in both hands ' +
+    'for a crushing blow',
+  5: 'Starless: every bit of silver gone dull black, its body pure lightless black-blue with no stars, the crescent eye dark grey ' +
+    'and dead, black roots reaching out of its open hands',
+  6: 'Tidal: one half armored in silver plate, the other half a body of dark teal water, kelp and barnacles, ' +
+    'water pouring off it in sheets',
+  7: 'Veiled: wrapped head to foot in long tattered dark teal shroud veils, its shape blurred under them, ' +
+    'only the crescent eye and the key showing',
+  8: 'Eclipse: split down the middle, the left half bright silver moonlight, the right half swallowed by black void speckled with stars, ' +
+    'its eye a black disc ringed by a thin silver corona',
 };
 
 /** Normal enemies, the zone's boss, its secret enemy. */
@@ -176,8 +228,8 @@ const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(
 function arts(): { arts: Art[]; missing: string[] } {
   const out: Art[] = [];
   const missing: string[] = [];
-  const add = (id: number, name: string, place: string, group: string, tier: number, region: Region | undefined, role: keyof typeof ROLES) => {
-    const look = LOOKS[id];
+  const add = (id: number, name: string, place: string, group: string, tier: number, region: Region | undefined, role: keyof typeof ROLES,
+    look = LOOKS[id]) => {
     if (!region) return void missing.push(`e-${id} ${name}: no REGIONS entry for ${place}`);
     if (!look) return void missing.push(`e-${id} ${name}: no LOOKS entry`);
     out.push({
@@ -197,6 +249,13 @@ function arts(): { arts: Art[]; missing: string[] } {
     }
   }
   for (const r of RAIDS) add(r.boss.id, r.boss.name, `the raid ${r.name}`, `raid-${slug(r.name)}`, r.tier, RAID_REGIONS[r.id], 'boss');
+  for (const k of ABYSS_KINDS) add(k.id, k.name, 'the Moonwell Deep', 'moonwell-deep', 4, DEEP_REGION, 'normal');
+  add(DEEP_WARDEN.id, DEEP_WARDEN.name, 'the Moonwell Deep', 'moonwell-deep-warden', 4, DEEP_REGION, 'boss');
+  for (const a of BOSS_AFFIXES) {
+    const v = WARDEN_VARIANTS[a.id];
+    add(wardenArtId(a.id), `${a.name} ${DEEP_WARDEN.name}`, 'the Moonwell Deep', 'moonwell-deep-warden', 4, DEEP_REGION, 'boss',
+      v && LOOKS[DEEP_WARDEN.id] && `${LOOKS[DEEP_WARDEN.id]}. This one is ${v}`);
+  }
   return { arts: out, missing };
 }
 

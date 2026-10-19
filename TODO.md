@@ -46,9 +46,6 @@ And this one-off migration code, which only converts pre-wipe data:
 
 Phase 1 (gathering, Smithing, Alchemy, elixirs) is built. Left:
 
-- **Raids use the active elixir** (design: "Boss challenges and raids use the active
-  buffs"). `reducers/raid.ts` builds raid stats without buffs today; decide whether a raid
-  fight uses charges.
 - **Zones preview with and without the elixir** ("viable with Elixir of Wrath"). The
   matchups already include the active elixir; there's no side-by-side yet.
 - **Away report: when the elixir slot ran empty**, not only that it did.

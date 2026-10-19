@@ -409,8 +409,6 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 
 - **Name:** Chaos Dungeon or a lore name.
 - **Unlock:** T2 boss, or later (T3 boss, alongside Wyrm Hollow)?
-- **Elixirs and meals:** off (as here, self-contained) or allowed (an Alchemy and Cooking
-  sink)?
 - **Pacing:** is ~30 fights per run right for an idle game, or should floors be shorter
   (~4 rows) for a ~15-minute run?
 - **Riftstone:** what it crafts. Could share the answer with the raid token shop and

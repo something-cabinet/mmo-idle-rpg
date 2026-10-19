@@ -11,7 +11,7 @@ import {
   SECOND_BOSS_AFFIX_FROM, depthLineup, depthReward, depthTier, wardenArtId,
 } from '../../../spacetimedb/src/data/abyss';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
-import { SUPPLIES_BY_ID, elixirBuffs } from '../../../spacetimedb/src/data/supplies';
+import { SUPPLIES_BY_ID } from '../../../spacetimedb/src/data/supplies';
 import { elixirText } from '../lifeSkills';
 import { decodeBuild, decodeStats, depthFoes, depthRng, simulateDepth, type DepthFoe, type DepthResult } from '../../../spacetimedb/src/abyss';
 import { call, useSticky, useTick } from '../../store';
@@ -84,9 +84,8 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
   const [loadout, setLoadout] = useSticky<number>('deepLoadout', s.row.activeLoadout);
   const lo = s.loadouts.find(l => l.index === loadout) ?? s.active;
   const gear = gearFor(lo?.slots ?? [], s.items);
-  // As the server takes it: your level, the loadout, the active elixir.
-  const buffs = s.elixir && elixirBuffs(s.elixir.supply.id, s.elixir.infused);
-  const stats = useMemo(() => combatStats(s.level, gear, buffs), [s.level, gear.map(i => String(i?.id ?? 0n)).join(), buffs?.damage, buffs?.attackSpeed]); // eslint-disable-line react-hooks/exhaustive-deps
+  // As the server takes it: your level and the loadout (elixirs are for farming only).
+  const stats = useMemo(() => combatStats(s.level, gear), [s.level, gear.map(i => String(i?.id ?? 0n)).join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const lineup = depthLineup(depth);
   const foes = useMemo(() => depthFoes(stats, lineup), [stats, depth]); // eslint-disable-line react-hooks/exhaustive-deps
   const reward = depthReward(depth);
@@ -145,11 +144,6 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
                 ))}
               </div>
             </div>
-            {s.elixir && (
-              <div className="deep-facts">
-                <div title="Your elixir applies to every fight and uses a charge per kill"><span>Elixir</span><strong>{s.elixir.infused ? 'Infused ' : ''}{s.elixir.supply.name}</strong></div>
-              </div>
-            )}
             <button className="btn primary deep-go" disabled={!!block} onClick={() => {
               setPending(true);
               const p = conn.reducers.descend({ loadout: lo?.index ?? 0 });

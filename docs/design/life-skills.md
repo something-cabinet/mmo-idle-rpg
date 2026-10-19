@@ -256,7 +256,8 @@ target**, so an empty queue never wastes offline time.
   same elixir is taken from stock (infused while Infuse is on and herbs last). When stock
   runs out, the slot stays empty. Typical
   bedtime routine: stock ~2,000 kills of elixirs and meals (~8 h), then log off.
-- Boss challenges and raids use the active buffs. No boss-only consumables.
+- **Buffs are for farming only.** Raids, the Moonwell Deep and other modes ignore them
+  and use no charges, so those modes check gear alone. No boss-only consumables.
 - UI: two buff icons in the top bar with charges and stock (`Wrath 180 · ×12`). Hovering
   shows the effect, infused or not. The Zones screen previews fights with and without buffs ("viable
   with Hearty Stew"). The away report lists buffs used and when a slot ran empty.

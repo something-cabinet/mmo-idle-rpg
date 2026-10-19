@@ -209,6 +209,36 @@ Publish the server first, then the client, so a new client never talks to an old
 Checklist before deploying: `npm run typecheck`, then the relevant `npm run test:*` scripts
 against a local server, and make sure `dist/` was built after the last change.
 
+### Changelog
+
+Players see `src/changelog.ts` in the "What's new" popup: every entry newer than the
+version they last saw. Write it for players: a `new`, `balance` or `fix` tag per line,
+concrete numbers with the old value ("37,000, was 35,000"), and nothing internal (tests,
+refactors, docs).
+
+**Commit and push without deploying.** Changes that players will notice still get notes
+right away, in a *pending* entry at the top of the list:
+
+1. If the top entry is already pending (it has a `commit` field), add to it. Otherwise
+   start one: bump `version` (minor for new content, patch for tuning and fixes) and give
+   it a `title`.
+2. Find what it doesn't cover yet: `git log <commit>..HEAD` (or `npm run changes`, which
+   lists everything since the last deploy).
+3. Set `date` to today and `commit` to the short hash of the last commit the notes now
+   cover (`git rev-parse --short HEAD` before committing the changelog).
+4. Commit the changelog on its own ("Changelog 0.1.1: ...").
+
+**Deploy.** `npm run deploy` refuses when something changed since the last deploy but
+`src/changelog.ts` didn't (`--no-changelog` skips that, for art and internal fixes). Before
+deploying:
+
+1. Catch up the pending entry with anything since its `commit` (step 2 above).
+2. Set `date` to the deploy day and remove `commit`.
+3. Commit, then deploy. The deploy moves the local `deployed` tag to HEAD, so the next
+   `npm run changes` starts from there.
+
+An entry players have already seen stays as it was; corrections go in the next one.
+
 Free-tier notes: reducer calls, bandwidth, and storage use energy. With no server tick, cost
 scales with player actions only. Chat keeps the newest 200 messages. Guest accounts that
 never return are never deleted yet.

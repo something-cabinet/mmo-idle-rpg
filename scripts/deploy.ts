@@ -8,7 +8,8 @@
 //   npm run deploy -- --skip-checks   # skip typecheck
 //   npm run deploy -- --no-changelog  # ship without a new src/changelog.ts entry (art, internal fixes)
 // Each successful deploy moves the local git tag `deployed` to HEAD; the next deploy refuses
-// when something changed since then but src/changelog.ts didn't.
+// when something changed since then but src/changelog.ts didn't. `npm run changes` lists the
+// commits since the last deploy, to write the entry from.
 import { spawnSync } from 'node:child_process';
 import { loadEnv } from 'vite';
 

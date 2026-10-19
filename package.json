@@ -16,6 +16,7 @@
     "spacetime:logs:local": "spacetime logs --server local mmo-idle-rpg",
     "spacetime:publish": "spacetime publish --module-path spacetimedb --server maincloud",
     "deploy": "tsx scripts/deploy.ts",
+    "changes": "git log --reverse --format=\"%h %ad %s\" --date=short deployed..HEAD",
     "test:smoke": "tsx scripts/smoke-test.ts",
     "test:data": "tsx scripts/check-data.ts",
     "test:combat": "tsx scripts/check-combat.ts",

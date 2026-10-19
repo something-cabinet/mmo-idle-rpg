@@ -55,7 +55,7 @@ worth a little more than one affix because a build rarely uses every stat in it.
 | **Might** | +0.5% physical damage, +0.2% max HP, +0.25% accuracy rating | +20% phys, +8% HP, +10% acc |
 | **Finesse** | +0.1% attack speed, +0.4% increased crit chance, +0.25% evasion rating | +4% AS, +16% crit, +10% eva |
 | **Mind** | +0.45% magic damage, +0.45% heal, +0.25 points crit damage | +18% magic, +18% heal, +10 crit dmg |
-| **Vitality** | +0.25% max HP, +1% HP regen, +0.25% threat | +10% HP, +40% regen, +10% threat |
+| **Vitality** | +0.25% max HP, +0.5% HP regen, +0.25% threat | +10% HP, +20% regen, +10% threat |
 
 All primary bonuses go into the **percent** sums of their stats (see combat.md
 aggregation). Finesse's crit and evasion bonuses are *increased* modifiers like every
@@ -184,7 +184,7 @@ Item tier N matches enemy level `10 × N` on average (zones.md).
 | Physical damage (added) | 2 | Offense | 756 | Straight bonus per hit: worth more on fast weapons |
 | Magic damage (added) | 2 | Offense | 756 | Same |
 | Max HP | 20 | Life | 860 | |
-| HP regen (/s) | 6 | Heal | 59 | Grows like enemy DPS; Vitality's +1%/point does the rest. Tier ranges start and end on whole numbers |
+| HP regen (/s) | 6 | Heal | 59 | Grows like enemy DPS; Vitality's +0.5%/point does the rest. Tier ranges start and end on whole numbers |
 | Heal (added) | 4 | Heal | 39 | Straight bonus per hit: worth more on fast weapons |
 | Armor | 5 | Linear | 45 | One best roll ≈ 9% mitigation vs a matching enemy |
 | Resistance | 5 | Linear | 45 | Same as armor |

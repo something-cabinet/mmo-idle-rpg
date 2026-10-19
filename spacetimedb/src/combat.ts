@@ -241,7 +241,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     // Moonlight: armor penetration counts as magic penetration.
     magicPen: Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct) + (moonlight ? pct(Stat.ArmorPenPct) : 0)),
     maxHp,
-    regen: frozenBlood ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.01 * vitality)),
+    regen: frozenBlood ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.005 * vitality)),
     armor: moonshadow ? 0 : armorTotal,
     resistance: moonshadow ? 0 : resistanceTotal,
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse) + (moonshadow ? armorTotal + resistanceTotal : 0),

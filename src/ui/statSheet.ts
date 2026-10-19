@@ -20,7 +20,7 @@ export const STAT_HELP: Record<string, string> = {
   Might: 'Each point: +0.5% physical damage, +0.2% max HP, +0.25% accuracy rating.\nYou gain 1 per level.',
   Finesse: 'Each point: +0.1% attack speed, +0.4% increased crit chance, +0.25% evasion rating.\nYou gain 1 per level.',
   Mind: 'Each point: +0.45% magic damage, +0.45% heal, +0.25% crit damage.\nYou gain 1 per level.',
-  Vitality: 'Each point: +0.25% max HP, +1% HP regen, +0.25% threat.\nYou gain 1 per level.',
+  Vitality: 'Each point: +0.25% max HP, +0.5% HP regen, +0.25% threat.\nYou gain 1 per level.',
   Damage: "Damage per attack, before the enemy's armor (physical) or resistance (magic).",
   Heal: 'HP restored per attack. Solo, heals land on yourself.',
   'Attack speed': 'Attacks per second.',
@@ -125,7 +125,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   const defense: StatRow[] = [
     row('Max HP', fmt(st.maxHp), from([Stat.MaxHp, Stat.MaxHpPct], `Base ${100 + 10 * (level - 1)} (100 + 10 per level)`,
       `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.25 * mind)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
-    row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
+    row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(0.5 * vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
     row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + 5 × enemy level); vs Lv ${level}: / (armor + ${5 * level}), cap ${pct(mitCap)}`,
       leg(Effect.Runeguard), has(Effect.Moonshadow) && 'Moonshadow: all of it becomes evasion rating', has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],

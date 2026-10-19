@@ -12,8 +12,8 @@ import { seededRng } from '../loot';
 
 /** The current season (abyss.md, "Leaderboard"): always 1 until seasons are turned on. */
 export const ABYSS_SEASON = 1;
-/** The raid whose first win opens the Deep (The Drowned Moon). */
-export const ABYSS_UNLOCK_RAID = 2;
+/** The zone whose boss's first kill opens the Deep (Moonveil Vale: Selvara). */
+export const ABYSS_UNLOCK_ZONE = 4;
 
 // ---------------------------------------------------------------- scaling
 

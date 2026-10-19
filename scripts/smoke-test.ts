@@ -346,7 +346,7 @@ await b.conn.reducers.inspectCharacter({ characterId: 0n });
 await sleep(200);
 check('stop inspecting clears the views', b.conn.db.inspectedCharacter.count() === 0n && b.conn.db.inspectedItems.count() === 0n);
 
-await expectError('the Moonwell Deep is locked before Umbriel', a.conn.reducers.descend({ loadout: 0 }), 'open the Moonwell Deep');
+await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.descend({ loadout: 0 }), 'open the Moonwell Deep');
 
 // Raids: party up, hire NPCs, start; the scheduled finish logs it. The dev cheats unlock the raid and pay for the hires.
 {
@@ -403,7 +403,7 @@ await expectError('the Moonwell Deep is locked before Umbriel', a.conn.reducers.
   check('an empty party disbands', !a.conn.db.raidParty.id.find(party.id));
 }
 
-// The Moonwell Deep (devUnlockZones above also records the raid boss kills that open it).
+// The Moonwell Deep (devUnlockZones above also records the Selvara kill that opens it).
 {
   const record = () => [...a.conn.db.abyssRecord.iter()].find(r => r.characterId === charOf(a)!.id);
   const newest = () => [...a.conn.db.myAbyssLog.iter()].sort((x, y) => (x.id < y.id ? 1 : -1))[0];

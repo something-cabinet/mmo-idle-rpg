@@ -6,10 +6,10 @@ import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { AbyssLog, AbyssRecord, Item } from '../../module_bindings/types';
 import { combatStats, type CombatStats } from '../../../spacetimedb/src/combat';
 import {
-  ABYSS_SEASON, ABYSS_UNLOCK_RAID, BOSS_AFFIXES_BY_ID, DEPTH_TIME_LIMIT, ELITE_AFFIXES_BY_ID, ABYSS_KINDS_BY_ID, DEEP_WARDEN, FAST_FROM,
+  ABYSS_SEASON, ABYSS_UNLOCK_ZONE,BOSS_AFFIXES_BY_ID, DEPTH_TIME_LIMIT, ELITE_AFFIXES_BY_ID, ABYSS_KINDS_BY_ID, DEEP_WARDEN, FAST_FROM,
   SECOND_BOSS_AFFIX_FROM, depthLineup, depthReward, depthTier, wardenArtId,
 } from '../../../spacetimedb/src/data/abyss';
-import { RAIDS_BY_ID } from '../../../spacetimedb/src/data/raids';
+import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
 import { SUPPLIES_BY_ID, elixirBuffs } from '../../../spacetimedb/src/data/supplies';
 import { decodeBuild, decodeStats, depthFoes, depthRng, simulateDepth, type DepthFoe, type DepthResult } from '../../../spacetimedb/src/abyss';
 import { call, useSticky, useTick } from '../../store';
@@ -47,8 +47,8 @@ function FoeArt({ foe, className }: { foe: DepthFoe; className?: string }) {
 
 export const AbyssView = memo(function AbyssView({ s }: { s: Snapshot }) {
   const conn = s.conn;
-  const raid = RAIDS_BY_ID.get(ABYSS_UNLOCK_RAID)!;
-  const unlocked = (s.kills.get(raid.boss.id) ?? 0) > 0 || [...conn.db.myRaidLog.iter()].some(l => l.raidId === raid.id && l.won);
+  const zone = ZONES_BY_ID.get(ABYSS_UNLOCK_ZONE)!;
+  const unlocked = s.killedZones.has(zone.id);
   const record = [...conn.db.abyssRecord.iter()].find(r => r.characterId === s.row.id && r.season === ABYSS_SEASON);
   const deepest = record?.deepest ?? 0;
 
@@ -61,11 +61,12 @@ export const AbyssView = memo(function AbyssView({ s }: { s: Snapshot }) {
         </span>
       </ViewHeader>
       <p className="muted deep-blurb">
-        Below Selvara's moonwell, the dark the moon fell through has no bottom. Each depth is a basic enemy, an Elite and the Deep Warden,
-        fought back to back on one HP bar. Clear it to go deeper. Solo, online only; farming carries on meanwhile.
+        With Selvara dead, nothing holds her moonwell shut. Past its flooded heart, the dark the moon fell through has no bottom. Each depth is
+        a basic enemy, an Elite and the Deep Warden, fought back to back on one HP bar. Clear it to go deeper. Solo, online only; farming
+        carries on meanwhile.
       </p>
       {!unlocked ? (
-        <div className="lock-note"><Icon name="lock" />Defeat {raid.boss.name} in {raid.name} to open the Moonwell Deep</div>
+        <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} in {zone.name} to open the Moonwell Deep</div>
       ) : (
         <Descent s={s} depth={deepest + 1} />
       )}

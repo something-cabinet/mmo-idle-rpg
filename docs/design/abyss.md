@@ -7,13 +7,14 @@ enemies that keep getting stronger and a leaderboard for the deepest floor. It e
 
 ## Name
 
-Working name **The Moonwell Deep**. It follows on from The Drowned Moon raid: Umbriel
-drowned in Selvara's moonwell, half silver light and half void. Killing it cracks the bottom
-of the well, and below is the dark the moon fell through, with no end anyone has found.
+Working name **The Moonwell Deep**. Selvara pulled the moon down into her moonwell, and
+her power alone kept the well shut. With the queen dead, nothing holds it: past its flooded
+heart, where Umbriel still breathes (The Drowned Moon raid), is the dark the moon fell
+through, with no end anyone has found. The Deep and the raid open together.
 
 | Option | Feel |
 |---|---|
-| **The Moonwell Deep** (recommended) | Ties into T4 and Umbriel; "Deep 37" reads well on a leaderboard |
+| **The Moonwell Deep** (recommended) | Ties into T4 and Selvara's moonwell; "Deep 37" reads well on a leaderboard |
 | The Lightless Descent | Grim, generic |
 | Umbral Depths | Ties to the Umbral bases from the raid |
 | The Drowned Abyss | Plain and clear |
@@ -22,8 +23,8 @@ Floors are called **depths** ("Depth 37").
 
 ## Rules at a glance
 
-- **Unlocks** for a character once it has **won The Drowned Moon** (killed Umbriel) once,
-  rewarded or not.
+- **Unlocks** for a character once it has **killed Selvara, the Moonless Queen** (T4 boss)
+  once, the same kill that opens The Drowned Moon raid. No raid win needed.
 - **Solo and online only**, like raids: never settled offline, never a farming target.
   **Farming continues** during a descent.
 - **Every depth is the same shape: a basic enemy, then an Elite, then the boss**, fought back
@@ -118,7 +119,7 @@ GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) 
   depths for the few at the top. The faster rate makes each depth past 100 a real step, and
   the board still separates them: twice as strong is ~5 depths deeper.
 - **A gentle start (`ease`).** Depth 1 is on the easy side of T4: HP and DPS × 0.6 (about
-  0.36× the difficulty), back to the full curve by depth 6. Anyone who beat Umbriel gets a
+  0.36× the difficulty), back to the full curve by depth 6. Anyone who beat Selvara gets a
   few free depths and a feel for the format before it bites. The ease only touches the start,
   so depth 51 still lines up with T9.
 - **GAUNTLET** keeps a depth at about one hard fight's worth of damage taken. Target: a
@@ -291,7 +292,7 @@ portrait frames later, with the same unlock list.
 | `data/abyss.ts` | Pool enemies and the boss (permanent IDs, 9100+), Elite and Boss affixes, `GAUNTLET`, slot multipliers, growth factors, reward table |
 | `abyss.ts` (pure, shared) | `depthLineup(season, depth)` (basic, Elite + affix, Boss affixes), `depthStats(depth, kind, slot)`, `simulateDepth(stats, lineup, seed)`: `simulateFight` with a starting HP, per-depth Second Wind and the affix hooks |
 | `fight.ts` | `simulateFight` takes a starting HP (default: max) and returns the HP left |
-| Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: the latest attempt only, with the stats fought with, for the replay, and the reward). The unlock reads `enemy_kill`: a raid win records a kill of its boss, and those rows are never pruned |
+| Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: the latest attempt only, with the stats fought with, for the replay, and the reward). The unlock reads `boss_kill` (zone 4), like the raid unlock |
 | Reducer | `descend(loadout)`: unlocked, settle, simulate, pay on a win. The dev cheat "Unlock all zones" also opens the Deep |
 | Client | A **Moonwell Deep** page under Adventure next to Raids: the next depth's line-up and affixes, loadout picker, replay, leaderboard |
 | Check | `npm run test:abyss`: the reference player's wall depth, GAUNTLET tuning, win odds per Elite and Boss affix, every depth's line-up is valid |

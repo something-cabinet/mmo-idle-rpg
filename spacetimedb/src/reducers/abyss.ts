@@ -5,20 +5,14 @@ import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
 import { ElixirTracker, LOADOUT_COUNT, addXp } from '../game';
 import { MAX_LEVEL, combatStats } from '../combat';
-import { ABYSS_SEASON, ABYSS_UNLOCK_RAID, depthReward, depthTier } from '../data/abyss';
-import { RAIDS_BY_ID } from '../data/raids';
+import { ABYSS_SEASON, ABYSS_UNLOCK_ZONE, depthReward, depthTier } from '../data/abyss';
+import { ZONES_BY_ID, bossOf } from '../data/zones';
 import { elixirBuffs } from '../data/supplies';
 import { depthRng, encodeBuild, encodeStats, simulateDepth } from '../abyss';
-import { addMaterials, addSupply, killsOf, requireActive, settle, supplyCount, takeSupply, type Character, type Ctx } from '../helpers';
+import { addMaterials, addSupply, hasKilledBoss, requireActive, settle, supplyCount, takeSupply, type Character, type Ctx } from '../helpers';
 
 /** Deep log rows kept per character: only the latest attempt, which the client replays. */
 const ABYSS_LOG_KEEP = 1;
-
-/** The Deep opens with the first win against The Drowned Moon (a win records a kill of its boss). */
-function abyssUnlocked(ctx: Ctx, characterId: bigint): boolean {
-  const raid = RAIDS_BY_ID.get(ABYSS_UNLOCK_RAID);
-  return !!raid && killsOf(ctx, characterId, raid.boss.id) > 0n;
-}
 
 function loadoutGear(ctx: Ctx, ch: Character, index: number) {
   const lo = [...ctx.db.loadout.characterId.filter(ch.id)].find(l => l.index === index);
@@ -35,7 +29,10 @@ function loadoutGear(ctx: Ctx, ch: Character, index: number) {
 export const descend = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout }) => {
   const { ch: row } = requireActive(ctx);
   if (loadout >= LOADOUT_COUNT) throw new SenderError('No such loadout');
-  if (!abyssUnlocked(ctx, row.id)) throw new SenderError(`Defeat ${RAIDS_BY_ID.get(ABYSS_UNLOCK_RAID)?.boss.name ?? 'the raid boss'} to open the Moonwell Deep`);
+  if (!hasKilledBoss(ctx, row.id, ABYSS_UNLOCK_ZONE)) {
+    const zone = ZONES_BY_ID.get(ABYSS_UNLOCK_ZONE);
+    throw new SenderError(`Defeat ${(zone && bossOf(zone)?.name) ?? 'the zone boss'} to open the Moonwell Deep`);
+  }
   let ch = settle(ctx, row);
 
   const record = ctx.db.abyssRecord.characterId.find(ch.id);

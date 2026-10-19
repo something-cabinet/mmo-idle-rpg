@@ -14,7 +14,7 @@ not decisions.
 | [life-skills.md](life-skills.md) | Gathering and production skills, tools, buffs, Essences, Hideout |
 | [zones.md](zones.md) | Zones, enemy levels, enemy stats, rewards, loot tables |
 | [trading.md](trading.md) | Async gold market (5 listings, 2% listing fee, 10% tax) and friend gifts (5/day); registered level 30+ only |
-| [abyss.md](abyss.md) | The Moonwell Deep (first version built): endless solo gauntlet after Umbriel: each depth a basic, an Elite and the boss on one HP bar, with Elite and Boss affixes, infinite scaling, first-clear rewards, leaderboard |
+| [abyss.md](abyss.md) | The Moonwell Deep (first version built): endless solo gauntlet after Selvara: each depth a basic, an Elite and the boss on one HP bar, with Elite and Boss affixes, infinite scaling, first-clear rewards, leaderboard |
 | [chaos-dungeon.md](chaos-dungeon.md) | The Chaos Dungeon (brainstorm, not built): weekly solo roguelike of 5 floors (branching maps of battles, Elites, shops, events, rests, a boss), gear locked in, run-only boons and Ethereal gear in a separate table and dungeon loadout, weekly resource rewards, free replays |
 | [duels.md](duels.md) | Friendly duels against a friend's character (client-only, no rewards) |
 | [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass, T4 Moonveil Vale: enemies, bosses, drops, starter kit |
@@ -36,6 +36,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-19 | The Moonwell Deep (abyss.md) opens with the first Selvara kill (T4 boss), alongside The Drowned Moon, instead of a Drowned Moon win. Lore: her death leaves the moonwell unsealed. |
 | 2026-10-18 | Moonshadow reworked (legendary.md): all armor and resistance become evasion rating (was: the hit after a dodge deals 50% less, landed hits 10% more). That old effect is now the Defense legendary **Afterimage** (49): 50% per copy, cap 75%, no downside. Moonshadow Jerkin rolls max HP instead of evasion rating. |
 | 2026-10-17 | Scrap is renamed **Recycle** (distinct from Salvage), is instant and leaves Smithing (life-skills.md, "Recycle into materials"): recycling a bag item, or a drop or forged base the filters reject, gives its materials at once (no smelting queue, no Smithing XP). Yields cut to 1 / 2 / 3 / 8 / 20 materials by rarity (were 2 / 3 / 5 / 15 / 40 per 30 s smelt). Smelting is Ore only. No wipe: migrate.ts turns held scrap into materials at the old yields and empties the `scrap` table. Code keeps the old name (`scrapItems`, the filters' `scrap` flag, `SCRAP_YIELD`). |
 | 2026-10-17 | Online respawn (combat.md, "Respawn"): a live fight lost in a matchup won on average costs a 30 s respawn, then the same target again, instead of going idle. Logged per settle (`respawns`) and shown in the combat loot log. Offline settles a viable matchup at the kill rate live fights average out to (400 sampled fights: losses and respawns included; combat.md, "Offline losses"), so close matchups no longer earn 100% offline. |

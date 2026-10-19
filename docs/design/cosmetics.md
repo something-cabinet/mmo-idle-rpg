@@ -57,11 +57,11 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 | 6 | Moonlit | Defeat the Moonlit Champion (T4 secret) |
 | 7 | Wyrmslayer | Win Wyrm Hollow |
 | 8 | Eclipsed | Win The Drowned Moon |
-| 9 | of the Deep | Clear Moonwell depth 10 |
+| 9 | Deepdiver | Clear Moonwell depth 10 |
 | 10 | Moonless | Clear depth 25 |
 | 11 | Lightless | Clear depth 50 |
 | 12 | Voidborn | Clear depth 75 |
-| 13 | Who Fell With the Moon | Clear depth 100 |
+| 13 | Moonfallen | Clear depth 100 |
 | 14 | Centurion | Reach level 100 |
 | 20–24 | Master Miner, Master Woodcutter, Master Forager, Master Smith, Master Alchemist | That life skill at 99 (life-skills.md) |
 

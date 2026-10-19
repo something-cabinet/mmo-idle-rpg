@@ -250,8 +250,8 @@ but far slower than the difficulty (× 1.155), so they never become a reason to 
 
 ### Titles
 
-Built as part of cosmetics (cosmetics.md): *"of the Deep"* (10), *"Moonless"* (25),
-*"Lightless"* (50), *"Voidborn"* (75), *"Who Fell With the Moon"* (100, the last one), plus
+Built as part of cosmetics (cosmetics.md): *"Deepdiver"* (10), *"Moonless"* (25),
+*"Lightless"* (50), *"Voidborn"* (75), *"Moonfallen"* (100, the last one), plus
 name effects and nameplates. Later, once seasons are on: the season's top 10 get a gold
 title and plate for the next season.
 

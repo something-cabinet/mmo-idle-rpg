@@ -1,5 +1,5 @@
 // How a player's name is drawn (docs/design/cosmetics.md): its name effect, title and
-// nameplate. Full size shows all three; inline (chat) drops the plate and the animation.
+// nameplate. Full size shows all three; inline (chat) shows only the effect, without animation.
 
 import type { DbConnection } from '../module_bindings';
 import { cosmeticOf } from '../../spacetimedb/src/data/cosmetics';
@@ -12,7 +12,7 @@ export interface LookIds {
 
 /** A name in a given look (the Character page previews one not worn yet). */
 export function NameInLook({ name, look, inline }: { name: string; look?: LookIds; inline?: boolean }) {
-  const title = look && cosmeticOf(look.titleId, 'title');
+  const title = !inline && look ? cosmeticOf(look.titleId, 'title') : undefined;
   const visual = look && cosmeticOf(look.visualId, 'visual');
   const plate = !inline && look ? cosmeticOf(look.plateId, 'plate') : undefined;
   return (

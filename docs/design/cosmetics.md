@@ -31,7 +31,7 @@ One component draws every player name (`PlayerName`). Two sizes:
 
 - **Full** (effect, title and plate): the top bar, the Character page, inspect, the friend
   and online lists, raid seats and the raid fight, duels, the Moonwell leaderboard.
-- **Inline** (effect and title, no plate, no animation): chat lines. A plate and an
+- **Inline** (effect only: no title, no plate, no animation): chat lines. A plate and an
   animation on every line would be noise.
 
 The look is always the character's current one (one public `look` row per character),

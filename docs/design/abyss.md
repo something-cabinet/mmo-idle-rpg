@@ -221,8 +221,9 @@ attempt.
 
 | What | When | Notes |
 |---|---|---|
-| Gold + XP | Every depth | ~30 min of farming at the depth's tier (`tier(d)`, rounded down to an existing zone) |
-| Dust + materials | Every depth | Materials of the depth's tier, all kinds |
+| Gold + Dust | Every depth | ~2.5 h of farming at the depth's tier (`tier(d)`, rounded down to an existing zone) |
+| XP | Every depth | ~1 h of farming at the depth's tier |
+| Materials | Every depth | ~30 min of the depth's tier's materials, all kinds |
 | **Voidglass** | Every depth: 3, and 18 on every 10th | The Deep's own material, for Phials (phials.md). The main source: first clears pay once, so they pay big (~450 for depths 1–100). Raids, zone bosses, unique salvage and Mining pay a slow trickle |
 | A power elixir of the depth's grade + 1 rare herb | Every 5 depths | Fuel for farming |
 | Essences | Every 10 depths | **Once Essence drops ship**: left out until then; rare Essences from depth 30 |
@@ -234,8 +235,9 @@ growing slowly with depth:
 
 ```
 g(d)       = 1.03^(d − 101)
-gold, XP   = 30 min of T9 farming × g(d)
-Dust       = 30 min of T9 salvage × g(d)
+gold       = 2.5 h of T9 farming × g(d)
+XP         = 1 h of T9 farming × g(d)
+Dust       = 2.5 h of T9 salvage × g(d)
 materials  = T9 materials, all kinds, 30 min's worth × g(d)
 Voidglass  = 6 + 2 × floor((d − 101) / 10)
 ```

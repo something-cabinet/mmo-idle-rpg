@@ -25,6 +25,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'new', text: 'Elixir grades: Elixir, Greater and Divine, by material tier, with an Infuse toggle.' },
       { tag: 'new', text: 'Raid 2, The Drowned Moon, and the T4 zone Moonveil Vale.' },
       { tag: 'new', text: 'Life skills: Mining, Woodcutting, Foraging, Smithing and Alchemy.' },
+      { tag: 'balance', text: 'Moonwell Deep first clears pay 5× the gold and Dust and 2× the XP.' },
       { tag: 'balance', text: 'Raid Epic and Legendary drops roll every affix at the top tier.' },
       { tag: 'balance', text: 'Vitality gives +0.5% HP regen per point, down from +1%.' },
       { tag: 'balance', text: 'Thorned elites in the Deep reflect 10% of damage taken, down from 15%.' },

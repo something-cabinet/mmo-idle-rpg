@@ -230,21 +230,25 @@ const MAX_MATERIAL_TIER = Math.max(...SUPPLY_TIERS);
 /** The tier a depth's rewards are paid at: its own, rounded down to a zone that exists, T9 at most. */
 export const rewardTier = (d: number) => Math.min(9, MAX_ZONE_TIER, Math.floor(depthTier(d)));
 
+/** Hours of farming at the reward tier that a depth's first clear pays, per currency. */
+const GOLD_HOURS = 2.5;
+const DUST_HOURS = 2.5;
+const XP_HOURS = 1;
 /** Each material kind's count per depth: about 30 min of farming. */
 const MATERIAL_COUNTS: Partial<Record<MaterialKind, number>> = { Metal: 10, Hide: 10, Cloth: 10, Wood: 10, Reagent: 10, Core: 4, Gem: 2 };
 const REWARD_SALT = 0x6465657072n; // "deepr"
 
 /**
- * The first-clear reward of depth `d` (abyss.md, "Rewards"): about 30 min of farming at
- * its tier (1,200 gold, 4,800 XP and 15 Dust an hour × 2.9^(T−1), crafting.md), its tier's
- * materials, Voidglass, and up to depth 100 a power elixir and a rare herb every ELIXIR_EVERY depths.
+ * The first-clear reward of depth `d` (abyss.md, "Rewards"): GOLD_HOURS, XP_HOURS and
+ * DUST_HOURS of farming at its tier (1,200 gold, 4,800 XP and 15 Dust an hour × 2.9^(T−1),
+ * crafting.md), 30 min of its tier's materials, Voidglass, and up to depth 100 a power elixir and a rare herb every ELIXIR_EVERY depths.
  * Past depth 100 only the formula, × REWARD_GROWTH a depth.
  */
 export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
   const tier = rewardTier(d);
   const past = d >= FAST_FROM;
   const g = past ? REWARD_GROWTH ** (d - FAST_FROM) : 1;
-  const scale = 0.5 * 2.9 ** (tier - 1) * g;
+  const scale = 2.9 ** (tier - 1) * g;
   const matTier = Math.min(tier, MAX_MATERIAL_TIER);
   const materials: [number, number][] = [];
   for (const kind of MATERIAL_KINDS) {
@@ -263,9 +267,9 @@ export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
     if (herb) materials.push([herb.id, 1]);
   }
   return {
-    gold: BigInt(Math.round(1200 * scale)),
-    xp: BigInt(Math.round(4800 * scale)),
-    dust: BigInt(Math.round(15 * scale)),
+    gold: BigInt(Math.round(1200 * GOLD_HOURS * scale)),
+    xp: BigInt(Math.round(4800 * XP_HOURS * scale)),
+    dust: BigInt(Math.round(15 * DUST_HOURS * scale)),
     materials,
     ...(elixir !== undefined && { elixir }),
   };

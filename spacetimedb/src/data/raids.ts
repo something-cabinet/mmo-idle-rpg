@@ -123,10 +123,10 @@ export const RAIDS: RaidDef[] = [
     unlockZoneId: 4,
     boss: {
       id: 9002, name: 'Umbriel, the Eclipse', level: 50, damageType: 'Magic', defense: 'Armored', speed: 0.8,
-      hp: 38000, dps: 140, armor: 320, resistance: 60, xp: 110000, gold: 80000, drops: raidDrops(2), materials: [], boss: true,
+      hp: 35000, dps: 140, armor: 320, resistance: 60, xp: 110000, gold: 80000, drops: raidDrops(2), materials: [], boss: true,
     },
     // Moonfall: a shard of the moon shared by the living, so every death makes the next one hit harder.
-    aoe: { every: 15, damage: 440, damageType: 'Magic', name: 'Moonfall', icon: 'moon', split: true },
+    aoe: { every: 15, damage: 400, damageType: 'Magic', name: 'Moonfall', icon: 'moon', split: true },
     // Silver light behind plate, then void behind wards: a party of one damage type has a slow half of every cycle.
     phases: {
       every: 20,
@@ -135,7 +135,7 @@ export const RAIDS: RaidDef[] = [
         { name: 'New Moon', armor: 60, resistance: 320, defense: 'Warded', damageType: 'Physical' },
       ],
     },
-    enrageSeconds: 270,
+    enrageSeconds: 220,
     clearsPerDay: 3,
     itemsPerClear: 3,
     ownBaseShare: 1 / 2,

@@ -46,13 +46,13 @@ void, and still alive.
 | | |
 |---|---|
 | Boss | Umbriel, the Eclipse: Lv 50, 0.8 attacks/s, each at one fighter picked by threat |
-| HP | 38,000 |
+| HP | 35,000 |
 | Attack | 140 DPS; its damage type follows the phase |
 | **Lunar Phases** (passive) | every 20 s it turns to its other face, starting at Full Moon |
 | · Full Moon | Armored: armor 320, resistance 60; **magic** attacks |
 | · New Moon | Warded: armor 60, resistance 320; **physical** attacks |
-| Moonfall | every 15 s, 440 magic damage **shared evenly by the living** (4 alive: ~110 each; 2 alive: 220); can't be dodged |
-| Enrage | at 4:30 the party wipes |
+| Moonfall | every 15 s, 400 magic damage **shared evenly by the living** (4 alive: 100 each; 2 alive: 200); can't be dodged |
+| Enrage | at 3:40 the party wipes |
 
 What it asks for, beyond more stats than Wyrm Hollow:
 

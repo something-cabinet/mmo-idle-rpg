@@ -223,7 +223,7 @@ attempt.
 |---|---|---|
 | Gold + XP | Every depth | ~30 min of farming at the depth's tier (`tier(d)`, rounded down to an existing zone) |
 | Dust + materials | Every depth | Materials of the depth's tier, all kinds |
-| **Voidglass** | Every depth, a bigger batch every 10 | New Deep-only material: the "precious material" raids.md plans. Paid out and stored from the first version; what it crafts is decided later |
+| **Voidglass** | Every depth: 3, and 18 on every 10th | The Deep's own material, for Phials (phials.md). The main source: first clears pay once, so they pay big (~450 for depths 1–100). Raids, zone bosses, unique salvage and Mining pay a slow trickle |
 | A power elixir of the depth's grade + 1 rare herb | Every 5 depths | Fuel for farming |
 | Essences | Every 10 depths | **Once Essence drops ship**: left out until then; rare Essences from depth 30 |
 | **Title** | Depths 10, 25, 50, 75, 100 | Cosmetic (cosmetics.md); a name effect at 50 and 100, a nameplate at 25 and 75 |
@@ -237,7 +237,7 @@ g(d)       = 1.03^(d − 101)
 gold, XP   = 30 min of T9 farming × g(d)
 Dust       = 30 min of T9 salvage × g(d)
 materials  = T9 materials, all kinds, 30 min's worth × g(d)
-Voidglass  = 3 + floor((d − 101) / 10)
+Voidglass  = 6 + 2 × floor((d − 101) / 10)
 ```
 
 The few players this deep play for the leaderboard, not for one-off prizes, and an endless

@@ -221,7 +221,7 @@ function DeepLoot({ log }: { log: AbyssLog }) {
     ...(log.xp > 0n ? [{ key: 'xp', icon: 'star', cls: 'c-ok', text: `+${fmtBig(log.xp)} XP`, title: 'Experience' }] : []),
     { key: 'dust', icon: 'gem', cls: 'c-dust', text: `+${fmtBig(log.dust)} Dust`, title: 'Dust' },
     ...(supply ? [{ key: 'elixir', icon: 'flask', cls: 'c-voidglass', text: supply.name, title: `${supply.name}: ${elixirText(supply)}`, special: true }] : []),
-    // Voidglass first among the materials: it only comes from the Deep.
+    // Voidglass first among the materials: the Deep's own material.
     ...[...log.materials].sort((x, y) => Number(y.materialId === voidglass) - Number(x.materialId === voidglass)).map(m => ({
       key: `m${m.materialId}`, icon: materialIconName(m.materialId), cls: m.materialId === voidglass ? 'c-voidglass' : 'c-material',
       text: `+${fmt(m.count)} ${materialName(m.materialId)}`, title: materialName(m.materialId), special: m.materialId === voidglass,

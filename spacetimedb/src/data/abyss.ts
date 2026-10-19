@@ -252,7 +252,7 @@ export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
     const m = materialAt(matTier, kind);
     if (n && m) materials.push([m.id, Math.round(n * g)]);
   }
-  const voidglass = past ? 3 + Math.floor((d - FAST_FROM) / 10) : 1 + (d % VOIDGLASS_BATCH_EVERY === 0 ? 5 : 0);
+  const voidglass = past ? 6 + 2 * Math.floor((d - FAST_FROM) / 10) : 3 + (d % VOIDGLASS_BATCH_EVERY === 0 ? 15 : 0);
   materials.push([untieredMaterial('Voidglass').id, voidglass]);
   let elixir: number | undefined;
   if (!past && d % ELIXIR_EVERY === 0) {

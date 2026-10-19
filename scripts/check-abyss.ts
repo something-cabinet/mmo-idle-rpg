@@ -156,7 +156,7 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
   check('a power elixir and a rare herb every 5 depths up to 100', [5, 10, 95, 100].every(d => SUPPLIES_BY_ID.get(depthReward(d).elixir ?? 0)?.elixir.group === 'Power' &&
     depthReward(d).materials.some(([id]) => MATERIALS_BY_ID.get(id)?.kind === 'Herb')) &&
     [4, 6, 101, 105].every(d => depthReward(d).elixir === undefined));
-  check('past depth 100 rewards only grow by the formula (× 1.03 a depth)', Math.abs(Number(r111.gold) / Number(r101.gold) - 1.03 ** 10) < 0.01 && voidglass(r111) === 4);
+  check('past depth 100 rewards only grow by the formula (× 1.03 a depth)', Math.abs(Number(r111.gold) / Number(r101.gold) - 1.03 ** 10) < 0.01 && voidglass(r111) === 8);
 }
 
 // ---------------------------------------------------------------- balance

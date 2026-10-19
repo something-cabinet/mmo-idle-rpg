@@ -63,11 +63,13 @@ the recipe.
 
 ## Where Voidglass comes from
 
-Today Voidglass only comes from first clears in the Deep: 1 per depth and 6 on every 10th,
-~150 for depths 1–100 in a season. That's enough for ~30 Phials a season. Four sources are
-added, all gated at **T4+** (where the Deep opens), so early content stays as it is.
+**The Deep's first clears are the main source**, raised on 2026-10-19 because they pay
+only once: **3 per depth and 18 on every 10th** (was 1 and 6), ~450 for depths 1–100 in a
+season, enough for ~90 Phials. Past depth 100: 6 + 2 × floor((d − 101) / 10) (was
+3 + floor(…)).
 
-Target: a dedicated endgame player makes **3–5 Phials a day** (15–25 Voidglass).
+Four slow sources keep Phials coming after a push. They're kept small on purpose: the
+Deep pays the bulk, and these stay a trickle.
 
 ### 1. Raid clears
 
@@ -77,24 +79,22 @@ Target: a dedicated endgame player makes **3–5 Phials a day** (15–25 Voidgla
   Phials, and their clears are already capped per day.
 - This is the "precious material" raids.md planned, so that note becomes Voidglass.
 
-### 2. Rare find while farming
+### 2. Zone bosses
 
-- Each kill in a **T4+ zone** has a **0.1% × (T − 3)** chance to drop 1 Voidglass: T4
-  0.1%, T9 0.6%. Bosses count like other kills.
+- Only **zone bosses** drop it, not regular enemies or secret-area bosses: **0.2% per
+  boss kill** in **T4+ zones**, × (T − 3) (T4 0.2%, T9 1.2%).
 - Rolled in the settle like rare encounters: online it's seeded, offline it's one Poisson
   draw. Closed form stays intact.
-- At ~240 kills an hour: **~0.24 an hour at T4** (~4 from a day of farming), ~1.4 an hour at T9.
-- Works offline, so it rewards idle farming, not being online. It's a slow, steady trickle.
-- Shown in the settle log and the away report with the other materials.
+- Very rare: about one per 500 boss kills at T4. Farming the boss pays a little Voidglass
+  on top of its own loot, a reason to farm it after the first kill.
+- Works offline. Shown in the settle log and the away report with the other materials.
 
-### 3. Salvaging legendaries and uniques
+### 3. Salvaging uniques
 
-- Salvaging a **T4+** Legendary gives **2 Voidglass** and a Unique gives **3**, on top of
-  its Dust and gold.
-- Works the same for manual salvage and the loot filter's auto-salvage, so a long offline
-  session pays it too.
-- At current drop rates (~1.3 legendaries and ~1.3 uniques a day), salvaging what you don't
-  keep comes to **up to ~6 a day**. It gives duplicate legendaries and uniques a use.
+- Salvaging a **Unique of any tier** gives **2 Voidglass**, on top of its Dust and gold.
+  Legendaries give none.
+- Uniques are always kept by the loot filter, so this is manual salvage only.
+- At ~1.3 uniques a day, **up to ~2.5 a day**. It gives duplicate uniques a use.
 - Recycle (materials) stays as it is: only Salvage pays Voidglass.
 
 ### 4. Void Geode (Mining rare find)
@@ -109,13 +109,13 @@ Target: a dedicated endgame player makes **3–5 Phials a day** (15–25 Voidgla
 
 ### Totals
 
-| Player | Raids | Farming | Salvage | Geodes | Per day | Phials |
+| Player | Raids | Boss | Salvage | Geodes | Per day | Phials |
 |-|-|-|-|-|-|-|
-| Idle T4 farmer, no raids | 0 | ~4 | ~4 | 0 | ~8 | ~1.5 |
+| Idle T4 farmer, no raids | 0 | 0–1 | ~2.5 | 0 | ~3 | ~0.5 |
 | Idle T4 miner, no raids | 0 | 0 | 0 | ~10 | ~10 | ~2 |
-| Raider who farms T4 | 18 | ~4 | ~4 | 0 | ~26 | ~5 |
+| Raider who farms T4 | 18 | 0–1 | ~2.5 | 0 | ~21 | ~4 |
 
-Plus Deep first clears, which come in bursts while pushing.
+On top of that, the Deep's first clears: ~450 over depths 1–100, in bursts while pushing.
 
 ### Not doing
 
@@ -134,8 +134,9 @@ Plus Deep first clears, which come in bursts while pushing.
   the fight starts, and the fight's stats include it. `raid_log` records it.
 - **Renewal** is an effect in the fight sims (`simulateDepth`, raid fight), not a
   multiplier. It works like Second Wind but triggers at 50% HP.
-- **Voidglass sources:** a T4+ Voidglass roll in the settle's loot step, a Voidglass amount
-  in salvage values for T4+ Legendary and Unique, and a Void Geode roll in gathering.
+- **Voidglass sources:** a Voidglass roll for T4+ zone boss kills in the settle's loot
+  step, a Voidglass amount in the salvage value of Uniques, and a Void Geode roll in
+  gathering. The Deep's first-clear amounts are already live (data/abyss.ts `depthReward`).
   Raid rewards get a `voidglass` count per raid.
 
 ## Open questions

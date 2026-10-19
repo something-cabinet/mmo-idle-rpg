@@ -1925,6 +1925,9 @@ button.version:hover {
 }
 
 /* what's new */
+.modal-card.changelog-popup {
+  width: min(760px, 100%);
+}
 .changelog section + section {
   margin-top: 14px;
   padding-top: 12px;

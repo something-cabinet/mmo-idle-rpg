@@ -38,7 +38,7 @@ function Entries({ entries }: { entries: ChangelogEntry[] }) {
 /** The full changelog, opened on demand. */
 export function ChangelogPopup({ onClose }: { onClose: () => void }) {
   return (
-    <Modal onClose={onClose}>
+    <Modal className="changelog-popup" onClose={onClose}>
       <CardHead title="What's new" />
       <Entries entries={CHANGELOG} />
       <div className="row">
@@ -61,7 +61,7 @@ export function WhatsNew({ conn }: { conn: DbConnection }) {
     call(conn.reducers.seeChangelog({ version: LATEST_VERSION }));
   };
   return (
-    <Modal onClose={close}>
+    <Modal className="changelog-popup" onClose={close}>
       <CardHead title="What's new since you were last here" />
       <Entries entries={entries} />
       <div className="row">

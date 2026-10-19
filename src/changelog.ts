@@ -21,17 +21,17 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '0.2.0',
+    version: '0.1.1',
     date: '2026-10-20',
     title: 'Zone maps, instant tool upgrades and raid tuning',
     changes: [
       { tag: 'new', text: 'Zone art: every zone map is now a painted landscape, with its landmarks where the areas are. Turn it off in Settings › Zone art for the plain map.' },
+      { tag: 'new', text: 'Crafting: Reroll, Upgrade and Temper are tabs. Alchemy: the Brew tab is now Elixirs.' },
       { tag: 'fix', text: 'Stoneskin says more clearly what it does: each enemy hit is reduced by a flat 1% of your max HP per copy. Unchanged in effect.' },
       { tag: 'balance', text: 'Smithing: tool upgrades are instant, like tempering. Same cost and XP, and whatever you are doing carries on.' },
       { tag: 'balance', text: 'The Drowned Moon: the enrage is at 4:00 (was 3:40), and Umbriel has more HP (37,000, was 35,000) and hits harder (150 DPS, was 140).' },
       { tag: 'balance', text: 'Wyrm Hollow: Skaldrith has more HP (20,000, was 18,000). Hired NPCs in both raids deal more damage, to keep up with current gear.' },
       { tag: 'balance', text: 'Lantern of the Drowned Moon: Drowned Hymn is renamed Moonlit Vigil, so it is not confused with The Drowned Hymnal. Same effect.' },
-      { tag: 'new', text: 'Crafting: Reroll, Upgrade and Temper are tabs. Alchemy: the Brew tab is now Elixirs.' },
     ],
   },
   {

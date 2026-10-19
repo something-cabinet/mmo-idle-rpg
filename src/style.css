@@ -1927,6 +1927,20 @@ button.version:hover {
 /* what's new */
 .modal-card.changelog-popup {
   width: min(760px, 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Only the entries scroll; the title and OK stay in view. */
+.changelog-popup .changelog {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+.changelog-popup > .row {
+  margin-top: 10px;
 }
 .changelog section + section {
   margin-top: 14px;

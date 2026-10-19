@@ -6,6 +6,9 @@
 //   npm run deploy -- --server-only   # publish the module only
 //   npm run deploy -- --delete-data   # breaking schema change: WIPES ALL PLAYERS on Maincloud
 //   npm run deploy -- --skip-checks   # skip typecheck
+//   npm run deploy -- --no-changelog  # ship without a new src/changelog.ts entry (art, internal fixes)
+// Each successful deploy moves the local git tag `deployed` to HEAD; the next deploy refuses
+// when something changed since then but src/changelog.ts didn't.
 import { spawnSync } from 'node:child_process';
 import { loadEnv } from 'vite';
 
@@ -16,6 +19,13 @@ const clientOnly = args.has('--client-only');
 const serverOnly = args.has('--server-only');
 const deleteData = args.has('--delete-data');
 const skipChecks = args.has('--skip-checks');
+const noChangelog = args.has('--no-changelog');
+const DEPLOYED_TAG = 'deployed';
+
+/** Whether `git diff` against the last deploy (working tree included) finds changes in `paths`. */
+function changedSinceDeploy(...paths: string[]) {
+  return spawnSync('git', ['diff', '--quiet', DEPLOYED_TAG, '--', ...paths]).status === 1;
+}
 
 // The dev cheats (reducers/dev.ts) must never be switched on in production: drop the
 // value so a shell that happens to have it set can't publish it to Maincloud.
@@ -45,6 +55,18 @@ if (!host.includes('maincloud') || !dbName) {
   );
   process.exit(1);
 }
+const hasTag = spawnSync('git', ['rev-parse', '--verify', '--quiet', `${DEPLOYED_TAG}^{commit}`]).status === 0;
+if (!hasTag) {
+  console.log(`No "${DEPLOYED_TAG}" git tag yet: skipping the changelog check.`);
+} else if (!noChangelog && changedSinceDeploy('.') && !changedSinceDeploy('src/changelog.ts')) {
+  console.error(
+    `Nothing new in src/changelog.ts since the last deploy (git tag "${DEPLOYED_TAG}").\n` +
+    'Add an entry for what players will notice, or pass --no-changelog if there is nothing to tell.\n' +
+    `Changes since then: git log --oneline ${DEPLOYED_TAG}..HEAD`,
+  );
+  process.exit(1);
+}
+
 console.log(`Deploying db "${dbName}" (${host}) -> Cloudflare Pages "${PAGES_PROJECT}"`);
 
 if (!skipChecks) run('npm run typecheck');
@@ -61,3 +83,7 @@ if (!serverOnly) {
   run(`npx wrangler pages deploy dist --project-name ${PAGES_PROJECT}`);
   console.log(`\nLive at https://${PAGES_PROJECT}.pages.dev`);
 }
+
+// Marks what went out, for the next deploy's changelog check (uncommitted changes deployed
+// along with it aren't recorded: commit first).
+spawnSync('git', ['tag', '-f', DEPLOYED_TAG, 'HEAD']);

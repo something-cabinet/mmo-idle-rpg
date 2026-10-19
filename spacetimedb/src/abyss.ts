@@ -87,7 +87,7 @@ export function depthFoes(s: CombatStats, lineup: DepthLineup): DepthFoe[] {
     if (a === EliteAffix.Vampiric) mods.drain = Math.max(mods.drain ?? 0, 0.5);
     if (a === EliteAffix.WardedShell) enemy = withProfile(enemy, resistingProfile(s));
     if (a === EliteAffix.Swift) enemy = { ...enemy, speed: enemy.speed * 1.5, dps: enemy.dps * 1.5 * 0.75 };
-    if (a === EliteAffix.Thorned) mods.reflect = 0.15 * (1 - defenseAgainst(s, 'Physical', enemy.level).mitigation);
+    if (a === EliteAffix.Thorned) mods.reflect = 0.1 * (1 - defenseAgainst(s, 'Physical', enemy.level).mitigation);
     if (a === EliteAffix.Unyielding) enemy = { ...enemy, regen: (enemy.regen ?? 0) + 0.02 * enemy.hp };
     if (a === EliteAffix.Ravenous) mods.ramp = { every: 5, step: 0.05 };
     foes.push({ slot: 'elite', kindId: kind.id, affixes: [a], enemy, matchup: matchup(s, enemy), mods });

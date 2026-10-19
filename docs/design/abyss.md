@@ -175,7 +175,7 @@ Elite is easy to read and to balance on its own.
 | Vampiric | Heals itself for 50% of the damage it deals |
 | Warded Shell | Takes the defense profile that resists your larger damage type |
 | Swift | Attack speed +50%, damage per hit −25% |
-| Thorned | Reflects 15% of the damage it takes, as physical |
+| Thorned | Reflects 10% of the damage it takes, as physical |
 | Unyielding | Regenerates 2% max HP per second |
 | Ravenous | Its damage grows +5% every 5 s of its fight |
 

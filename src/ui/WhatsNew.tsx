@@ -20,7 +20,7 @@ function Entries({ entries }: { entries: ChangelogEntry[] }) {
           <h4>
             {dateText(e.date)} <span className="muted" title="Version">v{e.version}</span>
           </h4>
-          <p><strong>{e.title}</strong></p>
+          <h3 className="changelog-title">{e.title}</h3>
           <ul>
             {e.changes.map(c => (
               <li key={c.text}>

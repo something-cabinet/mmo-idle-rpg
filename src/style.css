@@ -1937,6 +1937,11 @@ button.version:hover {
   margin: 0;
   font-size: 13px;
 }
+.changelog-title {
+  margin: 10px 0 12px;
+  font-size: 20px;
+  text-align: center;
+}
 .changelog ul {
   margin: 6px 0 0;
   padding: 0;

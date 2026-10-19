@@ -38,10 +38,10 @@ function character(seed: number, profile: Profile = PROFILES[seed % 2]): CombatS
 // ---------------------------------------------------------------- scaling and line-ups
 
 check('depth 1 is eased to 0.6× the T4 average enemy, full from depth 6',
-  Math.abs(depthHpMult(1) - 0.6) < 1e-9 && Math.abs(depthDpsMult(1) - 0.6) < 1e-9 && Math.abs(depthHpMult(6) - 1.055 ** 5) < 1e-9);
-check('depth 51 is about T9 (HP × ~14.5, DPS × ~9.0)', Math.abs(depthHpMult(51) - 14.54) < 0.05 && Math.abs(depthDpsMult(51) - 9.03) < 0.05,
+  Math.abs(depthHpMult(1) - 0.6) < 1e-9 && Math.abs(depthDpsMult(1) - 0.6) < 1e-9 && Math.abs(depthHpMult(6) - 1.045 ** 5) < 1e-9);
+check('depth 51: HP and DPS × ~9.0', Math.abs(depthHpMult(51) - 9.03) < 0.05 && Math.abs(depthDpsMult(51) - 9.03) < 0.05,
   `${depthHpMult(51).toFixed(2)} / ${depthDpsMult(51).toFixed(2)}`);
-check('the same growth past depth 100', Math.abs(depthHpMult(151) / depthHpMult(150) - 1.055) < 1e-9 &&
+check('the same growth past depth 100', Math.abs(depthHpMult(151) / depthHpMult(150) - 1.045) < 1e-9 &&
   Math.abs(depthDpsMult(151) / depthDpsMult(150) - 1.045) < 1e-9);
 check('the curve never stops', Number.isFinite(depthHpMult(1000)) && depthHpMult(1000) > depthHpMult(999));
 
@@ -111,6 +111,8 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
   const plain = depthEnemy(5, ABYSS_KINDS[4], 'elite');
   check('Swift: 1.5× the attacks, each 0.75× the hit', Math.abs(swift.speed / plain.speed - 1.5) < 1e-9 && Math.abs(swift.dps / swift.speed / (plain.dps / plain.speed) - 0.75) < 1e-9);
   const thorned = fightFoe(hero, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]), 1).fight;
+  check('Thorned: 30% less max HP', Math.abs(depthFoes(hero, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].enemy.hp -
+    0.7 * depthFoes(hero, lineup(5, EliteAffix.Ravenous, [BossAffix.Hungering]))[1].enemy.hp) < 1e-6);
   check('Thorned: your hits come back at you', thorned.events.some(e => e.by === 'you' && (e.reflected ?? 0) > 0));
   const thornedMods = (c: CombatStats) => depthFoes(c, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].mods.reflect ?? 0;
   const lvl = depthFoes(hero, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].enemy.level;
@@ -119,7 +121,7 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
     Math.abs(thornedMods(mage) - 0.1 * (1 - defenseAgainst(mage, 'Magic', lvl).mitigation)) < 1e-9,
     `hero ${thornedMods(hero).toFixed(4)}, mage ${thornedMods(mage).toFixed(4)}`);
   const unyielding = depthFoes(hero, lineup(5, EliteAffix.Unyielding, [BossAffix.Hungering]))[1].enemy;
-  check('Unyielding: regenerates 2% of max HP a second', Math.abs((unyielding.regen ?? 0) - 0.02 * unyielding.hp) < 1e-6);
+  check('Unyielding: regenerates 1.5% of max HP a second', Math.abs((unyielding.regen ?? 0) - 0.015 * unyielding.hp) < 1e-6);
   const rav = fightFoe(dummy, lineup(5, EliteAffix.Ravenous, [BossAffix.Hungering]), 1, 3n).fight;
   const early = mean(rav.events.filter(e => e.by === 'enemy' && e.kind === 'hit' && e.t < 5).map(e => e.damage));
   const late = mean(rav.events.filter(e => e.by === 'enemy' && e.kind === 'hit' && e.t >= 25).map(e => e.damage));

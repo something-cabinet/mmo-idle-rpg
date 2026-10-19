@@ -97,7 +97,7 @@ Depth 1 is a T4 enemy, and every 10 depths is one tier:
 ```
 tier(d)   = 4 + (d − 1) / 10                    // depth 1 = T4, 11 = T5, 51 = T9
 level(d)  = min(100, 40 + (d − 1))              // capped: see below
-HP(d)     = 915  × 1.055^(d − 1) × ease(d) × kind.hp × slot.hp
+HP(d)     = 915  × 1.045^(d − 1) × ease(d) × kind.hp × slot.hp
 DPS(d)    = 53   × 1.045^(d − 1) × ease(d) × kind.dps × slot.dps × GAUNTLET
 ease(d)   = min(1, 0.6 + 0.08 × (d − 1))         // depth 1 at 0.6, full from depth 6
 armor/res = 2.5 × level(d) × profile             // as zones
@@ -106,18 +106,20 @@ GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) 
 
 - `915` and `53` are the T4 average enemy's HP and DPS. `kind` is the pool enemy's own
   shape (table below), `slot` the basic / Elite / boss multiplier (above).
-- **1.055 and 1.045** are close to the zone table from T4 to T9 (HP × 19.7 and DPS × 7.4
-  over 5 tiers, i.e. 1.06 and 1.04), leaning a bit to damage: Deep enemies hit a bit harder
-  and have a bit less HP than zone enemies of the same tier, for the same overall difficulty.
-- **Difficulty per depth ≈ 1.055 × 1.045 ≈ 1.10, so it doubles about every 7 depths.** The
-  leaderboard therefore reads on a log scale: a build twice as strong goes ~7 depths deeper,
+- **HP and DPS grow at the same rate, 1.045 a depth.** Neither leans: a build that is all
+  damage or all defense walls as early as its weak side allows, so going deep asks for a
+  balanced build. (Zones lean to HP from T4 to T9: × 19.7 HP and × 7.4 DPS over 5 tiers,
+  i.e. 1.06 and 1.04.) Overall a bit slower than the zones: depth 51 is a little easier
+  than T9.
+- **Difficulty per depth ≈ 1.045 × 1.045 ≈ 1.09, so it doubles about every 8 depths.** The
+  leaderboard therefore reads on a log scale: a build twice as strong goes ~8 depths deeper,
   not twice as deep. Gaps at the top stay readable instead of exploding.
 - **The same growth all the way down.** No faster curve past depth 100: the board keeps one
-  scale, and twice as strong is ~7 depths deeper at any depth.
+  scale, and twice as strong is ~8 depths deeper at any depth.
 - **A gentle start (`ease`).** Depth 1 is on the easy side of T4: HP and DPS × 0.6 (about
   0.36× the difficulty), back to the full curve by depth 6. Anyone who beat Selvara gets a
   few free depths and a feel for the format before it bites. The ease only touches the start,
-  so depth 51 still lines up with T9.
+  so it never changes the curve past depth 6.
 - **GAUNTLET** keeps a depth at about one hard fight's worth of damage taken. Target: a
   reference player at the unlock (Lv 48, random T4 Rare+ gear, as in `test:raid`) clears
   depths 1–5 comfortably and walls around depth 8–12. Tuned in a
@@ -129,14 +131,14 @@ GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) 
 | Depth | Like | Level | HP × | DPS × | Boss affixes |
 |---|---|---|---|---|---|
 | 1 | easy T4 | 40 | 0.6 | 0.6 | 1 |
-| 6 | T4+ | 45 | 1.31 | 1.25 | 1 |
-| 11 | T5 | 50 | 1.7 | 1.55 | 1 |
-| 21 | T6 | 60 | 2.9 | 2.4 | 1 |
-| 31 | T7 | 70 | 5.0 | 3.75 | 1 |
-| 51 | T9 | 90 | 14.5 | 9.0 | 2 |
-| 101 | past T9 | 100 | 211 | 81.6 | 2 |
-| 111 | past T9 | 100 | 361 | 127 | 2 |
-| 121 | past T9 | 100 | 617 | 197 | 2 |
+| 6 | T4+ | 45 | 1.25 | 1.25 | 1 |
+| 11 | T5 | 50 | 1.55 | 1.55 | 1 |
+| 21 | T6 | 60 | 2.4 | 2.4 | 1 |
+| 31 | T7 | 70 | 3.75 | 3.75 | 1 |
+| 51 | T9 | 90 | 9.0 | 9.0 | 2 |
+| 101 | past T9 | 100 | 82 | 82 | 2 |
+| 111 | past T9 | 100 | 127 | 127 | 2 |
+| 121 | past T9 | 100 | 197 | 197 | 2 |
 
 Zones only go to T4 for now, so today the wall sits a few depths past T4 gear. Each new tier
 pushes everyone deeper, which is one reason for seasons (below).
@@ -154,7 +156,7 @@ numbers are *illustrative*.
 |---|---|---|---|---|---|
 | Moonless Shade | Magic | Balanced | 1.2/s | 0.9 / 1.0 | Evasive (hard to hit) |
 | Drowned Acolyte | Magic | Warded | 0.9/s | 1.0 / 1.1 | Plain caster: a resistance check |
-| Tidebound Husk | Phys | Armored | 0.5/s | 1.4 / 0.9 | Regen: punishes low burst |
+| Tidebound Husk | Phys | Armored | 0.5/s | 1.2 / 0.8 | Regen (1% max HP/s): punishes low burst |
 | Voidling Swarm | Phys | Balanced | 1.8/s | 0.7 / 1.1 | Very fast small hits |
 | Fallen Moonguard | Phys | Armored | 0.7/s | 1.2 / 1.0 | An armor-pen check |
 | Starless Lamprey | Phys | Balanced | 1.0/s | 1.0 / 1.0 | **Drains:** heals itself for 50% of the damage it deals |
@@ -171,8 +173,8 @@ Elite is easy to read and to balance on its own.
 | Vampiric | Heals itself for 50% of the damage it deals |
 | Warded Shell | Takes the defense profile that resists your larger damage type |
 | Swift | Attack speed +50%, damage per hit −25% |
-| Thorned | Reflects 10% of the damage it takes, in the same damage types: physical hits come back physical, magic hits magic |
-| Unyielding | Regenerates 2% max HP per second |
+| Thorned | Reflects 10% of the damage it takes, in the same damage types: physical hits come back physical, magic hits magic. Has 30% less max HP, so the reflect lasts a shorter fight |
+| Unyielding | Regenerates 1.5% max HP per second |
 | Ravenous | Its damage grows +5% every 5 s of its fight |
 
 ### The boss: the Deep Warden

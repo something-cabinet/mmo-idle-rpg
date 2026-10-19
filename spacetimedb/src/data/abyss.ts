@@ -21,7 +21,7 @@ export const ABYSS_UNLOCK_ZONE = 4;
 export const BASE_HP = 915;
 export const BASE_DPS = 53;
 /** Growth per depth, the same all the way down (≈ the zone curve from T4 to T9, leaning to damage). */
-export const HP_GROWTH = 1.055;
+export const HP_GROWTH = 1.045;
 export const DPS_GROWTH = 1.045;
 /** From this depth there are no milestone rewards, only the formula (Rewards). */
 export const FORMULA_FROM = 101;
@@ -89,7 +89,7 @@ export interface AbyssKind {
 export const ABYSS_KINDS: AbyssKind[] = [
   { id: 9101, name: 'Moonless Shade', damageType: 'Magic', defense: 'Balanced', speed: 1.2, hp: 0.9, dps: 1, evasive: true, twist: 'Hard to hit' },
   { id: 9102, name: 'Drowned Acolyte', damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 1, dps: 1.1, twist: 'A resistance check' },
-  { id: 9103, name: 'Tidebound Husk', damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 1.4, dps: 0.9, regen: 0.015, twist: 'Regenerates' },
+  { id: 9103, name: 'Tidebound Husk', damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 1.2, dps: 0.8, regen: 0.01, twist: 'Regenerates' },
   { id: 9104, name: 'Voidling Swarm', damageType: 'Physical', defense: 'Balanced', speed: 1.8, hp: 0.7, dps: 1.1, twist: 'Very fast small hits' },
   { id: 9105, name: 'Fallen Moonguard', damageType: 'Physical', defense: 'Armored', speed: 0.7, hp: 1.2, dps: 1, twist: 'An armor check' },
   { id: 9106, name: 'Starless Lamprey', damageType: 'Physical', defense: 'Balanced', speed: 1, hp: 1, dps: 1, drain: 0.5, twist: 'Heals from the damage it deals' },
@@ -124,8 +124,8 @@ export const ELITE_AFFIXES: AffixDef[] = [
   { id: EliteAffix.Vampiric, name: 'Vampiric', text: 'Heals itself for 50% of the damage it deals' },
   { id: EliteAffix.WardedShell, name: 'Warded Shell', text: 'Takes the defenses that resist your main damage type' },
   { id: EliteAffix.Swift, name: 'Swift', text: 'Attacks 50% faster, each hit 25% weaker' },
-  { id: EliteAffix.Thorned, name: 'Thorned', text: 'Reflects 10% of the damage it takes, in the same damage types' },
-  { id: EliteAffix.Unyielding, name: 'Unyielding', text: 'Regenerates 2% of its max HP per second' },
+  { id: EliteAffix.Thorned, name: 'Thorned', text: 'Reflects 10% of the damage it takes, in the same damage types, but has 30% less max HP' },
+  { id: EliteAffix.Unyielding, name: 'Unyielding', text: 'Regenerates 1.5% of its max HP per second' },
   { id: EliteAffix.Ravenous, name: 'Ravenous', text: 'Its damage grows 5% every 5 s' },
 ];
 export const BOSS_AFFIXES: AffixDef[] = [

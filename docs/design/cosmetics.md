@@ -119,7 +119,8 @@ reset of the Deep).
 The page has two tabs: **Status** (level, stats, effects) and **Customize**. Customize
 shows a preview of the name as others see it (full size) and one picker per slot with
 only the cosmetics unlocked so far, each drawn in its own look. Picking one wears it at
-once. Locked ones are hidden.
+once. Locked ones are hidden unless **Show locked** is ticked: then they show greyed out, with
+how to unlock them, and each slot shows how many of its cosmetics are unlocked.
 
 ## Later
 

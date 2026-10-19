@@ -17,8 +17,8 @@ export function NameInLook({ name, look, inline }: { name: string; look?: LookId
   const plate = !inline && look ? cosmeticOf(look.plateId, 'plate') : undefined;
   return (
     <span className={`pname${inline ? ' inline' : ''}${plate ? ` np np-${plate.css}` : ''}`}>
+      {title && <span className="pname-title" title={title.name}>{title.name}</span>}
       <span className={`pname-name${visual ? ` nv nv-${visual.css}` : ''}`} data-text={name}>{name}</span>
-      {title && <span className="pname-title">{title.name}</span>}
     </span>
   );
 }

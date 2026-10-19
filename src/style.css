@@ -4118,35 +4118,41 @@ fieldset.affix-pick legend {
    themes and set their own text colour; any visual can sit on any plate. */
 .pname {
   display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
   max-width: 100%;
   min-width: 0;
-  vertical-align: baseline;
+  vertical-align: middle;
+  line-height: 1.2;
 }
 .pname-name {
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Small, above the name; a title too long for the space ends in "…" (full text on hover). */
 .pname-title {
-  font-size: 0.78em;
-  font-weight: 600;
-  opacity: 0.75;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-.pname-title::before {
-  content: '· ';
+  font-size: 0.68em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.75;
 }
 .pname.inline {
   display: inline;
 }
+.look-preview .pname {
+  align-items: center;
+}
 
 .np {
-  padding: 1px 9px;
+  padding: 2px 9px;
   border-radius: 6px;
   border: 1px solid transparent;
-  line-height: 1.5;
 }
 .np-moonwell {
   color: #e6ecff;

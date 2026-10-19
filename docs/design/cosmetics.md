@@ -13,7 +13,7 @@ none can be bought (a raid token or Voidglass shop may sell some later).
 
 | Slot | What it is | Example |
 |---|---|---|
-| **Title** | A short phrase after the name, in smaller text | "Lam · Moonless" |
+| **Title** | A short phrase in small text above the name; too long for the space, it ends in "…" (full text on hover) | "Moonless" over "Lam" |
 | **Name effect** | How the name text is drawn: a fixed colour and effect pair | Moonlight: silver shimmer |
 | **Nameplate** | A background plate behind the name and title | Moonwell: deep blue, silver rim |
 

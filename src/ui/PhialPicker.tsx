@@ -9,14 +9,14 @@ export const heldPhials = (s: Snapshot) => PHIALS.filter(p => (s.supplies.get(p.
 /** `phialId` if one is in stock, else 0: what a fight would really use. */
 export const usablePhial = (s: Snapshot, phialId: number) => (phialId !== 0 && (s.supplies.get(phialId) ?? 0) > 0 ? phialId : 0);
 
-/** A select of the Phials in stock (with the chosen one even when none are left), or a hint when there are none. */
+/** A select of the Phials in stock (with the chosen one even when none are left). With none, it still shows, holding only "No Phial", so the feature stays visible. */
 export function PhialPicker({ s, value, onChange }: { s: Snapshot; value: number; onChange: (phialId: number) => void }) {
   const held = heldPhials(s);
   const chosen = PHIALS_BY_ID.get(value);
   const options = chosen && !held.includes(chosen) ? [chosen, ...held] : held;
-  if (!options.length) return <span className="muted">No Phials: <a href="#alchemy">brew them with Alchemy</a></span>;
   return (
-    <select value={value} onChange={e => onChange(Number(e.target.value))} title={chosen ? `${chosen.name}: ${phialText(chosen)}. Used up win or lose.` : 'One fight, used up win or lose'}>
+    <select value={value} onChange={e => onChange(Number(e.target.value))}
+      title={chosen ? `${chosen.name}: ${phialText(chosen)}. Used up win or lose.` : options.length ? 'One fight, used up win or lose' : 'No Phials: brew them with Alchemy'}>
       <option value={0}>No Phial</option>
       {options.map(p => {
         const n = s.supplies.get(p.id) ?? 0;

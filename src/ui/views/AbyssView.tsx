@@ -7,7 +7,7 @@ import type { AbyssLog, AbyssRecord, Item } from '../../module_bindings/types';
 import type { DbConnection } from '../../module_bindings';
 import { combatStats, type CombatStats } from '../../../spacetimedb/src/combat';
 import {
-  ABYSS_SEASON, ABYSS_UNLOCK_ZONE,BOSS_AFFIXES_BY_ID, DEPTH_TIME_LIMIT, ELITE_AFFIXES_BY_ID, ABYSS_KINDS_BY_ID, DEEP_WARDEN, FAST_FROM,
+  ABYSS_SEASON, ABYSS_UNLOCK_ZONE,BOSS_AFFIXES_BY_ID, DEPTH_TIME_LIMIT, ELITE_AFFIXES_BY_ID, ABYSS_KINDS_BY_ID, DEEP_WARDEN,
   SECOND_BOSS_AFFIX_FROM, depthLineup, depthReward, depthTier, wardenArtId,
 } from '../../../spacetimedb/src/data/abyss';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
@@ -58,12 +58,7 @@ export const AbyssView = memo(function AbyssView({ s }: { s: Snapshot }) {
 
   return (
     <>
-      <ViewHeader title="Moonwell Deep" icon="moon">
-        <span className="chip stat" title="Deepest depth cleared this season">
-          <Icon name="moon" className="c-magic" />
-          Deepest <strong>{deepest}</strong>
-        </span>
-      </ViewHeader>
+      <ViewHeader title="Moonwell Deep" icon="moon" />
       <p className="muted deep-blurb">
         With Selvara dead, nothing holds her moonwell shut. Past its flooded heart, the dark the moon fell through has no bottom. Each depth is
         a basic enemy, an Elite and the Deep Warden, fought back to back on one HP bar. Clear it to go deeper. Solo, online only; farming
@@ -125,7 +120,6 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
         <section className="card deep-next">
           <CardHead title={`Depth ${depth}`}>
             <span className="tag" title="The zone tier this depth is as strong as">Like T{Math.floor(depthTier(depth))}</span>
-            {depth >= FAST_FROM && <span className="tag c-bad" title="Past depth 100 enemies grow faster">Fast growth</span>}
           </CardHead>
           <ol className="deep-lineup">
             {foes.map(f => <FoeCard key={f.slot} foe={f} />)}

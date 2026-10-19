@@ -114,6 +114,7 @@ and existing IDs are never reused, renumbered or redefined.
 | 2 | Physical damage | % | | Kill speed |
 | 3 | Magic damage | flat | | Kill speed |
 | 4 | Magic damage | % | | Kill speed |
+| 33 | Base damage | % | the weapon's own hit only, either type | Kill speed |
 | 5 | Attack speed | % | floor 25% of weapon | Kill speed |
 | 6 | Crit chance | % increased | base from weapon, no cap (excess over 100% unused) | Kill speed, heals |
 | 7 | Crit damage | % points | base 150% | Kill speed, heals |
@@ -146,6 +147,9 @@ and existing IDs are never reused, renumbered or redefined.
 - **Flat added damage and heal (1, 3, 19)** are worth the same DPS on every weapon:
   per hit they add `value × 1.0 / weapon base speed` (combat.md), so a 2.0/s dagger
   adds half per hit and a 0.55/s greatsword adds ~1.8×.
+- **Base damage (33)** is the counterpart of flat added damage: it scales the weapon's
+  own hit (physical, magic or both halves of a Split weapon), before damage %, and never
+  flat added damage. Flat favours fast weapons; base damage favours slow, heavy hitters.
 - **Heal (19, 20)** only scales heal effects on a weapon. A weapon without a heal
   effect gets nothing from it.
 - **Lifesteal** is rare and capped: low drop weight and a 10% cap, so it can't make every
@@ -163,8 +167,10 @@ where damage grows far more than HP:
 
 | Curve | Per tier | T1 → T9 | Used by |
 |---|---|---|---|
-| **Offense** | ×2.1 to T3, then ×1.6 | ×74 | Weapon damage, flat added damage, enemy HP |
+| **Offense** | ×2.1 to T3, then ×1.6 | ×74 | Weapon damage, enemy HP |
+| **Flat damage** | As Offense to T4, then ×1.5 | ×54 | Flat added physical and magic damage |
 | **Life** | ×1.6 | ×43 | Gear HP |
+| **Flat HP** | As Life to T4, then ×1.5 | ×31 | Flat max HP affixes |
 | **Heal** | ×1.33 | ×10 | Weapon heal, flat added heal, HP regen |
 | **Linear** | ×T | ×9 | Armor, resistance, evasion rating (their formulas use level, which is linear) |
 | **Percent** | `√(N / 9)` (of T9) | ×3 | Percent stats and primaries |
@@ -205,8 +211,9 @@ output, after the bonus from level primaries.
 | Stat | T9 best roll P | Notes |
 |---|---|---|
 | Physical / magic damage % | 30% | |
-| Attack speed % | 10% | Scales damage and heals, so lower |
+| Attack speed % | 15% | Scales damage and heals, so lower |
 | Increased crit chance % | 40% | 5% base → 7% |
+| Base damage % | 30% | Weapon hit only, both types; multiplies with damage % |
 | Crit damage | +30 points | 150% → 180% |
 | Base crit chance | +5 points | Weight 25 (rare); affix tiers span 0.5% (worst T1) to 5% (best T9) instead of starting at 0 (T1 0.5–2%); 5% base → 10%, then scaled by increased |
 | Armor / magic penetration % | 15% | Cap 75% |

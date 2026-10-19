@@ -138,7 +138,7 @@ check('T1 cloth helm armor 1.2 → 1, never 0', implicitValue(base(30).implicits
 check('item values are whole except lifesteal and HP regen',
   roundStat(Stat.MaxHp, 13.4) === 13 && roundStat(Stat.PhysDamage, 0.3) === 1 &&
   roundStat(Stat.LifestealPct, 0.137) === 0.14 && roundStat(Stat.HpRegen, 0.256) === 0.26);
-check('max HP affix ref at T5 ≈ 131', near(Math.round(affixRef(Stat.MaxHp, 5)), 131));
+check('max HP affix ref at T5 ≈ 123 (×1.5 from T4)', near(Math.round(affixRef(Stat.MaxHp, 5)), 123));
 check('phys % affix ref at T1 = 10%', near(affixRef(Stat.PhysDamagePct, 1), 10));
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

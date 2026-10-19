@@ -4,7 +4,7 @@ import { SLOTS, ZONE_BASES } from '../spacetimedb/src/data/bases';
 import { combatStats, defenseAgainst, matchup, type CombatStats } from '../spacetimedb/src/combat';
 import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
 import {
-  ABYSS_KINDS, BOSS_AFFIXES, BossAffix, DEPTH_TIME_LIMIT, ELITE_AFFIXES, EliteAffix, FAST_FROM, SECOND_BOSS_AFFIX_FROM, bossAffixesClash,
+  ABYSS_KINDS, BOSS_AFFIXES, BossAffix, DEPTH_TIME_LIMIT, ELITE_AFFIXES, EliteAffix, SECOND_BOSS_AFFIX_FROM, bossAffixesClash,
   depthEnemy, depthHpMult, depthDpsMult, depthLineup, depthReward, DEEP_WARDEN, type DepthLineup,
 } from '../spacetimedb/src/data/abyss';
 import { MATERIALS_BY_ID, untieredMaterial } from '../spacetimedb/src/data/materials';
@@ -38,11 +38,11 @@ function character(seed: number, profile: Profile = PROFILES[seed % 2]): CombatS
 // ---------------------------------------------------------------- scaling and line-ups
 
 check('depth 1 is eased to 0.6× the T4 average enemy, full from depth 6',
-  Math.abs(depthHpMult(1) - 0.6) < 1e-9 && Math.abs(depthDpsMult(1) - 0.6) < 1e-9 && Math.abs(depthHpMult(6) - 1.06 ** 5) < 1e-9);
-check('depth 51 is about T9 (HP × ~18.4, DPS × ~7.1)', Math.abs(depthHpMult(51) - 18.42) < 0.05 && Math.abs(depthDpsMult(51) - 7.11) < 0.05,
+  Math.abs(depthHpMult(1) - 0.6) < 1e-9 && Math.abs(depthDpsMult(1) - 0.6) < 1e-9 && Math.abs(depthHpMult(6) - 1.055 ** 5) < 1e-9);
+check('depth 51 is about T9 (HP × ~14.5, DPS × ~9.0)', Math.abs(depthHpMult(51) - 14.54) < 0.05 && Math.abs(depthDpsMult(51) - 9.03) < 0.05,
   `${depthHpMult(51).toFixed(2)} / ${depthDpsMult(51).toFixed(2)}`);
-check(`faster growth from depth ${FAST_FROM}`, Math.abs(depthHpMult(FAST_FROM + 1) / depthHpMult(FAST_FROM) - 1.09) < 1e-9 &&
-  Math.abs(depthHpMult(FAST_FROM) / depthHpMult(FAST_FROM - 1) - 1.06) < 1e-9);
+check('the same growth past depth 100', Math.abs(depthHpMult(151) / depthHpMult(150) - 1.055) < 1e-9 &&
+  Math.abs(depthDpsMult(151) / depthDpsMult(150) - 1.045) < 1e-9);
 check('the curve never stops', Number.isFinite(depthHpMult(1000)) && depthHpMult(1000) > depthHpMult(999));
 
 const lineups = Array.from({ length: 300 }, (_, i) => depthLineup(i + 1));

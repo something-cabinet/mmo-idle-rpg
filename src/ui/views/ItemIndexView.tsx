@@ -95,7 +95,7 @@ const num = (v: number) => String(Number(v.toFixed(2)));
 const TIERS = Array.from({ length: MAX_TIER }, (_, i) => i + 1);
 const AFFIX_WEIGHT = AFFIX_STAT_IDS.reduce((sum, id) => sum + (STATS[id as StatId].weight ?? 100), 0);
 /** Stats added after their kin, listed right after it instead of by ID. */
-const AFFIX_AFTER: Partial<Record<number, number>> = { [Stat.BaseCritChance]: Stat.CritChancePct, [Stat.EvasionRatingPct]: Stat.EvasionRating, [Stat.AccuracyPct]: Stat.Accuracy };
+const AFFIX_AFTER: Partial<Record<number, number>> = { [Stat.BaseCritChance]: Stat.CritChancePct, [Stat.EvasionRatingPct]: Stat.EvasionRating, [Stat.AccuracyPct]: Stat.Accuracy, [Stat.BaseDamagePct]: Stat.MagicDamagePct };
 const affixRank = (id: number) => (AFFIX_AFTER[id] ?? id - 0.5) + 0.5;
 const AFFIX_ORDER = [...AFFIX_STAT_IDS].sort((a, b) => affixRank(a) - affixRank(b));
 

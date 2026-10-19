@@ -40,11 +40,12 @@ export const Stat = {
   BaseCritChance: 30, // percentage points added to the weapon's base crit, before increased
   Accuracy: 31, // accuracy rating: lowers the chance your attacks are dodged
   AccuracyPct: 32,
+  BaseDamagePct: 33, // the weapon's own hit, both damage types; not flat added damage
 } as const;
 export type StatId = (typeof Stat)[keyof typeof Stat];
 
 /** How a value grows with tier. */
-export type Curve = 'offense' | 'life' | 'heal' | 'linear' | 'percent';
+export type Curve = 'offense' | 'flatDamage' | 'life' | 'flatHp' | 'heal' | 'linear' | 'percent';
 
 export const MAX_TIER = 9;
 
@@ -54,8 +55,14 @@ export function curve(c: Curve, t: number): number {
     case 'offense':
       // ×2.1 to T3, then ×1.6 like gear HP, so last tier's weapon isn't half the new one.
       return t <= 3 ? 2.1 ** (t - 1) : 2.1 ** 2 * 1.6 ** (t - 3);
+    case 'flatDamage':
+      // Flat added damage: the offense curve to T4, then ×1.5 a tier, a bit behind weapons.
+      return t <= 4 ? curve('offense', t) : curve('offense', 4) * 1.5 ** (t - 4);
     case 'life':
       return 1.6 ** (t - 1);
+    case 'flatHp':
+      // Flat max HP affixes: the life curve to T4, then ×1.5 a tier, a bit behind gear HP.
+      return t <= 4 ? curve('life', t) : curve('life', 4) * 1.5 ** (t - 4);
     case 'heal':
       return 1.33 ** (t - 1);
     case 'linear':
@@ -100,16 +107,16 @@ const s = (id: StatId, name: string, percent: boolean, c: Curve, ref?: number, w
 });
 
 export const STATS: Record<StatId, StatDef> = {
-  1: s(1, 'Physical damage', false, 'offense', 2),
+  1: s(1, 'Physical damage', false, 'flatDamage', 2),
   2: s(2, 'Physical damage', true, 'percent', 30),
-  3: s(3, 'Magic damage', false, 'offense', 2),
+  3: s(3, 'Magic damage', false, 'flatDamage', 2),
   4: s(4, 'Magic damage', true, 'percent', 30),
-  5: s(5, 'Attack speed', true, 'percent', 10),
+  5: s(5, 'Attack speed', true, 'percent', 15),
   6: s(6, 'Increased crit chance', true, 'percent', 40),
   7: s(7, 'Crit damage', true, 'percent', 30),
   8: s(8, 'Armor penetration', true, 'percent', 15),
   9: s(9, 'Magic penetration', true, 'percent', 15),
-  10: s(10, 'Max HP', false, 'life', 20),
+  10: s(10, 'Max HP', false, 'flatHp', 20),
   11: s(11, 'Max HP', true, 'percent', 15),
   12: s(12, 'Armor', false, 'linear', 5),
   13: s(13, 'Armor', true, 'percent', 25),
@@ -132,6 +139,7 @@ export const STATS: Record<StatId, StatDef> = {
   30: s(30, 'Base crit chance', true, 'percent', 5, 25, true, 0.5),
   31: s(31, 'Accuracy rating', false, 'linear', 10),
   32: s(32, 'Accuracy rating', true, 'percent', 25),
+  33: s(33, 'Base damage', true, 'percent', 30),
 };
 
 /** Caps (display units). */

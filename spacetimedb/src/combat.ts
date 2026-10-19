@@ -151,10 +151,12 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
 
   // Primaries: `level` from level-ups (1 at level 1) plus gear; each point is a
   // percent bonus to a bundle of stats (attributes.md). Lunar Insight: Might gives
-  // nothing; Mind also gives max HP and resistance.
+  // nothing; Mind also gives max HP and resistance. Drowned Hymn: Finesse gives nothing;
+  // Mind also gives attack speed and armor.
   const lunar = has(Effect.LunarInsight);
+  const hymn = has(Effect.DrownedHymn);
   const might = lunar ? 0 : level + flat(Stat.Might);
-  const finesse = level + flat(Stat.Finesse);
+  const finesse = hymn ? 0 : level + flat(Stat.Finesse);
   const mind = level + flat(Stat.Mind);
   const vitality = level + flat(Stat.Vitality);
 
@@ -171,9 +173,11 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   // Honed Edge raises flat added damage; it never deepens an Anomaly's negative roll.
   const honed = (x: number) => (x > 0 ? x * (1 + amount(Effect.HonedEdge)) : x);
   const addedFlat: Record<DamageType, number> = { Physical: honed(flat(Stat.PhysDamage)), Magic: honed(flat(Stat.MagicDamage)) };
+  // Base damage %: the weapon's own hit only (either type), the counterpart of flat added damage.
+  const baseDamage = 1 + pct(Stat.BaseDamagePct);
   // Discipline: a "more" multiplier from the highest primary attribute.
   const discipline = 1 + (amount(Effect.Discipline) * Math.max(0, might, finesse, mind, vitality)) / 100;
-  const attackSpeedPct = pct(Stat.AttackSpeedPct) + 0.001 * finesse;
+  const attackSpeedPct = pct(Stat.AttackSpeedPct) + 0.001 * finesse + (hymn ? 0.0008 * mind : 0);
   const critIncreased = pct(Stat.CritChancePct) + 0.004 * finesse;
   const critDamage = 1.5 + pct(Stat.CritDamage) + 0.0025 * mind;
   const healPct = pct(Stat.HealPct) + 0.0045 * mind;
@@ -188,13 +192,13 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     for (const t of ['Physical', 'Magic'] as const) {
       if (moonlight) {
         // Weapon hit and every flat added damage, as magic, scaled by magic % only.
-        hit[t] = t === 'Physical' ? 0 : Math.max(0, (fromStored(w.hit) + addedFlat.Physical + addedFlat.Magic) * (1 + damagePct.Magic) * damageMult * discipline * (buffs?.damage ?? 1));
+        hit[t] = t === 'Physical' ? 0 : Math.max(0, (fromStored(w.hit) * baseDamage + addedFlat.Physical + addedFlat.Magic) * (1 + damagePct.Magic) * damageMult * discipline * (buffs?.damage ?? 1));
         continue;
       }
       const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
       // A Split weapon's hit is half physical, half magic; each half takes its own damage % and mitigation.
       const share = w.damageType.tag === 'Split' ? 0.5 : w.damageType.tag === from ? 1 : 0;
-      const base = share * fromStored(w.hit);
+      const base = share * fromStored(w.hit) * baseDamage;
       // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
       // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
       hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * discipline * (buffs?.damage ?? 1));
@@ -226,7 +230,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   // Frozen Blood adds bonus HP / 10 to both. Ironclad and Runeguard convert from armor and
   // resistance before either is added, so they don't loop (max HP never depends on them).
   const fromHp = frozenBlood ? bonusHp(level, maxHp, has(Effect.GlassCannon)) / 10 : 0;
-  const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct)) + fromHp;
+  const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct) + (hymn ? 0.002 * mind : 0)) + fromHp;
   const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct) + (lunar ? 0.005 * mind : 0)) + fromHp;
   const armorTotal = armor + amount(Effect.Runeguard) * resistance;
   const resistanceTotal = resistance + amount(Effect.Ironclad) * armor;

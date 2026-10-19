@@ -20,12 +20,11 @@ export const ABYSS_UNLOCK_ZONE = 4;
 /** The T4 average enemy (zones.md): depth 1's numbers before `ease`. */
 export const BASE_HP = 915;
 export const BASE_DPS = 53;
-/** Growth per depth up to FAST_FROM (the zone curve from T4 to T9), then faster. */
-export const HP_GROWTH = 1.06;
-export const DPS_GROWTH = 1.04;
-export const FAST_FROM = 101;
-export const FAST_HP_GROWTH = 1.09;
-export const FAST_DPS_GROWTH = 1.06;
+/** Growth per depth, the same all the way down (≈ the zone curve from T4 to T9, leaning to damage). */
+export const HP_GROWTH = 1.055;
+export const DPS_GROWTH = 1.045;
+/** From this depth there are no milestone rewards, only the formula (Rewards). */
+export const FORMULA_FROM = 101;
 /** × every enemy's DPS: three fights on one HP bar. */
 export const GAUNTLET = 0.2;
 /** Seconds per depth; past it the depth is lost. */
@@ -39,11 +38,10 @@ export const depthTier = (d: number) => 4 + (d - 1) / 10;
 export const depthLevel = (d: number) => Math.min(100, 40 + (d - 1));
 /** A gentle start: × 0.6 at depth 1, full from depth 6. */
 export const ease = (d: number) => Math.min(1, 0.6 + 0.08 * (d - 1));
-const grow = (d: number, slow: number, fast: number) => slow ** (Math.min(d, FAST_FROM) - 1) * fast ** Math.max(0, d - FAST_FROM);
 /** × BASE_HP at depth `d`. */
-export const depthHpMult = (d: number) => grow(d, HP_GROWTH, FAST_HP_GROWTH) * ease(d);
+export const depthHpMult = (d: number) => HP_GROWTH ** (d - 1) * ease(d);
 /** × BASE_DPS at depth `d` (before GAUNTLET). */
-export const depthDpsMult = (d: number) => grow(d, DPS_GROWTH, FAST_DPS_GROWTH) * ease(d);
+export const depthDpsMult = (d: number) => DPS_GROWTH ** (d - 1) * ease(d);
 
 // ---------------------------------------------------------------- enemies
 
@@ -246,8 +244,8 @@ const REWARD_SALT = 0x6465657072n; // "deepr"
  */
 export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
   const tier = rewardTier(d);
-  const past = d >= FAST_FROM;
-  const g = past ? REWARD_GROWTH ** (d - FAST_FROM) : 1;
+  const past = d >= FORMULA_FROM;
+  const g = past ? REWARD_GROWTH ** (d - FORMULA_FROM) : 1;
   const scale = 2.9 ** (tier - 1) * g;
   const matTier = Math.min(tier, MAX_MATERIAL_TIER);
   const materials: [number, number][] = [];
@@ -256,7 +254,7 @@ export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
     const m = materialAt(matTier, kind);
     if (n && m) materials.push([m.id, Math.round(n * g)]);
   }
-  const voidglass = past ? 6 + 2 * Math.floor((d - FAST_FROM) / 10) : 3 + (d % VOIDGLASS_BATCH_EVERY === 0 ? 15 : 0);
+  const voidglass = past ? 6 + 2 * Math.floor((d - FORMULA_FROM) / 10) : 3 + (d % VOIDGLASS_BATCH_EVERY === 0 ? 15 : 0);
   materials.push([untieredMaterial('Voidglass').id, voidglass]);
   let elixir: number | undefined;
   if (!past && d % ELIXIR_EVERY === 0) {

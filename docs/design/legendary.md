@@ -46,16 +46,16 @@ Effects come in two kinds:
 |---|---|---|---|---|
 | 1 | **Overcrit** | Base crit chance | Each 1% of crit chance above 100% gives **+2% crit damage** | none |
 | 3 | **Zealot's Oath** | Heal % | Your heals also damage the enemy for **50%** of the heal (magic) | none |
-| 14 | **Executioner** | Physical damage % | Enemies below **30%** HP take double damage | 50% |
+| 14 | **Executioner** | Physical damage % | You deal **100% more damage** to enemies below **30%** HP | 50% |
 | 15 | **Rending** | Armor penetration % | Your physical damage ignores **40%** of the enemy's armor mitigation left after penetration | 70% |
 | 21 | **Spellbreaker** | Magic penetration % | Your magic damage ignores **40%** of the enemy's resistance mitigation left after penetration | 70% |
 | 25 | **Follow-through** | Crit damage | **60%** of your overkill damage hits the next enemy as it arrives | 120% |
 | 26 | **Riposte** | Evasion rating % | Each attack you evade counters for **50%** of your average hit | 100% |
 | 27 | **Deadeye** | Increased crit chance | Your crits ignore **50%** of the enemy's armor and resistance mitigation left after penetration | 100% |
-| 28 | **Bully** | Magic damage % | Enemies above **70%** HP take double damage | 50% (above 50%) |
-| 29 | **Honed Edge** | Attack speed % | Flat added damage **+50%** (a negative flat roll is left as it is) | +100% |
+| 28 | **Bully** | Magic damage % | You deal **100% more damage** to enemies above **70%** HP | 50% (above 50%) |
+| 29 | **Honed Edge** | Attack speed % | **50% more** flat added damage (a negative flat roll is left as it is) | +100% |
 | 30 | **Bloodthirst** | Lifesteal % | Lifesteal cap **+5%** (10% → 15%) | +10% (20%) |
-| 31 | **Discipline** | Vitality | Damage **× (1 + 10% per 100 points of your highest attribute)** | 20% per 100 |
+| 31 | **Discipline** | Attack speed % | **10% more damage** per 100 points of your highest attribute | 20% per 100 |
 
 ```
 Overcrit:       critDamage += a × max(0, critChance − 1)            a = 2 per copy
@@ -69,7 +69,7 @@ Deadeye:        crits use enemy mitigation × (1 − a): critMult = 1 − c + c 
 Bully:          timeToKill × (1 − (aExecutioner + aBully) / 2)
 Honed Edge:     addedFlat_t × (1 + a)        (only when addedFlat_t > 0)
 Bloodthirst:    lifesteal cap = 10% + a
-Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   ("more", after damage %)
+Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   (after damage %)
 ```
 
 - Zealot's Oath runs one way only (heal → damage), so it can't loop.
@@ -92,7 +92,7 @@ Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   ("
 | 32 | **Unbreakable** | Resistance | Armor and resistance cap **+5%** (85% → 90%) | +10% (95%) |
 | 33 | **Stoneskin** | Armor | Each enemy hit deals **1%** of your max HP less (after mitigation) | 3% |
 | 34 | **Last Stand** | Vitality | Below 30% HP, you take **20%** less damage | 50% |
-| 35 | **Berserker** | Might | **+3%** damage per 10% of your max HP missing | +9% |
+| 35 | **Berserker** | Might | **3% more damage** per 10% of your max HP missing | +9% |
 | 36 | **Bulwark** | Evasion rating | **15%** chance to block half of each enemy hit | 50% |
 | 49 | **Afterimage** | Evasion rating | After you evade, the enemy's **next hit deals 50% less** | 75% |
 | 37 | **Second Skin** | Max HP | Each fight starts with a shield of **15%** of your max HP | 50% |
@@ -129,11 +129,11 @@ Berserker:    damage × (1 + 10a × missing / maxHp). Missing HP grows at netInc
 | 7 | **Swift Hunter** | Attack speed % | Walk time **−40%** | −80% |
 | 9 | **Fortune's Favor** | Item find % | Each **kept** drop has a **10%** chance to be upgraded one rarity (max Legendary) | 30% |
 | 19 | **Seasoned** | XP gain % | Offline progress cap **+4h** (8h → 12h) | +8h (16h) |
-| 20 | **Prosperity** | Gold find % | Gold **× 1.4** | × 1.6 |
+| 20 | **Prosperity** | Gold find % | **40% more** gold | 60% more |
 | 38 | **Salvager** | Gold find % | Each drop the loot filter or a full bag rejects has a **25%** chance to be salvaged (or recycled) twice | 50% |
 | 39 | **Bounty** | Item find % | Every **200** kills of an enemy, an extra Rare drops | every 67 |
 | 40 | **Prospector** | Max HP | Kills drop **0.1** Ore of the zone's tier on average | 0.3 |
-| 41 | **Patience** | XP gain % | Offline fighting past the first 4h earns **+15%** XP, gold, drops and materials | +30% |
+| 41 | **Patience** | XP gain % | Offline fighting past the first 4h earns **15% more** XP, gold, drops and materials | 30% more |
 | 42 | **Keen Eye** | Item find % | Kept Rare or better drops have a **20%** chance to raise their lowest affix to the item's top affix tier | 40% |
 | 43 | **Savor** | Max HP % | Each kill has a **15%** chance not to use a charge of your elixir | 30% |
 | 44 | **Raid Favor** | Threat % | Each rewarded raid clear has a **15%** chance to give one more item | 30% |
@@ -172,17 +172,18 @@ this split keep working.
 |---|---|---|
 | 2 | **Spellblade** | Your damage **swaps type**: physical becomes magic, magic becomes physical. Both damage-% groups apply. |
 | 4 | **Juggernaut** | You can't evade, but **armor also reduces magic damage**. |
-| 8 | **Midas Touch** | Kills give **no XP**, but gold × 2.5. |
-| 10 | **Voidtouched** | Your damage **ignores the enemy's armor and resistance**, but deals 25% less. |
-| 11 | **Glass Cannon** | **All damage ×2, max HP halved.** |
+| 8 | **Midas Touch** | Kills give **no XP**, but **150% more gold**. |
+| 10 | **Voidtouched** | Your damage **ignores the enemy's armor and resistance**, but you deal **25% less damage**. |
+| 11 | **Glass Cannon** | **100% more damage, 50% less max HP.** |
 | 12 | **Spellward** | You can't evade, but **resistance also reduces physical damage**. |
-| 13 | **Scholar's Focus** | XP × 1.75, gold × 0.5. |
+| 13 | **Scholar's Focus** | **75% more XP**, 50% less gold. |
 | 22 | **Frostbite** | Your crits deal **no extra damage**. Instead the enemy deals 0.5% less damage per 1% crit chance: `enemyDPS × (1 − 0.5 × min(1, critChance))`. |
-| 23 | **Frozen Blood** | **+1 armor and resistance per 10 bonus max HP**, but attack speed × 0.8 (after the floor) and HP regen and lifesteal do nothing. Added before Ironclad / Runeguard convert. Bonus HP = max HP − what your level gives with no gear: `(100 + 10 × (level − 1)) × (1 + 0.45% × level)` (× 0.5 with Glass Cannon). |
-| 24 | **Ambush** | Your **first attack each fight deals 5×** damage, but attack speed × 0.7. `timeToKill = max(TTK − 4 / attacksPerSec, 0.5 / attacksPerSec)` (the first swing lands half a period in). |
+| 23 | **Frozen Blood** | **+1 armor and resistance per 10 bonus max HP**, but **20% less attack speed** (after the floor), and HP regen and lifesteal do nothing. Added before Ironclad / Runeguard convert. Bonus HP = max HP − what your level gives with no gear: `(100 + 10 × (level − 1)) × (1 + 0.45% × level)` (× 0.5 with Glass Cannon). |
+| 24 | **Ambush** | Your **first attack each fight deals 5×** damage, but 30% less attack speed. `timeToKill = max(TTK − 4 / attacksPerSec, 0.5 / attacksPerSec)` (the first swing lands half a period in). |
 | 45 | **Moonlight** | **All your damage is magic**: the weapon's hit and flat physical convert, only the magic %-group applies (magic damage %, Mind), and armor penetration counts as magic penetration. **Every 3rd attack hits twice.** |
-| 46 | **Waxing Moon** | Your hits start at **−40%** damage and grow **+10%** per attack, up to **+60%** from the 11th attack on. Resets each fight. |
-| 47 | **Moonshadow** | **All your armor and resistance become evasion rating**: you keep none, but each point adds 1 evasion rating. |
+| 46 | **Waxing Moon** | Your hits start at **40% less damage** and gain **10% more** per attack, up to **60% more** from the 11th attack on. Resets each fight. |
+| 47 | **Moonshadow** | **All your armor and resistance become evasion rating.** (You keep none; each point adds 1 evasion rating.) |
+| 50 | **Drowned Hymn** | Each point of Mind also gives **+0.08% attack speed** and **+0.2% armor**, but **Finesse gives nothing**. |
 | 48 | **Lunar Insight** | Each point of Mind also gives **+0.25% max HP** and **+0.5% resistance**, but **Might gives nothing**. |
 
 ```
@@ -205,6 +206,7 @@ Moonshadow:   evasionRating += armor + resistance;  armor = resistance = 0
               (final values: after their %, Frozen Blood, Ironclad and Runeguard; added after
               evasion rating % and Finesse, so they don't multiply it)
 Lunar Insight: might = 0 for its bonuses;  maxHP% += 0.25% × mind;  resistance% += 0.5% × mind
+Drowned Hymn: finesse = 0 for its bonuses;  attackSpeed% += 0.08% × mind;  armor% += 0.2% × mind
 ```
 
 - Damage from Zealot's Oath and Thornshell counts as your damage: Glass Cannon's ×2

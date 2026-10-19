@@ -345,6 +345,18 @@ function withEffect(it: GearItem, effect: number): GearItem {
   check('Lunar Insight: more resistance from Mind', li.resistance > noLi.resistance);
   check('Lunar Insight: Might adds no physical damage', li.sources[0].hit.Physical < noLi.sources[0].hit.Physical);
 
+  // Base damage %: scales the weapon's own hit, not flat added damage.
+  const bd = (affixes: [number, number][]) => combatStats(1, gear({ MainHand: item(1, 1, affixes) })).sources[0].hit.Physical;
+  check('Base damage %: +50% on the weapon hit only', near(bd([[Stat.BaseDamagePct, 50], [Stat.PhysDamage, 10]]) - bd([[Stat.PhysDamage, 10]]),
+    bd([[Stat.BaseDamagePct, 50]]) - bd([]), 1e-9) && bd([[Stat.BaseDamagePct, 50]]) > bd([]));
+
+  // Drowned Hymn: Finesse gives nothing; Mind gives attack speed and armor.
+  const hymnAmulet = item(56, 1, [[Stat.Mind, 40], [Stat.Finesse, 40], [Stat.Armor, 100]]);
+  const dh = combatStats(10, kit(sword, { Amulet: withEffect(hymnAmulet, Effect.DrownedHymn) }));
+  const noDh = combatStats(10, kit(sword, { Amulet: hymnAmulet }));
+  check('Drowned Hymn: more armor from Mind', dh.armor > noDh.armor);
+  check('Drowned Hymn: Finesse adds no crit chance', dh.sources[0].critChance < noDh.sources[0].critChance);
+
   const ac = (effect: number) => combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), effect) }));
   const acBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]) }));
   const ic = ac(Effect.Ironclad);

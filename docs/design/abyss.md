@@ -97,8 +97,8 @@ Depth 1 is a T4 enemy, and every 10 depths is one tier:
 ```
 tier(d)   = 4 + (d − 1) / 10                    // depth 1 = T4, 11 = T5, 51 = T9
 level(d)  = min(100, 40 + (d − 1))              // capped: see below
-HP(d)     = 915  × 1.06^(min(d, 101) − 1) × 1.09^max(0, d − 101) × ease(d) × kind.hp × slot.hp
-DPS(d)    = 53   × 1.04^(min(d, 101) − 1) × 1.06^max(0, d − 101) × ease(d) × kind.dps × slot.dps × GAUNTLET
+HP(d)     = 915  × 1.055^(d − 1) × ease(d) × kind.hp × slot.hp
+DPS(d)    = 53   × 1.045^(d − 1) × ease(d) × kind.dps × slot.dps × GAUNTLET
 ease(d)   = min(1, 0.6 + 0.08 × (d − 1))         // depth 1 at 0.6, full from depth 6
 armor/res = 2.5 × level(d) × profile             // as zones
 GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) on one HP bar
@@ -106,18 +106,14 @@ GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) 
 
 - `915` and `53` are the T4 average enemy's HP and DPS. `kind` is the pool enemy's own
   shape (table below), `slot` the basic / Elite / boss multiplier (above).
-- **1.06 and 1.04** fit the zone table from T4 to T9 (HP × 19.7 and DPS × 7.4 over 5 tiers),
-  so depth 51 lines up with T9, and past that the curve just keeps going.
-- **Difficulty per depth ≈ 1.06 × 1.04 ≈ 1.10, so it doubles about every 7 depths.** The
+- **1.055 and 1.045** are close to the zone table from T4 to T9 (HP × 19.7 and DPS × 7.4
+  over 5 tiers, i.e. 1.06 and 1.04), leaning a bit to damage: Deep enemies hit a bit harder
+  and have a bit less HP than zone enemies of the same tier, for the same overall difficulty.
+- **Difficulty per depth ≈ 1.055 × 1.045 ≈ 1.10, so it doubles about every 7 depths.** The
   leaderboard therefore reads on a log scale: a build twice as strong goes ~7 depths deeper,
   not twice as deep. Gaps at the top stay readable instead of exploding.
-- **Faster from depth 101: HP × 1.09 and DPS × 1.06 per depth, ≈ 1.155, doubling about
-  every 5 depths.** Depth 51 is T9 strength, the top gear tier; past it, gear stops
-  growing and only its quality counts. Depths 51–100 keep the normal rate, so very good
-  T9 builds have 50 depths to spread out over (difficulty × ~128 by depth 101). Only the
-  strongest builds get past 100. From there, the old rate would mean a long, slow slog of
-  depths for the few at the top. The faster rate makes each depth past 100 a real step, and
-  the board still separates them: twice as strong is ~5 depths deeper.
+- **The same growth all the way down.** No faster curve past depth 100: the board keeps one
+  scale, and twice as strong is ~7 depths deeper at any depth.
 - **A gentle start (`ease`).** Depth 1 is on the easy side of T4: HP and DPS × 0.6 (about
   0.36× the difficulty), back to the full curve by depth 6. Anyone who beat Selvara gets a
   few free depths and a feel for the format before it bites. The ease only touches the start,
@@ -133,14 +129,14 @@ GAUNTLET  = 0.2                                  // 3 fights (7.5 basics of HP) 
 | Depth | Like | Level | HP × | DPS × | Boss affixes |
 |---|---|---|---|---|---|
 | 1 | easy T4 | 40 | 0.6 | 0.6 | 1 |
-| 6 | T4+ | 45 | 1.34 | 1.22 | 1 |
-| 11 | T5 | 50 | 1.8 | 1.5 | 1 |
-| 21 | T6 | 60 | 3.2 | 2.2 | 1 |
-| 31 | T7 | 70 | 5.7 | 3.2 | 1 |
-| 51 | T9 | 90 | 18.4 | 7.1 | 2 |
-| 101 | past T9 | 100 | 339 | 50.5 | 2 |
-| 111 | past T9 (faster) | 100 | 803 | 90.4 | 2 |
-| 121 | past T9 (faster) | 100 | 1,900 | 162 | 2 |
+| 6 | T4+ | 45 | 1.31 | 1.25 | 1 |
+| 11 | T5 | 50 | 1.7 | 1.55 | 1 |
+| 21 | T6 | 60 | 2.9 | 2.4 | 1 |
+| 31 | T7 | 70 | 5.0 | 3.75 | 1 |
+| 51 | T9 | 90 | 14.5 | 9.0 | 2 |
+| 101 | past T9 | 100 | 211 | 81.6 | 2 |
+| 111 | past T9 | 100 | 361 | 127 | 2 |
+| 121 | past T9 | 100 | 617 | 197 | 2 |
 
 Zones only go to T4 for now, so today the wall sits a few depths past T4 gear. Each new tier
 pushes everyone deeper, which is one reason for seasons (below).

@@ -61,7 +61,7 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 13 | T3 | **Hoardkeeper's Censer** | Healing Staff | Zealot's Oath, Runeguard | Heal % (×1.25), Mind, resistance %. *Raid only: Wyrm Hollow.* |
 | 14 | T3 | **Skaldrith's Fang** | Dagger | Executioner, Rending | Crit damage, physical damage %, attack speed %. *Raid only: Wyrm Hollow.* |
 | 20 | T4 | **Eclipse Aegis** | Greatshield | Ironclad, Runeguard | Threat % (×1.5), armor %, resistance %. *Raid only: The Drowned Moon.* |
-| 21 | T4 | **Lantern of the Drowned Moon** | Healing Staff | Second Skin, Lunar Insight | Heal % (×1.25), Mind, max HP %. *Raid only: The Drowned Moon.* |
+| 21 | T4 | **Lantern of the Drowned Moon** | Healing Staff | Second Skin, Drowned Hymn | Heal, heal % (×1.25), Mind. *Raid only: The Drowned Moon.* |
 | 22 | T4 | **Umbriel's Edge** | Umbral Katana (Split) | Rending, Spellbreaker | Armor pen %, magic pen %, crit damage. *Raid only: The Drowned Moon.* |
 | 15 | T4 | **Moonlight Greatsword** | Greatsword | Moonlight | Magic damage %, Mind, crit damage. *Only from the Moonlit Champion (Moonlight Garden).* |
 | 16 | T4 | **Waxing Crescent** | Katana | Waxing Moon | Physical damage %, attack speed %, crit damage |

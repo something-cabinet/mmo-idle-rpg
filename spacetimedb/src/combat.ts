@@ -151,10 +151,10 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
 
   // Primaries: `level` from level-ups (1 at level 1) plus gear; each point is a
   // percent bonus to a bundle of stats (attributes.md). Lunar Insight: Might gives
-  // nothing; Mind also gives max HP and resistance. Drowned Hymn: Finesse gives nothing;
+  // nothing; Mind also gives max HP and resistance. Moonlit Vigil: Finesse gives nothing;
   // Mind also gives attack speed and armor.
   const lunar = has(Effect.LunarInsight);
-  const hymn = has(Effect.DrownedHymn);
+  const hymn = has(Effect.MoonlitVigil);
   const might = lunar ? 0 : level + flat(Stat.Might);
   const finesse = hymn ? 0 : level + flat(Stat.Finesse);
   const mind = level + flat(Stat.Mind);

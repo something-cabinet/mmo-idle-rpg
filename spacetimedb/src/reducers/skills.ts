@@ -1,7 +1,7 @@
 import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
-import { GATHER_NODES_BY_ID, SKILLS_BY_ID, SkillId, gatherBlocker, gatherSpotId, productionBlocker } from '../data/skills';
-import { affordable, recipeOf, temperCost } from '../data/recipes';
+import { GATHER_NODES_BY_ID, SKILLS_BY_ID, SkillId, gatherBlocker, gatherSpotId, productionBlocker, productionXpPerAction } from '../data/skills';
+import { affordable, recipeOf, temperCost, toolRecipeId } from '../data/recipes';
 import { addSkillXp } from '../gather';
 import { addXp } from '../game';
 import { ELIXIR_KILLS, SUPPLIES_BY_ID } from '../data/supplies';
@@ -64,11 +64,7 @@ export const startProduction = spacetimedb.reducer({ skillId: t.u8(), recipe: t.
   });
   if (blocker) throw new SenderError(blocker);
   const out = r.output;
-  if (out.kind === 'tool') {
-    const have = toolTier(ctx, ch.id, out.skillId);
-    if (have >= r.tier) throw new SenderError('You already have this tool');
-    if (have < r.tier - 1) throw new SenderError(`Upgrade to tier ${r.tier - 1} first`);
-  }
+  if (out.kind === 'tool') throw new SenderError('Tool upgrades are instant: use Upgrade');
   if (out.kind === 'item' && settled.bagSize - bagCount(ctx, ch.id) <= 0) throw new SenderError('Your bag is full');
   const held = materialCounts(ctx, ch.id);
   if (affordable(r, { have: id => held.get(id) ?? 0 }) < 1) throw new SenderError('Not enough materials');
@@ -95,6 +91,34 @@ export const temperItem = spacetimedb.reducer({ itemId: t.u64() }, (ctx, { itemI
   ctx.db.item.id.update({ ...it, temper: it.temper + 1 });
   ctx.db.skill.id.update({ ...row, ...addSkillXp(row.level, row.xp, cost.xp) });
   ctx.db.character.id.update({ ...settled, ...addXp(settled.level, settled.xp, cost.xp), gold: settled.gold - cost.gold });
+});
+
+/**
+ * Upgrades the tool of gathering skill `skillId` one tier (life-skills.md, "Tools"): instant,
+ * like tempering, and whatever the character is doing goes on. Pays the recipe's inputs and
+ * gives the Smithing XP of its `seconds` of work, and as much character XP. Needs the
+ * Smithing level and zone of the new tier.
+ */
+export const upgradeTool = spacetimedb.reducer({ skillId: t.u8() }, (ctx, { skillId }) => {
+  const { ch } = requireActive(ctx);
+  const def = SKILLS_BY_ID.get(skillId);
+  if (!def || def.kind !== 'Gathering') throw new SenderError('No such tool');
+  const have = toolTier(ctx, ch.id, def.id);
+  const r = recipeOf(SkillId.Smithing, toolRecipeId(def.id, have + 1));
+  if (!r) throw new SenderError('Already the highest tier');
+  const settled = settle(ctx, ch);
+  const row = skillRow(ctx, ch.id, SkillId.Smithing);
+  const blocker = productionBlocker({ level: row.level, tier: r.tier, zoneOpen: tierUnlocked(ctx, ch.id, r.tier) });
+  if (blocker) throw new SenderError(blocker);
+  const held = materialCounts(ctx, ch.id);
+  if (affordable(r, { have: id => held.get(id) ?? 0 }) < 1) throw new SenderError('Not enough materials');
+  takeMaterials(ctx, ch.id, r.inputs);
+  const tool = [...ctx.db.tool.characterId.filter(ch.id)].find(x => x.skillId === def.id);
+  if (!tool) ctx.db.tool.insert({ id: 0n, characterId: ch.id, skillId: def.id, tier: r.tier });
+  else ctx.db.tool.id.update({ ...tool, tier: r.tier });
+  const xp = productionXpPerAction(r.tier, r.seconds);
+  ctx.db.skill.id.update({ ...row, ...addSkillXp(row.level, row.xp, xp) });
+  ctx.db.character.id.update({ ...settled, ...addXp(settled.level, settled.xp, xp) });
 });
 
 /** Stops the life skill: settles, then goes back to fighting the kept target (idle without one). */

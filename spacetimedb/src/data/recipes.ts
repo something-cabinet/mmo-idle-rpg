@@ -4,7 +4,8 @@
 // A recipe's ID is stored in `character.activityRecipe` while it runs and in settle logs;
 // never renumber them. Per skill:
 //   Smithing: forge a base = baseId × 10 + tier; empowered forge (+1 Dryad's Tear) =
-//     30000 + baseId × 10 + tier; upgrade a tool = 1000 + skill × 10 + tier;
+//     30000 + baseId × 10 + tier; upgrade a tool = 1000 + skill × 10 + tier (instant now,
+//     `upgradeTool`: not queued, but kept for its inputs and XP);
 //     smelt Ore = 60000 + tier; 61000 + material ID was smelt scrap (retired: scrap is instant
 //     now, `SCRAP_YIELD`). (Tempering is instant, not a recipe: `temperCost`.)
 //   Alchemy: brew elixir kind k from tier-t materials = 400 + k × 10 + t (`elixirRecipeId`);
@@ -50,6 +51,7 @@ export interface Recipe {
 export const MAX_QUEUE = 1000;
 
 export const FORGE_SECONDS = 120;
+/** A tool upgrade is instant but gives the Smithing XP of TOOL_SECONDS of work. */
 export const TOOL_SECONDS = 1800;
 export const ELIXIR_SECONDS = 450;
 

@@ -183,7 +183,7 @@ this split keep working.
 | 45 | **Moonlight** | **All your damage is magic**: the weapon's hit and flat physical convert, only the magic %-group applies (magic damage %, Mind), and armor penetration counts as magic penetration. **Every 3rd attack hits twice.** |
 | 46 | **Waxing Moon** | Your hits start at **40% less damage** and gain **10% more** per attack, up to **60% more** from the 11th attack on. Resets each fight. |
 | 47 | **Moonshadow** | **All your armor and resistance become evasion rating.** (You keep none; each point adds 1 evasion rating.) |
-| 50 | **Drowned Hymn** | Each point of Mind also gives **+0.08% attack speed** and **+0.2% armor**, but **Finesse gives nothing**. |
+| 50 | **Moonlit Vigil** | Each point of Mind also gives **+0.08% attack speed** and **+0.2% armor**, but **Finesse gives nothing**. |
 | 48 | **Lunar Insight** | Each point of Mind also gives **+0.25% max HP** and **+0.5% resistance**, but **Might gives nothing**. |
 
 ```
@@ -206,7 +206,7 @@ Moonshadow:   evasionRating += armor + resistance;  armor = resistance = 0
               (final values: after their %, Frozen Blood, Ironclad and Runeguard; added after
               evasion rating % and Finesse, so they don't multiply it)
 Lunar Insight: might = 0 for its bonuses;  maxHP% += 0.25% × mind;  resistance% += 0.5% × mind
-Drowned Hymn: finesse = 0 for its bonuses;  attackSpeed% += 0.08% × mind;  armor% += 0.2% × mind
+Moonlit Vigil: finesse = 0 for its bonuses;  attackSpeed% += 0.08% × mind;  armor% += 0.2% × mind
 ```
 
 - Damage from Zealot's Oath and Thornshell counts as your damage: Glass Cannon's ×2

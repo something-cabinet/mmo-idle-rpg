@@ -2410,6 +2410,7 @@ button.version:hover {
   display: grid;
   gap: 12px;
   min-width: 0;
+  align-content: start;
 }
 .craft-do {
   display: flex;

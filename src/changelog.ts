@@ -32,7 +32,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'balance', text: "Moonwell Deep: Tidebound Husk has less HP (1.2× the depth's base, was 1.4×), deals less damage (0.8×, was 0.9×) and regenerates 1% of max HP a second (was 1.5%). Unyielding elites regenerate 1.5% (was 2%)." },
       { tag: 'balance', text: 'Flat physical and magic damage affixes and flat max HP affixes grow a bit slower from T5 (×1.5 a tier, was ×1.6). T4 and below are unchanged.' },
       { tag: 'balance', text: 'Attack speed affixes roll higher: up to 15% (was 10%).' },
-      { tag: 'balance', text: 'Lantern of the Drowned Moon: its Lunar Insight is now Drowned Hymn (each point of Mind also gives +0.08% attack speed and +0.2% armor, but Finesse gives nothing), and it rolls flat heal, heal % and Mind.' },
+      { tag: 'balance', text: 'Lantern of the Drowned Moon: its Lunar Insight is now Moonlit Vigil (each point of Mind also gives +0.08% attack speed and +0.2% armor, but Finesse gives nothing), and it rolls flat heal, heal % and Mind.' },
       { tag: 'balance', text: 'Legendary and unique effects that multiply your damage, gold or XP now say "more" or "less" (e.g. Berserker: 3% more damage per 10% of max HP missing), to set them apart from the additive % on regular affixes. Ambush keeps its 5×. Numbers are unchanged.' },
       { tag: 'balance', text: 'Discipline legendaries roll attack speed % as their stat bonus, instead of Vitality.' },
       { tag: 'balance', text: 'Thornshell reflects damage in the type you took it: magic hits come back as magic, physical as physical.' },

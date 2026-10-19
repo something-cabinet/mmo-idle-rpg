@@ -62,6 +62,7 @@ import TemperItemReducer from "../temper_item_reducer";
 import TransferCharacterReducer from "../transfer_character_reducer";
 import UnequipReducer from "../unequip_reducer";
 import UpgradeRarityReducer from "../upgrade_rarity_reducer";
+import UpgradeToolReducer from "../upgrade_tool_reducer";
 
 export type AcceptLinkParams = __Infer<typeof AcceptLinkReducer>;
 export type AddFriendParams = __Infer<typeof AddFriendReducer>;
@@ -119,4 +120,5 @@ export type TemperItemParams = __Infer<typeof TemperItemReducer>;
 export type TransferCharacterParams = __Infer<typeof TransferCharacterReducer>;
 export type UnequipParams = __Infer<typeof UnequipReducer>;
 export type UpgradeRarityParams = __Infer<typeof UpgradeRarityReducer>;
+export type UpgradeToolParams = __Infer<typeof UpgradeToolReducer>;
 

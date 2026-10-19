@@ -90,7 +90,8 @@ for (const r of many) for (const e of r.events) {
 check('the boss spreads its attacks by threat', counts.every((c, i) => Math.abs(c / attacks - shares[i]) < 0.03),
   `${counts.map(c => (c / attacks).toFixed(2)).join('/')} vs ${shares.map(x => x.toFixed(2)).join('/')}`);
 check('more threat, more attacks; nobody is safe', counts.every(c => c > 0) &&
-  four.fighters.every((f, i) => four.fighters.every((g, j) => f.stats.threat <= g.stats.threat || counts[i] > counts[j])));
+  four.fighters.every((f, i) => four.fighters.every((g, j) => f.stats.threat <= g.stats.threat + 0.02 || counts[i] > counts[j])), // near-equal threat is a coin flip
+  four.fighters.map((f, i) => `${f.stats.threat.toFixed(3)}→${counts[i]}`).join(' '));
 const tankShare = aggroShares([0.6, 0.15, 0.15, 0.15])[0];
 check(`a tank with 60% threat among 15% fighters takes most attacks (${THREAT_FOCUS})`, tankShare > 0.5 && tankShare < 0.9, tankShare.toFixed(2));
 

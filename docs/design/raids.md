@@ -13,7 +13,7 @@ Opens for a character once it has killed **Hrimvald, Frost Giant Jarl** (T3 boss
 | | |
 |---|---|
 | Boss | Skaldrith, the Rime Wyrm: Lv 40, physical, Armored (armor 250, resistance 100) |
-| HP | 18,000 |
+| HP | 20,000 |
 | Attack | 72 DPS (0.7 attacks/s), each attack at one fighter picked by threat |
 | Frost Breath | every 12 s, 40 magic damage to every living fighter; can't be dodged |
 | Enrage | at 4:00 the party wipes |
@@ -46,13 +46,13 @@ void, and still alive.
 | | |
 |---|---|
 | Boss | Umbriel, the Eclipse: Lv 50, 0.8 attacks/s, each at one fighter picked by threat |
-| HP | 35,000 |
-| Attack | 140 DPS; its damage type follows the phase |
+| HP | 37,000 |
+| Attack | 150 DPS; its damage type follows the phase |
 | **Lunar Phases** (passive) | every 20 s it turns to its other face, starting at Full Moon |
 | · Full Moon | Armored: armor 320, resistance 60; **magic** attacks |
 | · New Moon | Warded: armor 60, resistance 320; **physical** attacks |
 | Moonfall | every 15 s, 400 magic damage **shared evenly by the living** (4 alive: 100 each; 2 alive: 200); can't be dodged |
-| Enrage | at 3:40 the party wipes |
+| Enrage | at 4:00 the party wipes |
 
 What it asks for, beyond more stats than Wyrm Hollow:
 
@@ -137,7 +137,7 @@ live fights (combat.md). The server's outcome is final.
 - An NPC has **0.5×** the raid's **reference player** (`RaidDef.reference`), a fixed sheet
   of an average player ready for the raid, so NPCs never scale with the party. Wyrm Hollow's:
   Lv 38, 640 HP, 55 armor, 65 resistance, 22 evasion, 0.8 regen, 23% threat, 1.25 attacks/s
-  for 54 physical + 42 magic per second (before mitigation), 9% crit. Its DPS, HP, regen,
+  for 65 physical + 50 magic per second (before mitigation), 9% crit. Its DPS, HP, regen,
   defenses and threat are 0.5× that; speed, crits and penetration as listed. No effects.
 - `test:raid` checks the sheet stays within 10% of the measured average of level-38
   characters with random T3 gear; update it when gear or stats change.

@@ -60,11 +60,6 @@ function queueState(s: Snapshot, r: Recipe): { blocker?: string; max: number } {
   const zoneOpen = ZONES.some(z => z.tier === r.tier && zoneUnlocked(s, z));
   let blocker = productionBlocker({ level, tier: r.tier, zoneOpen, needsDeep: r.needsDeep, deepOpen: s.killedZones.has(ABYSS_UNLOCK_ZONE) });
   const out = r.output;
-  if (!blocker && out.kind === 'tool') {
-    const have = s.tools.get(out.skillId) ?? 1;
-    if (have >= r.tier) blocker = 'Done';
-    else if (have < r.tier - 1) blocker = `Upgrade to tier ${r.tier - 1} first`;
-  }
   let max = Math.min(r.max, affordable(r, stockOf(s)));
   if (out.kind === 'item') max = Math.min(max, s.row.bagSize - s.bag.length);
   if (!blocker && out.kind === 'item' && s.row.bagSize - s.bag.length <= 0) blocker = 'Your bag is full';
@@ -230,7 +225,7 @@ function BrewCard({ s }: { s: Snapshot }) {
   const grade = gradeOf(tier);
   return (
     <div className="card">
-      <CardHead title="Brew"><CountInput count={count} setCount={setCount} /></CardHead>
+      <CardHead title="Elixirs"><CountInput count={count} setCount={setCount} /></CardHead>
       <TierSeg tier={tier} setTier={setTier} />
       <ul className="foes">
         {ELIXIRS.map(el => {
@@ -298,6 +293,16 @@ function PhialCard({ s }: { s: Snapshot }) {
 
 // ---------------------------------------------------------------- Smithing
 
+/** Upgrades a tool one tier: instant, like tempering, so the queue (or the fight) goes on. */
+function UpgradeButton({ s, skillId, r }: { s: Snapshot; skillId: number; r: Recipe }) {
+  const { blocker } = queueState(s, r);
+  return (
+    <button className="btn small" disabled={!!blocker} title={blocker} onClick={() => call(s.conn.reducers.upgradeTool({ skillId }))}>
+      Upgrade
+    </button>
+  );
+}
+
 function ToolsCard({ s }: { s: Snapshot }) {
   return (
     <div className="card">
@@ -312,9 +317,9 @@ function ToolsCard({ s }: { s: Snapshot }) {
                 <Icon name={sk.icon} className="c-material" />
                 <div className="foe-info">
                   <div className="foe-name">{sk.tool} <span className="muted">T{have} · {sk.name}</span></div>
-                  <div className="foe-meta">{r ? <>T{r.tier}: <Cost s={s} r={r} /> · {duration(BigInt(r.seconds) * 1_000_000n)}</> : <span className="muted">Highest tier</span>}</div>
+                  <div className="foe-meta">{r ? <>T{r.tier}: <Cost s={s} r={r} /> · +{fmtBig(productionXpPerAction(r.tier, r.seconds))} XP</> : <span className="muted">Highest tier</span>}</div>
                 </div>
-                {r && <QueueButton s={s} r={r} count="1" label="Upgrade" />}
+                {r && <UpgradeButton s={s} skillId={sk.id} r={r} />}
               </div>
             </li>
           );
@@ -493,7 +498,7 @@ export const ProductionView = memo(function ProductionView({ s, skill }: { s: Sn
   let tabs: { key: string; label: string; body: ReactNode }[] = [];
   if (skill.id === SkillId.Alchemy) {
     tabs = [
-      { key: 'brew', label: 'Brew', body: <BrewCard s={s} /> },
+      { key: 'brew', label: 'Elixirs', body: <BrewCard s={s} /> },
       { key: 'phial', label: 'Phials', body: <PhialCard s={s} /> },
       { key: 'elixir', label: 'Active elixir', body: <ElixirCard s={s} /> },
     ];

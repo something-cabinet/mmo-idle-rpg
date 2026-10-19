@@ -4,7 +4,6 @@ import { craftable as canCraft, rerollCost, uncraftable, upgradeCost } from '../
 import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
 import { LISTED_RARITIES, RARITIES, rarityRank, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
-import { fmtBig } from '../format';
 import { Icon } from '../Icon';
 import { ItemCard, itemName, rarityCls, statText } from '../items';
 import { ItemIcon } from '../itemArt';
@@ -12,6 +11,7 @@ import { CollapsibleCard, ItemFilterCard, useItemFilter } from '../itemFilter';
 import { CardHead, ViewHeader, cantAfford, costText, loadoutNote } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { TemperAction } from './TemperAction';
+import { SkillTabs } from './SkillView';
 import { SkillId } from '../../../spacetimedb/src/data/skills';
 
 type Where = 'all' | 'equipped' | 'bag';
@@ -96,14 +96,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
       }
     />
   );
-  const head = (
-    <ViewHeader title="Crafting" icon="hammer">
-      <div className="head-tags">
-        <span className="chip"><Icon name="coins" />{fmtBig(s.gold)}</span>
-        <span className="chip"><Icon name="gem" />{fmtBig(s.row.dust)}</span>
-      </div>
-    </ViewHeader>
-  );
+  const head = <ViewHeader title="Crafting" icon="hammer" />;
   if (!item) {
     return (
       <>
@@ -164,6 +157,23 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
     </div>
   );
 
+  // One action at a time: new actions are a new tab.
+  const tabs = [
+    { key: 'reroll', label: 'Reroll', body: action('Reroll affix', rerollBody, rCost, rBlocked, 'Reroll', () => call(r.rerollAffix({ itemId: item.id, affixIndex: rerollIndex }))) },
+    { key: 'upgrade', label: 'Upgrade', body: action('Upgrade rarity', upgradeBody, uCost, uBlocked, 'Upgrade', () =>
+      call(r.upgradeRarity({ itemId: item.id, removeAffix: toLegendary ? removeIndex : undefined }))) },
+    ...(unique ? [] : [{ key: 'temper', label: 'Temper', body: (
+      <div className="card">
+        <CardHead title="Temper">
+          <a className="chip" href="#smithing" title="A Smithing action: uses and levels your Smithing skill">
+            <Icon name="anvil" />Smithing {s.skills.get(SkillId.Smithing)!.level}
+          </a>
+        </CardHead>
+        <TemperAction s={s} it={item} />
+      </div>
+    ) }]),
+  ];
+
   const list = (
     <>
       {!items.length && <p className="muted">No items match the filters.</p>}
@@ -203,19 +213,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
           <ItemCard it={item} note={loadoutNote(s, item)} />
         </div>
         <div className="craft-actions">
-          {action('Reroll affix', rerollBody, rCost, rBlocked, 'Reroll', () => call(r.rerollAffix({ itemId: item.id, affixIndex: rerollIndex })))}
-          {action('Upgrade rarity', upgradeBody, uCost, uBlocked, 'Upgrade', () =>
-            call(r.upgradeRarity({ itemId: item.id, removeAffix: toLegendary ? removeIndex : undefined })))}
-          {!unique && (
-            <div className="card">
-              <CardHead title="Temper">
-                <a className="chip" href="#smithing" title="A Smithing action: uses and levels your Smithing skill">
-                  <Icon name="anvil" />Smithing {s.skills.get(SkillId.Smithing)!.level}
-                </a>
-              </CardHead>
-              <TemperAction s={s} it={item} />
-            </div>
-          )}
+          <SkillTabs id="craft" tabs={tabs} />
         </div>
       </div>
     </>

@@ -192,8 +192,11 @@ One tool per gathering skill: **Pickaxe** (Mining), **Hatchet** (Woodcutting),
   skill level and the zone.
 - **+10% gathering speed per tool tier above T1** (T3: +20%), whatever tier is gathered.
   An old tool never slows gathering.
-- Upgrading a tool to tier T is a Smithing recipe: 100 Metal + 50 Wood of tier T−1 (so it
-  can be made before farming tier T), 30 min.
+- Upgrading a tool to tier T is an instant Smithing action, like tempering: 100 Metal +
+  50 Wood of tier T−1 (so it can be made before farming tier T). It needs the Smithing
+  level and zone of tier T, doesn't stop what the character is doing, and gives the
+  Smithing XP of 30 min of work (and as much character XP). Before 2026-10-19 it was a
+  30 min production queue.
 - A tool only counts while its skill is active. It has no effect in combat.
 
 ## Production

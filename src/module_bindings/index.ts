@@ -90,6 +90,7 @@ import TemperItemReducer from "./temper_item_reducer";
 import TransferCharacterReducer from "./transfer_character_reducer";
 import UnequipReducer from "./unequip_reducer";
 import UpgradeRarityReducer from "./upgrade_rarity_reducer";
+import UpgradeToolReducer from "./upgrade_tool_reducer";
 
 // Import all procedure arg schemas
 
@@ -458,6 +459,7 @@ const reducersSchema = __reducers(
   __reducerSchema("transfer_character", TransferCharacterReducer),
   __reducerSchema("unequip", UnequipReducer),
   __reducerSchema("upgrade_rarity", UpgradeRarityReducer),
+  __reducerSchema("upgrade_tool", UpgradeToolReducer),
 );
 
 /** The schema information for all procedures in this module. This is defined the same way as the procedures would have been defined in the server. */

@@ -30,7 +30,7 @@ const TIERS = [...new Set(ZONES.map(z => z.tier))].sort((a, b) => a - b);
 function tierText(skill: SkillDef, tier: number): string {
   if (skill.kind === 'Gathering') return `Gather ${materialOf(tier, skill.makes).name}`;
   if (skill.id === SkillId.Smithing) return `Forge, smelt and temper T${tier}${tier > 1 ? `, make T${tier} tools` : ''}`;
-  if (skill.id === SkillId.Alchemy) return `Brew from T${tier}: ${brewYield(tier)} ${GRADES[gradeOf(tier) - 1].prefix}elixirs a brew`;
+  if (skill.id === SkillId.Alchemy) return `Brew from T${tier}: ${brewYield(tier)} ${GRADES[gradeOf(tier) - 1].prefix}elixirs a brew, ${GRADES[gradeOf(tier) - 1].prefix}Phials`;
   return `Tier ${tier} recipes`;
 }
 

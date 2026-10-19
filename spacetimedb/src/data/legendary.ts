@@ -60,7 +60,7 @@ export const Effect = {
   Moonshadow: 47,
   LunarInsight: 48,
   Afterimage: 49,
-  DrownedHymn: 50,
+  MoonlitVigil: 50,
 } as const;
 
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
@@ -187,7 +187,7 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 45, name: 'Moonlight', text: 'All your damage is magic (only magic damage % and Mind boost it; armor penetration counts as magic penetration). Every 3rd attack hits twice.' },
   { id: 46, name: 'Waxing Moon', text: 'Your hits start at 40% less damage and gain 10% more per attack, up to 60% more from the 11th attack on. Resets each fight.' },
   { id: 47, name: 'Moonshadow', text: 'All your armor and resistance become evasion rating.' },
-  { id: 50, name: 'Drowned Hymn', text: 'Each point of Mind also gives +0.08% attack speed and +0.2% armor, but Finesse gives nothing.' },
+  { id: 50, name: 'Moonlit Vigil', text: 'Each point of Mind also gives +0.08% attack speed and +0.2% armor, but Finesse gives nothing.' },
   { id: 48, name: 'Lunar Insight', text: 'Each point of Mind also gives +0.25% max HP and +0.5% resistance, but Might gives nothing.' },
 ];
 

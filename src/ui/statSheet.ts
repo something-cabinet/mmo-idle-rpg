@@ -77,8 +77,8 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   const prim = (id: number) => level + (sums.get(id) ?? 0);
   const has = (e: number) => st.effects.has(e);
   const lunar = has(Effect.LunarInsight);
-  const hymn = has(Effect.DrownedHymn);
-  // Lunar Insight: Might gives nothing. Drowned Hymn: Finesse gives nothing.
+  const hymn = has(Effect.MoonlitVigil);
+  // Lunar Insight: Might gives nothing. Moonlit Vigil: Finesse gives nothing.
   const [might, finesse, mind, vit] = [lunar ? 0 : prim(Stat.Might), hymn ? 0 : prim(Stat.Finesse), prim(Stat.Mind), prim(Stat.Vitality)];
   /** Frozen Blood's base: max HP above what the level gives with no gear. */
   const frozen = bonusHp(level, st.maxHp, has(Effect.GlassCannon));
@@ -105,7 +105,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
             has(Effect.Voidtouched) && 'Voidtouched: 25% less, ignores enemy mitigation')),
         ...(src.heal ? [row('Heal', fmt(src.heal), from([Stat.Heal, Stat.HealPct], `Mind ${n1(mind)}: +${n1(0.45 * mind)}% heal`, 'Flat added heal is per hit: fast weapons get more from it'))] : []),
         row('Attack speed', `${src.attacksPerSec.toFixed(2)} /s`,
-          from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, hymn && `Drowned Hymn, Mind ${n1(mind)}: +${n1(0.08 * mind)}%`, "Floor: 25% of the weapon's speed",
+          from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, hymn && `Moonlit Vigil, Mind ${n1(mind)}: +${n1(0.08 * mind)}%`, "Floor: 25% of the weapon's speed",
             has(Effect.Ambush) && 'Ambush: 30% less; first attack each fight deals 5×', has(Effect.FrozenBlood) && 'Frozen Blood: 20% less')),
         row('Crit chance', pct(src.critChance, 1),
           from([Stat.BaseCritChance, Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
@@ -129,7 +129,7 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
       `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.25 * mind)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
     row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(0.5 * vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
     row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + 5 × enemy level); vs Lv ${level}: / (armor + ${5 * level}), cap ${pct(mitCap)}`,
-      leg(Effect.Runeguard), hymn && `Drowned Hymn, Mind ${n1(mind)}: +${n1(0.2 * mind)}%`, has(Effect.Moonshadow) && 'Moonshadow: all of it becomes evasion rating', has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
+      leg(Effect.Runeguard), hymn && `Moonlit Vigil, Mind ${n1(mind)}: +${n1(0.2 * mind)}%`, has(Effect.Moonshadow) && 'Moonshadow: all of it becomes evasion rating', has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),
     row('Resistance', `${fmt(st.resistance)} (${pct(magic.mitigation)} vs magic)`, from([Stat.Resistance, Stat.ResistancePct],
       `Reduction: resistance / (resistance + 5 × enemy level); vs Lv ${level}: / (resistance + ${5 * level}), cap ${pct(mitCap)}`,
       leg(Effect.Ironclad), has(Effect.Moonshadow) && 'Moonshadow: all of it becomes evasion rating', lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.5 * mind)}%`, has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Juggernaut) && 'Juggernaut: magic uses the better of armor and resistance')),

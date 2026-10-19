@@ -99,7 +99,7 @@ export const RAIDS: RaidDef[] = [
     unlockZoneId: 3,
     boss: {
       id: 9001, name: 'Skaldrith, the Rime Wyrm', level: 40, damageType: 'Physical', defense: 'Armored', speed: 0.7,
-      hp: 18000, dps: 72, armor: 250, resistance: 100, xp: 40000, gold: 30000, drops: raidDrops(1), materials: [], boss: true,
+      hp: 20000, dps: 72, armor: 250, resistance: 100, xp: 40000, gold: 30000, drops: raidDrops(1), materials: [], boss: true,
     },
     aoe: { every: 12, damage: 40, damageType: 'Magic', name: 'Frost Breath', icon: 'snowflake' },
     enrageSeconds: 240,
@@ -112,7 +112,7 @@ export const RAIDS: RaidDef[] = [
     // The average of level-38 characters with random T3 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
     reference: {
       level: 38, maxHp: 640, regen: 0.8, armor: 55, resistance: 65, evasionRating: 22, threat: 0.23,
-      attacksPerSec: 1.25, physicalPerSec: 54, magicPerSec: 42, critChance: 0.09, critMult: 1.05, armorPen: 0.02, magicPen: 0.02,
+      attacksPerSec: 1.25, physicalPerSec: 65, magicPerSec: 50, critChance: 0.09, critMult: 1.05, armorPen: 0.02, magicPen: 0.02,
     },
   },
   {
@@ -123,7 +123,7 @@ export const RAIDS: RaidDef[] = [
     unlockZoneId: 4,
     boss: {
       id: 9002, name: 'Umbriel, the Eclipse', level: 50, damageType: 'Magic', defense: 'Armored', speed: 0.8,
-      hp: 35000, dps: 140, armor: 320, resistance: 60, xp: 110000, gold: 80000, drops: raidDrops(2), materials: [], boss: true,
+      hp: 37000, dps: 150, armor: 320, resistance: 60, xp: 110000, gold: 80000, drops: raidDrops(2), materials: [], boss: true,
     },
     // Moonfall: a shard of the moon shared by the living, so every death makes the next one hit harder.
     aoe: { every: 15, damage: 400, damageType: 'Magic', name: 'Moonfall', icon: 'moon', split: true },
@@ -135,7 +135,7 @@ export const RAIDS: RaidDef[] = [
         { name: 'New Moon', armor: 60, resistance: 320, defense: 'Warded', damageType: 'Physical' },
       ],
     },
-    enrageSeconds: 220,
+    enrageSeconds: 240,
     clearsPerDay: 3,
     itemsPerClear: 3,
     ownBaseShare: 1 / 2,
@@ -145,7 +145,7 @@ export const RAIDS: RaidDef[] = [
     // The average of level-48 characters with random T4 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
     reference: {
       level: 48, maxHp: 815, regen: 2.6, armor: 72, resistance: 87, evasionRating: 31, threat: 0.28,
-      attacksPerSec: 1.16, physicalPerSec: 80, magicPerSec: 80, critChance: 0.1, critMult: 1.09, armorPen: 0.06, magicPen: 0.04,
+      attacksPerSec: 1.16, physicalPerSec: 96, magicPerSec: 96, critChance: 0.1, critMult: 1.09, armorPen: 0.06, magicPen: 0.04,
     },
   },
 ];

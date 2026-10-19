@@ -54,6 +54,7 @@ export const Account = __t.object("Account", {
   email: __t.option(__t.string()),
   createdAt: __t.timestamp(),
   lastLoginAt: __t.timestamp(),
+  changelogSeen: __t.string(),
 });
 export type Account = __Infer<typeof Account>;
 

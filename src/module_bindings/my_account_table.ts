@@ -27,4 +27,5 @@ export default __t.row({
   email: __t.option(__t.string()),
   createdAt: __t.timestamp().name("created_at"),
   lastLoginAt: __t.timestamp().name("last_login_at"),
+  changelogSeen: __t.string().name("changelog_seen"),
 });

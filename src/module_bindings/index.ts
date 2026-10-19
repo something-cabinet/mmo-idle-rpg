@@ -68,6 +68,7 @@ import RenameLoadoutReducer from "./rename_loadout_reducer";
 import RerollAffixReducer from "./reroll_affix_reducer";
 import SalvageReducer from "./salvage_reducer";
 import ScrapItemsReducer from "./scrap_items_reducer";
+import SeeChangelogReducer from "./see_changelog_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
 import SetElixirAutoRenewReducer from "./set_elixir_auto_renew_reducer";
@@ -435,6 +436,7 @@ const reducersSchema = __reducers(
   __reducerSchema("reroll_affix", RerollAffixReducer),
   __reducerSchema("salvage", SalvageReducer),
   __reducerSchema("scrap_items", ScrapItemsReducer),
+  __reducerSchema("see_changelog", SeeChangelogReducer),
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
   __reducerSchema("set_elixir_auto_renew", SetElixirAutoRenewReducer),

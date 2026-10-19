@@ -26,6 +26,9 @@ export const account = table(
     email: t.string().optional(),
     createdAt: t.timestamp(),
     lastLoginAt: t.timestamp(),
+    // New columns need defaults so existing rows migrate.
+    /** Newest changelog version (src/changelog.ts) the player has read; '' = none. */
+    changelogSeen: t.string().default(''),
   }
 );
 

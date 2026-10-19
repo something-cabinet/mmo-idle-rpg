@@ -10,6 +10,8 @@ import { elixirText } from './lifeSkills';
 import { GRADES } from '../../spacetimedb/src/data/supplies';
 import { nowMicros, syncClock } from './clock';
 import { DefeatReport } from './DefeatReport';
+import { ChangelogPopup, WhatsNew } from './WhatsNew';
+import { LATEST_VERSION } from '../changelog';
 import { revealedAreas, rumouredAreas } from './discovery';
 import { TopBar } from './TopBar';
 import { fmt, fmtBig } from './format';
@@ -96,10 +98,14 @@ const navOf = (view: View): View => (SKILLS.some(sk => sk.slug === view) ? 'skil
 
 /** The sidebar's footer, and the bottom of the phone "More" sheet. */
 function AccountFoot({ conn }: { conn: DbConnection }) {
+  const [changelog, setChangelog] = useState(false);
   return (
     <div className="sidebar-foot">
       <AccountControls conn={conn} />
-      <span className="muted version">v0.0.1 · prototype</span>
+      <button className="link muted version" title="What's new" onClick={() => setChangelog(true)}>
+        What's new · v{LATEST_VERSION}
+      </button>
+      {changelog && <ChangelogPopup onClose={() => setChangelog(false)} />}
     </div>
   );
 }
@@ -372,6 +378,8 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
         />
       </div>
       <BottomNav conn={conn} view={view} onNavigate={() => setChatOpen(false)} />
+      {/* Before the away report, so that one sits on top and is read first. */}
+      <WhatsNew conn={conn} />
       <AwayReport s={viewSnap} pres={pres} />
       <DefeatReport s={viewSnap} pres={pres} />
       {inspecting !== undefined && (

@@ -53,6 +53,7 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
       email,
       createdAt: ctx.timestamp,
       lastLoginAt: ctx.timestamp,
+      changelogSeen: '',
     });
   }
   enterWorld(ctx);
@@ -151,6 +152,16 @@ export const acceptLink = spacetimedb.reducer(
     enterWorld(ctx);
   }
 );
+
+/**
+ * Records the newest changelog entry the player has read. The changelog ships with the
+ * client, so the server takes the version as given.
+ */
+export const seeChangelog = spacetimedb.reducer({ version: t.string() }, (ctx, { version }) => {
+  const acc = requireAccount(ctx);
+  if (version.length > 16) throw new SenderError('Bad version');
+  ctx.db.account.identity.update({ ...acc, changelogSeen: version });
+});
 
 export const setBanned = spacetimedb.reducer(
   { target: t.identity(), banned: t.bool() },

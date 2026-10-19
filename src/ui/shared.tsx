@@ -300,17 +300,21 @@ export function AccountControls({ conn }: { conn: DbConnection }) {
 
 // ---------------------------------------------------------------- popup
 
-/** A dialog over the page; Esc or a click on the backdrop closes it. */
+/** A dialog over the page; Esc or a click on the backdrop closes it. Esc closes only the top one when several are open. */
 export function Modal({ onClose, className = '', children }: { onClose: () => void; className?: string; children: ReactNode }) {
   const close = useRef(onClose);
   close.current = onClose;
+  const self = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close.current();
+    const onKey = (e: KeyboardEvent) => {
+      const modals = document.querySelectorAll('.modal');
+      if (e.key === 'Escape' && modals[modals.length - 1] === self.current) close.current();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, []);
   return (
-    <div className="modal" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal" ref={self} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={`modal-card card ${className}`} role="dialog" aria-modal="true">
         {children}
       </div>

@@ -710,6 +710,19 @@ select:focus,
 .version {
   font-size: 11px;
 }
+button.version {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+button.version:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
 .account-controls {
   display: grid;
   justify-items: start;
@@ -1909,6 +1922,49 @@ select:focus,
 }
 .modal-card p {
   margin: 6px 0;
+}
+
+/* what's new */
+.changelog section + section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.changelog h4 {
+  margin: 0;
+  font-size: 13px;
+}
+.changelog ul {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+}
+.changelog li {
+  line-height: 1.45;
+}
+.change-tag {
+  display: inline-block;
+  min-width: 58px;
+  margin-right: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.tag-new {
+  background: color-mix(in srgb, var(--ok) 18%, transparent);
+  color: var(--ok);
+}
+.tag-balance {
+  background: color-mix(in srgb, var(--info) 18%, transparent);
+  color: var(--info);
+}
+.tag-fix {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
 }
 .item-card.empty {
   display: grid;

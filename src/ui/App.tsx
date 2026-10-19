@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import * as auth from '../auth';
+import { LATEST_VERSION } from '../changelog';
 import { characterOf } from '../net';
 import { STARTER_WEAPONS, base, weaponValues } from '../../spacetimedb/src/data/bases';
 import { validateCharacterName } from '../../spacetimedb/src/game';
@@ -83,6 +84,8 @@ function CreateCharacter() {
               const invalid = validateCharacterName(n);
               if (invalid) return toast(invalid);
               call(conn!.reducers.createCharacter({ name: n, starterWeapon: weapon }));
+              // A new player has nothing to catch up on.
+              call(conn!.reducers.seeChangelog({ version: LATEST_VERSION }));
             }}
           >
             <input placeholder="Name (3-16 letters, digits, _)" maxLength={16} value={name} onChange={e => setName(e.target.value)} />

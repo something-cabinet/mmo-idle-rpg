@@ -25,7 +25,7 @@ function Entries({ entries }: { entries: ChangelogEntry[] }) {
             {e.changes.map(c => (
               <li key={c.text}>
                 <span className={`change-tag tag-${c.tag}`}>{TAG_LABEL[c.tag]}</span>
-                {c.text}
+                <span>{c.text}</span>
               </li>
             ))}
           </ul>

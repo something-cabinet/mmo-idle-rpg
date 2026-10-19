@@ -1964,12 +1964,14 @@ button.version:hover {
   gap: 6px;
 }
 .changelog li {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  column-gap: 8px;
+  align-items: start;
   line-height: 1.45;
 }
 .change-tag {
-  display: inline-block;
-  min-width: 58px;
-  margin-right: 8px;
+  margin-top: 1px;
   padding: 1px 6px;
   border-radius: 4px;
   font-size: 11px;

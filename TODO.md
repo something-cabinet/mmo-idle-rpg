@@ -35,6 +35,12 @@ Drop these deprecated columns, which stay only so the schema migrates without a 
 - `character.essence` and `settle_log.essence`: replaced by `dust` (the settle folds any
   leftover `character.essence` into `dust`).
 - `presence.lastChatAt`: replaced by the private `chat_cooldown` table.
+- `character.activityItemId`: the item of a queued temper, before tempering became instant.
+
+And this one-off migration code, which only converts pre-wipe data:
+
+- Elixir grades (2026-10-19): `elixirGrades` in migrate.ts and `legacyElixir` in
+  data/supplies.ts. The retired supply IDs (100–299) stay unused after the wipe.
 
 ## Life skills (life-skills.md)
 

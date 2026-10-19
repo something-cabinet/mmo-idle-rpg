@@ -10,11 +10,12 @@
 //   Alchemy: brew elixir kind k from tier-t materials = 400 + k × 10 + t (`elixirRecipeId`);
 //     it makes `brewYield(t)` of the grade's elixir (data/supplies.ts). Before 2026-10-19 the
 //     recipe ID was the old tiered elixir's supply ID (migrate.ts).
+//     Brew Phial kind k from tier-t materials = 600 + k × 10 + t (`phialRecipeId`, phials.md).
 
 import { ZONE_BASES, base, type BaseDef } from './bases';
 import { MATERIALS_BY_ID, materialAt, materialOf, untieredMaterial, type MaterialKind } from './materials';
 import { GATHERING_SKILLS, SkillId, productionXpPerAction } from './skills';
-import { ELIXIRS, SUPPLIES_BY_ID, SUPPLY_TIERS, brewYield, elixirSupplyId, gradeOf } from './supplies';
+import { ELIXIRS, PHIALS_BY_ID, PHIAL_KINDS, SUPPLIES_BY_ID, SUPPLY_TIERS, brewYield, elixirSupplyId, gradeOf, phialSupplyId, phialVoidglass } from './supplies';
 
 export interface MaterialCost {
   materialId: number;
@@ -41,6 +42,8 @@ export interface Recipe {
   output: RecipeOutput;
   /** Most actions one queue can hold (a tool upgrade is one). */
   max: number;
+  /** Needs the Moonwell Deep open (its unlock boss killed): Phials, made from its Voidglass. */
+  needsDeep?: boolean;
 }
 
 /** Actions one queue can hold at most. */
@@ -52,6 +55,10 @@ export const ELIXIR_SECONDS = 450;
 
 /** The Alchemy recipe brewing elixir `kind` from tier-`tier` materials. */
 export const elixirRecipeId = (kind: number, tier: number) => 400 + kind * 10 + tier;
+
+export const PHIAL_SECONDS = 120;
+/** The Alchemy recipe brewing Phial `kind` from tier-`tier` materials. */
+export const phialRecipeId = (kind: number, tier: number) => 600 + kind * 10 + tier;
 export const SMELT_SECONDS = 12;
 /** Tempering step k is instant but gives the Smithing XP of TEMPER_XP_SECONDS × k of work. */
 export const TEMPER_XP_SECONDS = 180;
@@ -174,6 +181,27 @@ export const RECIPES: Recipe[] = [
         ],
         output: { kind: 'supply' as const, supplyId, count: brewYield(tier) },
         max: MAX_QUEUE,
+      };
+    })
+  ),
+  // Phials (phials.md): one a brew; higher tiers in a grade cost less Voidglass.
+  ...SUPPLY_TIERS.flatMap(tier =>
+    PHIAL_KINDS.map(p => {
+      const supplyId = phialSupplyId(p.kind, gradeOf(tier));
+      return {
+        id: phialRecipeId(p.kind, tier),
+        skillId: SkillId.Alchemy,
+        tier,
+        name: PHIALS_BY_ID.get(supplyId)!.name,
+        seconds: PHIAL_SECONDS,
+        inputs: [
+          { materialId: untieredMaterial('Voidglass').id, count: phialVoidglass(tier) },
+          { materialId: materialOf(tier, 'Herb').id, count: 1 },
+          { materialId: materialOf(tier, 'Reagent').id, count: 10 },
+        ],
+        output: { kind: 'supply' as const, supplyId, count: 1 },
+        max: MAX_QUEUE,
+        needsDeep: true,
       };
     })
   ),

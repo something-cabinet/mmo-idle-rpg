@@ -11,6 +11,7 @@ import {
   affordable,
   elixirRecipeId,
   forgeRecipeOf,
+  phialRecipeId,
   isScrapRarity,
   recipeOf,
   smeltRecipeId,
@@ -19,7 +20,8 @@ import {
   type Stock,
 } from '../../../spacetimedb/src/data/recipes';
 import { materialOf, untieredMaterial } from '../../../spacetimedb/src/data/materials';
-import { BREW_YIELD, ELIXIRS, ELIXIR_KILLS, INFUSE_BONUS, SUPPLIES, SUPPLIES_BY_ID, SUPPLY_TIERS, brewYield, elixirSupplyId, gradeOf, infuseHerbIds } from '../../../spacetimedb/src/data/supplies';
+import { BREW_YIELD, ELIXIRS, ELIXIR_KILLS, INFUSE_BONUS, PHIALS_BY_ID, PHIAL_KINDS, PHIAL_VOIDGLASS, SUPPLIES, SUPPLIES_BY_ID, SUPPLY_TIERS, brewYield, elixirSupplyId, gradeOf, infuseHerbIds, phialSupplyId, phialText } from '../../../spacetimedb/src/data/supplies';
+import { ABYSS_UNLOCK_ZONE } from '../../../spacetimedb/src/data/abyss';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
 import { FORGE_RARE_CHANCE, forgeMagicChance, type ForgeFilter } from '../../../spacetimedb/src/produce';
 import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
@@ -56,7 +58,7 @@ const stockOf = (s: Snapshot): Stock => ({ have: id => held(s, id) });
 function queueState(s: Snapshot, r: Recipe): { blocker?: string; max: number } {
   const level = s.skills.get(r.skillId)!.level;
   const zoneOpen = ZONES.some(z => z.tier === r.tier && zoneUnlocked(s, z));
-  let blocker = productionBlocker({ level, tier: r.tier, zoneOpen });
+  let blocker = productionBlocker({ level, tier: r.tier, zoneOpen, needsDeep: r.needsDeep, deepOpen: s.killedZones.has(ABYSS_UNLOCK_ZONE) });
   const out = r.output;
   if (!blocker && out.kind === 'tool') {
     const have = s.tools.get(out.skillId) ?? 1;
@@ -252,6 +254,43 @@ function BrewCard({ s }: { s: Snapshot }) {
       <p className="muted">
         T1–T3 materials brew Elixirs, T4–T6 Greater, T7–T9 Divine. Within a grade, higher-tier materials make more a
         brew: {BREW_YIELD.join(' / ')}.
+      </p>
+    </div>
+  );
+}
+
+/** Phials (phials.md): one fight in the Moonwell Deep or a raid, brewed from its Voidglass. */
+function PhialCard({ s }: { s: Snapshot }) {
+  const [tier, setTier] = useSticky('phialTier', 1);
+  const [count, setCount] = useState('');
+  const grade = gradeOf(tier);
+  return (
+    <div className="card">
+      <CardHead title="Phials"><CountInput count={count} setCount={setCount} /></CardHead>
+      <TierSeg tier={tier} setTier={setTier} />
+      <ul className="foes">
+        {PHIAL_KINDS.map(k => {
+          const r = recipeOf(SkillId.Alchemy, phialRecipeId(k.kind, tier))!;
+          const p = PHIALS_BY_ID.get(phialSupplyId(k.kind, grade))!;
+          return (
+            <li key={r.id} className="foe">
+              <div className="foe-row">
+                <Icon name="flask" className="c-magic" />
+                <div className="foe-info">
+                  <div className="foe-name">{p.name} <span className="muted">×{s.supplies.get(p.id) ?? 0} in stock</span></div>
+                  <div className="foe-meta muted">{phialText(p)}</div>
+                  <div className="foe-meta"><Cost s={s} r={r} /></div>
+                </div>
+                <QueueButton s={s} r={r} count={count} label="Brew" />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="muted">
+        One Phial lasts one fight in the Moonwell Deep or a raid, picked before it starts and used up win or lose. Elixirs
+        don't work there. T1–T3 materials brew Phials, T4–T6 Greater; within a grade, higher tiers cost less
+        Voidglass: {PHIAL_VOIDGLASS.join(' / ')}. Needs the Moonwell Deep open.
       </p>
     </div>
   );
@@ -455,6 +494,7 @@ export const ProductionView = memo(function ProductionView({ s, skill }: { s: Sn
   if (skill.id === SkillId.Alchemy) {
     tabs = [
       { key: 'brew', label: 'Brew', body: <BrewCard s={s} /> },
+      { key: 'phial', label: 'Phials', body: <PhialCard s={s} /> },
       { key: 'elixir', label: 'Active elixir', body: <ElixirCard s={s} /> },
     ];
   }

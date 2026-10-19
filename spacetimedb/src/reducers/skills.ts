@@ -5,10 +5,12 @@ import { affordable, recipeOf, temperCost } from '../data/recipes';
 import { addSkillXp } from '../gather';
 import { addXp } from '../game';
 import { ELIXIR_KILLS, SUPPLIES_BY_ID } from '../data/supplies';
+import { ABYSS_UNLOCK_ZONE } from '../data/abyss';
 import { temperBlocker } from '../produce';
 import {
   NO_SKILL,
   bagCount,
+  hasKilledBoss,
   materialCounts,
   requireActive,
   requireItem,
@@ -45,7 +47,8 @@ export const startGathering = spacetimedb.reducer({ skillId: t.u8(), tier: t.u8(
  * Starts a production queue (life-skills.md, "Production"): `count` actions of recipe
  * `recipe` of `skillId`, instead of fighting. It ends early when the inputs or the bag
  * run out, then the character goes back to the kept combat target. Needs the skill
- * level and zone of the recipe's tier, inputs for one action and, for a base, bag room.
+ * level and zone of the recipe's tier (a Phial: the Moonwell Deep open), inputs for one action and,
+ * for a base, bag room.
  */
 export const startProduction = spacetimedb.reducer({ skillId: t.u8(), recipe: t.u16(), count: t.u32() }, (ctx, { skillId, recipe, count }) => {
   const { ch } = requireActive(ctx);
@@ -55,7 +58,10 @@ export const startProduction = spacetimedb.reducer({ skillId: t.u8(), recipe: t.
   if (!r) throw new SenderError('No such recipe');
   if (count < 1 || count > r.max) throw new SenderError(r.max === 1 ? 'Make one at a time' : `Queue 1 to ${r.max}`);
   const settled = settle(ctx, ch);
-  const blocker = productionBlocker({ level: skillRow(ctx, ch.id, def.id).level, tier: r.tier, zoneOpen: tierUnlocked(ctx, ch.id, r.tier) });
+  const blocker = productionBlocker({
+    level: skillRow(ctx, ch.id, def.id).level, tier: r.tier, zoneOpen: tierUnlocked(ctx, ch.id, r.tier),
+    needsDeep: r.needsDeep, deepOpen: !!r.needsDeep && hasKilledBoss(ctx, ch.id, ABYSS_UNLOCK_ZONE),
+  });
   if (blocker) throw new SenderError(blocker);
   const out = r.output;
   if (out.kind === 'tool') {

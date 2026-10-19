@@ -11,7 +11,8 @@ import {
   SECOND_BOSS_AFFIX_FROM, depthLineup, depthReward, depthTier, wardenArtId,
 } from '../../../spacetimedb/src/data/abyss';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
-import { SUPPLIES_BY_ID } from '../../../spacetimedb/src/data/supplies';
+import { PHIALS_BY_ID, SUPPLIES_BY_ID, phialBuffs } from '../../../spacetimedb/src/data/supplies';
+import { PhialPicker, usablePhial } from '../PhialPicker';
 import { elixirText } from '../lifeSkills';
 import { decodeBuild, decodeStats, depthFoes, depthRng, simulateDepth, type DepthFoe, type DepthResult } from '../../../spacetimedb/src/abyss';
 import { call, useSticky, useTick } from '../../store';
@@ -84,8 +85,10 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
   const [loadout, setLoadout] = useSticky<number>('deepLoadout', s.row.activeLoadout);
   const lo = s.loadouts.find(l => l.index === loadout) ?? s.active;
   const gear = gearFor(lo?.slots ?? [], s.items);
-  // As the server takes it: your level and the loadout (elixirs are for farming only).
-  const stats = useMemo(() => combatStats(s.level, gear), [s.level, gear.map(i => String(i?.id ?? 0n)).join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  // As the server takes it: your level, the loadout and the Phial (elixirs are for farming only).
+  const [chosenPhial, setPhial] = useSticky<number>('deepPhial', 0);
+  const phial = usablePhial(s, chosenPhial);
+  const stats = useMemo(() => combatStats(s.level, gear, phialBuffs(phial)), [s.level, gear.map(i => String(i?.id ?? 0n)).join(), phial]); // eslint-disable-line react-hooks/exhaustive-deps
   const lineup = depthLineup(depth);
   const foes = useMemo(() => depthFoes(stats, lineup), [stats, depth]); // eslint-disable-line react-hooks/exhaustive-deps
   const reward = depthReward(depth);
@@ -144,9 +147,13 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
                 ))}
               </div>
             </div>
+            <div className="deep-loadouts">
+              <span className="muted">Phial</span>
+              <PhialPicker s={s} value={chosenPhial} onChange={setPhial} />
+            </div>
             <button className="btn primary deep-go" disabled={!!block} onClick={() => {
               setPending(true);
-              const p = conn.reducers.descend({ loadout: lo?.index ?? 0 });
+              const p = conn.reducers.descend({ loadout: lo?.index ?? 0, phial });
               p.catch(() => setPending(false));
               call(p);
             }}>
@@ -272,6 +279,7 @@ function DepthReplay({ s, log, onClose, onEnd }: { s: Snapshot; log: AbyssLog; o
   return (
     <section className={`card deep-replay${live ? '' : result.won ? ' won' : ' lost'}`}>
       <CardHead title={`Depth ${log.depth}`}>
+        {PHIALS_BY_ID.has(log.phial) && <span className="tag c-magic" title="Drunk for this depth">{PHIALS_BY_ID.get(log.phial)!.name}</span>}
         <span className={`tag${DEPTH_TIME_LIMIT - at < 30 ? ' c-bad' : ''}`} title="Time left for the depth">{clock(Math.max(0, DEPTH_TIME_LIMIT - at))}</span>
       </CardHead>
       {/* The three enemies in order: beaten ones crossed out and dimmed, the current one glowing. */}

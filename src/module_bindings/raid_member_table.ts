@@ -15,4 +15,5 @@ export default __t.row({
   partyId: __t.u64().name("party_id"),
   name: __t.string(),
   joinedAt: __t.timestamp().name("joined_at"),
+  phialId: __t.u16().name("phial_id"),
 });

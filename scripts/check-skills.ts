@@ -1,5 +1,6 @@
 // Checks for life skills: gathering (spacetimedb/src/gather.ts, data/skills.ts), production
-// (produce.ts, data/recipes.ts) and elixirs in combat (data/supplies.ts, game.ts, sim.ts).
+// (produce.ts, data/recipes.ts), elixirs in combat (data/supplies.ts, game.ts, sim.ts), and
+// Phials and the Voidglass sources (phials.md).
 // No server needed:
 //   npm run test:skills
 import {
@@ -12,6 +13,7 @@ import {
   findChances,
   findLevelMult,
   gatherActionMicros,
+  productionBlocker,
   gatherBlocker,
   gatherSpot,
   gatherSpotId,
@@ -20,20 +22,23 @@ import {
   tierRequirement,
 } from '../spacetimedb/src/data/skills';
 import { materialOf, untieredMaterial } from '../spacetimedb/src/data/materials';
-import { makeItem, rollDrops, scrapMaterials, seededRng } from '../spacetimedb/src/loot';
+import { makeItem, materialMeans, rollDrops, salvageVoidglass, scrapMaterials, seededRng } from '../spacetimedb/src/loot';
 import { addSkillXp, gatherCharacterXp, projectGathering, relicGold, rollGathering, rollGatheringActions } from '../spacetimedb/src/gather';
 import {
   RECIPES,
   affordable,
   elixirRecipeId,
   forgeRecipeOf,
+  phialRecipeId,
   recipeOf,
   scrapMaterialId,
   smeltRecipeId,
   temperCost,
   toolRecipeId,
 } from '../spacetimedb/src/data/recipes';
-import { ELIXIR_KILLS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir } from '../spacetimedb/src/data/supplies';
+import { ELIXIR_KILLS, PHIALS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir, phialBuffs, phialSupplyId } from '../spacetimedb/src/data/supplies';
+import { RAIDS } from '../spacetimedb/src/data/raids';
+import { simulateDepth } from '../spacetimedb/src/abyss';
 import { forgeItem, forged, productionCharacterXp, projectProduction, temperBlocker } from '../spacetimedb/src/produce';
 import { SLOTS } from '../spacetimedb/src/data/bases';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
@@ -220,7 +225,7 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
     wrath.output.kind === 'supply' && wrath.output.count === 2 && wrath.output.supplyId === elixirSupplyId(1, 1));
   const t4 = recipeOf(SkillId.Alchemy, elixirRecipeId(1, 4))!;
   check('T4 materials brew Greater elixirs', t4.output.kind === 'supply' && t4.output.supplyId === elixirSupplyId(1, 2) && cost(t4) === '10 604 + 1 304');
-  check('no herb in any brew', RECIPES.filter(r => r.skillId === SkillId.Alchemy).every(r => r.inputs.length === 2));
+  check('no herb in any elixir brew', RECIPES.filter(r => r.skillId === SkillId.Alchemy && r.output.kind === 'supply' && SUPPLIES.some(s => s.id === (r.output as { supplyId: number }).supplyId)).every(r => r.inputs.length === 2));
   check('affordable counts whole actions', affordable(wrath, { have: id => (id === 601 ? 95 : 4) }) === 4 && affordable(wrath, { have: () => 9 }) === 0);
 
   const smelt = recipeOf(SkillId.Smithing, smeltRecipeId(2))!;
@@ -444,6 +449,44 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('Infuse: renewals use herbs, then go plain', inf.elixir!.renewed === 3 && inf.elixir!.herbsUsed === 2 && inf.elixir!.infused === false, JSON.stringify(inf.elixir));
   const inf1 = project(start, { gear: starter, enemy: rat, elixir: { ...run, stock: 1, renew: { plain: wrath, infused: strong, herbs: 5 } } }, T0 + 8n * HOUR);
   check('… and the last one is infused while herbs last', inf1.elixir!.herbsUsed === 1 && inf1.elixir!.infused === true, JSON.stringify(inf1.elixir));
+}
+
+// ---------------------------------------------------------------- Phials and Voidglass (phials.md)
+
+{
+  const glass = untieredMaterial('Voidglass').id;
+  check('Phials: 4 kinds a grade, IDs apart from elixirs', PHIALS.length === 8 && PHIALS.every(p => p.id > 400 && !SUPPLIES.some(s => s.id === p.id)));
+  const near = (a: number | undefined, b: number) => a !== undefined && Math.abs(a - b) < 1e-9;
+  check('Wrath × 1.08, Greater × 1.12', near(phialBuffs(phialSupplyId(1, 1))!.damage, 1.08) && near(phialBuffs(phialSupplyId(1, 2))!.damage, 1.12));
+  check('Warding 8% / 12% less damage taken', near(phialBuffs(phialSupplyId(3, 1))!.damageTaken, 0.92) && near(phialBuffs(phialSupplyId(3, 2))!.damageTaken, 0.88));
+  check('Renewal heals 30% / 45%', near(phialBuffs(phialSupplyId(4, 1))!.renewal, 0.3) && near(phialBuffs(phialSupplyId(4, 2))!.renewal, 0.45));
+  const glassOf = (tier: number) => recipeOf(SkillId.Alchemy, phialRecipeId(1, tier))!.inputs.find(i => i.materialId === glass)?.count;
+  check('Voidglass per brew: 5 / 4 / 3 in a grade', [1, 2, 3, 4].map(glassOf).join() === '5,4,3,5');
+  const t4 = recipeOf(SkillId.Alchemy, phialRecipeId(4, 4))!;
+  check('a brew: 1 Phial from Voidglass, a herb and 10 reagents', t4.output.kind === 'supply' && t4.output.count === 1 && t4.output.supplyId === phialSupplyId(4, 2) &&
+    t4.inputs.some(i => i.materialId === materialOf(4, 'Herb').id && i.count === 1) && t4.inputs.some(i => i.materialId === materialOf(4, 'Reagent').id && i.count === 10));
+  check('Phials need the Deep open', !!t4.needsDeep && productionBlocker({ level: 99, tier: 4, zoneOpen: true, needsDeep: true, deepOpen: false }) !== undefined &&
+    productionBlocker({ level: 99, tier: 4, zoneOpen: true, needsDeep: true, deepOpen: true }) === undefined);
+
+  const gear = SLOTS.map(s => (s === 'MainHand' ? { ...forgeItem(seededRng(0n), 1, 4, 1), affixes: [] } : undefined));
+  const plain = combatStats(40, gear);
+  const warded = combatStats(40, gear, phialBuffs(phialSupplyId(3, 2)));
+  const boss = ENEMIES_BY_ID.get(406)!.enemy;
+  check('Warding shrinks the enemy hit', near(matchup(warded, boss).enemyHit / matchup(plain, boss).enemyHit, 0.88));
+  const renewing = combatStats(40, gear, phialBuffs(phialSupplyId(4, 2)));
+  const d = simulateDepth(renewing, 3, seededRng(1n, 2n));
+  const renewals = d.fights.flatMap(f => f.events).filter(e => e.renewed);
+  check('Renewal heals once per depth', renewals.length === 1, `${renewals.length}`);
+
+  const geode = (tier: number) => findChances(SkillId.Mining, tier, 0, 0).find(f => f.materialId === glass);
+  check('Void Geodes: T4+ Mining only, 2 Voidglass each', !geode(3) && near(geode(4)?.chance, 0.001) && geode(4)?.count === 2);
+  const g = rollGathering(seededRng(5n), SKILLS_BY_ID.get(SkillId.Mining)! as never, 4, { actions: 1_000_000, doubleMean: 0, runs: [{ start: 0n, step: 1n, n: 1_000_000, level: 0 }] });
+  const got = g.materials.find(m => m.materialId === glass)?.count ?? 0;
+  check('… and come in pairs', got > 0 && got % 2 === 0, `${got}`);
+  const bossGlass = (id: number, tier: number) => materialMeans(ENEMIES_BY_ID.get(id)!.enemy, tier, 1).find(m => m.materialId === glass)?.mean;
+  check('zone bosses from T4 drop Voidglass (0.2% a kill)', near(bossGlass(406, 4), 0.002) && bossGlass(306, 3) === undefined && bossGlass(401, 4) === undefined);
+  check('Uniques salvage into 2 Voidglass, Legendaries none', salvageVoidglass('Unique') === 2 && salvageVoidglass('Legendary') === 0);
+  check('raid clears pay Voidglass (2, then 4)', RAIDS.map(r => r.voidglass).join() === '2,4');
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');

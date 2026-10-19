@@ -154,17 +154,18 @@ On a win, each player gets, for up to **3 clears per raid per day** (`clearsPerD
   are any zone base or one of the raid's **own bases** (variants, bases.md; Wyrm Hollow: the Rime dagger, greatsword, healing staff, bow, shield, ring and amulet), one of the raid's own **1 time in 2** (`ownBaseShare`); a Unique comes from the raid's **own pool**, which drops nowhere else
   (Wyrmscale Aegis, Hoardkeeper's Censer, Skaldrith's Fang, see uniques.md). The items
   ignore the bag limit, like a first-kill reward.
-- **10 raid tokens** (`character.raidTokens`), 30,000 gold, 40,000 XP (Wyrm Hollow; The Drowned Moon: 15 tokens, 80,000 gold, 110,000 XP).
+- **10 raid tokens** (`character.raidTokens`), 2 Voidglass, 30,000 gold, 40,000 XP (Wyrm Hollow; The Drowned Moon: 15 tokens, 4 Voidglass, 80,000 gold, 110,000 XP).
+- Each player may bring a **Phial** (phials.md), picked in the party and used up when the fight starts.
 
 A player with no clears left today can still join and fight to help others; they get
 nothing. A loss gives nothing, and the hire cost is spent. Every fight is logged per
-player (`raid_log`): win, rewarded, item, tokens, gold, XP, hire cost.
+player (`raid_log`): win, rewarded, item, tokens, Voidglass, gold, XP, hire cost, Phial.
 
 ## Planned
 
 - **Raid token shop:** trade tokens for things (not decided what).
-- **Precious material:** Voidglass, paid per rewarded clear, for Phials (phials.md).
-  Not added yet.
+- **Precious material:** Voidglass, paid per rewarded clear (Wyrm Hollow 2, The Drowned
+  Moon 4), for Phials (phials.md). Built.
 - More raids, one per later tier pair, each with a mechanic of its own (Wyrm Hollow: none
   beyond the breath; The Drowned Moon: Lunar Phases and a split Moonfall). Ideas kept for
   later: an Eclipse (a few seconds where heals fail and the boss ignores threat), a Tidal

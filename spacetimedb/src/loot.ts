@@ -6,7 +6,8 @@ import { TYPE_LIST, base, baseType, implicitValue, weaponValues, type HealTarget
 import { LEGENDARIES } from './data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, fromStored, roundStat, toStored, type StatDef, type StatId } from './data/stats';
 import { uniquePool, uniqueRoll, type UniqueDef } from './data/uniques';
-import { MATERIAL_CHANCE, materialOf } from './data/materials';
+import { MATERIAL_CHANCE, materialOf, untieredMaterial } from './data/materials';
+import { UNIQUE_SALVAGE_VOIDGLASS, bossVoidglassChance } from './data/supplies';
 import { SCRAP_YIELD, isScrapRarity, scrapMaterialId, type ScrapRarity } from './data/recipes';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
@@ -47,6 +48,9 @@ export function salvageValue(rarity: RarityName, tier: number): { dust: bigint; 
   const scale = 2.9 ** (tier - 1);
   return { dust: BigInt(Math.round(DUST[rarity] * scale)), gold: BigInt(Math.round(SALVAGE_GOLD[rarity] * scale)) };
 }
+
+/** Voidglass one salvaged item of `rarity` gives: Uniques only, any tier (phials.md). */
+export const salvageVoidglass = (rarity: RarityName): number => (rarity === 'Unique' ? UNIQUE_SALVAGE_VOIDGLASS : 0);
 
 // ---------------------------------------------------------------- random
 
@@ -499,9 +503,14 @@ export function scrapMaterials(scrapped: readonly ScrapDrop[]): MaterialDrop[] {
   return out;
 }
 
-/** Mean material drops per kill of `enemy`, per material it drops (as `rollMaterials` samples). */
+/**
+ * Mean material drops per kill of `enemy`, per material it drops (as `rollMaterials` samples).
+ * A zone boss of tier VOIDGLASS_FROM_TIER+ also drops Voidglass, rarely (phials.md).
+ */
 export function materialMeans(enemy: EnemyDef, tier: number, rewardScale: number): { materialId: number; mean: number }[] {
-  return enemy.materials.map(kind => ({ materialId: materialOf(tier, kind).id, mean: rewardScale * MATERIAL_CHANCE[kind] }));
+  const means = enemy.materials.map(kind => ({ materialId: materialOf(tier, kind).id, mean: rewardScale * MATERIAL_CHANCE[kind] }));
+  const voidglass = enemy.boss ? bossVoidglassChance(tier) : 0;
+  return voidglass > 0 ? [...means, { materialId: untieredMaterial('Voidglass').id, mean: voidglass }] : means;
 }
 
 /**

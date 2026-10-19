@@ -6,7 +6,7 @@ import { Encounter as EncounterType, Found as FoundType, account, character, ite
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project, type ElixirLeft, type ElixirRun } from './game';
 import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
-import { materialAt } from './data/materials';
+import { materialAt, untieredMaterial } from './data/materials';
 import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
 import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, gatherSpot, type ProductionSkillDef } from './data/skills';
 import { recipeOf, scrapMaterialId, type MaterialCost, type ScrapRarity } from './data/recipes';
@@ -25,6 +25,7 @@ import {
   rollDrops,
   rollMaterials,
   salvageValue,
+  salvageVoidglass,
   samplePoisson,
   scrapMaterials,
   seededRng,
@@ -190,6 +191,9 @@ function settleCombat(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       ? samplePoisson(seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, PROSPECT_SALT), dropKills * amount(Effect.Prospector))
       : 0;
     if (ore && oreCount > 0) materials = mergeMaterials(materials, [{ materialId: ore.id, count: oreCount }]);
+    // Uniques salvaged for a full bag still give their Voidglass.
+    const voidglass = drops.salvaged.Unique * salvageVoidglass('Unique');
+    if (voidglass > 0) materials = mergeMaterials(materials, [{ materialId: untieredMaterial('Voidglass').id, count: voidglass }]);
     addMaterials(ctx, ch.id, materials);
   }
 

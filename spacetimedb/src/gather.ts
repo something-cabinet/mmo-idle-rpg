@@ -128,7 +128,7 @@ export function rollGatheringActions(characterId: bigint, skill: GatheringSkillD
       const twice = rng() < double;
       if (skill.id === SkillId.Mining && rng() < gem) gems++;
       if (main >= 1 || rng() < main) made += twice ? 2 : 1;
-      for (const f of finds) if (rng() < f.chance) found.set(f.materialId, (found.get(f.materialId) ?? 0) + 1);
+      for (const f of finds) if (rng() < f.chance) found.set(f.materialId, (found.get(f.materialId) ?? 0) + f.count);
     }
   }
   return gatheredYield(skill, tier, made, gems, found);
@@ -163,9 +163,11 @@ export function rollGathering(
   const main = mainChance(node);
   const made = main >= 1 ? g.actions + samplePoisson(rng, g.doubleMean) : samplePoisson(rng, main * (g.actions + g.doubleMean));
   const gems = skill.id === SkillId.Mining ? samplePoisson(rng, g.actions * gemChance(node)) : 0;
-  const means = new Map<number | undefined, number>();
+  // Finds, then the materials each gives (a Void Geode cracks into several).
+  const means = new Map<number | undefined, { mean: number; count: number }>();
   for (const run of g.runs ?? [])
-    for (const f of findChances(skill.id, tier, node, run.level)) means.set(f.materialId, (means.get(f.materialId) ?? 0) + run.n * f.chance);
-  for (const [id, mean] of means) found.set(id, samplePoisson(rng, mean));
+    for (const f of findChances(skill.id, tier, node, run.level))
+      means.set(f.materialId, { mean: (means.get(f.materialId)?.mean ?? 0) + run.n * f.chance, count: f.count });
+  for (const [id, { mean, count }] of means) found.set(id, samplePoisson(rng, mean) * count);
   return gatheredYield(skill, tier, made, gems, found);
 }

@@ -126,7 +126,7 @@ export interface DepthResult {
 
 /**
  * One depth: its three enemies back to back, starting at full HP. Each fight starts at the
- * HP the last one left, with no walk; Second Wind triggers once per depth; the depth is lost
+ * HP the last one left, with no walk; Second Wind and a Phial of Renewal trigger once per depth; the depth is lost
  * at DEPTH_TIME_LIMIT.
  */
 export function simulateDepth(s: CombatStats, depth: number, rng: Rng, season = ABYSS_SEASON): DepthResult {
@@ -135,16 +135,18 @@ export function simulateDepth(s: CombatStats, depth: number, rng: Rng, season = 
   const starts: number[] = [];
   let hp = s.maxHp;
   let secondWind = effectAmount(s.effects, Effect.SecondWind);
+  let renewal = s.renewal ?? 0;
   let elapsed = 0;
   for (const foe of foes) {
     const f = simulateFight(s, foe.matchup, foe.enemy, rng, {
-      ...foe.mods, walk: 0, startHp: hp, secondWind, timeLimit: DEPTH_TIME_LIMIT - elapsed,
+      ...foe.mods, walk: 0, startHp: hp, secondWind, renewal, timeLimit: DEPTH_TIME_LIMIT - elapsed,
     });
     fights.push(f);
     starts.push(elapsed);
     elapsed += f.end;
     hp = f.hpLeft;
     secondWind = f.secondWindLeft;
+    renewal = f.renewalLeft;
     if (f.outcome !== 'kill') return { foes, fights, starts, won: false, timedOut: f.outcome === 'stalemate', end: elapsed };
   }
   return { foes, fights, starts, won: true, timedOut: false, end: elapsed };

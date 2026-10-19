@@ -106,6 +106,10 @@ export interface CombatStats {
   offlineHours: number;
   /** Share of the enemy's damage removed (Frostbite). */
   chill: number;
+  /** × the damage you take after mitigation (a Phial of Warding; absent = 1). */
+  damageTaken?: number;
+  /** Once per fight, at half HP, heal this share of max HP (a Phial of Renewal; absent = 0). */
+  renewal?: number;
   /** Effect IDs worn → copies. Legendary effects stack (`effectAmount`); unique effects apply once. */
   effects: EffectCounts;
 }
@@ -120,7 +124,8 @@ export function effectDamageMult(effects: EffectCounts): number {
 
 /**
  * Final combat stats of a character at `level` wearing `gear`, with `buffs` (an active
- * elixir, data/supplies.ts) as separate "more" multipliers after everything else.
+ * elixir, or a Phial for one fight, data/supplies.ts) as separate "more" multipliers
+ * after everything else.
  */
 export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatStats {
   const sum = new Map<number, number>();
@@ -251,6 +256,8 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     walkTime: WALK_SECONDS * (1 - amount(Effect.SwiftHunter)),
     offlineHours: BASE_OFFLINE_HOURS + amount(Effect.Seasoned),
     chill: has(Effect.Frostbite) ? 0.5 * Math.min(1, sources[0]?.critChance ?? 0) : 0,
+    ...(buffs?.damageTaken !== undefined && { damageTaken: buffs.damageTaken }),
+    ...(buffs?.renewal && { renewal: buffs.renewal }),
     effects,
   };
 }
@@ -385,8 +392,10 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   // Stoneskin takes a share of max HP off each hit; Bulwark blocks half of a share of the hits.
   const stoneskin = amount(Effect.Stoneskin) * s.maxHp;
   const bulwark = amount(Effect.Bulwark);
-  const enemyHit = Math.max(0, (e.dps / e.speed) * (1 - s.chill) * (1 - playerMitigation) - stoneskin);
-  let incoming = stoneskin > 0 ? enemyHit * e.speed * (1 - evasion) : e.dps * (1 - s.chill) * (1 - playerMitigation) * (1 - evasion);
+  // A Phial of Warding shrinks what gets through mitigation.
+  const taken = (1 - s.chill) * (s.damageTaken ?? 1);
+  const enemyHit = Math.max(0, (e.dps / e.speed) * taken * (1 - playerMitigation) - stoneskin);
+  let incoming = stoneskin > 0 ? enemyHit * e.speed * (1 - evasion) : e.dps * taken * (1 - playerMitigation) * (1 - evasion);
   if (bulwark > 0) incoming *= 1 - bulwark / 2;
   // Afterimage: a hit right after a dodge (chance = evasion) deals a share less.
   incoming *= 1 - amount(Effect.Afterimage) * evasion;

@@ -11,7 +11,9 @@ import { Effect, effectAmount } from '../data/legendary';
 import { RAIDS_BY_ID, RAID_PARTY_SIZE, type RaidDef } from '../data/raids';
 import { ZONES_BY_ID, bossOf } from '../data/zones';
 import { clearsToday, encodeSetup, decodeSetup, npcStats, raidLootRng, raidRng, rollRaidItem, simulateRaid, type RaidFighter } from '../raid';
-import { addKills, discover, gearOf, grantCosmetics, hasKilledBoss, leaveRaidParty, raidFighting, raidMembers, requireActive, settle, type Character, type Ctx } from '../helpers';
+import { untieredMaterial } from '../data/materials';
+import { PHIALS_BY_ID, phialBuffs } from '../data/supplies';
+import { addKills, addMaterials, discover, gearOf, grantCosmetics, hasKilledBoss, leaveRaidParty, raidFighting, raidMembers, requireActive, settle, supplyCount, takeSupply, type Character, type Ctx } from '../helpers';
 
 /** Raid log rows kept per character. */
 const RAID_LOG_KEEP = 20;
@@ -45,7 +47,7 @@ export const createRaidParty = spacetimedb.reducer({ raidId: t.u16() }, (ctx, { 
   requireUnlocked(ctx, ch, raid);
   if (ctx.db.raidMember.characterId.find(ch.id)) throw new SenderError('Leave your raid party first');
   const party = ctx.db.raidParty.insert({ id: 0n, raidId, leaderId: ch.id, hired: 0, createdAt: ctx.timestamp, fight: undefined });
-  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp });
+  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp, phialId: 0 });
 });
 
 /** Joins a party with a free seat (hired NPC seats count as taken). */
@@ -57,7 +59,7 @@ export const joinRaidParty = spacetimedb.reducer({ partyId: t.u64() }, (ctx, { p
   requireUnlocked(ctx, ch, requireRaid(party.raidId));
   if (raidFighting(party)) throw new SenderError('That party is fighting');
   if (raidMembers(ctx, party.id).length + party.hired >= RAID_PARTY_SIZE) throw new SenderError('That party is full');
-  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp });
+  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp, phialId: 0 });
 });
 
 /** Leaves the caller's party (not during a fight). The next member leads; an empty party disbands. */
@@ -80,6 +82,18 @@ export const kickFromRaid = spacetimedb.reducer({ characterId: t.u64() }, (ctx, 
   leaveRaidParty(ctx, characterId);
 });
 
+/**
+ * Picks the Phial (data/supplies.ts, phials.md) the caller brings to the party's fights, 0
+ * for none. One is taken from stock as each fight starts; with none left, they fight without.
+ */
+export const setRaidPhial = spacetimedb.reducer({ phialId: t.u16() }, (ctx, { phialId }) => {
+  const { ch } = requireActive(ctx);
+  const m = ctx.db.raidMember.characterId.find(ch.id);
+  if (!m) throw new SenderError('You are not in a raid party');
+  if (phialId !== 0 && !PHIALS_BY_ID.has(phialId)) throw new SenderError('No such Phial');
+  ctx.db.raidMember.characterId.update({ ...m, phialId });
+});
+
 /** The leader sets how many empty seats NPCs fill; they are paid for at the start. */
 export const setRaidHires = spacetimedb.reducer({ count: t.u8() }, (ctx, { count }) => {
   const { ch } = requireActive(ctx);
@@ -90,8 +104,9 @@ export const setRaidHires = spacetimedb.reducer({ count: t.u8() }, (ctx, { count
 
 /**
  * The leader starts the fight. Every member must be online and have the raid
- * unlocked. Settles every member (their stats are taken as of now), charges the leader
- * for the hired NPCs, plays the whole fight, and schedules `finishRaid` for its end.
+ * unlocked. Settles every member (their stats are taken as of now), takes each member's
+ * Phial from stock (none left: they fight without), charges the leader for the hired NPCs,
+ * plays the whole fight, and schedules `finishRaid` for its end.
  */
 export const startRaid = spacetimedb.reducer(ctx => {
   const { ch: leader } = requireActive(ctx);
@@ -115,7 +130,9 @@ export const startRaid = spacetimedb.reducer(ctx => {
       ch = { ...ch, gold: ch.gold - hireCost };
     }
     ctx.db.character.id.update(ch);
-    players.push({ characterId: ch.id, name: ch.name, stats: combatStats(ch.level, gearOf(ctx, ch)) });
+    const phialId = m.phialId !== 0 && PHIALS_BY_ID.has(m.phialId) && supplyCount(ctx, ch.id, m.phialId) > 0 ? m.phialId : 0;
+    if (phialId) takeSupply(ctx, ch.id, phialId, 1);
+    players.push({ characterId: ch.id, name: ch.name, stats: combatStats(ch.level, gearOf(ctx, ch), phialBuffs(phialId)), ...(phialId && { phialId }) });
   }
   const npc = npcStats(raid);
   const hired = Array.from({ length: party.hired }, (_, i): RaidFighter => ({ characterId: 0n, name: `Hireling ${i + 1}`, stats: npc }));
@@ -134,7 +151,7 @@ export const startRaid = spacetimedb.reducer(ctx => {
 /**
  * A fight is over: every player in it gets a log row, and on a win, unless they have
  * used up today's clears (`clearsPerDay`), `itemsPerClear` Epic or better items (outside the bag limit), raid tokens,
- * gold and XP. Members who went offline during the fight leave the party.
+ * Voidglass, gold and XP. Members who went offline during the fight leave the party.
  */
 export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer: raidTimer.rowType }, (ctx, { timer }) => {
   if (!ctx.sender.isEqual(ctx.identity)) throw new SenderError('Runs on a schedule only');
@@ -165,6 +182,7 @@ export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer
       }
       const { level, xp } = addXp(ch.level, ch.xp, BigInt(raid.boss.xp));
       ctx.db.character.id.update({ ...ch, level, xp, gold: ch.gold + BigInt(raid.boss.gold), raidTokens: ch.raidTokens + BigInt(raid.tokens) });
+      addMaterials(ctx, ch.id, [{ materialId: untieredMaterial('Voidglass').id, count: raid.voidglass }]);
     }
     if (fight.won) grantCosmetics(ctx, ch.id, ctx.db.character.id.find(ch.id)!.level);
     ctx.db.raidLog.insert({
@@ -181,6 +199,8 @@ export const finishRaid = spacetimedb.reducer({ onSchedule: raidTimer }, { timer
       gold: rewarded ? BigInt(raid.boss.gold) : 0n,
       xp: rewarded && ch.level < MAX_LEVEL ? BigInt(raid.boss.xp) : 0n,
       hireCost: ch.id === party.leaderId ? fight.hireCost : 0n,
+      voidglass: rewarded ? raid.voidglass : 0,
+      phialId: f.phialId ?? 0,
     });
     pruneRaidLog(ctx, ch.id);
   }

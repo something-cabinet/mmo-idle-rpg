@@ -8,7 +8,8 @@ import { MAX_LEVEL, combatStats } from '../combat';
 import { ABYSS_SEASON, ABYSS_UNLOCK_ZONE, depthReward, depthTier } from '../data/abyss';
 import { ZONES_BY_ID, bossOf } from '../data/zones';
 import { depthRng, encodeBuild, encodeStats, simulateDepth } from '../abyss';
-import { addMaterials, addSupply, grantCosmetics, hasKilledBoss, requireActive, settle, type Character, type Ctx } from '../helpers';
+import { PHIALS_BY_ID, phialBuffs } from '../data/supplies';
+import { addMaterials, addSupply, grantCosmetics, hasKilledBoss, requireActive, settle, supplyCount, takeSupply, type Character, type Ctx } from '../helpers';
 
 /** Deep log rows kept per character: only the latest attempt, which the client replays. */
 const ABYSS_LOG_KEEP = 1;
@@ -21,11 +22,12 @@ function loadoutGear(ctx: Ctx, ch: Character, index: number) {
 
 /**
  * One attempt at the next depth with loadout `loadout` (any of the four; the farming
- * loadout is untouched). Settles first. Elixirs are for farming only: the active one
- * neither applies nor uses charges here. A win pays the depth's first-clear reward and records
+ * loadout is untouched), drinking Phial `phial` from stock for it (0: none; used up win or
+ * lose, phials.md). Settles first. Elixirs are for farming only: the active one neither
+ * applies nor uses charges here. A win pays the depth's first-clear reward and records
  * the new deepest depth and the build on the leaderboard.
  */
-export const descend = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout }) => {
+export const descend = spacetimedb.reducer({ loadout: t.u8(), phial: t.u16() }, (ctx, { loadout, phial }) => {
   const { ch: row } = requireActive(ctx);
   if (loadout >= LOADOUT_COUNT) throw new SenderError('No such loadout');
   if (!hasKilledBoss(ctx, row.id, ABYSS_UNLOCK_ZONE)) {
@@ -40,7 +42,12 @@ export const descend = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout 
   const gear = loadoutGear(ctx, ch, loadout);
   if (!gear.some(Boolean)) throw new SenderError('That loadout is empty');
 
-  const stats = combatStats(ch.level, gear);
+  if (phial !== 0) {
+    if (!PHIALS_BY_ID.has(phial)) throw new SenderError('No such Phial');
+    if (supplyCount(ctx, ch.id, phial) < 1) throw new SenderError('You have none of that Phial');
+    takeSupply(ctx, ch.id, phial, 1);
+  }
+  const stats = combatStats(ch.level, gear, phialBuffs(phial));
   const start = ctx.timestamp.microsSinceUnixEpoch;
   const result = simulateDepth(stats, depth, depthRng(ch.id, start));
 
@@ -74,6 +81,7 @@ export const descend = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout 
     dust: reward?.dust ?? 0n,
     materials: reward?.materials.map(([materialId, count]) => ({ materialId, count })) ?? [],
     elixir: reward?.elixir ?? 0,
+    phial,
   });
   pruneAbyssLog(ctx, ch.id);
 });

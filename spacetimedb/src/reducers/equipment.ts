@@ -3,8 +3,9 @@ import { EquipProfile, spacetimedb } from '../schema';
 import { LOADOUT_COUNT } from '../game';
 import { SLOT_COUNT } from '../data/bases';
 import { autoEquip as bestSlots, isCustomProfile, isProfile, placeItem, validCustomWeights } from '../equip';
-import { addScrap, salvageValue, scrapMaterials, type ScrapDrop } from '../loot';
+import { addScrap, salvageValue, salvageVoidglass, scrapMaterials, type ScrapDrop } from '../loot';
 import { isScrapRarity } from '../data/recipes';
+import { untieredMaterial } from '../data/materials';
 import { addMaterials, requireActive, requireItem, scrapMaterialIdOf, settle, type Character, type Ctx } from '../helpers';
 
 const MAX_LOADOUT_NAME = 20;
@@ -113,20 +114,23 @@ function requireDisposable(ctx: Ctx, ch: Character, id: bigint, equipped: Set<bi
   return it;
 }
 
-/** Turns bag items into Dust and gold. Locked items and items in any loadout are refused. */
+/** Turns bag items into Dust and gold, and Uniques also into Voidglass. Locked items and items in any loadout are refused. */
 export const salvage = spacetimedb.reducer({ itemIds: t.array(t.u64()) }, (ctx, { itemIds }) => {
   const { ch } = requireActive(ctx);
   const equipped = new Set([...ctx.db.loadout.characterId.filter(ch.id)].flatMap(l => l.slots));
   let dust = 0n;
   let gold = 0n;
+  let voidglass = 0;
   for (const id of new Set(itemIds)) {
     const it = requireDisposable(ctx, ch, id, equipped);
     const v = salvageValue(it.rarity.tag, it.tier);
     dust += v.dust;
     gold += v.gold;
+    voidglass += salvageVoidglass(it.rarity.tag);
     ctx.db.item.id.delete(id);
   }
   ctx.db.character.id.update({ ...ch, dust: ch.dust + dust, gold: ch.gold + gold });
+  if (voidglass > 0) addMaterials(ctx, ch.id, [{ materialId: untieredMaterial('Voidglass').id, count: voidglass }]);
 });
 
 /**

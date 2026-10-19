@@ -418,7 +418,7 @@ export const skill = table(
   }
 );
 
-/** A character's stock of one supply (data/supplies.ts): elixirs. Private; owners read theirs via `my_supplies`. */
+/** A character's stock of one supply (data/supplies.ts): elixirs and Phials. Private; owners read theirs via `my_supplies`. */
 export const supply = table(
   { name: 'supply' },
   {
@@ -577,6 +577,8 @@ export const raidMember = table(
     /** Snapshot, so the party list needs no character rows. */
     name: t.string(),
     joinedAt: t.timestamp(),
+    /** The Phial (data/supplies.ts) this player brings to the next fight, or 0; taken from stock when it starts. */
+    phialId: t.u16().default(0),
   }
 );
 
@@ -602,6 +604,10 @@ export const raidLog = table(
     hireCost: t.u64(),
     /** The items granted (`itemsPerClear` on a rewarded win); empty otherwise. */
     itemIds: t.array(t.u64()).default([]),
+    /** Voidglass granted (a rewarded win). */
+    voidglass: t.u32().default(0),
+    /** The Phial this player drank for the fight (data/supplies.ts), or 0. */
+    phialId: t.u16().default(0),
   }
 );
 
@@ -651,7 +657,7 @@ export const abyssLog = table(
     startedAt: t.timestamp(),
     /** Loadout fought with. */
     loadout: t.u8(),
-    /** abyss.ts `encodeStats`: the combat stats fought with (elixir included), so the client can replay it. */
+    /** abyss.ts `encodeStats`: the combat stats fought with (the Phial included), so the client can replay it. */
     stats: t.string(),
     won: t.bool(),
     /** Lost to the time limit. */
@@ -662,6 +668,8 @@ export const abyssLog = table(
     materials: t.array(MaterialCount),
     /** An elixir's supply ID granted (one, with a rare herb in `materials`), or 0. */
     elixir: t.u16(),
+    /** The Phial drunk for the depth (data/supplies.ts), or 0. */
+    phial: t.u16().default(0),
   }
 );
 

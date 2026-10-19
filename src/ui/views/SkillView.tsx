@@ -84,10 +84,13 @@ function extrasPerHour(skill: GatheringSkillDef, tier: number, node: number, lev
   if (skill.id === SkillId.Mining) out.push(`${fmt(actions * gemChance(node))} ${materialOf(tier, 'Gem').name}`);
   for (const f of findChances(skill.id, tier, node, level)) {
     const n = actions * f.chance;
+    const name = f.find.what.kind === 'material' ? f.find.what.name : undefined;
     out.push(
       f.materialId === undefined
         ? `${fmt(n)} Relics (${fmtBig(BigInt(Math.round(n * Number(relicGold(tier)))))} gold)`
-        : `${fmt(n)} ${MATERIALS_BY_ID.get(f.materialId)!.name}`
+        : name
+          ? `${fmt(n)} ${name}s (${fmt(n * f.count)} ${MATERIALS_BY_ID.get(f.materialId)!.name})`
+          : `${fmt(n)} ${MATERIALS_BY_ID.get(f.materialId)!.name}`
     );
   }
   return out;

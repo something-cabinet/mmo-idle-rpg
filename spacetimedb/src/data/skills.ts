@@ -7,6 +7,7 @@
 // combat in `character.activitySkill`).
 
 import { materialId, type MaterialKind, type UntieredKind } from './materials';
+import { GEODE_VOIDGLASS, VOIDGLASS_FROM_TIER } from './supplies';
 
 export const SkillId = { Mining: 1, Woodcutting: 2, Foraging: 3, Smithing: 11, Alchemy: 12 } as const;
 
@@ -103,8 +104,9 @@ export const temperRequirement = (temper: number) => (temper >= 10 ? MAX_SKILL_L
  */
 export interface RareFindDef {
   skillId: number;
-  what: { kind: 'material'; material: MaterialKind | UntieredKind; untiered: boolean } | { kind: 'relic' };
-  /** Chance per action at tier `tier`, before the level and node multipliers. */
+  /** `count`: materials one find gives (default 1; a Void Geode cracks into GEODE_VOIDGLASS). */
+  what: { kind: 'material'; material: MaterialKind | UntieredKind; untiered: boolean; count?: number; name?: string } | { kind: 'relic' };
+  /** Chance per action at tier `tier`, before the level and node multipliers (0: not found there). */
   chance: (tier: number) => number;
 }
 
@@ -113,6 +115,11 @@ export const RARE_FINDS: RareFindDef[] = [
   { skillId: SkillId.Mining, what: { kind: 'material', material: 'Meteor', untiered: true }, chance: tier => 0.001 * tier },
   { skillId: SkillId.Woodcutting, what: { kind: 'material', material: 'Tear', untiered: true }, chance: tier => 0.001 * tier },
   { skillId: SkillId.Foraging, what: { kind: 'material', material: 'Herb', untiered: false }, chance: () => 0.01 },
+  // Void Geode (phials.md): T4+ nodes only, cracked on the spot into Voidglass. Last, so older rolls replay as before.
+  {
+    skillId: SkillId.Mining, what: { kind: 'material', material: 'Voidglass', untiered: true, count: GEODE_VOIDGLASS, name: 'Void Geode' },
+    chance: tier => (tier >= VOIDGLASS_FROM_TIER ? 0.001 * (tier - VOIDGLASS_FROM_TIER + 1) : 0),
+  },
 ];
 
 /** Rare finds come `1 + level / 99` times as often: double at 99. */
@@ -165,13 +172,18 @@ export const mainChance = (node: number) => GATHER_NODES_BY_ID.get(node)?.mainCh
 /** Mining's Gem chance per action at `node`. */
 export const gemChance = (node: number) => GATHER_NODES_BY_ID.get(node)?.gemChance ?? GEM_CHANCE;
 
-/** Each rare find of `skillId` at `tier` and `node` with its chance per action at skill `level`, and the material it makes (undefined: a Relic). */
-export function findChances(skillId: number, tier: number, node: number, level: number): { find: RareFindDef; chance: number; materialId?: number }[] {
+/**
+ * Each rare find of `skillId` at `tier` and `node` with its chance per action at skill
+ * `level`, the material it makes (undefined: a Relic) and how many a find gives. Finds that
+ * can't happen at `tier` are left out.
+ */
+export function findChances(skillId: number, tier: number, node: number, level: number): { find: RareFindDef; chance: number; materialId?: number; count: number }[] {
   const boost = GATHER_NODES_BY_ID.get(node)?.boost;
-  return RARE_FINDS.filter(f => f.skillId === skillId).map(f => ({
+  return RARE_FINDS.filter(f => f.skillId === skillId && f.chance(tier) > 0).map(f => ({
     find: f,
     chance: Math.min(1, f.chance(tier) * findLevelMult(level) * (boost?.find === f ? boost.mult : 1)),
     materialId: f.what.kind === 'material' ? materialId(f.what.untiered ? 0 : tier, f.what.material) : undefined,
+    count: f.what.kind === 'material' ? (f.what.count ?? 1) : 1,
   }));
 }
 
@@ -184,8 +196,9 @@ export function gatherBlocker(g: { level: number; tier: number; zoneOpen: boolea
   return undefined;
 }
 
-/** Why production at tier `tier` isn't allowed, or undefined if it is. */
-export function productionBlocker(p: { level: number; tier: number; zoneOpen: boolean }): string | undefined {
+/** Why production at tier `tier` isn't allowed, or undefined if it is. `needsDeep`: a Phial, which needs the Moonwell Deep open (`deepOpen`). */
+export function productionBlocker(p: { level: number; tier: number; zoneOpen: boolean; needsDeep?: boolean; deepOpen?: boolean }): string | undefined {
+  if (p.needsDeep && !p.deepOpen) return 'Open the Moonwell Deep first';
   if (!p.zoneOpen) return `Unlock the tier ${p.tier} zone first`;
   if (p.level < tierRequirement(p.tier)) return `Needs level ${tierRequirement(p.tier)}`;
   return undefined;

@@ -24,4 +24,6 @@ export default __t.row({
   xp: __t.u64(),
   hireCost: __t.u64().name("hire_cost"),
   itemIds: __t.array(__t.u64()).name("item_ids"),
+  voidglass: __t.u32(),
+  phialId: __t.u16().name("phial_id"),
 });

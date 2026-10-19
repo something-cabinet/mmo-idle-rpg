@@ -31,4 +31,5 @@ export default __t.row({
     return __t.array(MaterialCount);
   },
   elixir: __t.u16(),
+  phial: __t.u16(),
 });

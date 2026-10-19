@@ -21,7 +21,10 @@ export interface RaidFighter {
   /** 0 for a hired NPC. */
   characterId: bigint;
   name: string;
+  /** With the Phial drunk for this fight, if any (`phialId`). */
   stats: CombatStats;
+  /** The Phial drunk for this fight (data/supplies.ts); absent for none. */
+  phialId?: number;
 }
 
 /** What a fight is played from: stored on the party when it starts, so every client replays the same fight. */
@@ -111,7 +114,7 @@ function offense(s: CombatStats, boss: EnemyDef) {
  * regen heal yourself. The highest Frostbite chill in the party shrinks all the boss's
  * damage. Executioner, Bully, Berserker, Ambush, Riposte, Second Wind, Second Skin,
  * Stoneskin, Bulwark, Last Stand, Thornshell, Zealot's Oath, Moonlight, Waxing Moon and
- * Afterimage work as in a solo fight.
+ * Afterimage work as in a solo fight, and so do Phials (Warding shrinks the hits taken, Renewal heals once below half HP).
  * Follow-through does nothing here: there is no next enemy. The party wins when the boss dies, and loses when everyone is dead or at the
  * enrage timer.
  */
@@ -134,6 +137,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const swings = fighters.map(() => 0);
   const lastDodged = fighters.map(() => false);
   const secondWind = fighters.map((_, i) => amount(i, Effect.SecondWind));
+  const renewal = fighters.map(s => s.renewal ?? 0);
   const executeBelow = fighters.map((_, i) => amount(i, Effect.Executioner) * boss.hp);
   const bullyAbove = fighters.map((_, i) => (1 - amount(i, Effect.Bully)) * boss.hp);
   const shield = fighters.map((s, i) => amount(i, Effect.SecondSkin) * s.maxHp);
@@ -161,8 +165,8 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
 
   /** `i` takes `damage` from the boss; Thornshell reflects some. Returns whether Second Wind saved them. */
   const hurt = (i: number, damage: number): boolean => {
-    // Stoneskin, Bulwark and Last Stand shrink the hit; Second Skin's shield takes it first.
-    damage = Math.max(0, damage - amount(i, Effect.Stoneskin) * maxHp[i]);
+    // A Phial of Warding, Stoneskin, Bulwark and Last Stand shrink the hit; Second Skin's shield takes it first.
+    damage = Math.max(0, damage * (fighters[i].damageTaken ?? 1) - amount(i, Effect.Stoneskin) * maxHp[i]);
     const bulwark = amount(i, Effect.Bulwark);
     blocked = bulwark > 0 && rng() < bulwark;
     if (blocked) damage /= 2;
@@ -177,6 +181,10 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     const thorns = amount(i, Effect.Thornshell) * damage * effectDamageMult(fighters[i].effects) * (1 - off[i].mitP);
     bossHp = Math.max(0, bossHp - thorns);
     hp[i] = Math.max(0, hp[i] - damage);
+    if (hp[i] > 0 && renewal[i] > 0 && hp[i] < maxHp[i] / 2) {
+      hp[i] = Math.min(maxHp[i], hp[i] + renewal[i] * maxHp[i]);
+      renewal[i] = 0;
+    }
     if (hp[i] > 0 || secondWind[i] <= 0) return false;
     hp[i] = secondWind[i] * maxHp[i];
     secondWind[i] = 0;
@@ -316,7 +324,7 @@ export function encodeSetup(setup: RaidSetup): string {
 }
 
 export function decodeSetup(json: string): RaidSetup {
-  const raw = JSON.parse(json) as { raidId: number; fighters: { characterId: string; name: string; stats: CombatStats & { effects: [number, number][] } }[] };
+  const raw = JSON.parse(json) as { raidId: number; fighters: { characterId: string; name: string; phialId?: number; stats: CombatStats & { effects: [number, number][] } }[] };
   return {
     raidId: raw.raidId,
     fighters: raw.fighters.map(f => ({ ...f, characterId: BigInt(f.characterId), stats: { ...f.stats, effects: new Map(f.stats.effects) } })),

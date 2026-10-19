@@ -67,6 +67,8 @@ export interface RaidDef {
   itemsPerClear: number;
   /** Raid tokens per rewarded kill. */
   tokens: number;
+  /** Voidglass per rewarded kill (phials.md). */
+  voidglass: number;
   /** Gold per hired NPC seat, paid by the leader at the start. */
   hireCost: number;
   /** The average player for this raid; a hired NPC has NPC_POWER × it, whoever is in the party. */
@@ -105,6 +107,7 @@ export const RAIDS: RaidDef[] = [
     itemsPerClear: 3,
     ownBaseShare: 1 / 2,
     tokens: 10,
+    voidglass: 2,
     hireCost: 2000,
     // The average of level-38 characters with random T3 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
     reference: {
@@ -137,6 +140,7 @@ export const RAIDS: RaidDef[] = [
     itemsPerClear: 3,
     ownBaseShare: 1 / 2,
     tokens: 15,
+    voidglass: 4,
     hireCost: 5000,
     // The average of level-48 characters with random T4 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
     reference: {

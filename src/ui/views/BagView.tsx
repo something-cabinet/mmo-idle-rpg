@@ -5,8 +5,9 @@ import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
 import { MATERIALS, MATERIALS_BY_ID } from '../../../spacetimedb/src/data/materials';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
-import { LISTED_RARITIES, rarityRank, salvageValue } from '../../../spacetimedb/src/loot';
-import { ELIXIR_KILLS, SUPPLIES } from '../../../spacetimedb/src/data/supplies';
+import { LISTED_RARITIES, rarityRank, salvageValue, salvageVoidglass } from '../../../spacetimedb/src/loot';
+import { ELIXIR_KILLS, SUPPLIES, phialText } from '../../../spacetimedb/src/data/supplies';
+import { heldPhials } from '../PhialPicker';
 import { SCRAP_YIELD, isScrapRarity, scrapMaterialId } from '../../../spacetimedb/src/data/recipes';
 
 /** Common to Legendary items of a tier with materials can be scrapped. */
@@ -107,7 +108,34 @@ function ConsumablesTab({ s }: { s: Snapshot }) {
       ) : (
         <p className="muted">No elixirs. Brew them with Alchemy; each lasts {ELIXIR_KILLS} kills.</p>
       )}
+      <PhialList s={s} />
     </div>
+  );
+}
+
+/** Phials in stock: picked per fight in the Moonwell Deep and raids, so nothing to drink here. */
+function PhialList({ s }: { s: Snapshot }) {
+  const held = heldPhials(s);
+  return (
+    <>
+      <CardHead title="Phials" />
+      {held.length ? (
+        <ul className="foes">
+          {held.map(p => (
+            <li key={p.id} className="foe">
+              <div className="foe-row">
+                <Icon name="flask" className="c-magic" />
+                <div className="foe-info">
+                  <div className="foe-name">{p.name} <span className="muted">×{s.supplies.get(p.id)}</span></div>
+                  <div className="foe-meta muted">{phialText(p)}</div>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className="muted">One fight each, in the Moonwell Deep or a raid: pick one before the fight. Used up win or lose.</p>
+    </>
   );
 }
 
@@ -160,6 +188,7 @@ function BagPopup({ s, it, onClose }: { s: Snapshot; it: Item; onClose: () => vo
           onClick={() => call(r.salvage({ itemIds: [it.id] }))}
         >
           Salvage → +{fmtBig(salvageValue(it.rarity.tag, it.tier).dust)} Dust, +{fmtBig(salvageValue(it.rarity.tag, it.tier).gold)} gold
+          {salvageVoidglass(it.rarity.tag) > 0 && `, +${salvageVoidglass(it.rarity.tag)} Voidglass`}
         </button>
       </div>
     </Modal>
@@ -187,6 +216,7 @@ function GearTab({ s }: { s: Snapshot }) {
   const allScrappable = unlocked.every(scrappable);
   const dust = unlocked.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).dust, 0n);
   const salvageGold = unlocked.reduce((sum, i) => sum + salvageValue(i.rarity.tag, i.tier).gold, 0n);
+  const salvageGlass = unlocked.reduce((sum, i) => sum + salvageVoidglass(i.rarity.tag), 0);
   const cost = bagExpansionCost(s.row.bagSize);
 
   function clickTile(ev: React.MouseEvent, id: bigint) {
@@ -284,7 +314,7 @@ function GearTab({ s }: { s: Snapshot }) {
           title={selected.length && !unlocked.length ? "Locked items can't be salvaged" : skipped ? `Skips ${skipped} locked` : undefined}
           onClick={() => call(r.salvage({ itemIds: unlocked.map(i => i.id) }).then(() => setSel(new Set())))}
         >
-          Salvage → +{fmtBig(dust)} Dust, +{fmtBig(salvageGold)} gold
+          Salvage → +{fmtBig(dust)} Dust, +{fmtBig(salvageGold)} gold{salvageGlass > 0 && `, +${salvageGlass} Voidglass`}
         </button>
       </div>
       {open && <BagPopup key={String(open.id)} s={s} it={open} onClose={() => setOpenId(undefined)} />}

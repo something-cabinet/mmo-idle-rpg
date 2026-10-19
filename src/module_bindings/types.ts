@@ -27,6 +27,7 @@ export const AbyssLog = __t.object("AbyssLog", {
     return __t.array(MaterialCount);
   },
   elixir: __t.u16(),
+  phial: __t.u16(),
 });
 export type AbyssLog = __Infer<typeof AbyssLog>;
 
@@ -414,6 +415,8 @@ export const RaidLog = __t.object("RaidLog", {
   xp: __t.u64(),
   hireCost: __t.u64(),
   itemIds: __t.array(__t.u64()),
+  voidglass: __t.u32(),
+  phialId: __t.u16(),
 });
 export type RaidLog = __Infer<typeof RaidLog>;
 
@@ -422,6 +425,7 @@ export const RaidMember = __t.object("RaidMember", {
   partyId: __t.u64(),
   name: __t.string(),
   joinedAt: __t.timestamp(),
+  phialId: __t.u16(),
 });
 export type RaidMember = __Infer<typeof RaidMember>;
 

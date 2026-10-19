@@ -12,7 +12,7 @@ import { ZONES } from '../data/zones';
 import { RAIDS } from '../data/raids';
 import { COSMETICS } from '../data/cosmetics';
 import { MATERIALS } from '../data/materials';
-import { SUPPLIES } from '../data/supplies';
+import { PHIALS, SUPPLIES } from '../data/supplies';
 import { DEV_RARITIES, makeItem, makeUnique, seededRng, type RarityName } from '../loot';
 import { addMaterials, addSupply, discover, requireActive, settle, skillRow, type Character, type Ctx } from '../helpers';
 
@@ -73,10 +73,10 @@ export const devGrantMaterials = spacetimedb.reducer({ count: t.u32() }, (ctx, {
   addMaterials(ctx, ch.id, MATERIALS.map(m => ({ materialId: m.id, count })));
 });
 
-/** Adds `count` of every supply (elixirs, every grade). */
+/** Adds `count` of every supply (elixirs and Phials, every grade). */
 export const devGrantSupplies = spacetimedb.reducer({ count: t.u32() }, (ctx, { count }) => {
   const { ch } = requireCheats(ctx);
-  for (const s of SUPPLIES) addSupply(ctx, ch.id, s.id, count);
+  for (const s of [...SUPPLIES, ...PHIALS]) addSupply(ctx, ch.id, s.id, count);
 });
 
 /** Sets the character's level (XP toward the next starts at 0), after settling what's pending at the old level. */

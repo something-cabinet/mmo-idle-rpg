@@ -10,6 +10,7 @@ import { RARITIES } from '../spacetimedb/src/loot';
 import { decodeBuild, decodeStats, depthRng, simulateDepth } from '../spacetimedb/src/abyss';
 import { depthReward } from '../spacetimedb/src/data/abyss';
 import { untieredMaterial } from '../spacetimedb/src/data/materials';
+import { phialSupplyId } from '../spacetimedb/src/data/supplies';
 
 const HOST = process.env.SPACETIMEDB_HOST ?? 'ws://localhost:3000';
 const DB = process.env.SPACETIMEDB_DB_NAME ?? 'mmo-idle-rpg';
@@ -357,7 +358,7 @@ await a.conn.reducers.setLook({ titleId: 0, visualId: 0, plateId: 0 });
 await sleep(200);
 check('wearing nothing removes the look row', !b.conn.db.look.characterId.find(charOf(a)!.id));
 
-await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.descend({ loadout: 0 }), 'open the Moonwell Deep');
+await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.descend({ loadout: 0, phial: 0 }), 'open the Moonwell Deep');
 
 // Raids: party up, hire NPCs, start; the scheduled finish logs it. The dev cheats unlock the raid and pay for the hires.
 {
@@ -418,11 +419,11 @@ await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.
 {
   const record = () => [...a.conn.db.abyssRecord.iter()].find(r => r.characterId === charOf(a)!.id);
   const newest = () => [...a.conn.db.myAbyssLog.iter()].sort((x, y) => (x.id < y.id ? 1 : -1))[0];
-  await expectError('no such loadout', a.conn.reducers.descend({ loadout: 9 }), 'No such loadout');
+  await expectError('no such loadout', a.conn.reducers.descend({ loadout: 9, phial: 0 }), 'No such loadout');
   const emptyLo = [...a.conn.db.myLoadouts.iter()].find(l => l.slots.every(id => id === 0n));
-  if (emptyLo) await expectError('an empty loadout is refused', a.conn.reducers.descend({ loadout: emptyLo.index }), 'loadout is empty');
+  if (emptyLo) await expectError('an empty loadout is refused', a.conn.reducers.descend({ loadout: emptyLo.index, phial: 0 }), 'loadout is empty');
   // A level-1 character with starter gear falls on depth 1.
-  await a.conn.reducers.descend({ loadout: 0 });
+  await a.conn.reducers.descend({ loadout: 0, phial: 0 });
   await sleep(200);
   const lost = newest();
   check('a lost attempt is logged at depth 1 with no reward', lost?.depth === 1 && !lost.won && lost.gold === 0n && lost.materials.length === 0);
@@ -437,7 +438,7 @@ await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.
   await a.conn.reducers.equip({ loadout: 0, slot: 0, itemId: sword.id });
   await sleep(200);
   const before = charOf(a)!;
-  await a.conn.reducers.descend({ loadout: 0 });
+  await a.conn.reducers.descend({ loadout: 0, phial: 0 });
   await sleep(300);
   const won = newest();
   const after = charOf(a)!;
@@ -446,7 +447,19 @@ await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.
   check('the first clear pays the depth reward', !!won?.won && won.gold === reward.gold && after.gold >= before.gold + reward.gold && after.dust >= before.dust + reward.dust &&
     [...a.conn.db.myMaterials.iter()].some(m => m.materialId === untieredMaterial('Voidglass').id));
   check('the leaderboard records depth 1 and the build', record()?.deepest === 1 && decodeBuild(record()!.build).some(Boolean));
-  check('the next attempt is depth 2', (await a.conn.reducers.descend({ loadout: 0 }), await sleep(300), newest()?.depth === 2));
+  check('the next attempt is depth 2', (await a.conn.reducers.descend({ loadout: 0, phial: 0 }), await sleep(300), newest()?.depth === 2));
+  // A Phial (phials.md): refused without stock, then taken for one depth and logged; the replay matches.
+  const phial = phialSupplyId(1, 2);
+  const stock = () => Number([...a.conn.db.mySupplies.iter()].find(r => r.supplyId === phial)?.count ?? 0n);
+  if (stock() === 0) await expectError('a Phial needs stock', a.conn.reducers.descend({ loadout: 0, phial }), 'none of that Phial');
+  await a.conn.reducers.devGrantSupplies({ count: 2 });
+  await sleep(200);
+  const had = stock();
+  await a.conn.reducers.descend({ loadout: 0, phial });
+  await sleep(300);
+  const drunk = newest();
+  check('a Phial is used up for one depth and logged', stock() === had - 1 && drunk?.phial === phial, `${had} → ${stock()}`);
+  check('… and the replay matches with it', !!drunk && simulateDepth(decodeStats(drunk.stats), drunk.depth, depthRng(drunk.characterId, drunk.startedAt.microsSinceUnixEpoch)).won === drunk.won);
 }
 
 await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.me, banned: true }), 'Admins only');

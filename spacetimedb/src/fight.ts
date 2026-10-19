@@ -32,6 +32,8 @@ export interface FightEvent {
   foeHealed?: number;
   /** Second Wind saved you from this hit. */
   secondWind?: boolean;
+  /** HP a Phial of Renewal healed after this event took you below half HP. */
+  renewed?: number;
   /** Second Skin's shield left after this event, while it lasts. */
   shield?: number;
   /** Follow-through: the previous kill's overkill landing as the fight starts. */
@@ -61,6 +63,8 @@ export interface FightMods {
   startHp?: number;
   /** Second Wind left, as a share of max HP (default: the worn amount): once per Deep depth, not per fight. */
   secondWind?: number;
+  /** Renewal left, as a share of max HP (default: the Phial's, `CombatStats.renewal`): once per Deep depth too. */
+  renewal?: number;
   /** Seconds after the walk before the fight ends as a stalemate (default MAX_FIGHT_SECONDS). */
   timeLimit?: number;
   /** The enemy heals this share of the damage it deals to your HP. */
@@ -95,6 +99,8 @@ export interface Fight {
   hpLeft: number;
   /** Second Wind left after the fight (0 once it triggered). */
   secondWindLeft: number;
+  /** Renewal left after the fight (0 once it triggered). */
+  renewalLeft: number;
 }
 
 /**
@@ -113,7 +119,7 @@ export interface Fight {
  * on its own). Second Skin's shield takes hits first; Bulwark halves some hits; Last
  * Stand shrinks hits while you are below its threshold. Moonlight doubles every 3rd
  * swing; Waxing Moon scales swing k by `waxingMult(k)`; Afterimage shrinks the enemy's
- * hit after a dodge. New effects draw from the
+ * hit after a dodge. A Phial of Renewal heals once when a hit leaves you below half HP. New effects draw from the
  * generator only when worn, so fights without them replay as before. `mods` (Moonwell Deep
  * fights only) change the start, the time limit and the enemy; see FightMods.
  */
@@ -156,6 +162,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const lastStand = amount(Effect.LastStand);
   const lowHp = LAST_STAND_BELOW * s.maxHp;
   let secondWind = mods.secondWind ?? amount(Effect.SecondWind);
+  let renewal = mods.renewal ?? s.renewal ?? 0;
   let shield = m.shield;
   const afterimage = amount(Effect.Afterimage);
   let lastDodged = false;
@@ -180,11 +187,19 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   let nextBurst = mods.burst ? walk + mods.burst.every : Infinity;
   const events: FightEvent[] = [];
   const done = (end: number, outcome: Fight['outcome']): Fight =>
-    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, startHp, hpLeft: youHp, secondWindLeft: secondWind });
+    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, startHp, hpLeft: youHp, secondWindLeft: secondWind, renewalLeft: renewal });
   const shieldNote = () => (m.shield > 0 ? { shield } : {});
-  /** You take `damage` (after the shield); Second Wind may save you. Returns whether it did. */
+  /** HP the last `take` got back from Renewal (0 if it didn't trigger). */
+  let renewed = 0;
+  /** You take `damage` (after the shield); Second Wind may save you. Returns whether it did. Renewal heals once below half HP. */
   const take = (damage: number): boolean => {
     youHp = Math.max(0, youHp - damage);
+    renewed = 0;
+    if (youHp > 0 && renewal > 0 && youHp < s.maxHp / 2) {
+      renewed = Math.min(s.maxHp - youHp, renewal * s.maxHp);
+      youHp += renewed;
+      renewal = 0;
+    }
     if (youHp > 0 || secondWind <= 0) return false;
     youHp = secondWind * s.maxHp;
     secondWind = 0;
@@ -216,7 +231,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const absorbed = Math.min(shield, damage);
       shield -= absorbed;
       const saved = take(damage - absorbed);
-      events.push({ t, by: 'enemy', kind: 'hit', damage, healed, youHp, foeHp, burst: true, ...(saved && { secondWind: true }), ...shieldNote() });
+      events.push({ t, by: 'enemy', kind: 'hit', damage, healed, youHp, foeHp, burst: true, ...(saved && { secondWind: true }), ...(renewed > 0 && { renewed }), ...shieldNote() });
       if (youHp <= 0) return done(t, 'defeat');
     } else if (nextYou <= nextFoe) {
       nextYou += yourPeriod;
@@ -237,7 +252,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const saved = reflected > 0 && take(reflected);
       events.push({ t, by: 'you', kind: missed || shielded ? 'miss' : isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp,
         ...(wave && !missed && !shielded && { wave: true }), ...(shielded && { immune: true }), ...(reflected > 0 && { reflected }),
-        ...(saved && { secondWind: true }), ...shieldNote() });
+        ...(saved && { secondWind: true }), ...(reflected > 0 && renewed > 0 && { renewed }), ...shieldNote() });
       if (foeHp <= 0) return done(t, 'kill');
       if (youHp <= 0) return done(t, 'defeat');
     } else {
@@ -259,7 +274,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       foeHp += drained;
       events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp,
         ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...(foeRegen > 0 && { foeHealed: foeRegained }),
-        ...(drained > 0 && { drained }), ...shieldNote() });
+        ...(drained > 0 && { drained }), ...(renewed > 0 && { renewed }), ...shieldNote() });
       foeRegained = 0;
       if (youHp <= 0) return done(t, 'defeat');
     }

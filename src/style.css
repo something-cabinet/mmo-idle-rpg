@@ -2890,6 +2890,19 @@ fieldset.affix-pick legend {
   align-items: center;
   gap: 4px 6px;
 }
+.raid-seat-phial {
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 6px;
+}
+.raid-seat-phial select,
+.deep-loadouts select {
+  max-width: 100%;
+  font-size: 13px;
+}
 .tag.raid-target {
   color: var(--accent);
 }

@@ -12,4 +12,5 @@ import {
 
 export default {
   loadout: __t.u8(),
+  phial: __t.u16(),
 };

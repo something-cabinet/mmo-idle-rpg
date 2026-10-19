@@ -18,7 +18,10 @@ import { EnemyArt, RaidBanner } from '../enemyArt';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
 import { PlayerName } from '../PlayerName';
-import { ItemCard, rarityCls, rarityLabel } from '../items';
+import { ItemCard, materialIconName, rarityCls, rarityLabel } from '../items';
+import { untieredMaterial } from '../../../spacetimedb/src/data/materials';
+import { PHIALS_BY_ID, phialBuffs } from '../../../spacetimedb/src/data/supplies';
+import { PhialPicker, usablePhial } from '../PhialPicker';
 import { CardHead, Modal, ViewHeader } from '../shared';
 import { gearFor, type Snapshot } from '../snapshot';
 import { rarityRank } from '../../../spacetimedb/src/loot';
@@ -248,7 +251,7 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
                   })}
                 </li>
               )}
-              <li>{raid.tokens} raid tokens · {fmt(boss.gold)} gold · {fmt(boss.xp)} XP</li>
+              <li>{raid.tokens} raid tokens · {raid.voidglass} Voidglass · {fmt(boss.gold)} gold · {fmt(boss.xp)} XP</li>
             </ul>
             <p className={left > 0 ? 'c-ok' : 'muted'}>
               Clears today: {Math.min(clears, raid.clearsPerDay)}/{raid.clearsPerDay}.{' '}
@@ -309,12 +312,14 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   const loadouts = new Map([...conn.db.raidPartyLoadouts.iter()].map(l => [l.characterId, l]));
   const items = new Map([...conn.db.raidPartyItems.iter()].map(i => [i.id, i]));
 
-  // Every member's stats as the server would take them at the start (yours projected to now).
+  // Every member's stats as the server would take them at the start (yours projected to now), with their Phials
+  // (yours only if you have one left; others' stock isn't public, so theirs as picked).
+  const myPhial = usablePhial(s, members.find(m => m.characterId === me)?.phialId ?? 0);
   const players = members.map((m): RaidFighter | undefined => {
-    if (m.characterId === me) return { characterId: me, name: m.name, stats: s.stats };
+    if (m.characterId === me) return { characterId: me, name: m.name, stats: myPhial ? combatStats(s.level, s.gear, phialBuffs(myPhial)) : s.stats };
     const ch = chars.get(m.characterId);
     const lo = loadouts.get(m.characterId);
-    return ch && lo && { characterId: ch.id, name: m.name, stats: combatStats(ch.level, gearFor(lo.slots, items)) };
+    return ch && lo && { characterId: ch.id, name: m.name, stats: combatStats(ch.level, gearFor(lo.slots, items), phialBuffs(m.phialId)) };
   });
   const known = players.every(p => p) ? (players as RaidFighter[]) : undefined;
   const npc = npcStats(raid);
@@ -389,6 +394,14 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
               )}
             </div>
             {seat(players[i]?.stats, i)}
+            {m.characterId === me && !fighting ? (
+              <div className="raid-seat-phial">
+                <span className="muted">Phial</span>
+                <PhialPicker s={s} value={m.phialId} onChange={phialId => call(conn.reducers.setRaidPhial({ phialId }))} />
+              </div>
+            ) : PHIALS_BY_ID.has(m.phialId) && (
+              <div className="raid-seat-phial muted">Phial: {PHIALS_BY_ID.get(m.phialId)!.name}</div>
+            )}
           </div>
         ))}
         {Array.from({ length: party.hired }, (_, i) => (
@@ -465,6 +478,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
             <li><span>Party</span><strong>{[...members.map(m => m.name), ...Array.from({ length: party.hired }, (_, i) => `Hireling ${i + 1}`)].join(', ')}</strong></li>
             {cost > 0n && <li><span>Hiring {party.hired} NPC{party.hired === 1 ? '' : 's'}</span><strong>{fmtBig(cost)} gold, paid now, win or lose</strong></li>}
             <li><span>Your clears today</span><strong>{clearsLeft}/{raid.clearsPerDay} left</strong></li>
+            <li><span>Your Phial</span><strong>{myPhial ? `${PHIALS_BY_ID.get(myPhial)!.name}, used up win or lose` : 'None'}</strong></li>
           </ul>
           {clearsLeft === 0 && <p className="c-bad">You have no clears left today: a win gives you no loot.</p>}
           <div className="row raid-confirm-actions">
@@ -649,6 +663,11 @@ function RaidLoot({ log, loot }: { log: RaidLog; loot: Item[] }) {
       <div className="raid-gains">
         <span style={{ '--delay': '0.2s' } as CSSProperties}><Icon name="crown" className="c-gold" />+{fmt(Number(log.tokens))} tokens</span>
         <span style={{ '--delay': '0.35s' } as CSSProperties}><Icon name="coins" className="c-gold" />+{fmtBig(log.gold)} gold</span>
+        {log.voidglass > 0 && (
+          <span style={{ '--delay': '0.42s' } as CSSProperties}>
+            <Icon name={materialIconName(untieredMaterial('Voidglass').id)} className="c-voidglass" />+{log.voidglass} Voidglass
+          </span>
+        )}
         {log.xp > 0n && <span style={{ '--delay': '0.5s' } as CSSProperties}><Icon name="star" className="c-ok" />+{fmtBig(log.xp)} XP</span>}
       </div>
       <div className="raid-loot-items">

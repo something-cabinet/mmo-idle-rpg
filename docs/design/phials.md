@@ -1,6 +1,6 @@
 # Phials
 
-Designed 2026-10-19, not built. Numbers are *illustrative* until there's play data.
+Designed and built 2026-10-19. Numbers are *illustrative* until there's play data.
 
 Phials are one-fight consumables for the **Moonwell Deep** (abyss.md) and **raids**
 (raids.md). Elixirs are for farming only (life-skills.md, "Buff rules"), so Phials give the
@@ -16,7 +16,9 @@ where Voidglass comes from.
   A raid attempt is one fight.
 - **Picked per attempt.** The Descend button and the raid party screen each have a Phial
   picker (None, or a Phial in stock with its count). There's no slot that stays filled, and
-  nothing to put on and take off. You choose at the moment you use it.
+  nothing to put on and take off. You choose at the moment you use it. The pick is
+  remembered for the next attempt (in the raid party, until you change it); with none left
+  in stock you fight without one, and a raid start never waits on it.
 - **Used up win or lose.** It's taken from stock when the fight starts. Otherwise every
   attempt would bring one for free.
 - **Raids:** each player picks their own, and it only changes that player's stats. A
@@ -34,27 +36,27 @@ Fight effects only: no gold, XP or item find, since those are farming stats.
 |-|-|-|
 | **Wrath** | × 1.08 damage | |
 | **Haste** | × 1.06 attack speed | |
-| **Bulwark** | × 0.92 damage taken | Applied after armor, resistance and evasion |
+| **Warding** | × 0.92 damage taken | Applied after armor, resistance and evasion |
 | **Renewal** | Once per fight, at 50% HP, heal 30% of max HP | In the Deep, once per depth, like Second Wind |
 
 **A Phial is the last little push, not a requirement.** It should turn a fight you lose
 narrowly into a win, not make a fight you lose badly winnable. If it were bigger, every
 Deep depth and raid would be balanced around having one, and going without would feel
-like a penalty. So Wrath, Haste and Bulwark stay below elixirs (× 1.08 against × 1.2).
+like a penalty. So Wrath, Haste and Warding stay below elixirs (× 1.08 against × 1.2).
 Renewal is the exception: a heal once per fight only matters when a fight is close.
 
 ### Grades
 
 The same grades as elixirs (supplies.ts `GRADES`), set by the tier of the herb and
 reagent used: Phial (T1–T3), Greater (T4–T6), Divine (T7–T9) at 1× / 1.5× / 2× the bonus.
-Greater Phial of Wrath is × 1.12 damage. Bulwark scales on the reduction (8% → 12% → 16%
+Greater Phial of Wrath is × 1.12 damage. Warding scales on the reduction (8% → 12% → 16%
 less), Renewal on the heal (30% → 45% → 60%).
 
 | Kind | Phial | Greater | Divine |
 |-|-|-|-|
 | Wrath | × 1.08 damage | × 1.12 | × 1.16 |
 | Haste | × 1.06 attack speed | × 1.09 | × 1.12 |
-| Bulwark | 8% less damage taken | 12% | 16% |
+| Warding | 8% less damage taken | 12% | 16% |
 | Renewal | Heal 30% max HP at 50% HP | 45% | 60% | No Infuse: the herb is already part of
 the recipe.
 
@@ -149,23 +151,26 @@ On top of that, the Deep's first clears: ~450 over depths 1–100, in bursts whi
 ## Data and code notes
 
 - **Supply IDs:** Phials are `400 + kind × 10 + grade` in the `supply` table, next to
-  elixirs (`300 + …`). These IDs are permanent.
-- **Deep:** `descend` gets a `phial: u16` (0 = none). The Phial's buffs go into
-  `combatStats`, so the stats logged with the attempt (`encodeStats`) already include them
-  and the replay matches. `abyss_log` gets a `phial` column for the replay screen.
-- **Raids:** each party member sets a `phialId` while waiting. It's taken from stock when
-  the fight starts, and the fight's stats include it. `raid_log` records it.
-- **Renewal** is an effect in the fight sims (`simulateDepth`, raid fight), not a
-  multiplier. It works like Second Wind but triggers at 50% HP.
-- **Voidglass sources:** a Voidglass roll for T4+ zone boss kills in the settle's loot
-  step, a Voidglass amount in the salvage value of Uniques, and a Void Geode roll in
-  gathering. The Deep's first-clear amounts are already live (data/abyss.ts `depthReward`).
-  Raid rewards get a `voidglass` count per raid.
+  elixirs (`300 + …`); recipes are `600 + kind × 10 + tier` (data/recipes.ts
+  `phialRecipeId`, `needsDeep`). These IDs are permanent. Named Warding, not Bulwark: that's
+  a legendary affix.
+- **Buffs:** `Buffs` gained `damageTaken` and `renewal`, and `CombatStats` carries them
+  (absent on older logs = no Phial). Warding is applied after mitigation in `matchup` and
+  the raid fight; Renewal in `simulateFight` (carried through a depth like Second Wind) and
+  the raid fight.
+- **Deep:** `descend({ loadout, phial })` (0 = none). The stats logged with the attempt
+  (`encodeStats`) include the Phial, so the replay matches; `abyss_log.phial` shows it.
+- **Raids:** `setRaidPhial` sets `raid_member.phialId`; `startRaid` takes one from stock per
+  member who has one and puts it in the setup (`RaidFighter.phialId`). `raid_log` records
+  `phialId` and `voidglass`.
+- **Voidglass sources:** zone bosses through `materialMeans` (loot.ts; the settle, the Forager's
+  Stash encounter and the drop list use it), `salvageVoidglass` (the salvage reducer and a full
+  bag's overflow), the Void Geode in `RARE_FINDS` (data/skills.ts) and `RaidDef.voidglass`.
 
 ## Open questions
 
 - **Haste and Renewal in raids:** Renewal on a tank may be stronger than a healer's NPC
-  hire. Check it against raid odds once built.
+  hire. Check it against raid odds.
 - **Cost of 5 / 4 / 3 Voidglass:** check it against how many attempts a Deep push really takes.
 - **A Phial for the Chaos Dungeon** if it's ever built (chaos-dungeon.md keeps elixirs and
   meals out; Phials could stay out too, so the run is self-contained).

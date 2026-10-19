@@ -39,6 +39,22 @@ export function mainDamageType(s: CombatStats): 'Physical' | 'Magic' {
   return src && src.hit.Magic > src.hit.Physical ? 'Magic' : 'Physical';
 }
 
+/**
+ * Thorned's reflect (abyss.md, "Elite affixes"): `share` of each hit comes back in the
+ * damage types it was dealt in, each cut by your own defense against that type. The split is
+ * your damage against `m`'s enemy, after its mitigation.
+ */
+function thornedReflect(s: CombatStats, m: Matchup, level: number, share: number): number {
+  let phys = 0;
+  let magic = 0;
+  for (const src of s.sources) {
+    phys += src.hit.Physical * (1 - m.enemyMitigation.Physical) * src.attacksPerSec;
+    magic += src.hit.Magic * (1 - m.enemyMitigation.Magic) * src.attacksPerSec;
+  }
+  const physShare = phys + magic > 0 ? phys / (phys + magic) : 1;
+  return share * (physShare * (1 - defenseAgainst(s, 'Physical', level).mitigation) + (1 - physShare) * (1 - defenseAgainst(s, 'Magic', level).mitigation));
+}
+
 /** The defense profile that resists `s`'s main damage type: Armored against physical, Warded against magic. */
 export const resistingProfile = (s: CombatStats): Defense => (mainDamageType(s) === 'Physical' ? 'Armored' : 'Warded');
 
@@ -87,10 +103,11 @@ export function depthFoes(s: CombatStats, lineup: DepthLineup): DepthFoe[] {
     if (a === EliteAffix.Vampiric) mods.drain = Math.max(mods.drain ?? 0, 0.5);
     if (a === EliteAffix.WardedShell) enemy = withProfile(enemy, resistingProfile(s));
     if (a === EliteAffix.Swift) enemy = { ...enemy, speed: enemy.speed * 1.5, dps: enemy.dps * 1.5 * 0.75 };
-    if (a === EliteAffix.Thorned) mods.reflect = 0.1 * (1 - defenseAgainst(s, 'Physical', enemy.level).mitigation);
     if (a === EliteAffix.Unyielding) enemy = { ...enemy, regen: (enemy.regen ?? 0) + 0.02 * enemy.hp };
     if (a === EliteAffix.Ravenous) mods.ramp = { every: 5, step: 0.05 };
-    foes.push({ slot: 'elite', kindId: kind.id, affixes: [a], enemy, matchup: matchup(s, enemy), mods });
+    const m = matchup(s, enemy);
+    if (a === EliteAffix.Thorned) mods.reflect = thornedReflect(s, m, enemy.level, 0.1);
+    foes.push({ slot: 'elite', kindId: kind.id, affixes: [a], enemy, matchup: m, mods });
   }
 
   // Boss: the Deep Warden with its Boss affixes.

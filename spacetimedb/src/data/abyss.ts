@@ -126,7 +126,7 @@ export const ELITE_AFFIXES: AffixDef[] = [
   { id: EliteAffix.Vampiric, name: 'Vampiric', text: 'Heals itself for 50% of the damage it deals' },
   { id: EliteAffix.WardedShell, name: 'Warded Shell', text: 'Takes the defenses that resist your main damage type' },
   { id: EliteAffix.Swift, name: 'Swift', text: 'Attacks 50% faster, each hit 25% weaker' },
-  { id: EliteAffix.Thorned, name: 'Thorned', text: 'Reflects 10% of the damage it takes, as physical' },
+  { id: EliteAffix.Thorned, name: 'Thorned', text: 'Reflects 10% of the damage it takes, in the same damage types' },
   { id: EliteAffix.Unyielding, name: 'Unyielding', text: 'Regenerates 2% of its max HP per second' },
   { id: EliteAffix.Ravenous, name: 'Ravenous', text: 'Its damage grows 5% every 5 s' },
 ];

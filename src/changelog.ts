@@ -28,7 +28,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'balance', text: 'Moonwell Deep first clears pay 5× the gold and Dust and 2× the XP.' },
       { tag: 'balance', text: 'Raid Epic and Legendary drops roll every affix at the top tier.' },
       { tag: 'balance', text: 'Vitality gives +0.5% HP regen per point, down from +1%.' },
-      { tag: 'balance', text: 'Thorned elites in the Deep reflect 10% of damage taken, down from 15%.' },
+      { tag: 'balance', text: 'Thorned elites in the Deep reflect 10% of damage taken, down from 15%, in the damage types you hit them with: magic comes back as magic, physical as physical.' },
       { tag: 'balance', text: 'The Drowned Moon has less HP and Moonfall, and a shorter enrage.' },
       { tag: 'balance', text: 'Elixirs are for farming only: the Deep ignores them.' },
       { tag: 'balance', text: 'Zone boss titles take 5,000 kills of the boss.' },

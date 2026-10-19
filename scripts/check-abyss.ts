@@ -1,7 +1,7 @@
 // Checks for Moonwell Deep fights (spacetimedb/src/abyss.ts) and their balance. No server needed:
 //   npm run test:abyss
 import { SLOTS, ZONE_BASES } from '../spacetimedb/src/data/bases';
-import { combatStats, matchup, type CombatStats } from '../spacetimedb/src/combat';
+import { combatStats, defenseAgainst, matchup, type CombatStats } from '../spacetimedb/src/combat';
 import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
 import {
   ABYSS_KINDS, BOSS_AFFIXES, BossAffix, DEPTH_TIME_LIMIT, ELITE_AFFIXES, EliteAffix, FAST_FROM, SECOND_BOSS_AFFIX_FROM, bossAffixesClash,
@@ -112,6 +112,12 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
   check('Swift: 1.5× the attacks, each 0.75× the hit', Math.abs(swift.speed / plain.speed - 1.5) < 1e-9 && Math.abs(swift.dps / swift.speed / (plain.dps / plain.speed) - 0.75) < 1e-9);
   const thorned = fightFoe(hero, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]), 1).fight;
   check('Thorned: your hits come back at you', thorned.events.some(e => e.by === 'you' && (e.reflected ?? 0) > 0));
+  const thornedMods = (c: CombatStats) => depthFoes(c, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].mods.reflect ?? 0;
+  const lvl = depthFoes(hero, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].enemy.level;
+  check('Thorned: physical damage comes back physical, magic comes back magic',
+    Math.abs(thornedMods(hero) - 0.1 * (1 - defenseAgainst(hero, 'Physical', lvl).mitigation)) < 1e-9 &&
+    Math.abs(thornedMods(mage) - 0.1 * (1 - defenseAgainst(mage, 'Magic', lvl).mitigation)) < 1e-9,
+    `hero ${thornedMods(hero).toFixed(4)}, mage ${thornedMods(mage).toFixed(4)}`);
   const unyielding = depthFoes(hero, lineup(5, EliteAffix.Unyielding, [BossAffix.Hungering]))[1].enemy;
   check('Unyielding: regenerates 2% of max HP a second', Math.abs((unyielding.regen ?? 0) - 0.02 * unyielding.hp) < 1e-6);
   const rav = fightFoe(dummy, lineup(5, EliteAffix.Ravenous, [BossAffix.Hungering]), 1, 3n).fight;

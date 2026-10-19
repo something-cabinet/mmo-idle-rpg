@@ -61,4 +61,5 @@ export default __t.row({
   elixirEmpty: __t.bool().name("elixir_empty"),
   scrapped: __t.array(__t.u32()),
   respawns: __t.u32(),
+  herbsUsed: __t.u32().name("herbs_used"),
 });

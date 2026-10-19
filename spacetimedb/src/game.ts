@@ -80,19 +80,28 @@ export interface Settled extends Progress {
 }
 
 /**
- * An active elixir (life-skills.md, "Buff rules"): its buffs in the target's zone, the
- * kills it has left, and how many more of it auto-renew can take from stock.
+ * An active elixir (life-skills.md, "Buff rules"): its buffs now, the kills it has left,
+ * and how many more of it auto-renew can take from stock. `renew`: the buffs a renewed
+ * one gets plain and infused, and the rare herbs Infuse can still use (one per renewal);
+ * without it a renewed elixir keeps `buffs`.
  */
 export interface ElixirRun {
   buffs: Buffs;
   killsLeft: number;
   stock: number;
+  /** The active one is infused. */
+  infused?: boolean;
+  renew?: { plain: Buffs; infused: Buffs; herbs: number };
 }
 
 export interface ElixirLeft {
   killsLeft: number;
   /** Elixirs taken from stock by auto-renew. */
   renewed: number;
+  /** Rare herbs those renewals infused with. */
+  herbsUsed: number;
+  /** Whether the elixir now active is infused (the last renewal's, or as it started). */
+  infused: boolean;
   /** Kills made with the elixir active. */
   buffedKills: number;
 }
@@ -112,18 +121,23 @@ export class ElixirTracker {
   killsLeft: number;
   stock: number;
   renewed = 0;
+  herbsUsed = 0;
   buffedKills = 0;
+  private current: Buffs | undefined;
+  private infused: boolean;
   private run: ElixirRun | undefined;
   private savor: number;
   constructor(run: ElixirRun | undefined, savor = 0) {
     this.run = run;
+    this.current = run?.buffs;
+    this.infused = run?.infused ?? false;
     this.killsLeft = run?.killsLeft ?? 0;
     this.stock = run?.stock ?? 0;
     this.savor = savor;
   }
   /** The buffs now, or undefined once spent. */
   get buffs(): Buffs | undefined {
-    return this.killsLeft > 0 ? this.run?.buffs : undefined;
+    return this.killsLeft > 0 ? this.current : undefined;
   }
   /** Kills the charges left last for, on average. */
   get killsCovered(): number {
@@ -141,10 +155,16 @@ export class ElixirTracker {
       this.stock -= 1;
       this.renewed += 1;
       this.killsLeft = ELIXIR_KILLS;
+      const renew = this.run!.renew;
+      if (renew) {
+        this.infused = this.herbsUsed < renew.herbs;
+        if (this.infused) this.herbsUsed += 1;
+        this.current = this.infused ? renew.infused : renew.plain;
+      }
     }
   }
   get left(): ElixirLeft | undefined {
-    return this.run && { killsLeft: this.killsLeft, renewed: this.renewed, buffedKills: this.buffedKills };
+    return this.run && { killsLeft: this.killsLeft, renewed: this.renewed, herbsUsed: this.herbsUsed, infused: this.infused, buffedKills: this.buffedKills };
   }
 }
 

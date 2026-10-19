@@ -46,7 +46,7 @@ Phase 1 (gathering, Smithing, Alchemy, elixirs) is built. Left:
 - **Zones preview with and without the elixir** ("viable with Elixir of Wrath"). The
   matchups already include the active elixir; there's no side-by-side yet.
 - **Away report: when the elixir slot ran empty**, not only that it did.
-- **Balance pass** on recipe costs, times and the elixir numbers once there's play data.
+- **Balance pass** on recipe costs, times and the elixir numbers (grades, 2 / 3 / 4 yield, Infuse) once there's play data.
 - **Phase 2:** Enchanting (Essences: forced-stat rerolls), Construction and the Hideout
   (stations, Bedroom offline hours), milestone combat bonuses at 25/50/75/99, total skill
   level on inspect and the friends list, the level-99 title.

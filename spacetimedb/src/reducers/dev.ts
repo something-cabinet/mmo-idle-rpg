@@ -65,7 +65,7 @@ export const devGrantMaterials = spacetimedb.reducer({ count: t.u32() }, (ctx, {
   addMaterials(ctx, ch.id, MATERIALS.map(m => ({ materialId: m.id, count })));
 });
 
-/** Adds `count` of every supply (elixirs). */
+/** Adds `count` of every supply (elixirs, every grade). */
 export const devGrantSupplies = spacetimedb.reducer({ count: t.u32() }, (ctx, { count }) => {
   const { ch } = requireCheats(ctx);
   for (const s of SUPPLIES) addSupply(ctx, ch.id, s.id, count);

@@ -7,9 +7,8 @@ import { ElixirTracker, LOADOUT_COUNT, addXp } from '../game';
 import { MAX_LEVEL, combatStats } from '../combat';
 import { ABYSS_SEASON, ABYSS_UNLOCK_ZONE, depthReward, depthTier } from '../data/abyss';
 import { ZONES_BY_ID, bossOf } from '../data/zones';
-import { elixirBuffs } from '../data/supplies';
 import { depthRng, encodeBuild, encodeStats, simulateDepth } from '../abyss';
-import { addMaterials, addSupply, hasKilledBoss, requireActive, settle, supplyCount, takeSupply, type Character, type Ctx } from '../helpers';
+import { addMaterials, addSupply, elixirRunOf, hasKilledBoss, requireActive, settle, spendElixir, type Character, type Ctx } from '../helpers';
 
 /** Deep log rows kept per character: only the latest attempt, which the client replays. */
 const ABYSS_LOG_KEEP = 1;
@@ -42,17 +41,15 @@ export const descend = spacetimedb.reducer({ loadout: t.u8() }, (ctx, { loadout 
   if (!gear.some(Boolean)) throw new SenderError('That loadout is empty');
 
   // The elixir active now applies to every fight of the depth.
-  const buffs = ch.elixirKillsLeft > 0 ? elixirBuffs(ch.elixirId, Math.floor(depthTier(depth))) : undefined;
-  const elixir = buffs && new ElixirTracker({ buffs, killsLeft: ch.elixirKillsLeft, stock: ch.elixirAutoRenew ? supplyCount(ctx, ch.id, ch.elixirId) : 0 });
-  const stats = combatStats(ch.level, gear, buffs);
+  const run = elixirRunOf(ctx, ch);
+  const elixir = run && new ElixirTracker(run);
+  const stats = combatStats(ch.level, gear, run?.buffs);
   const start = ctx.timestamp.microsSinceUnixEpoch;
   const result = simulateDepth(stats, depth, depthRng(ch.id, start));
 
   if (elixir) {
     elixir.use(result.fights.filter(f => f.outcome === 'kill').length);
-    if (elixir.renewed > 0) takeSupply(ctx, ch.id, ch.elixirId, elixir.renewed);
-    const empty = elixir.killsLeft <= 0;
-    ch = { ...ch, elixirId: empty ? 0 : ch.elixirId, elixirKillsLeft: Math.max(0, elixir.killsLeft) };
+    ch = { ...ch, ...spendElixir(ctx, ch, elixir.left!) };
   }
 
   const reward = result.won ? depthReward(depth) : undefined;

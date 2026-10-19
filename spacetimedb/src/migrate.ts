@@ -3,8 +3,11 @@
 // its name in the `migration` table. Called from the online settle timer and on connect,
 // so it runs within seconds of a publish whether or not anyone is online.
 
-import { addMaterials, type Ctx } from './helpers';
-import { migrateMaterialId } from './data/materials';
+import { addMaterials, addSupply, type Ctx } from './helpers';
+import { materialOf, migrateMaterialId } from './data/materials';
+import { elixirRecipeId } from './data/recipes';
+import { SkillId } from './data/skills';
+import { legacyElixir } from './data/supplies';
 
 interface Counted {
   materialId: number;
@@ -80,9 +83,50 @@ function scrapToMaterials(ctx: Ctx) {
   }
 }
 
+/**
+ * 2026-10-19: elixirs went from 4 tiers × normal/Greater to grades (data/supplies.ts,
+ * life-skills.md "Alchemy"). Each old elixir in stock becomes one of its grade, and a
+ * Greater one also gives back its rare herb. The active elixir keeps its charges (a
+ * Greater one stays infused); running brews, settle logs and Abyss logs get the new IDs.
+ */
+function elixirGrades(ctx: Ctx) {
+  for (const row of [...ctx.db.supply.iter()]) {
+    const old = legacyElixir(row.supplyId);
+    if (!old) continue;
+    ctx.db.supply.id.delete(row.id);
+    addSupply(ctx, row.characterId, old.supplyId, Number(row.count));
+    if (old.herbTier) addMaterials(ctx, row.characterId, [{ materialId: materialOf(old.herbTier, 'Herb').id, count: Number(row.count) }]);
+  }
+  for (const ch of [...ctx.db.character.iter()]) {
+    const active = legacyElixir(ch.elixirId);
+    const brew = ch.activitySkill === SkillId.Alchemy ? legacyElixir(ch.activityRecipe) : undefined;
+    if (!active && !brew) continue;
+    ctx.db.character.id.update({
+      ...ch,
+      ...(active && { elixirId: active.supplyId, elixirInfused: active.herbTier !== undefined }),
+      ...(brew && { activityRecipe: elixirRecipeId(Math.floor((ch.activityRecipe % 100) / 10), ch.activityRecipe % 10) }),
+    });
+  }
+  for (const log of [...ctx.db.settleLog.iter()]) {
+    const elixir = legacyElixir(log.elixirId);
+    const brew = log.skillId === SkillId.Alchemy ? legacyElixir(log.recipe) : undefined;
+    if (!elixir && !brew) continue;
+    ctx.db.settleLog.id.update({
+      ...log,
+      ...(elixir && { elixirId: elixir.supplyId }),
+      ...(brew && { recipe: elixirRecipeId(Math.floor((log.recipe % 100) / 10), log.recipe % 10) }),
+    });
+  }
+  for (const log of [...ctx.db.abyssLog.iter()]) {
+    const old = legacyElixir(log.elixir);
+    if (old) ctx.db.abyssLog.id.update({ ...log, elixir: old.supplyId });
+  }
+}
+
 const MIGRATIONS: [name: string, run: (ctx: Ctx) => void][] = [
   ['material-ids-kind-major', materialIds],
   ['scrap-to-materials', scrapToMaterials],
+  ['elixir-grades', elixirGrades],
 ];
 
 /** Runs every migration not yet recorded in the `migration` table. */

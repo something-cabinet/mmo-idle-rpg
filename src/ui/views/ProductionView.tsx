@@ -9,6 +9,7 @@ import { GATHERING_SKILLS, SkillId, TOOL_SPEED_PER_TIER, productionActionMicros,
 import {
   MAX_TEMPER,
   affordable,
+  elixirRecipeId,
   forgeRecipeOf,
   isScrapRarity,
   recipeOf,
@@ -18,7 +19,7 @@ import {
   type Stock,
 } from '../../../spacetimedb/src/data/recipes';
 import { materialOf, untieredMaterial } from '../../../spacetimedb/src/data/materials';
-import { ELIXIRS, ELIXIR_KILLS, SUPPLIES, SUPPLY_TIERS, elixirSupplyId } from '../../../spacetimedb/src/data/supplies';
+import { BREW_YIELD, ELIXIRS, ELIXIR_KILLS, INFUSE_BONUS, SUPPLIES, SUPPLIES_BY_ID, SUPPLY_TIERS, brewYield, elixirSupplyId, gradeOf, infuseHerbIds } from '../../../spacetimedb/src/data/supplies';
 import { ZONES } from '../../../spacetimedb/src/data/zones';
 import { FORGE_RARE_CHANCE, forgeMagicChance, type ForgeFilter } from '../../../spacetimedb/src/produce';
 import { MAX_TIER } from '../../../spacetimedb/src/data/stats';
@@ -33,7 +34,7 @@ import { CardHead, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
 import { ActionBar, SkillLevelCard, SkillTabs } from './SkillView';
 import { AFFIX_ENTRIES, KeepList } from './FilterView';
-import { elixirText, recipeLabel } from '../lifeSkills';
+import { elixirText, madeCount, recipeLabel } from '../lifeSkills';
 import { MilestonesCard } from './MilestonesCard';
 import { TemperAction } from './TemperAction';
 
@@ -153,7 +154,7 @@ function QueueCard({ s }: { s: Snapshot }) {
           <div className="stat-row"><span>Left</span><strong>{canMake.toLocaleString()}{canMake < pr.countLeft && <span className="muted"> (materials for {canMake} of {pr.countLeft})</span>}</strong></div>
           <div className="stat-row"><span>Done in</span><strong>~{duration(BigInt(canMake) * step)}</strong></div>
           <div className="stat-row"><span>XP per hour</span><strong>{fmt(perHour * Number(productionXpPerAction(r.tier, r.seconds)))} {q.skill.name} XP · as much Character XP</strong></div>
-          <div className="stat-row"><span>Since the last update</span><strong>{pr.actions} made</strong></div>
+          <div className="stat-row"><span>Since the last update</span><strong>{madeCount(r, pr.actions)} made</strong></div>
         </>
       )}
       <p className="muted">No gold or drops while {verbOf(r).toLowerCase()}. When the queue ends you go back to {target ? 'your combat target' : 'idle (no combat target)'}.</p>
@@ -166,9 +167,14 @@ function QueueCard({ s }: { s: Snapshot }) {
 function ElixirCard({ s }: { s: Snapshot }) {
   const e = s.elixir;
   const stock = SUPPLIES.filter(sup => (s.supplies.get(sup.id) ?? 0) > 0);
+  const herbs = (grade: number) => infuseHerbIds(grade).reduce((n, id) => n + Number(s.materials.get(id) ?? 0n), 0);
   return (
     <div className="card">
       <CardHead title="Active elixir">
+        <label className="check" title={`Each new elixir (drunk or auto-renewed) uses a rare herb of its grade for ${INFUSE_BONUS}× the bonus, while you have any`}>
+          <input type="checkbox" checked={s.row.elixirInfuse} onChange={ev => call(s.conn.reducers.setElixirInfuse({ on: ev.target.checked }))} />
+          Infuse
+        </label>
         <label className="check">
           <input type="checkbox" checked={s.row.elixirAutoRenew} onChange={ev => call(s.conn.reducers.setElixirAutoRenew({ on: ev.target.checked }))} />
           Auto-renew
@@ -176,8 +182,15 @@ function ElixirCard({ s }: { s: Snapshot }) {
       </CardHead>
       {e ? (
         <>
-          <div className="stat-row"><span><Icon name="flask" className="c-material" /> {e.supply.name} T{e.supply.tier}</span><strong>{e.killsLeft} / {ELIXIR_KILLS} kills</strong></div>
-          <p className="muted">{elixirText(e.supply)}. {s.row.elixirAutoRenew ? `When it runs out, the next is taken from stock (${s.supplies.get(e.supply.id) ?? 0} left).` : 'Auto-renew is off: the slot empties when it runs out.'}</p>
+          <div className="stat-row">
+            <span><Icon name="flask" className={e.infused ? 'c-magic' : 'c-material'} /> {e.infused ? 'Infused ' : ''}{e.supply.name}</span>
+            <strong>{e.killsLeft} / {ELIXIR_KILLS} kills</strong>
+          </div>
+          <p className="muted">
+            {elixirText(e.supply, e.infused)}.{' '}
+            {s.row.elixirAutoRenew ? `When it runs out, the next is taken from stock (${s.supplies.get(e.supply.id) ?? 0} left)` : 'Auto-renew is off: the slot empties when it runs out'}
+            {s.row.elixirAutoRenew && s.row.elixirInfuse && `, infused while rare herbs last (${herbs(e.supply.grade)} left)`}.
+          </p>
         </>
       ) : (
         <p className="muted">None. An elixir lasts {ELIXIR_KILLS} kills (about an hour of farming); losing fights and walking use none.</p>
@@ -189,7 +202,7 @@ function ElixirCard({ s }: { s: Snapshot }) {
               <div className="foe-row">
                 <Icon name="flask" className="c-material" />
                 <div className="foe-info">
-                  <div className="foe-name">{sup.name} <span className="muted">T{sup.tier} · ×{s.supplies.get(sup.id)}</span></div>
+                  <div className="foe-name">{sup.name} <span className="muted">×{s.supplies.get(sup.id)}</span></div>
                   <div className="foe-meta muted">{elixirText(sup)}</div>
                 </div>
                 <button className="btn small" title={e ? 'Discards what is left of the active elixir' : undefined}
@@ -201,7 +214,10 @@ function ElixirCard({ s }: { s: Snapshot }) {
           ))}
         </ul>
       )}
-      <p className="muted">One elixir at a time: power (Wrath, Haste) and profit (Wisdom, Greed, Fortune) share the slot.</p>
+      <p className="muted">
+        One elixir at a time: power (Wrath, Haste) and profit (Wisdom, Greed, Fortune) share the slot. Infusing uses one rare
+        herb from Foraging, any tier of the elixir's grade, lowest first.
+      </p>
     </div>
   );
 }
@@ -209,29 +225,34 @@ function ElixirCard({ s }: { s: Snapshot }) {
 function BrewCard({ s }: { s: Snapshot }) {
   const [tier, setTier] = useSticky('brewTier', 1);
   const [count, setCount] = useState('');
+  const grade = gradeOf(tier);
   return (
     <div className="card">
       <CardHead title="Brew"><CountInput count={count} setCount={setCount} /></CardHead>
       <TierSeg tier={tier} setTier={setTier} />
       <ul className="foes">
-        {[false, true].flatMap(greater => ELIXIRS.map(el => {
-          const r = recipeOf(SkillId.Alchemy, elixirSupplyId(el.kind, tier, greater))!;
+        {ELIXIRS.map(el => {
+          const r = recipeOf(SkillId.Alchemy, elixirRecipeId(el.kind, tier))!;
+          const sup = SUPPLIES_BY_ID.get(elixirSupplyId(el.kind, grade))!;
           return (
             <li key={r.id} className="foe">
               <div className="foe-row">
                 <Icon name="flask" className="c-material" />
                 <div className="foe-info">
-                  <div className="foe-name">{r.name} <span className="muted">T{tier} · {el.group} · ×{s.supplies.get(r.id) ?? 0} in stock</span></div>
-                  <div className="foe-meta muted">{elixirText(SUPPLIES.find(x => x.id === r.id)!)}</div>
+                  <div className="foe-name">{sup.name} <span className="muted">{el.group} · ×{brewYield(tier)} a brew · ×{s.supplies.get(sup.id) ?? 0} in stock</span></div>
+                  <div className="foe-meta muted">{elixirText(sup)}</div>
                   <div className="foe-meta"><Cost s={s} r={r} /></div>
                 </div>
                 <QueueButton s={s} r={r} count={count} label="Brew" />
               </div>
             </li>
           );
-        }))}
+        })}
       </ul>
-      <p className="muted">Greater elixirs need a rare herb from Foraging and give 1.5× the bonus.</p>
+      <p className="muted">
+        T1–T3 materials brew Elixirs, T4–T6 Greater, T7–T9 Divine. Within a grade, higher-tier materials make more a
+        brew: {BREW_YIELD.join(' / ')}.
+      </p>
     </div>
   );
 }
@@ -464,7 +485,7 @@ export const ProductionView = memo(function ProductionView({ s, skill }: { s: Sn
               return (
                 <li key={String(l.id)}>
                   <span className="c-material">
-                    {l.actions}× {r ? recipeLabel(r) : '?'}
+                    {r ? madeCount(r, l.actions) : l.actions}× {r ? recipeLabel(r) : '?'}
                     {l.materials.length > 0 && <span className="muted"> · +{l.materials.map(m => `${m.count.toLocaleString()} ${materialName(m.materialId)}`).join(', ')}</span>}
                     {salvagedOf(l) > 0 && <span className="muted"> · {salvagedOf(l)} salvaged (+{fmtBig(l.dust)} Dust, +{fmtBig(l.gold)} gold)</span>}
                     {scrappedOf(l) > 0 && <span className="muted"> · {scrappedOf(l)} recycled</span>}

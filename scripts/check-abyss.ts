@@ -7,7 +7,7 @@ import {
   ABYSS_KINDS, BOSS_AFFIXES, BossAffix, DEPTH_TIME_LIMIT, ELITE_AFFIXES, EliteAffix, FAST_FROM, SECOND_BOSS_AFFIX_FROM, bossAffixesClash,
   depthEnemy, depthHpMult, depthDpsMult, depthLineup, depthReward, DEEP_WARDEN, type DepthLineup,
 } from '../spacetimedb/src/data/abyss';
-import { untieredMaterial } from '../spacetimedb/src/data/materials';
+import { MATERIALS_BY_ID, untieredMaterial } from '../spacetimedb/src/data/materials';
 import { SUPPLIES_BY_ID } from '../spacetimedb/src/data/supplies';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
 import { decodeStats, depthFoes, depthOdds, depthRng, encodeStats, mainDamageType, simulateDepth, weakerDefense } from '../spacetimedb/src/abyss';
@@ -153,7 +153,8 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
   const voidglass = (r: ReturnType<typeof depthReward>) => r.materials.find(([id]) => id === untieredMaterial('Voidglass').id)?.[1] ?? 0;
   check('every depth pays gold, XP, Dust, materials and Voidglass', [r1, r10, r101].every(r => r.gold > 0n && r.xp > 0n && r.dust > 0n && r.materials.length > 1 && voidglass(r) > 0));
   check('a bigger Voidglass batch every 10 depths', voidglass(r10) > voidglass(depthReward(9)));
-  check('a Greater power elixir every 5 depths up to 100', [5, 10, 95, 100].every(d => SUPPLIES_BY_ID.get(depthReward(d).elixir ?? 0)?.greater === true) &&
+  check('a power elixir and a rare herb every 5 depths up to 100', [5, 10, 95, 100].every(d => SUPPLIES_BY_ID.get(depthReward(d).elixir ?? 0)?.elixir.group === 'Power' &&
+    depthReward(d).materials.some(([id]) => MATERIALS_BY_ID.get(id)?.kind === 'Herb')) &&
     [4, 6, 101, 105].every(d => depthReward(d).elixir === undefined));
   check('past depth 100 rewards only grow by the formula (× 1.03 a depth)', Math.abs(Number(r111.gold) / Number(r101.gold) - 1.03 ** 10) < 0.01 && voidglass(r111) === 4);
 }

@@ -113,7 +113,7 @@ what only that skill gives, and each feeds something different. Numbers are illu
 | Mining | **Relic** (old coins, idols, tablets) | Tier of the node | 2% | Sold on the spot for gold |
 | Mining | **Ancient Meteor Fragment** | Untiered | 0.1% × node tier | None yet (kept for a later sink) |
 | Woodcutting | **Dryad's Tear** (amber sap of the oldest trees) | Untiered | 0.1% × node tier | Smithing: an empowered forge |
-| Foraging | **Rare herb** (Bloodcap, Wraithbloom, Rimepetal …) | Tier of the node | 1% | Alchemy: Greater elixirs |
+| Foraging | **Rare herb** (Bloodcap, Wraithbloom, Rimepetal …) | Tier of the node | 1% | Alchemy: Infuse elixirs |
 
 - Materials: rare herbs are kind 10 (`1000 + tier`), Meteor Fragment kind 11 and Dryad's
   Tear kind 12, both untiered (tier 0: IDs 1100 and 1200). Relics are never stored.
@@ -143,13 +143,18 @@ what only that skill gives, and each feeds something different. Numbers are illu
   default): the Tear is one more input, so the queue ends when Tears run out and keep
   inputs can save one. The forge keep rule still applies.
 
-#### Foraging: Greater elixirs
+#### Foraging: Infuse
 
-- **Greater** variant of each elixir: the normal recipe + **1 rare herb** of tier T. Its
-  bonus is **1.5× the normal one** (Wrath ×1.3, Haste ×1.225, Wisdom ×1.3 …), same
-  240 charges, same tier rule.
-- This breaks the ×1.10–×1.25 farming buff guideline on purpose: Greater elixirs are the
+- **Infuse** is a toggle on the elixir slot (on by default), next to auto-renew. While on,
+  each new elixir (drunk or auto-renewed) also uses **1 rare herb of its grade**, any
+  tier, lowest first (Bloodcap, Wraithbloom or Rimepetal for an Elixir), and gets **1.5×
+  the bonus** for its 240 kills (Wrath ×1.3, Greater Wrath ×1.45, Divine Wrath ×1.6).
+  Out of herbs, the next one runs plain and the toggle stays on.
+- On the slot, not the brew, so infused elixirs aren't separate items.
+- This breaks the ×1.10–×1.25 farming buff guideline on purpose: infused elixirs are the
   wall-pushers, limited by herb supply (~3 per hour of Foraging at level 1, ~6 at 99).
+- Before 2026-10-19 the herb went into the brew and made a separate "Greater" elixir of
+  the tier; migrate.ts turned those into elixirs of their grade and gave back the herb.
 
 ### Special nodes
 
@@ -198,21 +203,28 @@ target**, so an empty queue never wastes offline time.
 
 ### Alchemy: Elixirs (combat buffs)
 
-| Elixir | Kind | Effect |
+| Elixir | Kind | Effect (Elixir / Greater / Divine) |
 |-|-|-|
-| Wrath | Power | ×1.2 damage |
-| Haste | Power | ×1.15 attack speed |
-| Wisdom | Profit | ×1.2 XP |
-| Greed | Profit | ×1.2 gold |
-| Fortune | Profit | ×1.2 item find |
+| Wrath | Power | ×1.2 / ×1.3 / ×1.4 damage |
+| Haste | Power | ×1.15 / ×1.225 / ×1.3 attack speed |
+| Wisdom | Profit | ×1.2 / ×1.3 / ×1.4 XP |
+| Greed | Profit | ×1.2 / ×1.3 / ×1.4 gold |
+| Fortune | Profit | ×1.2 / ×1.3 / ×1.4 item find |
+
+- **Three grades**, each brewed from three material tiers: **Elixir** (T1–T3),
+  **Greater Elixir** (T4–T6), **Divine Elixir** (T7–T9). A grade has 1×, 1.5× and 2× the
+  Elixir's bonus. That's 15 items (5 kinds × 3 grades) and no tier on the item: an elixir
+  has the same effect in every zone.
+- **The material tier sets the yield**: a brew from the 1st, 2nd and 3rd tier of a grade
+  makes **2 / 3 / 4** elixirs (T1 → 2, T3 → 4, T4 → 2 Greater). Older materials never
+  go to waste, and fresh ones pay the most.
 
 - Power and profit elixirs share **one slot**, so the player chooses between pushing
   harder targets and farming more comfortably.
 - Each elixir lasts **240 kills** (~1 h of reference farming, zones.md). Recipe:
-  10 Reagent + 1 Core of tier T, **7.5 min** (8 per hour of Alchemy).
-- A tier-T elixir has its full effect in zones of tier ≤ T and half effect above.
-- A chain example: 1 h of Foraging (300 Reagent) feeds ~3.75 h of Alchemy, which makes
-  30 elixirs, or ~30 h of buffed farming. With combat's Reagent drops added, foraging is optional,
+  10 Reagent + 1 Core of tier T, **7.5 min** (8 brews per hour of Alchemy, 16–32 elixirs).
+- A chain example: 1 h of Foraging (300 T1 Reagent) feeds ~3.75 h of Alchemy, which makes
+  60 elixirs, or ~60 h of buffed farming (90 from T2, 120 from T3). With combat's Reagent drops added, foraging is optional,
   not required.
 
 ### Cooking: Meals (survival buffs)
@@ -241,11 +253,12 @@ target**, so an empty queue never wastes offline time.
   gear's % stats. "+20%" means the same with any gear, which makes buffs easy to show and
   balance. Keep farming buffs within ×1.10–×1.25, because they compound with gear.
 - **Auto-renew** (per slot, on by default): when a buff runs out, the next one of the
-  same recipe is taken from stock. When stock runs out, the slot stays empty. Typical
+  same elixir is taken from stock (infused while Infuse is on and herbs last). When stock
+  runs out, the slot stays empty. Typical
   bedtime routine: stock ~2,000 kills of elixirs and meals (~8 h), then log off.
 - Boss challenges and raids use the active buffs. No boss-only consumables.
 - UI: two buff icons in the top bar with charges and stock (`Wrath 180 · ×12`). Hovering
-  shows the tier rule. The Zones screen previews fights with and without buffs ("viable
+  shows the effect, infused or not. The Zones screen previews fights with and without buffs ("viable
   with Hearty Stew"). The away report lists buffs used and when a slot ran empty.
 
 ### Smithing: forge a base
@@ -432,15 +445,15 @@ All of this stays in closed form (README pillar 1):
 |-|-|
 | `item` column | `temper` (0–10) |
 | `scrap` table | Unused since scrap became instant (emptied by migrate.ts); drop at the M9 save reset |
-| `character` columns | `activitySkill` (0 = combat), `activityRecipe` (gathering: `node × 100 + tier`, node 0 = normal; production: the recipe ID), `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `elixirAutoRenew`; later `mealId`, `mealKillsLeft`, `mealAutoRenew` |
+| `character` columns | `activitySkill` (0 = combat), `activityRecipe` (gathering: `node × 100 + tier`, node 0 = normal; production: the recipe ID), `activityCountLeft`, `elixirId`, `elixirKillsLeft`, `elixirAutoRenew`, `elixirInfused` (the active one), `elixirInfuse` (the toggle); later `mealId`, `mealKillsLeft`, `mealAutoRenew` |
 | `skill` table | (characterId, skillId, level, xp) |
 | `tool` table | (characterId, skillId, tier) |
 | `station` table | (characterId, stationId, level) (phase 2) |
 | `supply` table | (characterId, supplyId, count): elixirs; later meals, essences, parts |
 | `material` | Fish is new material kind 8, Ore kind 9, rare herbs 10, Meteor Fragment 11 and Dryad's Tear 12 (untiered) |
 | `data/skills.ts` | Skills, levels, speeds, permanent skill IDs |
-| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, empowered forge = 30000 + baseId × 10 + tier, tool = 1000 + skill × 10 + tier, smelt Ore = 60000 + tier, elixir = its supply ID; 61000 + material ID was smelt scrap (retired) |
-| `data/supplies.ts` | Elixirs and their buffs. Permanent supply IDs: elixirs 100 + kind × 10 + tier, Greater elixirs 200 + kind × 10 + tier |
+| `data/recipes.ts` | Production recipes. IDs: forge = baseId × 10 + tier, empowered forge = 30000 + baseId × 10 + tier, tool = 1000 + skill × 10 + tier, smelt Ore = 60000 + tier, brew = 400 + kind × 10 + material tier (was the old elixir's supply ID); 61000 + material ID was smelt scrap (retired) |
+| `data/supplies.ts` | Elixirs, grades and their buffs. Permanent supply IDs: elixirs 300 + kind × 10 + grade (retired: 100 + kind × 10 + tier, Greater 200 + kind × 10 + tier) |
 | `gather.ts`, `produce.ts` | Closed-form settlement, shared with the client |
 
 ## Rollout

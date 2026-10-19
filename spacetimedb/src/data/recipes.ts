@@ -7,12 +7,14 @@
 //     30000 + baseId × 10 + tier; upgrade a tool = 1000 + skill × 10 + tier;
 //     smelt Ore = 60000 + tier; 61000 + material ID was smelt scrap (retired: scrap is instant
 //     now, `SCRAP_YIELD`). (Tempering is instant, not a recipe: `temperCost`.)
-//   Alchemy: the elixir's supply ID (data/supplies.ts); Greater elixirs add a rare herb.
+//   Alchemy: brew elixir kind k from tier-t materials = 400 + k × 10 + t (`elixirRecipeId`);
+//     it makes `brewYield(t)` of the grade's elixir (data/supplies.ts). Before 2026-10-19 the
+//     recipe ID was the old tiered elixir's supply ID (migrate.ts).
 
 import { ZONE_BASES, base, type BaseDef } from './bases';
 import { MATERIALS_BY_ID, materialAt, materialOf, untieredMaterial, type MaterialKind } from './materials';
 import { GATHERING_SKILLS, SkillId, productionXpPerAction } from './skills';
-import { SUPPLIES, SUPPLY_TIERS } from './supplies';
+import { ELIXIRS, SUPPLIES_BY_ID, SUPPLY_TIERS, brewYield, elixirSupplyId, gradeOf } from './supplies';
 
 export interface MaterialCost {
   materialId: number;
@@ -23,7 +25,8 @@ export type RecipeOutput =
   /** `empowered`: spends a Dryad's Tear for at least Magic and one affix of the item's tier (life-skills.md). */
   | { kind: 'item'; baseId: number; empowered?: boolean }
   | { kind: 'tool'; skillId: number }
-  | { kind: 'supply'; supplyId: number }
+  /** `count` of a supply per action (an elixir brew). */
+  | { kind: 'supply'; supplyId: number; count: number }
   /** `count` of a material per action (smelting Ore). */
   | { kind: 'material'; materialId: number; count: number };
 
@@ -46,6 +49,9 @@ export const MAX_QUEUE = 1000;
 export const FORGE_SECONDS = 120;
 export const TOOL_SECONDS = 1800;
 export const ELIXIR_SECONDS = 450;
+
+/** The Alchemy recipe brewing elixir `kind` from tier-`tier` materials. */
+export const elixirRecipeId = (kind: number, tier: number) => 400 + kind * 10 + tier;
 export const SMELT_SECONDS = 12;
 /** Tempering step k is instant but gives the Smithing XP of TEMPER_XP_SECONDS × k of work. */
 export const TEMPER_XP_SECONDS = 180;
@@ -153,20 +159,24 @@ export const RECIPES: Recipe[] = [
     output: { kind: 'material' as const, materialId: materialOf(tier, 'Metal').id, count: 1 },
     max: MAX_QUEUE,
   })),
-  ...SUPPLIES.map(s => ({
-    id: s.id,
-    skillId: SkillId.Alchemy,
-    tier: s.tier,
-    name: s.name,
-    seconds: ELIXIR_SECONDS,
-    inputs: [
-      { materialId: materialOf(s.tier, 'Reagent').id, count: 10 },
-      { materialId: materialOf(s.tier, 'Core').id, count: 1 },
-      ...(s.greater ? [{ materialId: materialOf(s.tier, 'Herb').id, count: 1 }] : []),
-    ],
-    output: { kind: 'supply' as const, supplyId: s.id },
-    max: MAX_QUEUE,
-  })),
+  ...SUPPLY_TIERS.flatMap(tier =>
+    ELIXIRS.map(e => {
+      const supplyId = elixirSupplyId(e.kind, gradeOf(tier));
+      return {
+        id: elixirRecipeId(e.kind, tier),
+        skillId: SkillId.Alchemy,
+        tier,
+        name: SUPPLIES_BY_ID.get(supplyId)!.name,
+        seconds: ELIXIR_SECONDS,
+        inputs: [
+          { materialId: materialOf(tier, 'Reagent').id, count: 10 },
+          { materialId: materialOf(tier, 'Core').id, count: 1 },
+        ],
+        output: { kind: 'supply' as const, supplyId, count: brewYield(tier) },
+        max: MAX_QUEUE,
+      };
+    })
+  ),
 ];
 
 const BY_KEY = new Map(RECIPES.map(r => [`${r.skillId}:${r.id}`, r]));

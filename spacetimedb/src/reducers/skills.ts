@@ -15,7 +15,9 @@ import {
   takeMaterials,
   settle,
   skillRow,
+  herbCount,
   supplyCount,
+  takeHerbs,
   takeSupply,
   tierUnlocked,
   toolTier,
@@ -97,17 +99,26 @@ export const stopSkill = spacetimedb.reducer(ctx => {
 });
 
 /**
- * Drinks an elixir from stock (life-skills.md, "Buff rules"): it lasts ELIXIR_KILLS kills.
- * What is left of the active one is discarded. Settles first, so the kills so far count
- * with the old one.
+ * Drinks an elixir from stock (life-skills.md, "Buff rules"): it lasts ELIXIR_KILLS kills,
+ * infused with a rare herb of its grade when Infuse is on and there is one. What is left
+ * of the active one is discarded. Settles first, so the kills so far count with the old one.
  */
 export const drinkElixir = spacetimedb.reducer({ supplyId: t.u16() }, (ctx, { supplyId }) => {
   const { ch } = requireActive(ctx);
-  if (!SUPPLIES_BY_ID.has(supplyId)) throw new SenderError('No such elixir');
+  const sup = SUPPLIES_BY_ID.get(supplyId);
+  if (!sup) throw new SenderError('No such elixir');
   const settled = settle(ctx, ch);
   if (supplyCount(ctx, ch.id, supplyId) < 1) throw new SenderError('None in stock');
   takeSupply(ctx, ch.id, supplyId, 1);
-  ctx.db.character.id.update({ ...settled, elixirId: supplyId, elixirKillsLeft: ELIXIR_KILLS });
+  const infused = settled.elixirInfuse && herbCount(ctx, ch.id, sup.grade) > 0;
+  if (infused) takeHerbs(ctx, ch.id, sup.grade, 1);
+  ctx.db.character.id.update({ ...settled, elixirId: supplyId, elixirKillsLeft: ELIXIR_KILLS, elixirInfused: infused });
+});
+
+/** Turns Infuse on or off: from the next elixir drunk or auto-renewed, use a rare herb of its grade for INFUSE_BONUS × the bonus. */
+export const setElixirInfuse = spacetimedb.reducer({ on: t.bool() }, (ctx, { on }) => {
+  const { ch } = requireActive(ctx);
+  ctx.db.character.id.update({ ...settle(ctx, ch), elixirInfuse: on });
 });
 
 /** Turns auto-renew on or off: when the elixir runs out, take the next of the same from stock. */

@@ -350,7 +350,7 @@ Paid in **hours of farming at the run's tier**, so it scales like everything els
 |---|---|---|---|---|
 | 1 | 0.75 h | 0.75 h | 0.75 h of the tier's materials, all kinds | none |
 | 2 | 1 h | 1 h | 1 h | 2 **Riftstone** |
-| 3 | 1.5 h | 1.5 h | 1.5 h | 3 Riftstone, 1 **Greater elixir** of the tier |
+| 3 | 1.5 h | 1.5 h | 1.5 h | 3 Riftstone, 2 elixirs of the tier's grade |
 | 4 | 2 h | 2 h | 2 h | 4 Riftstone, 2 **rare herbs** |
 | 5 | 2.75 h | 2.75 h | 2.75 h | 10 Riftstone, **Essences** (once Essence drops ship), 1 Greater meal |
 | **Total** | **8 h** | **8 h** | **8 h** | **19 Riftstone** |

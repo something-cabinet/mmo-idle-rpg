@@ -34,4 +34,6 @@ export default __t.row({
   elixirKillsLeft: __t.u32().name("elixir_kills_left"),
   elixirAutoRenew: __t.bool().name("elixir_auto_renew"),
   activityItemId: __t.u64().name("activity_item_id"),
+  elixirInfused: __t.bool().name("elixir_infused"),
+  elixirInfuse: __t.bool().name("elixir_infuse"),
 });

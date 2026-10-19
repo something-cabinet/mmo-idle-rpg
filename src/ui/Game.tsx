@@ -7,6 +7,7 @@ import { xpToNext } from '../../spacetimedb/src/game';
 import { call, toast, useTick, useView, type View } from '../store';
 import { AwayReport } from './AwayReport';
 import { elixirText } from './lifeSkills';
+import { GRADES } from '../../spacetimedb/src/data/supplies';
 import { nowMicros, syncClock } from './clock';
 import { DefeatReport } from './DefeatReport';
 import { revealedAreas, rumouredAreas } from './discovery';
@@ -76,9 +77,9 @@ function TopStats({ s }: { s: Snapshot }) {
         </button>
       )}
       {e && (
-        <button className="chip activity" title={`${e.supply.name} T${e.supply.tier}: ${elixirText(e.supply)}. Kills left · in stock.`} onClick={() => (location.hash = '#alchemy')}>
-          <Icon name="flask" className="c-material" />
-          <span>{e.supply.greater ? 'Greater ' : ''}{e.supply.elixir.name} {e.killsLeft}</span>
+        <button className="chip activity" title={`${e.supply.name}: ${elixirText(e.supply, e.infused)}. Kills left · in stock.`} onClick={() => (location.hash = '#alchemy')}>
+          <Icon name="flask" className={e.infused ? 'c-magic' : 'c-material'} />
+          <span>{GRADES[e.supply.grade - 1].prefix}{e.supply.elixir.name} {e.killsLeft}</span>
           <span className="activity-rate">×{s.supplies.get(e.supply.id) ?? 0}</span>
         </button>
       )}

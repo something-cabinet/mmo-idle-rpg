@@ -182,7 +182,7 @@ function EnemyRewards({
   e: EnemyDef;
   m: Matchup;
 }) {
-  const itemFind = statsIn(s, z.tier).itemFind;
+  const itemFind = statsIn(s).itemFind;
   const scale = rewardScale(z, e) * (1 + itemFind);
   // Uniques drop from any enemy (every unique of the zone's tier and below, or the enemy's own); with none yet, their chance rolls Legendary.
   const uniques = hasUniques(z.tier, e.id);

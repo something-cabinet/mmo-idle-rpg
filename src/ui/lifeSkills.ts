@@ -1,19 +1,26 @@
 // Display helpers for life skills, shared by the skill pages, the top bar and reports.
 
 import type { Recipe } from '../../spacetimedb/src/data/recipes';
-import type { SupplyDef } from '../../spacetimedb/src/data/supplies';
+import { GRADES, brewYield, gradeOf, type SupplyDef } from '../../spacetimedb/src/data/supplies';
 import { GATHER_NODES, MAX_SKILL_LEVEL, SkillId, doubleYieldChance, temperRequirement, tierRequirement, type SkillDef } from '../../spacetimedb/src/data/skills';
 import { MAX_TEMPER } from '../../spacetimedb/src/data/recipes';
 import { materialOf } from '../../spacetimedb/src/data/materials';
 import { ZONES } from '../../spacetimedb/src/data/zones';
 import { pct } from './format';
 
-/** A recipe's name for lists and logs: elixirs carry their tier, bases and tools have it in their name. */
-export const recipeLabel = (r: Recipe) => (r.output.kind === 'supply' ? `${r.name} T${r.tier}` : r.name);
+/** A recipe's name for lists and logs: brews carry their material tier, bases and tools have it in their name. */
+export const recipeLabel = (r: Recipe) => (r.output.kind === 'supply' ? `${r.name} (T${r.tier})` : r.name);
 
-/** An elixir's effect: full up to its tier, half above. */
-export const elixirText = (sup: SupplyDef) =>
-  `×${Number(sup.mult.toFixed(3))} ${sup.elixir.text} (×${Number((1 + (sup.mult - 1) / 2).toFixed(3))} above T${sup.tier} zones)`;
+/** What `actions` of `r` made: a brew makes several elixirs. */
+export const madeCount = (r: Recipe, actions: number) => (r.output.kind === 'supply' ? actions * r.output.count : actions);
+
+const mult = (m: number) => `×${Number(m.toFixed(3))}`;
+
+/** An elixir's effect, plain or infused; without `infused`, both. */
+export const elixirText = (sup: SupplyDef, infused?: boolean) =>
+  infused === undefined
+    ? `${mult(sup.mult)} ${sup.elixir.text} (infused ${mult(sup.infusedMult)})`
+    : `${mult(infused ? sup.infusedMult : sup.mult)} ${sup.elixir.text}${infused ? ' (infused)' : ''}`;
 
 // Milestones (life-skills.md, "Levels and gating"), from the same formulas the server uses.
 
@@ -23,7 +30,7 @@ const TIERS = [...new Set(ZONES.map(z => z.tier))].sort((a, b) => a - b);
 function tierText(skill: SkillDef, tier: number): string {
   if (skill.kind === 'Gathering') return `Gather ${materialOf(tier, skill.makes).name}`;
   if (skill.id === SkillId.Smithing) return `Forge, smelt and temper T${tier}${tier > 1 ? `, make T${tier} tools` : ''}`;
-  if (skill.id === SkillId.Alchemy) return `Brew T${tier} elixirs`;
+  if (skill.id === SkillId.Alchemy) return `Brew from T${tier}: ${brewYield(tier)} ${GRADES[gradeOf(tier) - 1].prefix}elixirs a brew`;
   return `Tier ${tier} recipes`;
 }
 

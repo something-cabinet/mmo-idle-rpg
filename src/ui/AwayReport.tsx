@@ -6,6 +6,7 @@ import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
 import { RESPAWN_SECONDS } from '../../spacetimedb/src/fight';
 import { SKILLS_BY_ID } from '../../spacetimedb/src/data/skills';
 import { recipeOf } from '../../spacetimedb/src/data/recipes';
+import { madeCount } from './lifeSkills';
 import { SUPPLIES_BY_ID } from '../../spacetimedb/src/data/supplies';
 import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
@@ -30,7 +31,7 @@ function SkillLine({ l, salvage }: { l: SettleLog; /** Show what the keep rule s
   return (
     <>
       <p>
-        <strong>{skill?.name}</strong> × {l.actions.toLocaleString()} {name ?? 'actions'} · +{fmtBig(l.skillXp)} XP
+        <strong>{skill?.name}</strong> × {(r ? madeCount(r, l.actions) : l.actions).toLocaleString()} {name ?? 'actions'} · +{fmtBig(l.skillXp)} XP
         {l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelFrom} → ${l.skillLevelTo}` : ''}
       </p>
       {l.used.length > 0 && <p className="muted">Used: {materialsText(l.used)}</p>}
@@ -109,8 +110,9 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
       {elixir && (
         <p>
           <Icon name="flask" className="c-material" />
-          {elixir.name} T{elixir.tier}: {log.elixirKills.toLocaleString()} kills
+          {elixir.name}: {log.elixirKills.toLocaleString()} kills
           {log.elixirsUsed > 0 && `, ${log.elixirsUsed} more taken from stock`}
+          {log.herbsUsed > 0 && ` (${log.herbsUsed} infused)`}
           {log.elixirEmpty && <span className="c-bad"> · ran out: the slot is empty</span>}
         </p>
       )}

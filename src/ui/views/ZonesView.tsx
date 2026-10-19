@@ -182,7 +182,7 @@ function AreaPanel({ panelRef, s, z, a, known, here, unlocked, open, setOpen }: 
 }
 
 function Foe({ s, z, e, open, toggle }: { s: Snapshot; z: ZoneDef; e: EnemyDef; open: boolean; toggle: () => void }) {
-  const m = matchup(statsIn(s, z.tier), e);
+  const m = matchup(statsIn(s), e);
   const active = !s.skilling && s.row.targetEnemyId === e.id;
   const challenge = e.boss && !s.killedZones.has(z.id);
   const known = enemyKnown(s, e);

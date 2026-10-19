@@ -70,6 +70,7 @@ import ScrapItemsReducer from "./scrap_items_reducer";
 import SendChatReducer from "./send_chat_reducer";
 import SetBannedReducer from "./set_banned_reducer";
 import SetElixirAutoRenewReducer from "./set_elixir_auto_renew_reducer";
+import SetElixirInfuseReducer from "./set_elixir_infuse_reducer";
 import SetForgeFilterReducer from "./set_forge_filter_reducer";
 import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetProfileReducer from "./set_profile_reducer";
@@ -413,6 +414,7 @@ const reducersSchema = __reducers(
   __reducerSchema("send_chat", SendChatReducer),
   __reducerSchema("set_banned", SetBannedReducer),
   __reducerSchema("set_elixir_auto_renew", SetElixirAutoRenewReducer),
+  __reducerSchema("set_elixir_infuse", SetElixirInfuseReducer),
   __reducerSchema("set_forge_filter", SetForgeFilterReducer),
   __reducerSchema("set_loot_filter", SetLootFilterReducer),
   __reducerSchema("set_profile", SetProfileReducer),

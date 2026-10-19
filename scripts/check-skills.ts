@@ -25,6 +25,7 @@ import { addSkillXp, gatherCharacterXp, projectGathering, relicGold, rollGatheri
 import {
   RECIPES,
   affordable,
+  elixirRecipeId,
   forgeRecipeOf,
   recipeOf,
   scrapMaterialId,
@@ -32,7 +33,7 @@ import {
   temperCost,
   toolRecipeId,
 } from '../spacetimedb/src/data/recipes';
-import { ELIXIR_KILLS, elixirBuffs, elixirSupplyId } from '../spacetimedb/src/data/supplies';
+import { ELIXIR_KILLS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir } from '../spacetimedb/src/data/supplies';
 import { forgeItem, forged, productionCharacterXp, projectProduction, temperBlocker } from '../spacetimedb/src/produce';
 import { SLOTS } from '../spacetimedb/src/data/bases';
 import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
@@ -213,8 +214,13 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   const pick = recipeOf(SkillId.Smithing, toolRecipeId(SkillId.Mining, 2))!;
   check('pickaxe T2: 100 T1 Metal + 50 T1 Wood, one at a time', cost(pick) === '100 101 + 50 501' && pick.max === 1 && pick.seconds === 1800);
   check('no T1 tool recipe', !recipeOf(SkillId.Smithing, toolRecipeId(SkillId.Mining, 1)));
-  const wrath = recipeOf(SkillId.Alchemy, elixirSupplyId(1, 1))!;
+  const wrath = recipeOf(SkillId.Alchemy, elixirRecipeId(1, 1))!;
   check('elixir: 10 Reagent + 1 Core, 7.5 min', cost(wrath) === '10 601 + 1 301' && wrath.seconds === 450);
+  check('brews yield 2 / 3 / 4 by tier in the grade', [1, 2, 3, 4, 5, 6, 7].map(brewYield).join() === '2,3,4,2,3,4,2' &&
+    wrath.output.kind === 'supply' && wrath.output.count === 2 && wrath.output.supplyId === elixirSupplyId(1, 1));
+  const t4 = recipeOf(SkillId.Alchemy, elixirRecipeId(1, 4))!;
+  check('T4 materials brew Greater elixirs', t4.output.kind === 'supply' && t4.output.supplyId === elixirSupplyId(1, 2) && cost(t4) === '10 604 + 1 304');
+  check('no herb in any brew', RECIPES.filter(r => r.skillId === SkillId.Alchemy).every(r => r.inputs.length === 2));
   check('affordable counts whole actions', affordable(wrath, { have: id => (id === 601 ? 95 : 4) }) === 4 && affordable(wrath, { have: () => 9 }) === 0);
 
   const smelt = recipeOf(SkillId.Smithing, smeltRecipeId(2))!;
@@ -277,7 +283,7 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
 // ---------------------------------------------------------------- production
 
 {
-  const wrath = recipeOf(SkillId.Alchemy, elixirSupplyId(1, 1))!;
+  const wrath = recipeOf(SkillId.Alchemy, elixirRecipeId(1, 1))!;
   const plenty = { countLeft: 1000, have: () => 1e6, bagFree: 0 };
   const pr = projectProduction(fresh, wrath, plenty, 1n, HOUR);
   check('8 elixirs an hour at level 1 (bag room not needed)', pr.actions === 8 && pr.endedAt === undefined, `${pr.actions}`);
@@ -403,17 +409,19 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
 {
   const starter = SLOTS.map(s => (s === 'MainHand' ? { ...forgeItem(seededRng(0n), 1, 1, 1), affixes: [] } : undefined));
   const rat = ENEMIES_BY_ID.get(101)!.enemy;
-  const wrath = elixirBuffs(elixirSupplyId(1, 1), 1)!;
-  check('Wrath: ×1.2 damage in its tier, ×1.1 above', wrath.damage === 1.2 && elixirBuffs(elixirSupplyId(1, 1), 2)!.damage === 1.1);
-  const greater = elixirBuffs(elixirSupplyId(1, 1, true), 1)!;
-  check('Greater Wrath: ×1.3 damage in its tier, ×1.15 above',
-    Math.abs(greater.damage - 1.3) < 1e-9 && Math.abs(elixirBuffs(elixirSupplyId(1, 1, true), 2)!.damage - 1.15) < 1e-9);
-  const greaterRecipe = recipeOf(SkillId.Alchemy, elixirSupplyId(1, 2, true))!;
-  check('Greater elixir recipe adds one rare herb of its tier', greaterRecipe.inputs.some(i => i.materialId === materialOf(2, 'Herb').id && i.count === 1));
+  const wrath = elixirBuffs(elixirSupplyId(1, 1))!;
+  const near = (a: number, b: number) => Math.abs(a - b) < 1e-9;
+  check('Wrath ×1.2, infused ×1.3', wrath.damage === 1.2 && near(elixirBuffs(elixirSupplyId(1, 1), true)!.damage, 1.3));
+  check('Greater Wrath ×1.3, infused ×1.45', near(elixirBuffs(elixirSupplyId(1, 2))!.damage, 1.3) && near(elixirBuffs(elixirSupplyId(1, 2), true)!.damage, 1.45));
+  check('Greater Haste ×1.225', near(elixirBuffs(elixirSupplyId(2, 2))!.attackSpeed, 1.225));
+  check('grades: T1–T3 → 1, T4 → 2', [1, 2, 3, 4].map(gradeOf).join() === '1,1,1,2' && SUPPLIES.length === 10);
+  check('grade 1 infuses with any of the T1–T3 herbs, lowest first', infuseHerbIds(1).join() === [1, 2, 3].map(t => materialOf(t, 'Herb').id).join());
+  check('old elixirs map to their grade (Greater gives back its herb)',
+    JSON.stringify([legacyElixir(113), legacyElixir(214), legacyElixir(301)]) === JSON.stringify([{ supplyId: 311 }, { supplyId: 312, herbTier: 4 }, undefined]));
   const plain = matchup(combatStats(1, starter), rat);
   const buffed = matchup(combatStats(1, starter, wrath), rat);
   check('Wrath multiplies DPS', Math.abs(buffed.dps / plain.dps - 1.2) < 1e-9, `${buffed.dps / plain.dps}`);
-  const wisdom = elixirBuffs(elixirSupplyId(3, 1), 1)!;
+  const wisdom = elixirBuffs(elixirSupplyId(3, 1))!;
   check('Wisdom multiplies XP per kill', Math.abs(matchup(combatStats(1, starter, wisdom), rat).xpPerKill / plain.xpPerKill - 1.2) < 1e-9);
 
   const T0 = 1_700_000_000_000_000n;
@@ -429,6 +437,13 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   const sim = simulate(start, { gear: starter, enemy: rat, elixir: { ...run, killsLeft: 5, stock: 0 } }, T0 + HOUR, 9n);
   check('live fights use a charge per kill', sim.elixir!.buffedKills === Math.min(5, sim.kills) && sim.elixir!.killsLeft === Math.max(0, 5 - sim.kills),
     `${sim.kills} kills, ${JSON.stringify(sim.elixir)}`);
+
+  // Infuse: each renewal takes a herb while there are any, then runs plain.
+  const strong = elixirBuffs(elixirSupplyId(1, 1), true)!;
+  const inf = project(start, { gear: starter, enemy: rat, elixir: { ...run, stock: 3, renew: { plain: wrath, infused: strong, herbs: 2 } } }, T0 + 8n * HOUR);
+  check('Infuse: renewals use herbs, then go plain', inf.elixir!.renewed === 3 && inf.elixir!.herbsUsed === 2 && inf.elixir!.infused === false, JSON.stringify(inf.elixir));
+  const inf1 = project(start, { gear: starter, enemy: rat, elixir: { ...run, stock: 1, renew: { plain: wrath, infused: strong, herbs: 5 } } }, T0 + 8n * HOUR);
+  check('… and the last one is infused while herbs last', inf1.elixir!.herbsUsed === 1 && inf1.elixir!.infused === true, JSON.stringify(inf1.elixir));
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');

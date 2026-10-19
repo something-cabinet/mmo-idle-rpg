@@ -3,14 +3,14 @@
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { Encounter as EncounterType, Found as FoundType, account, character, item, presence, settleLog, skill, spacetimedb } from './schema';
-import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project } from './game';
+import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project, type ElixirLeft, type ElixirRun } from './game';
 import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { materialAt } from './data/materials';
 import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
 import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, gatherSpot, type ProductionSkillDef } from './data/skills';
 import { recipeOf, scrapMaterialId, type MaterialCost, type ScrapRarity } from './data/recipes';
-import { elixirBuffs } from './data/supplies';
+import { SUPPLIES_BY_ID, elixirBuffs, infuseHerbIds } from './data/supplies';
 import { GATHER_SALT, gatherCharacterXp, projectGathering, rollGathering, rollGatheringActions } from './gather';
 import { forged, productionCharacterXp, projectProduction, type ForgeFilter } from './produce';
 import { Effect, effectAmount } from './data/legendary';
@@ -113,8 +113,8 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const target = ENEMIES_BY_ID.get(ch.targetEnemyId);
   const progress = { ...ch, settledMicros: ch.lastSettledAt.microsSinceUnixEpoch };
   // The elixir's charges run out (and auto-renew from stock) inside the settle.
-  const buffs = target && ch.elixirKillsLeft > 0 ? elixirBuffs(ch.elixirId, target.zone.tier) : undefined;
-  const elixir = buffs && { buffs, killsLeft: ch.elixirKillsLeft, stock: ch.elixirAutoRenew ? supplyCount(ctx, ch.id, ch.elixirId) : 0 };
+  const elixir = target ? elixirRunOf(ctx, ch) : undefined;
+  const buffs = elixir?.buffs;
   const activity = { gear, enemy: target?.enemy, elixir };
   const now = ctx.timestamp.microsSinceUnixEpoch;
   const p = capMicros === undefined ? simulate(progress, activity, now, ch.id) : project(progress, activity, now, capMicros);
@@ -207,7 +207,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       kills: p.kills,
       zone: target.zone,
       enemy: target.enemy,
-      stats: combatStats(p.level, gear, p.elixir && p.elixir.killsLeft > 0 ? buffs : undefined),
+      stats: combatStats(p.level, gear, p.elixir && p.elixir.killsLeft > 0 ? elixirBuffs(ch.elixirId, p.elixir.infused) : undefined),
     });
     let bagFree = rolls.some(r => r.item) ? ch.bagSize - bagCount(ctx, ch.id) : 0;
     for (const r of rolls) {
@@ -236,9 +236,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     }
   }
 
-  const renewed = p.elixir?.renewed ?? 0;
-  if (renewed > 0) takeSupply(ctx, ch.id, ch.elixirId, renewed);
-  const elixirEmpty = !!p.elixir && p.elixir.killsLeft <= 0;
+  const elixirAfter = p.elixir ? spendElixir(ctx, ch, p.elixir) : undefined;
 
   const offline = capMicros !== undefined;
   const respawned = p.respawns ?? 0;
@@ -266,8 +264,9 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       idleMicros: idle > 0n ? idle : 0n,
       elixirId: elixir ? ch.elixirId : 0,
       elixirKills: buffedKills,
-      elixirsUsed: renewed,
-      elixirEmpty,
+      elixirsUsed: p.elixir?.renewed ?? 0,
+      elixirEmpty: !!p.elixir && p.elixir.killsLeft <= 0,
+      herbsUsed: p.elixir?.herbsUsed ?? 0,
       respawns: respawned,
     });
   }
@@ -281,8 +280,7 @@ export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     essence: 0n,
     lastSettledAt: new Timestamp(p.settledMicros),
     targetEnemyId: p.defeatedAt === undefined ? ch.targetEnemyId : 0,
-    elixirId: elixirEmpty ? 0 : ch.elixirId,
-    elixirKillsLeft: p.elixir ? Math.max(0, p.elixir.killsLeft) : ch.elixirKillsLeft,
+    ...elixirAfter,
   };
 }
 
@@ -385,7 +383,7 @@ function settleProduction(ctx: Ctx, ch: Character, def: ProductionSkillDef, capM
     materials = scrapMaterials(scrapped);
     addMaterials(ctx, ch.id, materials);
   } else if (out.kind === 'supply') {
-    addSupply(ctx, ch.id, out.supplyId, pr.actions);
+    addSupply(ctx, ch.id, out.supplyId, pr.actions * out.count);
   } else if (out.kind === 'material') {
     if (pr.yielded > 0) materials = [{ materialId: out.materialId, count: pr.yielded }];
     addMaterials(ctx, ch.id, materials);
@@ -475,6 +473,49 @@ export function supplyCount(ctx: Ctx, characterId: bigint, supplyId: number): nu
   return Number([...ctx.db.supply.characterId.filter(characterId)].find(r => r.supplyId === supplyId)?.count ?? 0n);
 }
 
+/**
+ * The active elixir as a settle or a depth uses it (life-skills.md, "Buff rules"), or
+ * undefined when the slot is empty. Auto-renew draws on the stock; Infuse on the rare
+ * herbs of the elixir's grade.
+ */
+export function elixirRunOf(ctx: Ctx, ch: Character): ElixirRun | undefined {
+  const sup = ch.elixirKillsLeft > 0 ? SUPPLIES_BY_ID.get(ch.elixirId) : undefined;
+  if (!sup) return undefined;
+  const plain = elixirBuffs(sup.id)!;
+  const infused = elixirBuffs(sup.id, true)!;
+  const stock = ch.elixirAutoRenew ? supplyCount(ctx, ch.id, sup.id) : 0;
+  const herbs = ch.elixirInfuse && stock > 0 ? herbCount(ctx, ch.id, sup.grade) : 0;
+  return { buffs: ch.elixirInfused ? infused : plain, killsLeft: ch.elixirKillsLeft, stock, infused: ch.elixirInfused, renew: { plain, infused, herbs } };
+}
+
+/** Takes what an elixir run used (renewed elixirs, herbs) from stock; returns the character's elixir columns after it. */
+export function spendElixir(ctx: Ctx, ch: Character, left: ElixirLeft): Pick<Character, 'elixirId' | 'elixirKillsLeft' | 'elixirInfused'> {
+  if (left.renewed > 0) takeSupply(ctx, ch.id, ch.elixirId, left.renewed);
+  const sup = SUPPLIES_BY_ID.get(ch.elixirId);
+  if (sup && left.herbsUsed > 0) takeHerbs(ctx, ch.id, sup.grade, left.herbsUsed);
+  const empty = left.killsLeft <= 0;
+  return { elixirId: empty ? 0 : ch.elixirId, elixirKillsLeft: Math.max(0, left.killsLeft), elixirInfused: !empty && left.infused };
+}
+
+/** Rare herbs held that can infuse an elixir of `grade`. */
+export function herbCount(ctx: Ctx, characterId: bigint, grade: number): number {
+  const held = materialCounts(ctx, characterId);
+  return infuseHerbIds(grade).reduce((n, id) => n + (held.get(id) ?? 0), 0);
+}
+
+/** Takes `n` rare herbs that infuse `grade`, lowest tier first (callers check there are enough). */
+export function takeHerbs(ctx: Ctx, characterId: bigint, grade: number, n: number) {
+  const held = materialCounts(ctx, characterId);
+  const costs: MaterialCost[] = [];
+  for (const materialId of infuseHerbIds(grade)) {
+    const count = Math.min(n, held.get(materialId) ?? 0);
+    if (count > 0) costs.push({ materialId, count });
+    n -= count;
+  }
+  if (n > 0) throw new SenderError('Not enough rare herbs');
+  takeMaterials(ctx, characterId, costs);
+}
+
 /** Adds `n` of supply `supplyId` to the character's stock. */
 export function addSupply(ctx: Ctx, characterId: bigint, supplyId: number, n: number) {
   if (n <= 0) return;
@@ -544,6 +585,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     elixirKills: 0,
     elixirsUsed: 0,
     elixirEmpty: false,
+    herbsUsed: 0,
     respawns: 0,
     ...row,
   });

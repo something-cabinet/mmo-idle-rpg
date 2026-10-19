@@ -102,6 +102,8 @@ export const Character = __t.object("Character", {
   elixirKillsLeft: __t.u32(),
   elixirAutoRenew: __t.bool(),
   activityItemId: __t.u64(),
+  elixirInfused: __t.bool(),
+  elixirInfuse: __t.bool(),
 });
 export type Character = __Infer<typeof Character>;
 
@@ -508,6 +510,7 @@ export const SettleLog = __t.object("SettleLog", {
   elixirEmpty: __t.bool(),
   scrapped: __t.array(__t.u32()),
   respawns: __t.u32(),
+  herbsUsed: __t.u32(),
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

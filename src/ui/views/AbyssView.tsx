@@ -11,6 +11,7 @@ import {
 } from '../../../spacetimedb/src/data/abyss';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
 import { SUPPLIES_BY_ID, elixirBuffs } from '../../../spacetimedb/src/data/supplies';
+import { elixirText } from '../lifeSkills';
 import { decodeBuild, decodeStats, depthFoes, depthRng, simulateDepth, type DepthFoe, type DepthResult } from '../../../spacetimedb/src/abyss';
 import { call, useSticky, useTick } from '../../store';
 import { startFight, stopFight } from '../fight';
@@ -81,8 +82,8 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
   const [loadout, setLoadout] = useSticky<number>('deepLoadout', s.row.activeLoadout);
   const lo = s.loadouts.find(l => l.index === loadout) ?? s.active;
   const gear = gearFor(lo?.slots ?? [], s.items);
-  // As the server takes it: your level, the loadout, the active elixir at the depth's tier.
-  const buffs = s.elixir && elixirBuffs(s.elixir.supply.id, Math.floor(depthTier(depth)));
+  // As the server takes it: your level, the loadout, the active elixir.
+  const buffs = s.elixir && elixirBuffs(s.elixir.supply.id, s.elixir.infused);
   const stats = useMemo(() => combatStats(s.level, gear, buffs), [s.level, gear.map(i => String(i?.id ?? 0n)).join(), buffs?.damage, buffs?.attackSpeed]); // eslint-disable-line react-hooks/exhaustive-deps
   const lineup = depthLineup(depth);
   const foes = useMemo(() => depthFoes(stats, lineup), [stats, depth]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -144,7 +145,7 @@ function Descent({ s, depth }: { s: Snapshot; depth: number }) {
             </div>
             {s.elixir && (
               <div className="deep-facts">
-                <div title="Your elixir applies to every fight and uses a charge per kill"><span>Elixir</span><strong>{s.elixir.supply.name}</strong></div>
+                <div title="Your elixir applies to every fight and uses a charge per kill"><span>Elixir</span><strong>{s.elixir.infused ? 'Infused ' : ''}{s.elixir.supply.name}</strong></div>
               </div>
             )}
             <button className="btn primary deep-go" disabled={!!block} onClick={() => {
@@ -206,7 +207,7 @@ function RewardLine({ gold, xp, dust, materials, elixir }: { gold: bigint; xp: b
       <span><Icon name="coins" className="c-gold" />{fmtBig(gold)} gold</span>
       {xp > 0n && <span><Icon name="star" className="c-ok" />{fmtBig(xp)} XP</span>}
       <span><Icon name="gem" className="c-dust" />{fmtBig(dust)} Dust</span>
-      {supply && <span><Icon name="flask" className="c-magic" />{supply.name} (T{supply.tier})</span>}
+      {supply && <span><Icon name="flask" className="c-magic" />{supply.name}</span>}
       <span className="muted">{mats.map(m => `${m.count} ${materialName(m.materialId)}`).join(' · ')}</span>
     </div>
   );
@@ -223,7 +224,7 @@ function DeepLoot({ log }: { log: AbyssLog }) {
     { key: 'gold', icon: 'coins', cls: 'c-gold', text: `+${fmtBig(log.gold)} gold`, title: 'Gold' },
     ...(log.xp > 0n ? [{ key: 'xp', icon: 'star', cls: 'c-ok', text: `+${fmtBig(log.xp)} XP`, title: 'Experience' }] : []),
     { key: 'dust', icon: 'gem', cls: 'c-dust', text: `+${fmtBig(log.dust)} Dust`, title: 'Dust' },
-    ...(supply ? [{ key: 'elixir', icon: 'flask', cls: 'c-voidglass', text: supply.name, title: `${supply.name} (T${supply.tier})`, special: true }] : []),
+    ...(supply ? [{ key: 'elixir', icon: 'flask', cls: 'c-voidglass', text: supply.name, title: `${supply.name}: ${elixirText(supply)}`, special: true }] : []),
     // Voidglass first among the materials: it only comes from the Deep.
     ...[...log.materials].sort((x, y) => Number(y.materialId === voidglass) - Number(x.materialId === voidglass)).map(m => ({
       key: `m${m.materialId}`, icon: materialIconName(m.materialId), cls: m.materialId === voidglass ? 'c-voidglass' : 'c-material',

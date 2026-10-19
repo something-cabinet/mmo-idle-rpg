@@ -52,7 +52,7 @@ the zones can't have.
   **Per depth:** Second Wind triggers once per depth, not once per enemy, otherwise it would
   be a free heal between fights.
 - **Buffs:** the active elixir and meal apply and use **1 charge per enemy** (3 per depth),
-  like kills. Greater elixirs are a real edge here, which gives Alchemy an endgame use.
+  like kills. Infused and higher-grade elixirs are a real edge here, which gives Alchemy an endgame use.
 - **Time limit: 4:00 per depth**, then the depth is lost. Without one, a healer or regen
   build that can't die but can't kill would stall forever. With it, a depth checks damage as
   well as survival.
@@ -224,7 +224,7 @@ attempt.
 | Gold + XP | Every depth | ~30 min of farming at the depth's tier (`tier(d)`, rounded down to an existing zone) |
 | Dust + materials | Every depth | Materials of the depth's tier, all kinds |
 | **Voidglass** | Every depth, a bigger batch every 10 | New Deep-only material: the "precious material" raids.md plans. Paid out and stored from the first version; what it crafts is decided later |
-| Rare / Greater elixirs | Every 5 depths | Fuel for the next push |
+| A power elixir of the depth's grade + 1 rare herb | Every 5 depths | Fuel for the next push |
 | Essences | Every 10 depths | **Once Essence drops ship**: left out until then; rare Essences from depth 30 |
 | **Title** | Depths 10, 25, 50, 75, 100 | Cosmetic, see below. **Later**: not in the first version |
 

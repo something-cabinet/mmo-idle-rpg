@@ -77,6 +77,10 @@ export const character = table(
     elixirAutoRenew: t.bool().default(true),
     /** Unused: the item of a queued temper, before tempering became instant. Drop on the next wipe. */
     activityItemId: t.u64().default(0n),
+    /** The active elixir is infused with a rare herb (life-skills.md, "Infuse"). */
+    elixirInfused: t.bool().default(false),
+    /** Infuse each new elixir (drunk or auto-renewed) with a rare herb of its grade while there are any. */
+    elixirInfuse: t.bool().default(true),
   }
 );
 
@@ -396,6 +400,8 @@ export const settleLog = table(
     scrapped: t.array(t.u32()).default([]),
     /** Live fights lost to `enemyId` in a matchup won on average: each cost a respawn, not the target (fight.ts). */
     respawns: t.u32().default(0),
+    /** Rare herbs auto-renewed elixirs were infused with. */
+    herbsUsed: t.u32().default(0),
   }
 );
 
@@ -652,7 +658,7 @@ export const abyssLog = table(
     xp: t.u64(),
     dust: t.u64(),
     materials: t.array(MaterialCount),
-    /** A Greater elixir's supply ID granted, or 0. */
+    /** An elixir's supply ID granted (one, with a rare herb in `materials`), or 0. */
     elixir: t.u16(),
   }
 );

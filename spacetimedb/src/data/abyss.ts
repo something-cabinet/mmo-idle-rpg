@@ -6,7 +6,7 @@
 // above the raid bosses' 9000 + raid ID, outside the zones' zoneId × 100 + n.
 
 import { MATERIAL_KINDS, materialAt, untieredMaterial, type MaterialKind } from './materials';
-import { ELIXIRS, SUPPLY_TIERS, elixirSupplyId } from './supplies';
+import { ELIXIRS, SUPPLY_TIERS, elixirSupplyId, gradeOf } from './supplies';
 import { ZONES, referenceAccuracy, type Defense, type EnemyDef } from './zones';
 import { seededRng } from '../loot';
 
@@ -208,7 +208,7 @@ export const bossName = (affixes: readonly number[]) => `${affixes.map(a => BOSS
 
 // ---------------------------------------------------------------- rewards
 
-/** Up to depth 100 milestones: a Greater power elixir every ELIXIR_EVERY depths, a bigger Voidglass batch every 10. */
+/** Up to depth 100 milestones: a power elixir and a rare herb every ELIXIR_EVERY depths, a bigger Voidglass batch every 10. */
 export const ELIXIR_EVERY = 5;
 export const VOIDGLASS_BATCH_EVERY = 10;
 /** Past depth 100 the rewards grow × REWARD_GROWTH a depth, far slower than the difficulty. */
@@ -220,7 +220,7 @@ export interface DepthReward {
   dust: bigint;
   /** [material ID, count]. Voidglass included. */
   materials: [number, number][];
-  /** A Greater elixir's supply ID, on milestone depths. */
+  /** A power elixir's supply ID (of the reward tier's grade), on milestone depths; a rare herb comes with it in `materials`. */
   elixir?: number;
 }
 
@@ -237,7 +237,7 @@ const REWARD_SALT = 0x6465657072n; // "deepr"
 /**
  * The first-clear reward of depth `d` (abyss.md, "Rewards"): about 30 min of farming at
  * its tier (1,200 gold, 4,800 XP and 15 Dust an hour × 2.9^(T−1), crafting.md), its tier's
- * materials, Voidglass, and up to depth 100 a Greater power elixir every ELIXIR_EVERY depths.
+ * materials, Voidglass, and up to depth 100 a power elixir and a rare herb every ELIXIR_EVERY depths.
  * Past depth 100 only the formula, × REWARD_GROWTH a depth.
  */
 export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
@@ -258,7 +258,9 @@ export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
   if (!past && d % ELIXIR_EVERY === 0) {
     const power = ELIXIRS.filter(e => e.group === 'Power');
     const kind = power[Math.floor(seededRng(BigInt(season), BigInt(d), REWARD_SALT)() * power.length)];
-    elixir = elixirSupplyId(kind.kind, matTier, true);
+    elixir = elixirSupplyId(kind.kind, gradeOf(matTier));
+    const herb = materialAt(matTier, 'Herb');
+    if (herb) materials.push([herb.id, 1]);
   }
   return {
     gold: BigInt(Math.round(1200 * scale)),

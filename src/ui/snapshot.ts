@@ -7,10 +7,10 @@ import { ENEMIES_BY_ID, type EnemyDef, type ZoneDef } from '../../spacetimedb/sr
 import { simulate, type Simulated } from '../../spacetimedb/src/sim';
 import { SKILLS, SKILLS_BY_ID, gatherSpot, type GatheringSkillDef, type ProductionSkillDef, type SkillDef } from '../../spacetimedb/src/data/skills';
 import { recipeOf, type Recipe } from '../../spacetimedb/src/data/recipes';
-import { SUPPLIES_BY_ID, elixirBuffs, type Buffs, type SupplyDef } from '../../spacetimedb/src/data/supplies';
+import { SUPPLIES_BY_ID, elixirBuffs, infuseHerbIds, type Buffs, type SupplyDef } from '../../spacetimedb/src/data/supplies';
 import { gatherCharacterXp, projectGathering, rollGatheringActions, type Gathered } from '../../spacetimedb/src/gather';
 import { forged, productionCharacterXp, projectProduction, type ForgeFilter, type Produced } from '../../spacetimedb/src/produce';
-import { addXp } from '../../spacetimedb/src/game';
+import { addXp, type ElixirRun } from '../../spacetimedb/src/game';
 import { foundKey } from './discovery';
 
 export interface Snapshot {
@@ -49,9 +49,9 @@ export interface Snapshot {
   defeated: boolean;
   /** The projection shows a boss's first kill, which the server grants on its next settle. */
   firstBossKill: boolean;
-  /** From level and gear, without the elixir (it depends on the zone: `statsIn`). */
+  /** From level and gear, without the elixir (`statsIn` has it). */
   stats: CombatStats;
-  /** The active elixir's buffs in the target's zone; undefined without either. */
+  /** The active elixir's buffs; undefined without it or a target. */
   buffs: Buffs | undefined;
   /** Against the target, with the elixir; undefined without a target. */
   fight: Matchup | undefined;
@@ -75,12 +75,21 @@ export interface Snapshot {
   /** The forge keep rule; undefined keeps every forged base. */
   forgeFilter: ForgeFilter | undefined;
   /** The active elixir, projected to now; undefined when the slot is empty. */
-  elixir: { supply: SupplyDef; killsLeft: number } | undefined;
+  elixir: { supply: SupplyDef; killsLeft: number; infused: boolean } | undefined;
 }
 
-/** Combat stats in a zone of `zoneTier`, with the active elixir (full effect up to its tier, half above). */
-export const statsIn = (s: Snapshot, zoneTier: number): CombatStats =>
-  s.elixir ? combatStats(s.level, s.gear, elixirBuffs(s.elixir.supply.id, zoneTier)) : s.stats;
+/** Combat stats with the active elixir. */
+export const statsIn = (s: Snapshot): CombatStats =>
+  s.elixir ? combatStats(s.level, s.gear, elixirBuffs(s.elixir.supply.id, s.elixir.infused)) : s.stats;
+
+/** The active elixir as the server's settle runs it (helpers.ts `elixirRunOf`). */
+function elixirRunOf(row: Character, sup: SupplyDef, supplies: Map<number, number>, materials: Map<number, bigint>): ElixirRun {
+  const plain = elixirBuffs(sup.id)!;
+  const infused = elixirBuffs(sup.id, true)!;
+  const stock = row.elixirAutoRenew ? supplies.get(sup.id) ?? 0 : 0;
+  const herbs = row.elixirInfuse && stock > 0 ? infuseHerbIds(sup.grade).reduce((n, id) => n + Number(materials.get(id) ?? 0n), 0) : 0;
+  return { buffs: row.elixirInfused ? infused : plain, killsLeft: row.elixirKillsLeft, stock, infused: row.elixirInfused, renew: { plain, infused, herbs } };
+}
 
 export const gearFor = (slots: readonly bigint[], items: Map<bigint, Item>): (Item | undefined)[] => slots.map(id => items.get(id));
 
@@ -96,22 +105,21 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   const forgeFilter: ForgeFilter | undefined = ff && { minRarity: ff.minRarity.tag, keepAffixes: ff.keepAffixes, minAffixTier: ff.minAffixTier, scrap: ff.scrap };
   const supplies = new Map([...conn.db.mySupplies.iter()].map(r => [r.supplyId, Number(r.count)]));
   const elixirSupply = row.elixirKillsLeft > 0 ? SUPPLIES_BY_ID.get(row.elixirId) : undefined;
-  const buffsNow = fighting && elixirSupply && elixirBuffs(elixirSupply.id, fighting.zone.tier);
-  const elixirRun = buffsNow && { buffs: buffsNow, killsLeft: row.elixirKillsLeft, stock: row.elixirAutoRenew ? supplies.get(row.elixirId) ?? 0 : 0 };
+  const materials = new Map([...conn.db.myMaterials.iter()].map(m => [m.materialId, m.count]));
+  const elixirRun = fighting && elixirSupply && elixirRunOf(row, elixirSupply, supplies, materials);
   const settledMicros = row.lastSettledAt.microsSinceUnixEpoch;
   // We're online: progress is the live fights the server will settle (sim.ts), not the offline formulas.
   let p = simulate({ ...row, settledMicros }, { gear, enemy: fighting?.enemy, elixir: elixirRun }, nowMicros, row.id);
   const defeated = p.defeatedAt !== undefined;
   // The elixir after the kills so far: auto-renew takes from stock, an empty slot stays empty.
-  let elixir: Snapshot['elixir'] = elixirSupply && { supply: elixirSupply, killsLeft: row.elixirKillsLeft };
+  let elixir: Snapshot['elixir'] = elixirSupply && { supply: elixirSupply, killsLeft: row.elixirKillsLeft, infused: row.elixirInfused };
   if (elixirSupply && p.elixir) {
     supplies.set(elixirSupply.id, (supplies.get(elixirSupply.id) ?? 0) - p.elixir.renewed);
-    elixir = p.elixir.killsLeft > 0 ? { supply: elixirSupply, killsLeft: p.elixir.killsLeft } : undefined;
+    elixir = p.elixir.killsLeft > 0 ? { supply: elixirSupply, killsLeft: p.elixir.killsLeft, infused: p.elixir.infused } : undefined;
   }
   const skills = new Map<number, { level: number; xp: bigint }>(SKILLS.map(sk => [sk.id, { level: 1, xp: 0n }]));
   for (const r of conn.db.mySkills.iter()) skills.set(r.skillId, { level: r.level, xp: r.xp });
   const tools = new Map([...conn.db.myTools.iter()].map(r => [r.skillId, r.tier]));
-  const materials = new Map([...conn.db.myMaterials.iter()].map(m => [m.materialId, m.count]));
   const inLoadouts = new Map<bigint, number[]>();
   for (const lo of loadouts) for (const id of lo.slots) if (id !== 0n) inLoadouts.set(id, [...(inLoadouts.get(id) ?? []), lo.index]);
   const bag = [...items.values()].filter(i => !inLoadouts.has(i.id));
@@ -151,7 +159,7 @@ export function snapshot(conn: DbConnection, row: Character, nowMicros: bigint):
   }
   const target = defeated ? undefined : fighting;
   const stats = combatStats(p.level, gear);
-  const buffs = target && elixir && elixirBuffs(elixir.supply.id, target.zone.tier);
+  const buffs = target && elixir && elixirBuffs(elixir.supply.id, elixir.infused);
   const killedZones = new Set([...conn.db.myBossKills.iter()].map(k => k.zoneId));
   const kills = new Map([...conn.db.myEnemyKills.iter()].map(k => [k.enemyId, Number(k.kills)]));
   if (target && p.kills > 0) kills.set(target.enemy.id, (kills.get(target.enemy.id) ?? 0) + p.kills);

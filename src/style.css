@@ -4301,7 +4301,7 @@ fieldset.affix-pick legend {
     linear-gradient(90deg, #1c2b5a, #22347a);
 }
 /* Black night, its stars gathered on the right. */
-.np-starless::before {
+.np-nightsky::before {
   background:
     radial-gradient(1px 1px at calc(100% - 2.6em) 30%, #fff 50%, transparent 51%),
     radial-gradient(1px 1px at calc(100% - 2em) 75%, #cfd6ff 50%, transparent 51%),

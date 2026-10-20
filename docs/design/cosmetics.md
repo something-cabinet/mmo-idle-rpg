@@ -88,7 +88,7 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 | ID | Plate | Look | How |
 |---|---|---|---|
 | 2001 | Moonwell | Deep blue, a silver crescent | Clear depth 25 |
-| 2002 | Starless | Black, stars gathered on the right | Clear depth 75 |
+| 2002 | Night Sky | Black, stars gathered on the right | Clear depth 75 |
 | 2003 | Moon Garden | Sage green, pale leaves | Defeat the Moonlit Champion |
 | 2004 | Veteran | Dark leather, gold trim and bar | Reach level 100 |
 

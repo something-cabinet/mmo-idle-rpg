@@ -73,7 +73,7 @@ export const COSMETICS: readonly CosmeticDef[] = [
   { id: 1006, slot: 'visual', name: 'Gilded', css: 'gilded', text: 'Gold, a slow shimmer', how: 'Any life skill at 99', unlock: { kind: 'skill', level: 99 } },
 
   { id: 2001, slot: 'plate', name: 'Moonwell', css: 'moonwell', text: 'Deep blue, a silver crescent', how: 'Clear Moonwell depth 25', unlock: { kind: 'depth', depth: 25 } },
-  { id: 2002, slot: 'plate', name: 'Starless', css: 'starless', text: 'Black, stars gathered on the right', how: 'Clear Moonwell depth 75', unlock: { kind: 'depth', depth: 75 } },
+  { id: 2002, slot: 'plate', name: 'Night Sky', css: 'nightsky', text: 'Black, stars gathered on the right', how: 'Clear Moonwell depth 75', unlock: { kind: 'depth', depth: 75 } },
   { id: 2003, slot: 'plate', name: 'Moon Garden', css: 'moongarden', text: 'Sage green, pale leaves', how: 'Defeat the Moonlit Champion (secret)', unlock: { kind: 'kill', enemyId: MOONLIT_CHAMPION } },
   { id: 2004, slot: 'plate', name: 'Veteran', css: 'veteran', text: 'Dark leather, gold trim and bar', how: 'Reach level 100', unlock: { kind: 'level', level: 100 } },
 ];

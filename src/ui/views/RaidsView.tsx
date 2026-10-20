@@ -384,7 +384,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           <div key={String(m.characterId)} className={`raid-seat${m.characterId === me ? ' me' : ''}`}>
             <div className="raid-seat-name">
               {m.characterId === party.leaderId && <Icon name="crown" className="c-gold" />}
-              <strong><PlayerName conn={conn} id={m.characterId} name={m.name} /></strong>
+              <strong><PlayerName conn={conn} id={m.characterId} name={m.name} row /></strong>
               <span className="muted">Lv {m.characterId === me ? s.level : (chars.get(m.characterId)?.level ?? '?')}</span>
               {!online.has(m.characterId) && <span className="tag">Offline</span>}
               {leading && m.characterId !== me && !fighting && (
@@ -549,7 +549,7 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
           <div key={i} className={`duelist${hp[i] <= 0 ? ' lost' : ''}`}>
             <div className="duelist-name">
               <i className="raid-who" style={{ '--who': `var(--party-${i % RAID_PARTY_SIZE})` } as CSSProperties} />
-              <PlayerName conn={s.conn} id={setup.fighters[i].characterId} name={name} />{setup.fighters[i].characterId === s.row.id ? ' (you)' : ''}
+              <PlayerName conn={s.conn} id={setup.fighters[i].characterId} name={name} row />{setup.fighters[i].characterId === s.row.id ? ' (you)' : ''}
             </div>
             <div className="hpbar">
               {breath && beforeBreath && beforeBreath.hp[i] > 0 && (

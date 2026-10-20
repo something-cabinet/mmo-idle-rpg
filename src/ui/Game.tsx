@@ -249,10 +249,10 @@ function Social({ conn, pres, mobile, onCollapse, onInspect }: { conn: DbConnect
             {online.map(p => (
               <li key={String(p.characterId)} className={p.characterId === pres.characterId ? 'me' : ''}>
                 {p.characterId === pres.characterId ? (
-                  <PlayerName conn={conn} id={p.characterId} name={p.characterName} />
+                  <PlayerName conn={conn} id={p.characterId} name={p.characterName} row />
                 ) : (
                   <button className="online-name" title="Inspect gear and stats" onClick={() => onInspect(p.characterId)}>
-                    <PlayerName conn={conn} id={p.characterId} name={p.characterName} />
+                    <PlayerName conn={conn} id={p.characterId} name={p.characterName} row />
                   </button>
                 )}
               </li>

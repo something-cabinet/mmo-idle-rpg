@@ -40,7 +40,7 @@ export function FriendsTab({ conn, onInspect }: { conn: DbConnection; onInspect:
           {friends.map(c => (
             <li key={String(c.id)} className={online.has(c.id) ? 'online' : ''} title={online.has(c.id) ? 'Online' : 'Offline'}>
               <button className="online-name" title="Inspect gear and stats" onClick={() => onInspect(c.id)}>
-                <PlayerName conn={conn} id={c.id} name={c.name} />
+                <PlayerName conn={conn} id={c.id} name={c.name} row />
               </button>
               <span className="muted">Lv {c.level}</span>
               <button className="btn icon ghost friend-duel" title={`Duel ${c.name} (just for fun)`} onClick={() => onInspect(c.id, 'duel')}>

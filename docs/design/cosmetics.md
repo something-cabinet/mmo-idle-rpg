@@ -31,10 +31,13 @@ is one colour with one effect, not a colour picker plus an effect picker.
 
 ## Where names show it
 
-One component draws every player name (`PlayerName`). Two sizes:
+One component draws every player name (`PlayerName`). Three sizes:
 
-- **Full** (effect, title and plate): the top bar, the Character page, inspect, the friend
-  and online lists, raid seats and the raid fight, duels, the Moonwell leaderboard.
+- **Full** (effect, title and plate): where one player is the focus: the top bar, the
+  Character page, inspect, a Moonwell record.
+- **Row** (effect and plate; the title shows on hover): lists, so every row is one line:
+  the friend and online lists, raid seats and the raid fight, duels, the Moonwell
+  leaderboard.
 - **Inline** (effect only: no title, no plate, no animation): chat lines. A plate and an
   animation on every line would be noise.
 

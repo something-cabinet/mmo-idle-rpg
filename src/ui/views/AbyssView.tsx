@@ -358,7 +358,7 @@ function Leaderboard({ s }: { s: Snapshot }) {
   const row = (r: AbyssRecord) => (
     <li key={String(r.characterId)} className={r.characterId === s.row.id ? 'me' : ''}>
       <span className="deep-rank">{rank.get(r.characterId)}</span>
-      <span className="deep-name"><PlayerName conn={conn} id={r.characterId} name={r.name} /></span>
+      <span className="deep-name"><PlayerName conn={conn} id={r.characterId} name={r.name} row /></span>
       <span className="muted deep-level">{r.level}</span>
       <strong className="deep-depth">{r.deepest}</strong>
       <button className="btn small deep-view-build" disabled={!r.build} onClick={() => setOpen(r)}>View build</button>

@@ -70,7 +70,7 @@ export function DuelPanel({ conn, me, foe }: { conn: DbConnection; me: Duelist; 
         {[0, 1].map(i => (
           <div key={i} className={`duelist${over && duel.winner === i ? ' won' : ''}${over && duel.winner === 1 - i ? ' lost' : ''}`}>
             <div className="duelist-name">
-              <PlayerName conn={conn} id={i === 0 ? me.id : foe.id} name={names[i]} /> <span className="muted">Lv {i === 0 ? me.level : foe.level}</span>
+              <PlayerName conn={conn} id={i === 0 ? me.id : foe.id} name={names[i]} row /> <span className="muted">Lv {i === 0 ? me.level : foe.level}</span>
             </div>
             <div className={`hpbar${i === 1 ? ' enemy' : ''}`}>
               <div className="hp-fill" style={{ width: `${(hp[i] / duel.maxHp[i]) * 100}%` }} />

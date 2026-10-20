@@ -15,13 +15,17 @@ none can be bought (a raid token or Voidglass shop may sell some later).
 |---|---|---|
 | **Title** | A short phrase in small text above the name; too long for the space, it ends in "…" (full text on hover) | "Moonless" over "Lam" |
 | **Name effect** | How the name text is drawn: a fixed colour and effect pair | Moonlight: silver shimmer |
-| **Nameplate** | A background plate behind the name and title | Moonwell: deep blue, silver rim |
+| **Nameplate** | A background plate behind the name and title, faint on the left and rich on the right | Moonwell: deep blue, silver crescent |
 
 Each slot is chosen on its own from the ones unlocked, or left empty (plain name). An effect
 is one colour with one effect, not a colour picker plus an effect picker.
 
 - **No theme versions.** A plate looks the same in light and dark mode, and any effect can
   sit on any plate. Players pick what they wear; an unreadable mix is their choice.
+- **Plates fade in from the left** (like Discord's): faint behind the name, with the colour
+  and art in extra room past it on the right. The name keeps its own colour (theme or
+  effect), so it stands out. Every full-size name reserves the plate's padding, so a list
+  row is the same height with or without a plate.
 - **Motion:** shimmer, flicker, glow and pulse are CSS animations. Under
   `prefers-reduced-motion` they stop and the name keeps its colour.
 
@@ -80,10 +84,10 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 
 | ID | Plate | Look | How |
 |---|---|---|---|
-| 2001 | Moonwell | Deep blue, silver rim | Clear depth 25 |
-| 2002 | Starless | Black, faint stars | Clear depth 75 |
-| 2003 | Moon Garden | Pale silver-green, leaf border | Defeat the Moonlit Champion |
-| 2004 | Veteran | Dark leather, gold border | Reach level 100 |
+| 2001 | Moonwell | Deep blue, a silver crescent | Clear depth 25 |
+| 2002 | Starless | Black, stars gathered on the right | Clear depth 75 |
+| 2003 | Moon Garden | Sage green, pale leaves | Defeat the Moonlit Champion |
+| 2004 | Veteran | Dark leather, gold trim and bar | Reach level 100 |
 
 IDs are permanent (stored in unlock and look rows): never reuse or renumber. Titles
 1–999, name effects 1001–1999, plates 2001–2999.

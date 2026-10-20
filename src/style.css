@@ -4204,9 +4204,13 @@ fieldset.affix-pick legend {
 }
 
 /* ------------------------------------------------------------------ cosmetics (cosmetics.md) */
-/* A player name: visual (`.nv-*`), title, and plate (`.np-*`). Plates have one look in both
-   themes and set their own text colour; any visual can sit on any plate. */
+/* A player name: visual (`.nv-*`), title, and plate (`.np-*`). Every full-size name reserves
+   the plate's padding, so a row is the same height with or without one. A plate is drawn
+   behind the name and fades in from the left (Discord-style): faint where the name sits,
+   rich on the right past it, so the name keeps its own colour and reads on any plate. */
 .pname {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   flex-direction: column;
   align-items: flex-start;
@@ -4214,6 +4218,8 @@ fieldset.affix-pick legend {
   min-width: 0;
   vertical-align: middle;
   line-height: 1.2;
+  padding: 2px 6px;
+  border-radius: 6px;
 }
 .pname-name {
   max-width: 100%;
@@ -4234,44 +4240,65 @@ fieldset.affix-pick legend {
 }
 .pname.inline {
   display: inline;
+  padding: 0;
 }
 .look-preview .pname {
   align-items: center;
 }
 
+/* The plate's art lives on the right, in the extra room past the name. */
 .np {
-  padding: 2px 9px;
-  border-radius: 6px;
-  border: 1px solid transparent;
+  padding-right: 3em;
 }
-.np-moonwell {
-  color: #e6ecff;
-  background: linear-gradient(180deg, #1c2b5a, #0e1736);
-  border-color: #b8c4e0;
-  box-shadow: inset 0 0 6px rgba(184, 196, 224, 0.35);
+.look-preview .np {
+  padding-left: 3em;
 }
-.np-starless {
-  color: #d9dbe6;
+.np::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  -webkit-mask-image: linear-gradient(to left, #000 0, #000 1em, rgba(0, 0, 0, 0.35) 2.6em, rgba(0, 0, 0, 0.1) 60%, transparent 100%);
+  mask-image: linear-gradient(to left, #000 0, #000 1em, rgba(0, 0, 0, 0.35) 2.6em, rgba(0, 0, 0, 0.1) 60%, transparent 100%);
+}
+/* Deep blue with a silver crescent. */
+.np-moonwell::before {
   background:
-    radial-gradient(1px 1px at 12% 30%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 38% 75%, #cfd6ff 50%, transparent 51%),
-    radial-gradient(1px 1px at 63% 22%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 84% 64%, #e9dcff 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 92% 18%, #fff 50%, transparent 51%),
+    radial-gradient(circle 0.42em at calc(100% - 0.85em) 42%, #22347a 96%, transparent 100%),
+    radial-gradient(circle 0.48em at calc(100% - 1.1em) 50%, #e6ecff 96%, transparent 100%),
+    radial-gradient(ellipse 2.5em 120% at 100% 50%, rgba(184, 196, 224, 0.35), transparent),
+    linear-gradient(90deg, #1c2b5a, #22347a);
+}
+/* Black night, its stars gathered on the right. */
+.np-starless::before {
+  background:
+    radial-gradient(1px 1px at calc(100% - 2.6em) 30%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at calc(100% - 2em) 75%, #cfd6ff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at calc(100% - 1.5em) 25%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at calc(100% - 1.1em) 62%, #e9dcff 50%, transparent 51%),
+    radial-gradient(2px 2px at calc(100% - 0.6em) 35%, #fff 50%, transparent 51%),
+    radial-gradient(1px 1px at calc(100% - 0.35em) 78%, #cfd6ff 50%, transparent 51%),
+    radial-gradient(1px 1px at 40% 60%, #fff 50%, transparent 51%),
+    radial-gradient(ellipse 2em 140% at 100% 50%, rgba(120, 100, 200, 0.3), transparent),
     #05060b;
-  border-color: #23263a;
 }
-.np-moongarden {
-  color: #20302a;
-  background: linear-gradient(135deg, #e3efe8, #c4dccf 60%, #d9e4ee);
-  border: 1px dashed #6f9a80;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45);
+/* Sage green, pale leaves on the right. */
+.np-moongarden::before {
+  background:
+    radial-gradient(ellipse 0.55em 0.22em at calc(100% - 0.7em) 35%, #e3efe8 92%, transparent 100%),
+    radial-gradient(ellipse 0.45em 0.18em at calc(100% - 1.5em) 68%, #d2e6da 92%, transparent 100%),
+    radial-gradient(ellipse 0.35em 0.15em at calc(100% - 2.2em) 32%, #c4dccf 92%, transparent 100%),
+    radial-gradient(ellipse 2.5em 120% at 100% 50%, rgba(217, 228, 238, 0.4), transparent),
+    linear-gradient(90deg, #3f6b55, #5f8f74);
 }
-.np-veteran {
-  color: #f3e3c3;
-  background: linear-gradient(180deg, #4a3020, #2e1d12);
-  border: 1px solid #c9a24a;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 162, 74, 0.25);
+/* Dark leather, gold-trimmed, a gold bar at the end. */
+.np-veteran::before {
+  background:
+    linear-gradient(90deg, transparent calc(100% - 0.9em), #c9a24a calc(100% - 0.9em), #c9a24a calc(100% - 0.7em), transparent calc(100% - 0.7em), transparent calc(100% - 0.5em), #c9a24a calc(100% - 0.5em), #f0d48a calc(100% - 0.3em), #c9a24a 100%),
+    radial-gradient(ellipse 2.5em 120% at 100% 50%, rgba(201, 162, 74, 0.3), transparent),
+    linear-gradient(180deg, #4a3020, #2e1d12);
+  box-shadow: inset 0 1px 0 #c9a24a, inset 0 -1px 0 #c9a24a;
 }
 
 .nv {

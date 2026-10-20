@@ -94,6 +94,13 @@ export const UNIQUES: UniqueDef[] = [
   { id: 19, name: "Lunatic's Wager", tier: 4, baseId: 52, effects: [],
     stats: [{ stat: Stat.MaxHpPct, roll: WAGER }, { stat: Stat.AttackSpeedPct, roll: WAGER }, { stat: Stat.ItemFindPct, roll: WAGER },
       { stat: Stat.XpGainPct, roll: WAGER }, { stat: Stat.GoldFindPct, roll: WAGER }] },
+  // T5: Brightvein Hold
+  { id: 23, name: "Forgefather's Maul", tier: 5, baseId: 3, effects: [Effect.AnvilStrength],
+    stats: [{ stat: Stat.ArmorPct }, { stat: Stat.MaxHp }, { stat: Stat.PhysDamagePct }] },
+  { id: 24, name: 'Veinseeker', tier: 5, baseId: 11, effects: [Effect.TrueShot],
+    stats: [{ stat: Stat.Finesse }, { stat: Stat.CritDamage }, { stat: Stat.ArmorPenPct }] },
+  { id: 25, name: 'Shardbound Band', tier: 5, baseId: 53, effects: [Effect.Resonance],
+    stats: [{ stat: Stat.BaseDamagePct }, { stat: Stat.MaxHpPct }, { stat: Stat.ItemFindPct }] },
 ];
 
 export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map(u => [u.id, u]));

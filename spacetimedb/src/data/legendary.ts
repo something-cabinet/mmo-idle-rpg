@@ -61,6 +61,11 @@ export const Effect = {
   LunarInsight: 48,
   Afterimage: 49,
   MoonlitVigil: 50,
+  AnvilStrength: 51,
+  TrueShot: 52,
+  Resonance: 53,
+  FadingRally: 54,
+  ParryAndThrust: 55,
 } as const;
 
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
@@ -90,6 +95,16 @@ const pc = (x: number) => `${Math.round(x * 100)}%`;
 export const PATIENCE_HOURS = 4;
 /** Last Stand applies below this share of max HP. */
 export const LAST_STAND_BELOW = 0.3;
+/** Anvil Strength: +1 physical damage per hit per this much armor (simulated: break-even for damage builds, a big gain for armored ones). */
+export const ANVIL_ARMOR = 1;
+/** Anvil Strength: × this attack speed. */
+export const ANVIL_SPEED = 0.75;
+/** Resonance: more damage and max HP per other unique worn. */
+export const RESONANCE = 0.08;
+/** True Shot: more damage per 1% accuracy above your level's own. */
+export const TRUE_SHOT = 1;
+/** Parry and Thrust: evasion rating per 1% crit chance. */
+export const PARRY_RATING = 4;
 
 function legendary(def: Omit<LegendaryDef, 'text'>): LegendaryDef {
   return { ...def, text: def.describe(def.perCopy) };
@@ -189,6 +204,11 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 47, name: 'Moonshadow', text: 'All your armor and resistance become evasion rating.' },
   { id: 50, name: 'Moonlit Vigil', text: 'Each point of Mind also gives +0.08% attack speed and +0.2% armor, but Finesse gives nothing.' },
   { id: 48, name: 'Lunar Insight', text: 'Each point of Mind also gives +0.25% max HP and +0.5% resistance, but Might gives nothing.' },
+  { id: 51, name: 'Anvil Strength', text: `Your hits deal +1 physical damage per ${ANVIL_ARMOR === 1 ? 'point of' : ANVIL_ARMOR} armor you have, but ${Math.round((1 - ANVIL_SPEED) * 100)}% less attack speed.` },
+  { id: 52, name: 'True Shot', text: `Your attacks never miss, and each 1% accuracy above your level's own gives ${TRUE_SHOT}% more damage.` },
+  { id: 53, name: 'Resonance', text: `Each other unique you wear gives ${Math.round(RESONANCE * 100)}% more damage and ${Math.round(RESONANCE * 100)}% more max HP.` },
+  { id: 54, name: 'Fading Rally', text: 'Each fight starts with 50% more attack speed, falling by 10% per attack, down to 50% less from the 11th attack on.' },
+  { id: 55, name: 'Parry and Thrust', text: `You can't crit normally: each 1% crit chance gives ${PARRY_RATING} evasion rating instead, and every attack you evade makes your next attack crit.` },
 ];
 
 /** Moonlight: every MOONLIGHT_EVERY-th attack hits twice. */
@@ -205,6 +225,19 @@ export function waxingAttacks(x: number): number {
   if (x <= 0) return 0;
   if (x <= 12.1) return (Math.sqrt(0.3025 + 0.2 * x) - 0.55) / 0.1;
   return 11 + (x - 12.1) / 1.6;
+}
+
+/** Fading Rally: attack `k` (from 1) comes at × this attack speed. */
+export const rallyMult = (k: number) => Math.max(0.5, 1.6 - 0.1 * k);
+/**
+ * Fading Rally: periods (at the base attack speed) that `x` attacks take (continuous):
+ * Σ 1 / rallyMult(k), a fraction of the next attack for the rest, 2 per attack from the 11th.
+ */
+export function rallyPeriods(x: number): number {
+  let t = 0;
+  let k = 1;
+  for (; k <= 10 && k <= x; k++) t += 1 / rallyMult(k);
+  return t + (x - (k - 1)) / rallyMult(k);
 }
 
 export const LEGENDARIES_BY_ID: ReadonlyMap<number, LegendaryDef> = new Map(LEGENDARIES.map(l => [l.id, l]));

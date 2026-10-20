@@ -344,8 +344,8 @@ the Chaos Dungeon is the first wall.
   (chaos-dungeon.md): the seal breaks and the rift opens.
 - **Bases are dealt by theme** rather than shuffled: the Golem drops plate and shields,
   the Warder Runeweave and the tome, the Drake Drakehide, the Delver weapons.
-- No secret area yet, and no T5 uniques yet: the zone drops T1–T4 uniques like any
-  zone above their tier (uniques.md).
+- No secret area yet. T5 uniques: Forgefather's Maul, Veinseeker, Shardbound Band
+  (uniques.md), plus T1–T4 uniques at lower weight.
 - **Simulated** (200 random characters, auto-equipped, 20 fights each; T4 in brackets).
   Farming gear (Magic 50%, Rare 40%, Epic 10%) at level 50: Warder 88%, Golem 49%, Delver
   22% won (Spellweaver 84%). Players at level 58 in Rare/Epic/Legendary gear beat Durgrim

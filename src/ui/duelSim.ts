@@ -64,7 +64,8 @@ function offense(a: CombatStats, b: CombatStats) {
     crit,
     // Deadeye: crits ignore a share of `b`'s mitigation.
     critX: crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
-    evasion: defenseAgainst(b, type, a.level, a.accuracy).evasion,
+    // True Shot: `a` never misses.
+    evasion: a.effects.has(Effect.TrueShot) ? 0 : defenseAgainst(b, type, a.level, a.accuracy).evasion,
     mitP,
     mitM,
   };

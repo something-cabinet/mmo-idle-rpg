@@ -353,6 +353,25 @@ const UNIQUE_LOOKS: Record<number, UniqueLook> = {
       'a round guard shaped like an eclipse: a black disc ringed by a thin silver corona, flanked on both sides by layered silver gill flaps ' +
       'and two small swept-back dark teal fins; a grip wrapped in dark scaled fish skin',
   },
+  // T5: Brightvein Hold, a dwarven mine whose ore veins glow from a fallen shard.
+  23: {
+    type: 'a one-handed war mace, diagonal with the handle at the bottom left and the head at the top right',
+    colors: 'bright silver-blue brightsteel, dark iron, warm forge bronze',
+    look: 'a heavy flanged head shaped like a small blacksmith anvil, brightsteel with thin glowing silver-blue veins running through it, ' +
+      'bronze rune bands where head meets haft, a thick haft of dark iron wrapped in worn leather, a bronze pommel cap',
+  },
+  24: {
+    type: 'a crossbow, front three-quarter view, the stock at the bottom left and the bow arms across the top right',
+    colors: 'dark polished ironwood, bright silver-blue brightsteel, brass',
+    look: 'a sturdy dwarven crossbow of dark ironwood with brightsteel bow arms, a small brass sighting scope with a silver-blue lens on top, ' +
+      'a loaded bolt with a glowing silver-blue brightsteel head, fine brass rune inlay along the stock',
+  },
+  25: {
+    type: 'a ring standing upright, seen from the front: a band below and a set stone on top facing the viewer',
+    colors: 'warm gold, pale white shard, soft silver-blue',
+    look: 'a heavy gold band etched with tiny dwarven runes, set with a jagged splinter of pale white stone like a broken piece of the moon, ' +
+      'thin silver-blue cracks of light spreading from it into the gold',
+  },
 };
 
 // ------------------------------------------------------------------ items

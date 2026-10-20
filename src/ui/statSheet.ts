@@ -5,7 +5,7 @@
 
 import type { Item } from '../module_bindings/types';
 import { MITIGATION_CAP, bonusHp, defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
-import { Effect, LEGENDARIES_BY_ID, effectAmount } from '../../spacetimedb/src/data/legendary';
+import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LEGENDARIES_BY_ID, RESONANCE, TRUE_SHOT, effectAmount } from '../../spacetimedb/src/data/legendary';
 import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, fromStored } from '../../spacetimedb/src/data/stats';
 import { scoreGear } from '../../spacetimedb/src/equip';
 import { WALK_SECONDS } from '../../spacetimedb/src/data/zones';
@@ -77,6 +77,9 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
   const prim = (id: number) => level + (sums.get(id) ?? 0);
   const has = (e: number) => st.effects.has(e);
   const lunar = has(Effect.LunarInsight);
+  // As combatStats works them out: other uniques worn (Resonance), True Shot's damage multiplier.
+  const others = Math.max(0, gear.filter(it => it?.uniqueId).length - 1);
+  const trueShot = 1 + TRUE_SHOT * Math.max(0, st.accuracy / (accuracyAtLevel(level) * (1 + MIGHT_ACCURACY * level)) - 1);
   const hymn = has(Effect.MoonlitVigil);
   // Lunar Insight: Might gives nothing. Moonlit Vigil: Finesse gives nothing.
   const [might, finesse, mind, vit] = [lunar ? 0 : prim(Stat.Might), hymn ? 0 : prim(Stat.Finesse), prim(Stat.Mind), prim(Stat.Vitality)];
@@ -102,11 +105,15 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
             has(Effect.WaxingMoon) && 'Waxing Moon: hits start at 40% less, 10% more per attack, up to 60% more from the 11th',
             lunar && 'Lunar Insight: Might gives nothing',
             has(Effect.GlassCannon) && 'Glass Cannon: 100% more',
-            has(Effect.Voidtouched) && 'Voidtouched: 25% less, ignores enemy mitigation')),
+            has(Effect.Voidtouched) && 'Voidtouched: 25% less, ignores enemy mitigation',
+            has(Effect.AnvilStrength) && `Anvil Strength: +${n1(st.armor / ANVIL_ARMOR)} physical per hit (armor ${fmt(st.armor)} / ${ANVIL_ARMOR})`,
+            has(Effect.TrueShot) && `True Shot: ${pct(trueShot - 1)} more (accuracy above your level's own)`,
+            has(Effect.Resonance) && `Resonance: ${others} other unique${others === 1 ? '' : 's'}, ${pct(RESONANCE * others)} more`)),
         ...(src.heal ? [row('Heal', fmt(src.heal), from([Stat.Heal, Stat.HealPct], `Mind ${n1(mind)}: +${n1(0.45 * mind)}% heal`, 'Flat added heal is per hit: fast weapons get more from it'))] : []),
         row('Attack speed', `${src.attacksPerSec.toFixed(2)} /s`,
           from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, hymn && `Moonlit Vigil, Mind ${n1(mind)}: +${n1(0.08 * mind)}%`, "Floor: 25% of the weapon's speed",
-            has(Effect.Ambush) && 'Ambush: 30% less; first attack each fight deals 5×', has(Effect.FrozenBlood) && 'Frozen Blood: 20% less')),
+            has(Effect.Ambush) && 'Ambush: 30% less; first attack each fight deals 5×', has(Effect.FrozenBlood) && 'Frozen Blood: 20% less',
+            has(Effect.AnvilStrength) && `Anvil Strength: ${pct(1 - ANVIL_SPEED)} less`)),
         row('Crit chance', pct(src.critChance, 1),
           from([Stat.BaseCritChance, Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
             leg(Effect.Overcrit))),
@@ -116,7 +123,8 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
           has(Effect.Moonlight) && 'Moonlight: armor penetration also counts as magic penetration',
           leg(Effect.Rending), leg(Effect.Spellbreaker))),
         row('Accuracy', fmt(st.accuracy), from([Stat.Accuracy, Stat.AccuracyPct], `Base ${accuracyAtLevel(level)} (10 per level)`,
-          `Might ${n1(might)}: +${n1(100 * MIGHT_ACCURACY * might)}% rating`, 'An evasive enemy dodges at its evasion rating / (its rating + your accuracy)')),
+          `Might ${n1(might)}: +${n1(100 * MIGHT_ACCURACY * might)}% rating`, 'An evasive enemy dodges at its evasion rating / (its rating + your accuracy)',
+          has(Effect.TrueShot) && 'True Shot: your attacks never miss')),
         row('DPS', fmt(scoreGear(level, gear).dps),
           ["Damage × attack speed × average crit, after a reference enemy's mitigation\n(armor and resistance 2.5 × your level, half its damage physical, half magic)",
             leg(Effect.Thornshell), leg(Effect.ZealotsOath),
@@ -126,7 +134,8 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
 
   const defense: StatRow[] = [
     row('Max HP', fmt(st.maxHp), from([Stat.MaxHp, Stat.MaxHpPct], `Base ${100 + 10 * (level - 1)} (100 + 10 per level)`,
-      `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.25 * mind)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5', leg(Effect.SecondWind))),
+      `Might ${n1(might)}: +${n1(0.2 * might)}%`, `Vitality ${n1(vit)}: +${n1(0.25 * vit)}%`, lunar && `Lunar Insight, Mind ${n1(mind)}: +${n1(0.25 * mind)}%`, has(Effect.GlassCannon) && 'Glass Cannon: × 0.5',
+      has(Effect.Resonance) && `Resonance: ${others} other unique${others === 1 ? '' : 's'}, ${pct(RESONANCE * others)} more`, leg(Effect.SecondWind))),
     row('HP regen', `${fmt(st.regen)} /s`, from([Stat.HpRegen], `Vitality ${n1(vit)}: +${n1(0.5 * vit)}%`, has(Effect.FrozenBlood) && 'Frozen Blood: no regen')),
     row('Armor', `${fmt(st.armor)} (${pct(phys.mitigation)} vs phys)`, from([Stat.Armor, Stat.ArmorPct], `Reduction: armor / (armor + 5 × enemy level); vs Lv ${level}: / (armor + ${5 * level}), cap ${pct(mitCap)}`,
       leg(Effect.Runeguard), hymn && `Moonlit Vigil, Mind ${n1(mind)}: +${n1(0.2 * mind)}%`, has(Effect.Moonshadow) && 'Moonshadow: all of it becomes evasion rating', has(Effect.FrozenBlood) && `Frozen Blood: +${fmt(frozen / 10)} (bonus HP ${fmt(frozen)} / 10)`, has(Effect.Spellward) && 'Spellward: physical uses the better of armor and resistance')),

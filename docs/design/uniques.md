@@ -67,6 +67,9 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 16 | T4 | **Waxing Crescent** | Katana | Waxing Moon | Physical damage %, attack speed %, crit damage |
 | 17 | T4 | **Moonshadow Jerkin** | Leather chest | Moonshadow | Max HP, evasion rating %, Finesse |
 | 18 | T4 | **Tear of the Moon** | Sapphire (Moonstone) amulet | Lunar Insight | Mind, magic damage %, resistance % |
+| 23 | T5 | **Forgefather's Maul** | Mace | Anvil Strength | Armor %, max HP, physical damage % |
+| 24 | T5 | **Veinseeker** | Crossbow | True Shot | Finesse, crit damage, armor pen % |
+| 25 | T5 | **Shardbound Band** | Sunstone (Vitality) ring | Resonance | Base damage %, max HP %, item find % |
 | 19 | T4 | **Lunatic's Wager** | Sapphire (Moonstone) ring | None | Max HP %, attack speed %, item find %, XP gain %, gold find %, each rolled **−3 to +3** × value |
 
 Unique IDs are permanent, like effect IDs.
@@ -85,6 +88,27 @@ one per build style, and Lunatic's Wager with none:
   Pays off for real evasion builds, a small loss below ~20% evasion.
 - **Tear of the Moon** (caster defence, amulet): Mind also gives max HP and resistance;
   Might gives nothing. Pairs with the Moonlight Greatsword.
+
+### T5 uniques
+
+Brightvein Hold's uniques (zone-content.md), each with a new unique-only effect
+(legendary.md, IDs 51–53), for builds T5 asks for: armor, accuracy, and the shard story.
+
+- **Forgefather's Maul** (Brightsteel Mace): the last forge-hammer of the hold. **Anvil
+  Strength** turns armor into damage: +1 physical per hit per point of armor, 25% less
+  attack speed. Simulated at level 55 in random T5 gear: about break-even for damage builds
+  (Hollowed Delver won 68% → 71%), a big gain for armored ones (68% → 83%, Durgrim 1% →
+  16%). The only unique where defence is your damage; strong against Durgrim's low armor.
+- **Veinseeker** (Ironwood Crossbow): a prospector's crossbow, sighted to find a vein in
+  the dark. **True Shot**: never misses, and accuracy above your level's own becomes more
+  damage one for one (random T5 gear: +18% to +58%, median +29%). The counter to
+  evasive enemies (Glowvein Crawler, Moonmoth Swarm) and a reason to stack accuracy.
+  Simulated: Delver 68% → 84%, Durgrim 1% → 7%.
+- **Shardbound Band** (Cut Sunstone Ring): set with a splinter of the broken moon; it hums
+  near other relics. **Resonance**: 8% more damage and max HP per other unique worn. A
+  collector's chase: alone it's just its stats (Delver 87%); with 2 other uniques 99% and
+  Durgrim 28%, with 4 other uniques Durgrim 65%. A full unique set is uncapped (+64% with
+  8 others) but trades away every rolled affix, so it isn't a concern.
 
 ### Lunatic's Wager
 
@@ -140,4 +164,4 @@ value = ref(stat, tier) × x × (roll[0] + (roll[1] − roll[0]) × rng())
 ## Open
 
 - Tune stat multipliers (`x`) with simulation once players use them.
-- Uniques for T5+ as zones are added.
+- Uniques for T6+ as zones are added.

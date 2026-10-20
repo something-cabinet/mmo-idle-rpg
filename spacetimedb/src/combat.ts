@@ -6,7 +6,7 @@
 // hundredths, converted with `fromStored`.
 
 import { SLOTS } from './data/bases';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, effectAmount, waxingAttacks, type EffectCounts } from './data/legendary';
+import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, PARRY_RATING, RESONANCE, TRUE_SHOT, effectAmount, rallyPeriods, waxingAttacks, type EffectCounts } from './data/legendary';
 import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, dodgeChance, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
 import type { DamageType, WeaponDamage } from './data/bases';
@@ -36,6 +36,8 @@ export interface GearItem {
   legendary?: GearStat & { effect: number };
   /** A unique's effects. */
   effects?: readonly number[];
+  /** Set on a unique (Resonance counts them). */
+  uniqueId?: number;
   weapon?: GearWeapon;
   /** Temper level (0–10): +2% base stats each (`tempered`). */
   temper?: number;
@@ -182,49 +184,15 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const critDamage = 1.5 + pct(Stat.CritDamage) + 0.0025 * mind;
   const healPct = pct(Stat.HealPct) + 0.0045 * mind;
 
-  // Only the main hand attacks today; off-hands add stats only.
-  const sources: AttackSource[] = [];
-  for (const { item, speedFactor } of [{ item: gear[MAIN_HAND], speedFactor: 1 }]) {
-    const w = item?.weapon;
-    if (!w) continue;
-    const baseSpeed = w.speedMilli / 1000;
-    const hit = { Physical: 0, Magic: 0 };
-    for (const t of ['Physical', 'Magic'] as const) {
-      if (moonlight) {
-        // Weapon hit and every flat added damage, as magic, scaled by magic % only.
-        hit[t] = t === 'Physical' ? 0 : Math.max(0, (fromStored(w.hit) * baseDamage + addedFlat.Physical + addedFlat.Magic) * (1 + damagePct.Magic) * damageMult * discipline * (buffs?.damage ?? 1));
-        continue;
-      }
-      const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
-      // A Split weapon's hit is half physical, half magic; each half takes its own damage % and mitigation.
-      const share = w.damageType.tag === 'Split' ? 0.5 : w.damageType.tag === from ? 1 : 0;
-      const base = share * fromStored(w.hit) * baseDamage;
-      // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
-      // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
-      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * discipline * (buffs?.damage ?? 1));
-    }
-    const baseHeal = fromStored(w.heal);
-    const heal = baseHeal > 0 ? Math.max(0, (baseHeal + flat(Stat.Heal)) * (1 + healPct)) : 0;
-    const critChance = Math.max(0, (w.baseCritBp / 10_000 + pct(Stat.BaseCritChance)) * (1 + critIncreased));
-    // Overcrit: each 1% of crit chance above 100% gives +2% crit damage per copy. A crit never hits softer than a normal hit.
-    const critDmg = Math.max(1, critDamage + amount(Effect.Overcrit) * Math.max(0, critChance - 1));
-    sources.push({
-      hit,
-      heal,
-      healAll: w.healTarget?.tag === 'All',
-      // Ambush (× 0.7) and Frozen Blood (× 0.8) apply after the floor, so they always cost speed.
-      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (has(Effect.FrozenBlood) ? 0.8 : 1) * (buffs?.attackSpeed ?? 1),
-      critChance,
-      // Frostbite: crits deal no extra damage (they chill instead, see `chill`).
-      critMult: has(Effect.Frostbite) ? 1 : 1 + Math.min(1, critChance) * (critDmg - 1),
-    });
-  }
+  // Resonance: × (1 + RESONANCE) damage and max HP per other unique worn.
+  const resonance = has(Effect.Resonance) ? 1 + RESONANCE * Math.max(0, gear.filter(it => it?.uniqueId).length - 1) : 1;
 
   const maxHp = Math.max(
     1,
     (100 + 10 * (level - 1) + flat(Stat.MaxHp)) *
     (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality + (lunar ? 0.0025 * mind : 0)) *
-    (has(Effect.GlassCannon) ? 0.5 : 1),
+    (has(Effect.GlassCannon) ? 0.5 : 1) *
+    resonance,
   );
   const frozenBlood = has(Effect.FrozenBlood);
   // Frozen Blood adds bonus HP / 10 to both. Ironclad and Runeguard convert from armor and
@@ -237,6 +205,58 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   // Moonshadow: every point of armor and resistance (after the conversions above) becomes evasion rating.
   const moonshadow = has(Effect.Moonshadow);
 
+  const accuracy = (accuracyAtLevel(level) + flat(Stat.Accuracy)) * (1 + pct(Stat.AccuracyPct) + MIGHT_ACCURACY * might);
+  // True Shot: × (1 + TRUE_SHOT × accuracy above your level's own, with the level's Might), never below × 1.
+  const trueShot = has(Effect.TrueShot)
+    ? 1 + TRUE_SHOT * Math.max(0, accuracy / (accuracyAtLevel(level) * (1 + MIGHT_ACCURACY * level)) - 1)
+    : 1;
+  // Anvil Strength: armor (what's left after Moonshadow) adds flat physical damage to every hit.
+  if (has(Effect.AnvilStrength)) addedFlat.Physical += (moonshadow ? 0 : armorTotal) / ANVIL_ARMOR;
+
+  // Parry and Thrust: no normal crits; crit chance becomes evasion rating (crits come from evading, `matchup`).
+  const parry = has(Effect.ParryAndThrust);
+  let parryRating = 0;
+
+  // Only the main hand attacks today; off-hands add stats only.
+  const sources: AttackSource[] = [];
+  for (const { item, speedFactor } of [{ item: gear[MAIN_HAND], speedFactor: 1 }]) {
+    const w = item?.weapon;
+    if (!w) continue;
+    const baseSpeed = w.speedMilli / 1000;
+    const hit = { Physical: 0, Magic: 0 };
+    for (const t of ['Physical', 'Magic'] as const) {
+      if (moonlight) {
+        // Weapon hit and every flat added damage, as magic, scaled by magic % only.
+        hit[t] = t === 'Physical' ? 0 : Math.max(0, (fromStored(w.hit) * baseDamage + addedFlat.Physical + addedFlat.Magic) * (1 + damagePct.Magic) * damageMult * resonance * trueShot * discipline * (buffs?.damage ?? 1));
+        continue;
+      }
+      const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
+      // A Split weapon's hit is half physical, half magic; each half takes its own damage % and mitigation.
+      const share = w.damageType.tag === 'Split' ? 0.5 : w.damageType.tag === from ? 1 : 0;
+      const base = share * fromStored(w.hit) * baseDamage;
+      // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
+      // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
+      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * resonance * trueShot * discipline * (buffs?.damage ?? 1));
+    }
+    const baseHeal = fromStored(w.heal);
+    const heal = baseHeal > 0 ? Math.max(0, (baseHeal + flat(Stat.Heal)) * (1 + healPct)) : 0;
+    const critChance = Math.max(0, (w.baseCritBp / 10_000 + pct(Stat.BaseCritChance)) * (1 + critIncreased));
+    // Overcrit: each 1% of crit chance above 100% gives +2% crit damage per copy. A crit never hits softer than a normal hit.
+    const critDmg = Math.max(1, critDamage + amount(Effect.Overcrit) * Math.max(0, critChance - 1));
+    if (parry) parryRating = PARRY_RATING * 100 * critChance;
+    sources.push({
+      hit,
+      heal,
+      healAll: w.healTarget?.tag === 'All',
+      // Ambush (× 0.7), Frozen Blood (× 0.8) and Anvil Strength (× 0.75) apply after the floor, so they always cost speed.
+      attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (has(Effect.FrozenBlood) ? 0.8 : 1) *
+        (has(Effect.AnvilStrength) ? ANVIL_SPEED : 1) * (buffs?.attackSpeed ?? 1),
+      critChance: parry ? 0 : critChance,
+      // Frostbite: crits deal no extra damage (they chill instead, see `chill`).
+      critMult: has(Effect.Frostbite) || parry ? 1 : 1 + Math.min(1, critChance) * (critDmg - 1),
+    });
+  }
+
   return {
     level,
     sources,
@@ -248,8 +268,8 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     regen: frozenBlood ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.005 * vitality)),
     armor: moonshadow ? 0 : armorTotal,
     resistance: moonshadow ? 0 : resistanceTotal,
-    evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse) + (moonshadow ? armorTotal + resistanceTotal : 0),
-    accuracy: (accuracyAtLevel(level) + flat(Stat.Accuracy)) * (1 + pct(Stat.AccuracyPct) + MIGHT_ACCURACY * might),
+    evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse) + (moonshadow ? armorTotal + resistanceTotal : 0) + parryRating,
+    accuracy,
     // Bloodthirst raises the lifesteal cap.
     lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst), pct(Stat.LifestealPct))),
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
@@ -302,6 +322,9 @@ export function critMultAgainst(src: AttackSource, mit: Record<DamageType, numbe
   return 1 - c + c * critDmg * (pierced / normal);
 }
 
+/** Parry and Thrust: `src` as if every attack crit (crit damage `critDamage`), for `critMultAgainst`: a parried attack's multiplier. */
+export const parrySource = (src: AttackSource, critDamage: number): AttackSource => ({ ...src, critChance: 1, critMult: Math.max(1, critDamage) });
+
 /**
  * Your mitigation and evasion against `type` damage from an attacker of `enemyLevel`.
  * Mitigation scales with its level, evasion with its `accuracy` (an enemy's is its
@@ -339,6 +362,10 @@ export interface Matchup {
   dps: number;
   /** Waxing Moon's average damage multiplier over this fight (1 without it); already in `dps`. */
   waxing: number;
+  /** Fading Rally's average attack speed multiplier over this fight (1 without it); already in `dps` and `hps`. */
+  rally: number;
+  /** Parry and Thrust: the chance each of your attacks crits, from evading since your last one (0 without it). */
+  parry: number;
   /** Self-heal per second. */
   hps: number;
   /** Enemy damage per second after your mitigation and evasion. */
@@ -370,19 +397,23 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   let hps = 0;
   let critMult = 1;
   const deadeye = amount(Effect.Deadeye);
+  const { mitigation: playerMitigation, evasion } = defenseAgainst(s, e.damageType, e.level);
+  const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
+  // Parry and Thrust: an attack crits if any enemy attack was evaded since your last one.
+  const parry = has(Effect.ParryAndThrust) && period > 0 ? 1 - (1 - evasion) ** (e.speed * period) : 0;
+  // An evasive enemy dodges a share of your attacks; heals still land. True Shot: never.
+  const enemyEvasion = has(Effect.TrueShot) ? 0 : dodgeChance(e.evasionRating ?? 0, s.accuracy);
+  const sources = s.sources;
   // Moonlight: every 3rd attack hits twice.
   const wave = has(Effect.Moonlight) ? MOONLIGHT_MULT : 1;
-  for (const src of s.sources) {
+  for (const src of sources) {
     const perHit = src.hit.Physical * (1 - enemyMitigation.Physical) + src.hit.Magic * (1 - enemyMitigation.Magic);
-    const cm = critMultAgainst(src, enemyMitigation, deadeye);
-    if (src === s.sources[0]) critMult = cm;
+    const cm = has(Effect.ParryAndThrust) ? 1 + parry * (critMultAgainst(parrySource(src, s.critDamage), enemyMitigation, deadeye) - 1) : critMultAgainst(src, enemyMitigation, deadeye);
+    if (src === sources[0]) critMult = cm;
     dps += perHit * src.attacksPerSec * cm * wave;
-    hps += src.heal * src.attacksPerSec * src.critMult; // solo: heals land on yourself
+    hps += src.heal * src.attacksPerSec * (has(Effect.ParryAndThrust) ? 1 + parry * (s.critDamage - 1) : src.critMult); // solo: heals land on yourself
   }
-  // An evasive enemy dodges a share of your attacks; heals still land.
-  const enemyEvasion = dodgeChance(e.evasionRating ?? 0, s.accuracy);
   dps *= 1 - enemyEvasion;
-  const period = s.sources[0] ? 1 / s.sources[0].attacksPerSec : 0;
   // Waxing Moon: hits grow through the fight. `x` average hits kill at full strength;
   // waxingAttacks(x) is how many it takes, so the fight's average multiplier is x / that.
   let waxing = 1;
@@ -391,8 +422,16 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     waxing = x / waxingAttacks(x);
     dps *= waxing;
   }
+  // Fading Rally: attack speed falls through the fight. `x` attacks kill; rallyPeriods(x)
+  // base periods is how long they take, so the fight's average speed multiplier is x / that.
+  let rally = 1;
+  if (has(Effect.FadingRally) && dps > 0 && period > 0) {
+    const x = e.hp / (dps * period);
+    rally = x / rallyPeriods(x);
+    dps *= rally;
+    hps *= rally;
+  }
 
-  const { mitigation: playerMitigation, evasion } = defenseAgainst(s, e.damageType, e.level);
   // Stoneskin takes a share of max HP off each hit; Bulwark blocks half of a share of the hits.
   const stoneskin = amount(Effect.Stoneskin) * s.maxHp;
   const bulwark = amount(Effect.Bulwark);
@@ -404,7 +443,7 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   // Afterimage: a hit right after a dodge (chance = evasion) deals a share less.
   incoming *= 1 - amount(Effect.Afterimage) * evasion;
   // Riposte: each evaded attack counters for a share of your average hit.
-  dps += amount(Effect.Riposte) * evasion * e.speed * dps * period;
+  dps += amount(Effect.Riposte) * evasion * e.speed * (dps / rally) * period;
   // Effect damage is your damage: Glass Cannon and Voidtouched apply to it too.
   const damageMult = effectDamageMult(s.effects);
   // Thornshell reflects a share of the damage taken, in the type it was dealt in.
@@ -463,6 +502,8 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     shield,
     dps,
     waxing,
+    rally,
+    parry,
     hps,
     incoming,
     netIncoming,

@@ -185,6 +185,9 @@ this split keep working.
 | 47 | **Moonshadow** | **All your armor and resistance become evasion rating.** (You keep none; each point adds 1 evasion rating.) |
 | 50 | **Moonlit Vigil** | Each point of Mind also gives **+0.08% attack speed** and **+0.2% armor**, but **Finesse gives nothing**. |
 | 48 | **Lunar Insight** | Each point of Mind also gives **+0.25% max HP** and **+0.5% resistance**, but **Might gives nothing**. |
+| 51 | **Anvil Strength** | Your hits deal **+1 physical damage per point of armor** you have, but **25% less attack speed**. |
+| 52 | **True Shot** | Your attacks **never miss**, and each **1% accuracy above your level's own** gives **1% more damage**. |
+| 53 | **Resonance** | Each **other unique** you wear gives **8% more damage** and **8% more max HP**. |
 
 ```
 Spellblade:   each damage term moves to the other type; damage multiplier =
@@ -196,6 +199,10 @@ Midas Touch:  xp = 0;  gold × 2.5
 Voidtouched:  enemy mitigation = 0;  damage × 0.75
 Glass Cannon: damage × 2;  maxHP × 0.5
 Scholar's:    xp × 1.75;  gold × 0.5
+Anvil Str.:   flat_phys += armor (after Moonshadow) / ANVIL_ARMOR (1);  attack speed × 0.75
+True Shot:    enemy evasion = 0;  damage × (1 + max(0, accuracy / levelAccuracy − 1))
+              levelAccuracy = 10 × level × (1 + 0.25% × level), your level's own with its Might
+Resonance:    damage × (1 + 0.08 × n);  maxHP × (1 + 0.08 × n);  n = other uniques worn
 Moonlight:    hit_magic = (weaponBase + flat_phys + flat_magic) × (1 + pct_magic) × … × (1 + 1/3);
               hit_phys = 0;  magicPen = min(cap, magicPen% + armorPen%)
 Waxing Moon:  attack k (from 1) deals × w(k) = min(1.6, 0.5 + 0.1k);

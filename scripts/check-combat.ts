@@ -2,9 +2,9 @@
 // No server needed:
 //   npm run test:combat
 import { SLOTS, STARTER_ARMOR, STARTER_WEAPONS, base, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
-import { Stat, toStored } from '../spacetimedb/src/data/stats';
+import { MIGHT_ACCURACY, Stat, accuracyAtLevel, fromStored, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, WALK_SECONDS } from '../spacetimedb/src/data/zones';
-import { Effect, LEGENDARIES_BY_ID } from '../spacetimedb/src/data/legendary';
+import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LEGENDARIES_BY_ID, RESONANCE, TRUE_SHOT } from '../spacetimedb/src/data/legendary';
 import { simulateFight } from '../spacetimedb/src/fight';
 import { MAX_LEVEL, bonusHp, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { scoreGear } from '../spacetimedb/src/equip';
@@ -356,6 +356,45 @@ function withEffect(it: GearItem, effect: number): GearItem {
   const noDh = combatStats(10, kit(sword, { Amulet: hymnAmulet }));
   check('Moonlit Vigil: more armor from Mind', dh.armor > noDh.armor);
   check('Moonlit Vigil: Finesse adds no crit chance', dh.sources[0].critChance < noDh.sources[0].critChance);
+
+  // Anvil Strength (T5): + armor / ANVIL_ARMOR flat physical per hit (scaled like any flat damage), attack speed × ANVIL_SPEED.
+  const mace = item(3, 1);
+  const plate = item(39, 1, [[Stat.Armor, 200]]);
+  const anv = combatStats(10, kit(withEffect(mace, Effect.AnvilStrength), { Chest: plate }));
+  const noAnv = combatStats(10, kit(mace, { Chest: plate }));
+  const scale = noAnv.sources[0].hit.Physical / fromStored(mace.weapon!.hit);
+  check(`Anvil Strength: + armor / ${ANVIL_ARMOR} physical per hit`, near(anv.sources[0].hit.Physical, noAnv.sources[0].hit.Physical + (noAnv.armor / ANVIL_ARMOR) * scale, 1e-9),
+    `${f(noAnv.sources[0].hit.Physical)} → ${f(anv.sources[0].hit.Physical)}, armor ${f(noAnv.armor)}`);
+  check('Anvil Strength: 25% less attack speed', near(anv.sources[0].attacksPerSec, noAnv.sources[0].attacksPerSec * ANVIL_SPEED, 1e-9));
+  const anvMsh = combatStats(10, kit(withEffect(mace, Effect.AnvilStrength), { Chest: withEffect(plate, Effect.Moonshadow) }));
+  check('Anvil Strength: no armor left under Moonshadow, no bonus', near(anvMsh.sources[0].hit.Physical, noAnv.sources[0].hit.Physical, 1e-9));
+
+  // True Shot (T5): never misses; damage × (1 + accuracy over the level's own, with the level's Might).
+  const xbow = item(11, 1, [[Stat.Accuracy, 200]]);
+  const tsh = combatStats(10, kit(withEffect(xbow, Effect.TrueShot)));
+  const noTs = combatStats(10, kit(xbow));
+  const levelAcc = accuracyAtLevel(10) * (1 + MIGHT_ACCURACY * 10);
+  check("True Shot: damage × accuracy over the level's own", near(tsh.sources[0].hit.Physical, noTs.sources[0].hit.Physical * (1 + TRUE_SHOT * (noTs.accuracy / levelAcc - 1)), 1e-9),
+    `accuracy ${f(noTs.accuracy)} vs ${f(levelAcc)}`);
+  const plainTs = combatStats(10, kit(withEffect(item(11, 1), Effect.TrueShot)));
+  check('True Shot: no bonus without accuracy gear, never less', near(plainTs.sources[0].hit.Physical, combatStats(10, kit(item(11, 1))).sources[0].hit.Physical * (1 + TRUE_SHOT * (plainTs.accuracy / levelAcc - 1)), 1e-9) &&
+    plainTs.sources[0].hit.Physical >= combatStats(10, kit(item(11, 1))).sources[0].hit.Physical);
+  const moth = { ...enemy(401), hp: 1e6, dps: 0.1 };
+  const tshM = matchup(tsh, moth);
+  check('True Shot: an evasive enemy never dodges', tshM.enemyEvasion === 0 && matchup(noTs, moth).enemyEvasion > 0.1);
+  const tshFight = simulateFight(tsh, tshM, moth, seededRng(3n), { timeLimit: 60 });
+  check('True Shot in a live fight: no misses', tshFight.events.some(e => e.by === 'you') && tshFight.events.every(e => !(e.by === 'you' && e.kind === 'miss')));
+
+  // Resonance (T5): × (1 + RESONANCE) damage and max HP per other unique worn.
+  const asUnique = (it: GearItem, id: number): GearItem => ({ ...it, uniqueId: id });
+  const band = asUnique(withEffect(item(53, 1), Effect.Resonance), 25);
+  const res = (extra: Partial<Record<Slot, GearItem>>) => combatStats(10, kit(sword, { Ring1: band, ...extra }));
+  const res0 = res({});
+  const res2 = res({ Head: asUnique(item(38, 1), 5), Amulet: asUnique(item(57, 1), 9) });
+  const plain2 = combatStats(10, kit(sword, { Ring1: item(53, 1), Head: item(38, 1), Amulet: item(57, 1) }));
+  check('Resonance: alone, nothing more', near(res0.sources[0].hit.Physical, combatStats(10, kit(sword, { Ring1: item(53, 1) })).sources[0].hit.Physical, 1e-9));
+  check('Resonance: 2 other uniques, 16% more damage and max HP', near(res2.sources[0].hit.Physical, plain2.sources[0].hit.Physical * (1 + 2 * RESONANCE), 1e-9) &&
+    near(res2.maxHp, plain2.maxHp * (1 + 2 * RESONANCE), 1e-9), `${f(plain2.maxHp)} → ${f(res2.maxHp)}`);
 
   const ac = (effect: number) => combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), effect) }));
   const acBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]) }));

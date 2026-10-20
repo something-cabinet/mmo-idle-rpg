@@ -21,9 +21,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.2.1',
+    date: '2026-10-20',
+    commit: '33153e3',
+    title: "The Brothers' Forge",
+    changes: [
+      { tag: 'new', text: "New raid, The Brothers' Forge (tier 5), opened by your first Durgrim kill: two dwarven smith brothers fought at once. The leader assigns each seat to a brother, and the one you attack comes after you. When one falls, the other absorbs his power after 5 seconds, unless you bring him down first. Its own Forgefire gear and three new raid Uniques." },
+      { tag: 'new', text: "Uniques can be tempered: their base stats (weapon damage, armor, implicits) grow like any item's. Their own stats and effects stay as they rolled. Corrupted Uniques still can't." },
+      { tag: 'balance', text: 'Bulwark legendaries roll threat % as their stat bonus, instead of evasion rating: it is a tank effect. Bulwark items you already have keep their evasion rating.' },
+    ],
+  },
+  {
     version: '0.2.0',
     date: '2026-10-20',
-    commit: 'bb2aa0e',
     title: 'Brightvein Hold, five new Uniques and the Broken Moon',
     changes: [
       { tag: 'new', text: 'Tier 5 zone, Brightvein Hold: a silent dwarven mine where the largest shard of the moon fell, opened by your first Selvara kill. Levels 46 to 55, and a real step up: from T5 on, enemies have 10% more HP and damage on top of the usual climb. One road leads down the pit, from the glowing tunnels at the rim to the rift at the bottom.' },

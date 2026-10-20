@@ -78,21 +78,29 @@ export function ActionBar({ start, step }: { start: bigint; step: bigint }) {
   );
 }
 
+/** Something gathered, per hour: `note` adds what it's worth (Relics' gold, a named find's material). */
+interface Yield {
+  name: string;
+  perHour: number;
+  note?: string;
+}
+const yieldText = (y: Yield) => `${fmt(y.perHour)} ${y.name}${y.note ? ` (${y.note})` : ''}`;
+
 /** What `skill` at `tier` and `node` yields per hour on top of the main material: Gems and rare finds. */
-function extrasPerHour(skill: GatheringSkillDef, tier: number, node: number, level: number, actions: number): string[] {
-  const out: string[] = [];
-  if (skill.id === SkillId.Mining) out.push(`${fmt(actions * gemChance(node))} ${materialOf(tier, 'Gem').name}`);
+function extrasPerHour(skill: GatheringSkillDef, tier: number, node: number, level: number, actions: number): Yield[] {
+  const out: Yield[] = [];
+  if (skill.id === SkillId.Mining) out.push({ name: materialOf(tier, 'Gem').name, perHour: actions * gemChance(node) });
   for (const f of findChances(skill.id, tier, node, level)) {
     const n = actions * f.chance;
     const name = f.find.what.kind === 'material' ? f.find.what.name : undefined;
     out.push(
       f.find.what.kind === 'chisel'
-        ? `${fmt(n)} Chisels`
+        ? { name: 'Chisels', perHour: n }
         : f.materialId === undefined
-        ? `${fmt(n)} Relics (${fmtBig(BigInt(Math.round(n * Number(relicGold(tier)))))} gold)`
+        ? { name: 'Relics', perHour: n, note: `${fmtBig(BigInt(Math.round(n * Number(relicGold(tier)))))} gold` }
         : name
-          ? `${fmt(n)} ${name}s (${fmt(n * f.count)} ${MATERIALS_BY_ID.get(f.materialId)!.name})`
-          : `${fmt(n)} ${MATERIALS_BY_ID.get(f.materialId)!.name}`
+          ? { name: `${name}s`, perHour: n, note: `${fmt(n * f.count)} ${MATERIALS_BY_ID.get(f.materialId)!.name}` }
+          : { name: MATERIALS_BY_ID.get(f.materialId)!.name, perHour: n }
     );
   }
   return out;
@@ -153,7 +161,7 @@ function GatheringCard({ s }: { s: Snapshot }) {
       </div>
       <div className="stat-row">
         <span>Per hour</span>
-        <strong>{[...(main > 0 ? [`${fmt(r.actions * main)} ${material.name}`] : []), ...extrasPerHour(g.skill, g.tier, g.node, at.level, r.actions)].join(' · ')}</strong>
+        <strong>{[...(main > 0 ? [`${fmt(r.actions * main)} ${material.name}`] : []), ...extrasPerHour(g.skill, g.tier, g.node, at.level, r.actions).map(yieldText)].join(' · ')}</strong>
       </div>
       <div className="stat-row"><span>XP per hour</span><strong>{fmt(r.xp)} {g.skill.name} XP · {fmt(r.charXp)} Character XP</strong></div>
       <div className="stat-row"><span>Next {g.skill.name} level</span><strong>{toNext}</strong></div>
@@ -220,19 +228,24 @@ function TierRow({ s, skill, tier, node = 0 }: { s: Snapshot; skill: GatheringSk
   const n = GATHER_NODES_BY_ID.get(node);
   const main = mainChance(node);
   const r = rates(tier, toolTier);
-  const yields = [
-    ...(main > 0 ? [`${fmt(r.actions * main)}/h`] : []),
-    `${fmt(r.xp)} XP/h`,
-    ...extrasPerHour(skill, tier, node, level, r.actions).map(x => `${x}/h`),
+  const [open, setOpen] = useState(false);
+  // The row shows the main yield and XP; Details lists everything.
+  const summary = [...(main > 0 ? [`${fmt(r.actions * main)}/h`] : []), `${fmt(r.xp)} XP/h`];
+  const all: Yield[] = [
+    ...(main > 0 ? [{ name: material.name, perHour: r.actions * main }] : []),
+    ...extrasPerHour(skill, tier, node, level, r.actions),
   ];
   return (
-    <li className={`foe${active ? ' active' : ''}`}>
+    <li className={`foe${active ? ' active' : ''}${open ? ' open' : ''}`}>
       <div className="foe-row">
         <Icon name={materialIconName(material.id)} className="c-material" />
         <div className="foe-info">
           <div className="foe-name">{n ? n.name : material.name} <span className="muted">T{tier}{n && ` · ${n.text}`}</span></div>
-          <div className="foe-meta muted">{blocker ?? yields.join(' · ')}</div>
+          <div className="foe-meta muted">{blocker ?? summary.join(' · ')}</div>
         </div>
+        <button className="btn small details" aria-expanded={open} onClick={() => setOpen(!open)}>
+          Details
+        </button>
         {active ? (
           <span className="btn small fighting">Gathering</span>
         ) : (
@@ -241,6 +254,15 @@ function TierRow({ s, skill, tier, node = 0 }: { s: Snapshot; skill: GatheringSk
           </button>
         )}
       </div>
+      {open && (
+        <div className="foe-detail">
+          <div className="stat-row"><span>Actions</span><strong>{fmt(r.actions)}/h · {(Number(gatherActionMicros(toolTier)) / 1e6).toFixed(1)} s each</strong></div>
+          <div className="stat-row"><span>XP</span><strong>{fmt(r.xp)} {skill.name} XP/h · {fmt(r.charXp)} Character XP/h</strong></div>
+          {all.map(y => (
+            <div key={y.name} className="stat-row"><span>{y.name}</span><strong>{fmt(y.perHour)}/h{y.note && ` · ${y.note}`}</strong></div>
+          ))}
+        </div>
+      )}
     </li>
   );
 }

@@ -21,6 +21,20 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.1.2',
+    date: '2026-10-20',
+    commit: 'df9f78f',
+    title: 'Mail, Chronoshards and a rare loot pool',
+    changes: [
+      { tag: 'new', text: 'Mail: messages and gifts from the game now arrive in your mailbox (System › Mail), with a badge when something is unread. Open a mail and press Claim to take what is attached. Some gifts expire, so claim them in time.' },
+      { tag: 'new', text: 'Chronoshards: rare finds that fast-forward what you are doing, as if you had been away: 30 minutes (Chronoshard), 1 hour (Greater) or 2 hours (Divine). They do not count against the offline cap. Use them from the Bag.' },
+      { tag: 'new', text: 'Rare loot pool: every enemy can now drop Chronoshards, very rarely. Elites drop pool loot 3× as often as regular enemies, bosses 10×, and higher-level enemies a little more.' },
+      { tag: 'balance', text: 'Voidglass now drops from every enemy in tier 4 zones and up, not only zone bosses: about 1 in 5,200 kills from regular enemies and 1 in 1,700 from elites. Selvara stays about the same (1 in 510, was 1 in 500).' },
+      { tag: 'new', text: 'Nameplates fade in behind the name from the left, and names keep the same height with or without one. Friend and online lists, raid seats, duels and the Moonwell leaderboard show names on one line, with the title on hover.' },
+      { tag: 'new', text: 'New players start with the dark theme. Pick Light or System in Settings › Appearance.' },
+    ],
+  },
+  {
     version: '0.1.1',
     date: '2026-10-20',
     title: 'Zone maps, instant tool upgrades and raid tuning',

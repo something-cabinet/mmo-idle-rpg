@@ -179,22 +179,23 @@ share of the cycle against weak enemies.
 | 2 | 20 | 27 | 355 | 201 | 23.9 | 58 | 14 |
 | 3 | 30 | 64 | 504 | 493 | 35.6 | 168 | 42 |
 | 4 | 40 | 113 | 716 | 915 | 53.0 | 488 | 122 |
-| 5 | 50 | 198 | 1,016 | 1,681 | 79.1 | 1,415 | 354 |
-| 6 | 60 | 343 | 1,443 | 3,066 | 117.9 | 4,102 | 1,026 |
-| 7 | 70 | 592 | 2,050 | 5,558 | 175.8 | 11,896 | 2,974 |
-| 8 | 80 | 1,017 | 2,910 | 10,020 | 262.1 | 34,500 | 8,625 |
-| 9 | 90 | 1,739 | 4,133 | 17,982 | 390.8 | 100,000 | 25,000 |
+| 5 | 50 | 198 | 1,016 | 1,849 | 87.0 | 1,415 | 354 |
+| 6 | 60 | 343 | 1,443 | 3,373 | 129.7 | 4,102 | 1,026 |
+| 7 | 70 | 592 | 2,050 | 6,114 | 193.4 | 11,896 | 2,974 |
+| 8 | 80 | 1,017 | 2,910 | 11,022 | 288.3 | 34,500 | 8,625 |
+| 9 | 90 | 1,739 | 4,133 | 19,780 | 429.9 | 100,000 | 25,000 |
 
 Enemy HP and DPS include `climb(T)` (below); player numbers are the reference player.
 
 ### Difficulty climb
 
 Every tier is harder than the last. Enemy HP and DPS outgrow the reference player's
-curve by **× 1.05 a tier, compounding** (`CLIMB_FACTOR` in zones.ts). T1 is the tutorial
-and sits on the curve.
+curve by **× 1.05 a tier, compounding** (`CLIMB_FACTOR` in zones.ts), plus a one-time
+**× 1.1 step at T5** carried into every tier above (`TIER_STEP`, `STEP_FROM_TIER`). T1 is
+the tutorial and sits on the curve.
 
 ```
-climb(T) = 1.05^(T−1)          // T2 1.05, T3 1.10, T4 1.16, T5 1.22, T7 1.34, T9 1.48
+climb(T) = 1.05^(T−1) × (T ≥ 5 ? 1.1 : 1)   // T2 1.05, T3 1.10, T4 1.16, T5 1.34, T7 1.47, T9 1.63
 ```
 
 | Tier | climb | Felt difficulty vs reference* | Reference player vs average enemy (kill / die) |
@@ -202,17 +203,22 @@ climb(T) = 1.05^(T−1)          // T2 1.05, T3 1.10, T4 1.16, T5 1.22, T7 1.34,
 | 2 | 1.05 | 1.10× | 10.5 s / 23.8 s |
 | 3 | 1.10 | 1.22× | 11.0 s / 22.7 s |
 | 4 | 1.16 | 1.34× | 11.6 s / 21.6 s |
-| 5 | 1.22 | 1.48× | 12.2 s / 20.6 s |
-| 7 | 1.34 | 1.80× | 13.4 s / 18.7 s |
-| 9 | 1.48 | 2.18× | 14.8 s / 16.9 s |
+| 5 | 1.34 | 1.79× | 13.4 s / 18.7 s |
+| 7 | 1.47 | 2.17× | 14.7 s / 17.0 s |
+| 9 | 1.63 | 2.64× | 16.3 s / 15.4 s |
 
 \* HP and DPS both scale, so difficulty moves with `climb²`.
 
 - The point: enemies grow a little faster than weapon base damage, so average gear picked
   up along the way falls further behind each tier. Rolled affixes, rerolls, tempering and
   a planned build have to make up the gap, more and more the higher the player climbs.
-- By T9 a reference player only just beats the average enemy; comfortable farming needs
-  clearly better than average gear.
+- **The T5 step** (2026-10-20): T5 opens the Chaos Dungeon and is the first tier that should
+  feel like a wall. Simulated (random farming gear, Magic to Epic, at level 10T, auto-equipped):
+  the zone's hardest regular enemy goes from 84% won at T4 to 22% at T5; players 8 levels
+  over the zone in Rare to Legendary gear beat Selvara 25% of the time and Durgrim 4%.
+- From T5, average gear is not enough: by T7 a reference player only just beats the average
+  enemy, and at T9 it loses (kill 16.3 s, die 15.4 s). Farming T8–T9 needs a real build.
+  Revisit when T6+ is built.
 - Rewards stay on the reward curve; a harder tier pays the same per kill but kills are
   slower, so pushing gear before moving on pays off.
 - Replaces the 2026-10-12 sawtooth (× 1.1 on odd tiers from 3). T3 lands almost where it

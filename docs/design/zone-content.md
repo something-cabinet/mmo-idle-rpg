@@ -314,22 +314,25 @@ a full moon. The sky above it is empty."
 A dwarven hold in the mountain the largest moon shard fell through (story.md). Its light
 got into the stone and the veins began to glow: **brightsteel**, the T5 metal. The dwarves
 dug after it until the mine broke into the rift; their last thane sealed the breach and
-bound himself to the shard to hold it. Levels 46–55. HP and DPS × 1.22 over the reference
-curve (zones.md, "Difficulty climb"), boss at the full HP bonus (× 1.3).
+bound himself to the shard to hold it. Levels 46–55. Boss at the full HP bonus (× 1.3).
+
+**The T5 step:** HP and DPS × 1.34 over the reference curve, not × 1.22: the climb's
+usual × 1.05 plus a one-time × 1.1 (zones.md, "Difficulty climb"). The tier that opens
+the Chaos Dungeon is the first wall.
 
 | Enemy | Level | Damage | Defense | Speed | HP | DPS | Armor / Res | XP | Gold |
 |---|---|---|---|---|---|---|---|---|---|
-| Glowvein Crawler | 46 | Phys | Armored | 1.4/s | 802 | 58.1 | 276 / 46 | 899 | 225 |
-| Tunnel Drake | 48 | Phys | Balanced | 1.0/s | 1,495 | 70.3 | 120 / 120 | 1,168 | 292 |
-| Runeweave Warder | 50 | **Magic** | Warded | 0.9/s | 1,809 | 85.1 | 50 / 300 | 1,518 | 380 |
-| Brightsteel Golem | 52 | Phys | Armored | 0.5/s | 1,639 | 103 | 312 / 52 | 1,973 | 493 |
-| Hollowed Delver | 54 | **Magic** | Balanced | 1.1/s | 2,649 | 124.6 | 135 / 135 | 2,564 | 641 |
-| **Boss: Durgrim, the Last Thane** | 55 | Phys | **Warded** | 0.7/s | 4,583 | 165.8 | 55 / 330 | 3,799 | 950 |
+| Glowvein Crawler | 46 | Phys | Armored | 1.4/s | 883 | 63.9 | 276 / 46 | 899 | 225 |
+| Tunnel Drake | 48 | Phys | Balanced | 1.0/s | 1,645 | 77.4 | 120 / 120 | 1,168 | 292 |
+| Runeweave Warder | 50 | **Magic** | Warded | 0.9/s | 1,990 | 93.6 | 50 / 300 | 1,518 | 380 |
+| Brightsteel Golem | 52 | Phys | Armored | 0.5/s | 1,808 | 113.3 | 312 / 52 | 1,973 | 493 |
+| Hollowed Delver | 54 | **Magic** | Balanced | 1.1/s | 2,913 | 137 | 135 / 135 | 2,564 | 641 |
+| **Boss: Durgrim, the Last Thane** | 55 | Phys | **Warded** | 0.7/s | 5,041 | 182.4 | 55 / 330 | 3,799 | 950 |
 
 - **Traits**, each paid for with HP: the **Glowvein Crawler** is hard to hit (**evasion
-  rating 277**: 35% dodge against a same-level player without accuracy gear, HP 1,236 →
-  802) behind armor, so physical builds need accuracy *and* armor penetration, or magic.
-  The **Brightsteel Golem** regenerates (**55 HP/s**, HP 2,189 → 1,639) behind armor: the
+  rating 277**: 35% dodge against a same-level player without accuracy gear, HP 1,360 →
+  883) behind armor, so physical builds need accuracy *and* armor penetration, or magic.
+  The **Brightsteel Golem** regenerates (**60 HP/s**, HP 2,408 → 1,808) behind armor: the
   zone's burst check.
 - **The boss is the last mix: physical damage behind Warded defense**, a runeforged
   king in runed brightsteel plate. Plate soaks his hits; magic builds hit
@@ -343,9 +346,17 @@ curve (zones.md, "Difficulty climb"), boss at the full HP bonus (× 1.3).
   the Warder Runeweave and the tome, the Drake Drakehide, the Delver weapons.
 - No secret area yet, and no T5 uniques yet: the zone drops T1–T4 uniques like any
   zone above their tier (uniques.md).
-- Not simulated yet.
+- **Simulated** (200 random characters, auto-equipped, 20 fights each; T4 in brackets).
+  Farming gear (Magic 50%, Rare 40%, Epic 10%) at level 50: Warder 88%, Golem 49%, Delver
+  22% won (Spellweaver 84%). Players at level 58 in Rare/Epic/Legendary gear beat Durgrim
+  4% of the time, physical builds 7% and magic 0% (Selvara 25%). He's the gear check
+  before the Chaos Dungeon: tempering, rerolls and a planned physical build.
 
 **Areas:**
+
+**Map:** a mine, unlike the climbs before it: you descend from the Lode at the top,
+through the Forge (right) or the Gate (left), joined by a cross-tunnel, down to the Breach
+at the bottom.
 
 | Area | Enemies | Blurb |
 |---|---|---|

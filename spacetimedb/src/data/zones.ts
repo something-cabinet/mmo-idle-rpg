@@ -258,20 +258,22 @@ export const ZONES: ZoneDef[] = [
     blurb: 'A dwarven hold, silent for an age, where the largest shard fell through the mountain and set the veins glowing.',
     bossLine: 'The seal breaks. Below, something opens its eyes.',
     enemies: [
-      { id: 501, name: 'Glowvein Crawler', level: 46, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 1.4, hp: 802, evasionRating: 277, dps: 58.1, armor: 276, resistance: 46, xp: 899, gold: 225, drops: T5_DROPS.crawler, materials: ['Hide', 'Reagent'] },
-      { id: 502, name: 'Tunnel Drake', level: 48, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.0, hp: 1495, dps: 70.3, armor: 120, resistance: 120, xp: 1168, gold: 292, drops: T5_DROPS.drake, materials: ['Hide', 'Reagent'] },
-      { id: 503, name: 'Runeweave Warder', level: 50, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 1809, dps: 85.1, armor: 50, resistance: 300, xp: 1518, gold: 380, drops: T5_DROPS.warder, materials: ['Cloth', 'Core', 'Gem'] },
-      { id: 504, name: 'Brightsteel Golem', level: 52, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 1639, regen: 55, dps: 103, armor: 312, resistance: 52, xp: 1973, gold: 493, drops: T5_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
-      { id: 505, name: 'Hollowed Delver', level: 54, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.1, hp: 2649, dps: 124.6, armor: 135, resistance: 135, xp: 2564, gold: 641, drops: T5_DROPS.delver, materials: ['Metal', 'Wood', 'Cloth'] },
-      { id: 506, name: 'Durgrim, the Last Thane', level: 55, rank: 'Boss', damageType: 'Physical', defense: 'Warded', speed: 0.7, hp: 4583, dps: 165.8, armor: 55, resistance: 330, xp: 3799, gold: 950, drops: all(T5_DROPS), materials: ['Metal', 'Core', 'Gem'], boss: true },
+      { id: 501, name: 'Glowvein Crawler', level: 46, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 1.4, hp: 883, evasionRating: 277, dps: 63.9, armor: 276, resistance: 46, xp: 899, gold: 225, drops: T5_DROPS.crawler, materials: ['Hide', 'Reagent'] },
+      { id: 502, name: 'Tunnel Drake', level: 48, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.0, hp: 1645, dps: 77.4, armor: 120, resistance: 120, xp: 1168, gold: 292, drops: T5_DROPS.drake, materials: ['Hide', 'Reagent'] },
+      { id: 503, name: 'Runeweave Warder', level: 50, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 1990, dps: 93.6, armor: 50, resistance: 300, xp: 1518, gold: 380, drops: T5_DROPS.warder, materials: ['Cloth', 'Core', 'Gem'] },
+      { id: 504, name: 'Brightsteel Golem', level: 52, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 1808, regen: 60, dps: 113.3, armor: 312, resistance: 52, xp: 1973, gold: 493, drops: T5_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
+      { id: 505, name: 'Hollowed Delver', level: 54, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.1, hp: 2913, dps: 137, armor: 135, resistance: 135, xp: 2564, gold: 641, drops: T5_DROPS.delver, materials: ['Metal', 'Wood', 'Cloth'] },
+      { id: 506, name: 'Durgrim, the Last Thane', level: 55, rank: 'Boss', damageType: 'Physical', defense: 'Warded', speed: 0.7, hp: 5041, dps: 182.4, armor: 55, resistance: 330, xp: 3799, gold: 950, drops: all(T5_DROPS), materials: ['Metal', 'Core', 'Gem'], boss: true },
     ],
     areas: [
-      { id: 51, name: 'Brightsteel Lode', blurb: 'Glowing veins light the upper tunnels, and things crawl toward the light.', enemies: [501, 502], x: 10, y: 90 },
-      { id: 52, name: 'Collapsed Forge', blurb: 'The great forge lies cold and broken. Its rune-keepers still tend it.', enemies: [503, 504], x: 90, y: 62 },
-      { id: 53, name: 'Runebound Gate', blurb: 'Rune-carved doors to the lowest shafts, and the miners who never came back up.', enemies: [505], x: 12, y: 32 },
-      { id: 54, name: 'Sealed Breach', blurb: 'The Last Thane stands fused to the seal, the shard blazing in his chest.', enemies: [506], x: 84, y: 6 },
+      { id: 51, name: 'Brightsteel Lode', blurb: 'Glowing veins light the upper tunnels, and things crawl toward the light.', enemies: [501, 502], x: 50, y: 6 },
+      { id: 52, name: 'Collapsed Forge', blurb: 'The great forge lies cold and broken. Its rune-keepers still tend it.', enemies: [503, 504], x: 88, y: 38 },
+      { id: 53, name: 'Runebound Gate', blurb: 'Rune-carved doors to the lowest shafts, and the miners who never came back up.', enemies: [505], x: 14, y: 62 },
+      { id: 54, name: 'Sealed Breach', blurb: 'The Last Thane stands fused to the seal, the shard blazing in his chest.', enemies: [506], x: 56, y: 96 },
     ],
-    links: [[51, 52], [51, 53], [52, 54], [53, 54]],
+    // A mine, unlike the climbs before it: you descend from the entrance at the top to the breach at
+    // the bottom, with a cross-tunnel between the forge and the gate.
+    links: [[51, 52], [51, 53], [52, 53], [52, 54], [53, 54]],
   },
 ];
 
@@ -293,11 +295,14 @@ export const areaIndexOf = (zone: ZoneDef, enemyId: number) => zone.areas.findIn
 /**
  * Enemy HP and DPS multiplier at `tier`, compounding: enemies outgrow the weapon curve by
  * × CLIMB_FACTOR a tier, so every tier is harder than the last and gear building matters
- * more the higher you go (zones.md, "Difficulty climb"). Content numbers are
- * precomputed; this documents the factor used.
+ * more the higher you go (zones.md, "Difficulty climb"). From STEP_FROM_TIER on, a one-time
+ * × TIER_STEP on top (the T5 step: the Chaos Dungeon's tier asks for a real build), carried
+ * into every tier above. Content numbers are precomputed; this documents the factors used.
  */
 export const CLIMB_FACTOR = 1.05;
-export const climb = (tier: number) => CLIMB_FACTOR ** (tier - 1);
+export const TIER_STEP = 1.1;
+export const STEP_FROM_TIER = 5;
+export const climb = (tier: number) => CLIMB_FACTOR ** (tier - 1) * (tier >= STEP_FROM_TIER ? TIER_STEP : 1);
 
 /**
  * An enemy's HP and DPS against the zone's average-enemy curve at level offset `o`

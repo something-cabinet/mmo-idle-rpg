@@ -105,9 +105,9 @@ Deep pays the bulk, and these stay a trickle.
 ### 2. The rare loot pool
 
 - Moved from zone bosses into the global rare loot pool (data/pool.ts, 2026-10-20): every
-  enemy of a **T4+ zone** can drop it, at **0.016% per kill** × its rank (Basic 1, Elite 3,
-  Boss 10; an Elite encounter counts as Elite) × (1 + 0.5% per enemy level).
-- Selvara (Boss, level 45): ~1 in 510 kills, about as before. A T4 Basic: ~1 in 5,200.
+  enemy of a **T4+ zone** can drop it, at **0.04% per kill** × its rank (Basic 1, Elite 3,
+  Boss 4; an Elite encounter counts as Elite) × (1 + 0.5% per enemy level).
+- Selvara (Boss, level 45): ~1 in 510 kills, about as when only bosses dropped it. A T4 Basic: ~1 in 2,100.
   The old × (T − 3) tier ramp is gone; only the level term grows it.
 - One Poisson draw per settle (`rollPool`), online and offline. Not in the Forager's Stash,
   and not on the enemy's drop list. Shown with the other materials in the log and report.

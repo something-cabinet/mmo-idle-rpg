@@ -2,7 +2,9 @@ import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
 import { BAG_STEP, bagExpansionCost, rerollAffix as reroll, rerollCost, upgradeCost, upgradeRarity as upgrade, type CraftCost } from '../craft';
 import { seededRng } from '../loot';
-import { requireActive, requireItem, settle, type Character, type Ctx, type Item } from '../helpers';
+import { requireActive, requireItem, settle, supplyCount, takeSupply, type Character, type Ctx, type Item } from '../helpers';
+import { applyChisel as chisel } from '../chisel';
+import { CHISELS_BY_ID } from '../data/supplies';
 
 /**
  * Settles (crafting may change equipped gear, and idle gold counts toward the cost),
@@ -38,6 +40,25 @@ export const upgradeRarity = spacetimedb.reducer(
     craft(ctx, itemId, upgradeCost, (ch, it) => upgrade(rngFor(ctx, ch, it), it, removeAffix));
   }
 );
+
+/**
+ * Uses chisel `chiselId` from stock on item `itemId` (chisel.ts): `target` is the affix for
+ * Binding and Improvement (BOUND_LEGENDARY for the legendary one), ignored otherwise. Settles
+ * first: it may change equipped gear.
+ */
+export const applyChisel = spacetimedb.reducer({ itemId: t.u64(), chiselId: t.u16(), target: t.u8() }, (ctx, { itemId, chiselId, target }) => {
+  const { ch } = requireActive(ctx);
+  const c = CHISELS_BY_ID.get(chiselId);
+  if (!c) throw new SenderError('No such chisel');
+  const it = requireItem(ctx, ch, itemId);
+  if (supplyCount(ctx, ch.id, chiselId) < 1) throw new SenderError('None in stock');
+  const settled = settle(ctx, ch);
+  const next = chisel(rngFor(ctx, settled, it), c, it, target);
+  if (typeof next === 'string') throw new SenderError(next);
+  takeSupply(ctx, ch.id, chiselId, 1);
+  ctx.db.item.id.update(next);
+  ctx.db.character.id.update(settled);
+});
 
 /** Adds 25 bag slots for `50,000 × 4^n` gold, up to 400. */
 export const expandBag = spacetimedb.reducer(ctx => {

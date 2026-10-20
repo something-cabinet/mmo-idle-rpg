@@ -5,7 +5,8 @@ import { base, baseType } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
 import { MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
 import { supplyName } from '../../spacetimedb/src/data/supplies';
-import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
+import { STATS, fromStored, roundStat, type StatId } from '../../spacetimedb/src/data/stats';
+import { BOUND_LEGENDARY, CORRUPTION_TEXT, type Corruption } from '../../spacetimedb/src/chisel';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
 import { MAX_TEMPER } from '../../spacetimedb/src/data/recipes';
 import { TEMPER_STEP, tempered } from '../../spacetimedb/src/combat';
@@ -33,6 +34,21 @@ export const suppliesText = (ss: readonly { supplyId: number; count: number }[])
 export const itemIconName = (it: { baseId: number }) => `i-${baseType(it.baseId).icon}`;
 
 const num = (v: number) => String(Number(Math.abs(v).toFixed(2)));
+
+/** A stat's roll range in display units, e.g. "12–18%" (a negative bound keeps its sign). */
+export function statRangeText(stat: number, lo: number, hi: number): string {
+  const d = STATS[stat as StatId];
+  const sign = (v: number) => (v < 0 ? '−' : '');
+  const r = (v: number) => (d ? roundStat(stat as StatId, v) : v);
+  return `${sign(r(lo))}${num(r(lo))}–${sign(r(hi))}${num(r(hi))}${d?.percent ? '%' : ''}`;
+}
+
+/** Marks an affix a Binding Chisel bound. */
+export const BoundMark = () => (
+  <span className="affix-bound" title="Bound: no reroll or chisel changes it">
+    <Icon name="bind" />
+  </span>
+);
 
 /** "+12 Max HP", "+5% Physical damage", "−8% Attack speed". */
 export function statText(stat: number, value: bigint): string {
@@ -98,6 +114,11 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
       ) : (
         top
       )}
+      {it.corruption > 0 && (
+        <div className="item-sub">
+          <span className="c-bad" title={`Corruption Chisel: ${CORRUPTION_TEXT[it.corruption as Corruption] ?? 'changed'}. It can't be crafted any more.`}>Corrupted</span>
+        </div>
+      )}
       {it.temper > 0 && (
         <div className="item-sub">
           <span className="c-temper">Tempered +{it.temper}: base stats +{Math.round(it.temper * TEMPER_STEP * 100)}%</span>
@@ -113,6 +134,7 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
           <strong>
             <Icon name="sparkles" />
             {leg.name}
+            {it.boundAffix === BOUND_LEGENDARY && <BoundMark />}
           </strong>
           <span>{leg.text}</span>
           <span className="muted">{statText(it.legendary!.stat, it.legendary!.value)}</span>
@@ -136,6 +158,7 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
           {it.affixes.map((a, i) => (
             <div className="affix" key={i}>
               <span>{statText(a.stat, a.value)}</span>
+              {it.boundAffix === i + 1 && <BoundMark />}
               {a.tier > 0 && <span className="affix-tier">T{a.tier}</span>}
             </div>
           ))}

@@ -1772,6 +1772,28 @@ button.version:hover {
   font-size: 10.5px;
   font-weight: 700;
 }
+.affix-bound {
+  display: inline-flex;
+  color: var(--r-magic);
+}
+.affix-bound svg {
+  width: 12px;
+  height: 12px;
+}
+.chisel-affixes {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.chisel-affixes .affix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+}
+.chisel-affixes .affix > span:first-child {
+  flex: 1;
+}
 
 .toolbar {
   display: flex;

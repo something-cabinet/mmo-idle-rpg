@@ -167,6 +167,10 @@ export const item = table(
     effects: t.array(t.u16()).default([]),
     /** Temper level 0–10 (life-skills.md, "Smithing: temper an item"): +2% base stats each, applied when stats are computed. */
     temper: t.u8().default(0),
+    /** The affix a Binding Chisel bound (chisel.ts): 0 none, i + 1 regular affix i, BOUND_LEGENDARY the legendary one. */
+    boundAffix: t.u8().default(0),
+    /** Corrupted by a Corruption Chisel (chisel.ts `Corruption`): 0 not, else what it did. No more crafting. */
+    corruption: t.u8().default(0),
   }
 );
 

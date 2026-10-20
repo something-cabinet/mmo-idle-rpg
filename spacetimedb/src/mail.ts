@@ -5,7 +5,7 @@ import { BASES } from './data/bases';
 import { COSMETICS_BY_ID } from './data/cosmetics';
 import { MATERIALS_BY_ID } from './data/materials';
 import { MAX_TIER } from './data/stats';
-import { CHRONOSHARDS_BY_ID, PHIALS_BY_ID, SUPPLIES_BY_ID } from './data/supplies';
+import { isSupplyId } from './data/supplies';
 import { UNIQUES_BY_ID } from './data/uniques';
 import { DEV_RARITIES, type RarityName } from './loot';
 
@@ -77,7 +77,7 @@ export function parseGift(spec: string): Gift {
       }
       case 'supply': {
         const [supplyId, count] = idCount(v, 'supply');
-        if (!SUPPLIES_BY_ID.has(supplyId) && !PHIALS_BY_ID.has(supplyId) && !CHRONOSHARDS_BY_ID.has(supplyId)) throw new Error(`No supply ${supplyId}`);
+        if (!isSupplyId(supplyId)) throw new Error(`No supply ${supplyId}`);
         const row = g.supplies.find(s => s.supplyId === supplyId);
         if (row) row.count += count;
         else g.supplies.push({ supplyId, count });

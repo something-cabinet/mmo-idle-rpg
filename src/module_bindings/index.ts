@@ -37,6 +37,7 @@ import {
 import AcceptLinkReducer from "./accept_link_reducer";
 import ActivateChronoshardReducer from "./activate_chronoshard_reducer";
 import AddFriendReducer from "./add_friend_reducer";
+import ApplyChiselReducer from "./apply_chisel_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
 import ClaimMailReducer from "./claim_mail_reducer";
 import CopyLoadoutReducer from "./copy_loadout_reducer";
@@ -437,6 +438,7 @@ const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
   __reducerSchema("activate_chronoshard", ActivateChronoshardReducer),
   __reducerSchema("add_friend", AddFriendReducer),
+  __reducerSchema("apply_chisel", ApplyChiselReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
   __reducerSchema("claim_mail", ClaimMailReducer),
   __reducerSchema("copy_loadout", CopyLoadoutReducer),

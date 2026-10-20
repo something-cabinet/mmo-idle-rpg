@@ -153,8 +153,9 @@ export function forged(characterId: bigint, r: Recipe, made: { at: bigint; level
  * Why `it` can't be tempered one more level (life-skills.md, "Smithing: temper an item") at
  * Smithing `level`, or undefined. `zoneOpen`: a zone of the item's tier is unlocked.
  */
-export function temperBlocker(it: { baseId: number; rarity: { tag: RarityName }; tier: number; temper: number }, level: number, zoneOpen: boolean): string | undefined {
+export function temperBlocker(it: { baseId: number; rarity: { tag: RarityName }; tier: number; temper: number; corruption?: number }, level: number, zoneOpen: boolean): string | undefined {
   if (rarityRank(it.rarity.tag) >= rarityRank('Unique')) return it.rarity.tag === 'Unique' ? "Uniques can't be tempered" : "This item can't be tempered";
+  if (it.corruption) return "Corrupted: it can't be tempered";
   if (it.temper >= MAX_TEMPER) return 'Fully tempered';
   // No Smithing level for the item's tier: only the temper cap below.
   if (!zoneOpen) return `Unlock the tier ${it.tier} zone first`;

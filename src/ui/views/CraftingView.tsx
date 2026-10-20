@@ -1,16 +1,17 @@
 import { memo, useState, useSyncExternalStore } from 'react';
 import type { Item } from '../../module_bindings/types';
-import { craftable as canCraft, rerollCost, uncraftable, upgradeCost } from '../../../spacetimedb/src/craft';
+import { CORRUPTED, craftable as canCraft, rerollCost, uncraftable, upgradeCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
 import { LISTED_RARITIES, RARITIES, rarityRank, type RarityName } from '../../../spacetimedb/src/loot';
 import { call, useSticky } from '../../store';
 import { Icon } from '../Icon';
-import { ItemCard, itemName, rarityCls, statText } from '../items';
+import { BoundMark, ItemCard, itemName, rarityCls, statText } from '../items';
 import { ItemIcon } from '../itemArt';
 import { CollapsibleCard, ItemFilterCard, useItemFilter } from '../itemFilter';
 import { CardHead, ViewHeader, cantAfford, costText, loadoutNote } from '../shared';
 import type { Snapshot } from '../snapshot';
 import { TemperAction } from './TemperAction';
+import { ChiselAction } from './ChiselAction';
 import { SkillTabs } from './SkillView';
 import { SkillId } from '../../../spacetimedb/src/data/skills';
 
@@ -25,8 +26,8 @@ const useStacked = () =>
     return () => stacked.removeEventListener('change', l);
   }, () => stacked.matches);
 
-/** Rarities that can be crafted: uniques can't. */
-const CRAFT_RARITIES = LISTED_RARITIES.filter(r => r !== 'Unique');
+/** Rarities listed: Uniques too, for the Recalibration Chisel. */
+const CRAFT_RARITIES = LISTED_RARITIES;
 
 function AffixPick({ it, name, value, onChange }: { it: Item; name: string; value: number; onChange: (i: number) => void }) {
   return (
@@ -35,6 +36,7 @@ function AffixPick({ it, name, value, onChange }: { it: Item; name: string; valu
         <label className="radio" key={i}>
           <input type="radio" name={name} checked={i === value} onChange={() => onChange(i)} />
           <span>{statText(a.stat, a.value)}</span>
+          {it.boundAffix === i + 1 && <BoundMark />}
           <span className="affix-tier">T{a.tier}</span>
         </label>
       ))}
@@ -52,7 +54,8 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   const r = s.conn.reducers;
   const isStacked = useStacked();
 
-  const craftable = [...s.items.values()].filter(canCraft);
+  // Uniques can't be crafted, only chiseled (Recalibration).
+  const craftable = [...s.items.values()].filter(it => canCraft(it) || it.uniqueId !== undefined);
   const by: Record<CraftSort, (a: Item, b: Item) => number> = {
     rarity: (a, b) => rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag) || b.tier - a.tier,
     tier: (a, b) => b.tier - a.tier || rarityRank(b.rarity.tag) - rarityRank(a.rarity.tag),
@@ -109,18 +112,21 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
 
   const rarity = item.rarity.tag as RarityName;
   const unique = !canCraft(item);
+  // Uniques can't be crafted (only chiseled), nor can corrupted items.
+  const locked = unique ? uncraftable(item) : item.corruption ? CORRUPTED : undefined;
   const next = RARITIES[rarityRank(rarity) + 1];
   const toLegendary = rarity === 'Epic';
 
   // Reroll: replace one regular affix.
   const rCost = item.affixes.length ? rerollCost(item) : undefined;
   const rBlocked = rCost ? cantAfford(s, rCost) : 'Nothing to reroll';
-  const rerollBody = unique ? (
-    <p className="muted">{uncraftable(item)}.</p>
+  const rerollBody = locked ? (
+    <p className="muted">{locked}.</p>
   ) : item.affixes.length ? (
     <>
       <p className="muted">The chosen affix is replaced by a new random one, rolled like a drop.{item.legendary ? ' The legendary affix stays.' : ''}</p>
       <AffixPick it={item} name="craft-reroll" value={rerollIndex} onChange={setRerollIndex} />
+      {item.boundAffix === rerollIndex + 1 && <p className="muted">A bound affix can't be rerolled.</p>}
     </>
   ) : (
     <p className="muted">This item has no affixes to reroll. Upgrade its rarity first.</p>
@@ -129,8 +135,8 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
   // Upgrade: one rarity higher.
   const uCost = upgradeCost(item);
   const uBlocked = uCost ? cantAfford(s, uCost) : 'Nothing to upgrade';
-  const upgradeBody = unique ? (
-    <p className="muted">{uncraftable(item)}.</p>
+  const upgradeBody = locked ? (
+    <p className="muted">{locked}.</p>
   ) : uCost ? (
     <>
       <p>
@@ -147,7 +153,7 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
     <div className="card">
       <CardHead title={title} />
       {body}
-      {!unique && cost && (
+      {!locked && cost && (
         <div className="craft-do">
           <span className="cost">Cost: <strong>{costText(cost)}</strong></span>
           <button className="btn primary" disabled={Boolean(blocked)} title={blocked || undefined} onClick={run}>{label}</button>
@@ -172,6 +178,12 @@ export const CraftingView = memo(function CraftingView({ s }: { s: Snapshot }) {
         <TemperAction s={s} it={item} />
       </div>
     ) }]),
+    { key: 'chisel', label: 'Chisel', body: (
+      <div className="card">
+        <CardHead title="Chisel" />
+        <ChiselAction key={String(item.id)} s={s} it={item} />
+      </div>
+    ) },
   ];
 
   const list = (

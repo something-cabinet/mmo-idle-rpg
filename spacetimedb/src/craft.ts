@@ -3,10 +3,13 @@
 // the drop rolls from loot.ts.
 
 import { BAG_MAX, BAG_START } from './game';
-import { raiseRarity, rarityRank, rollAffix, type RaisableItem, type RarityName, type Rng } from './loot';
+import { raiseRarity, rarityRank, rollAffix, type NewItem, type RaisableItem, type RarityName, type Rng } from './loot';
 
 /** What crafting needs from an item: an `item` row or a `NewItem`. */
-export type CraftItem = RaisableItem;
+export type CraftItem = RaisableItem & Pick<NewItem, 'boundAffix' | 'corruption'>;
+
+/** Regular affix `i` was bound by a Binding Chisel (chisel.ts): nothing random changes it. */
+const bound = (it: CraftItem, i: number) => it.boundAffix === i + 1;
 
 export interface CraftCost {
   gold: bigint;
@@ -29,6 +32,9 @@ export const UPGRADE_HOURS: Partial<Record<RarityName, number>> = { Common: 0.25
 /** Common to Legendary: Unique and the rarities above it can't be crafted. */
 export const craftable = (it: Pick<CraftItem, 'rarity'>) => rarityRank(it.rarity.tag) < rarityRank('Unique');
 
+/** Why a corrupted item (chisel.ts) can't be crafted. */
+export const CORRUPTED = "Corrupted: it can't be crafted any more";
+
 /** Why `it` (not craftable) can't be crafted. */
 export const uncraftable = (it: Pick<CraftItem, 'rarity'>) => (it.rarity.tag === 'Unique' ? "Uniques can't be crafted" : "This item can't be crafted");
 
@@ -44,7 +50,9 @@ export const upgradeCost = (it: CraftItem): CraftCost | undefined => {
 /** The item with regular affix `index` replaced by a fresh roll, or an error message. */
 export function rerollAffix<T extends CraftItem>(rng: Rng, it: T, index: number): T | string {
   if (!craftable(it)) return uncraftable(it);
+  if (it.corruption) return CORRUPTED;
   if (index >= it.affixes.length) return 'No such affix';
+  if (bound(it, index)) return "A bound affix can't be rerolled";
   return { ...it, affixes: it.affixes.map((a, i) => (i === index ? rollAffix(rng, it.tier) : a)) };
 }
 
@@ -56,9 +64,13 @@ export function upgradeRarity<T extends CraftItem>(rng: Rng, it: T, removeIndex?
   if (UPGRADE_HOURS[it.rarity.tag] === undefined) {
     return !craftable(it) ? uncraftable(it) : 'Legendary is the highest craftable rarity';
   }
+  if (it.corruption) return CORRUPTED;
   if (it.rarity.tag !== 'Epic') return raiseRarity(rng, it, 0);
   if (removeIndex === undefined || removeIndex >= it.affixes.length) return 'Pick an affix to remove';
-  return raiseRarity(rng, it, removeIndex);
+  if (bound(it, removeIndex)) return "A bound affix can't be removed";
+  // Later affixes move down one place, the bound one with them.
+  const boundAffix = it.boundAffix > removeIndex + 1 && it.boundAffix <= it.affixes.length ? it.boundAffix - 1 : it.boundAffix;
+  return { ...raiseRarity(rng, it, removeIndex), boundAffix };
 }
 
 /** Slots per bag expansion. */

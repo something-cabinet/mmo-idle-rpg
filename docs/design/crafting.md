@@ -68,6 +68,44 @@ Raises an item one rarity step. Its base and existing affixes stay.
   crafting is faster but expensive, and the player picks the base and keeps 2 chosen
   affixes.
 
+## Chisels
+
+Crafting consumables (chisel.ts), like PoE's orbs: each does one thing gold crafting can't.
+Kept in the `supply` table (IDs 700 + kind), untiered: one chisel works on any item tier.
+Used from the Crafting screen's Chisel tab. Uniques take only Recalibration; Anomalies none.
+
+| Chisel | Effect |
+|-|-|
+| Recalibration | Rerolls the value of every affix within its tier, and the legendary bonus. On a Unique, its stats within their roll range. |
+| Chaos | Rerolls every affix as new random ones, the legendary affix (effect and bonus) included. |
+| Binding | Binds one affix, regular or legendary, for good (`item.boundAffix`). One per item. |
+| Improvement | Raises one regular affix a tier, up to the item's tier, and rerolls its value in the new tier's range. |
+| Corruption | One random outcome, then the item is corrupted: no more crafting of any kind (rerolls, upgrades, tempering, chisels). |
+
+- Nothing changes a bound affix: the gold reroll, Chaos, Recalibration and Improvement
+  all leave it, and Epic → Legendary can't remove it.
+- Sources: the rare loot pool (data/pool.ts), per Basic kill before rank and level:
+  Chaos and Corruption 1 in 2,500 each; Binding, Recalibration and Improvement 1 in 5,000 each.
+  Also System mail gifts (`supply:701` to `705`).
+
+### Corruption
+
+Five outcomes, equally likely (chisel.ts `corrupt`); `item.corruption` records which one
+happened (0 = not corrupted). Uniques and Anomalies can't be corrupted.
+
+- **Add or remove an affix** (half each): adds a random affix even past the rarity's
+  count, or removes a random unbound one.
+- **Raise or lower an affix tier** (half each): a random unbound affix, value rerolled in
+  its new tier. It may rise one tier past the item's tier: a T9 item can get a T10 affix,
+  whose range comes from the stat's curve formula past T9 (`affixRange` already extends).
+- **A corrupted affix:** exclusive to corruption. Not designed yet: until then this outcome
+  isn't rolled and the other four are 25% each.
+- **Nothing.**
+- **Reroll every value**, as a Recalibration Chisel does.
+
+Bound affixes are never removed or changed. With no unbound affix, a tier change does
+nothing and an affix count change adds one.
+
 ## Bag expansion
 
 - Bag starts at **200** slots. Each expansion adds **25**, up to **400** (storage budget,

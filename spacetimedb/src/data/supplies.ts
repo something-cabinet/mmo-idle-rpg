@@ -4,7 +4,7 @@
 //
 // PERMANENT IDS: supply IDs are stored in `supply` rows, `character.elixirId`,
 // `raid_member.phialId`, settle and Abyss logs; never reuse or renumber them. Elixirs are
-// 300 + kind × 10 + grade, Phials 400 + kind × 10 + grade, Chronoshards 500 + grade. Before
+// 300 + kind × 10 + grade, Phials 400 + kind × 10 + grade, Chronoshards 500 + grade, Chisels 700 + kind. Before
 // 2026-10-19 elixirs were tiered: 100 + kind × 10 + tier, Greater (rare herb) 200 + kind
 // × 10 + tier; migrate.ts turned those into graded ones (`legacyElixir`).
 
@@ -219,9 +219,49 @@ export const CHRONOSHARDS: ChronoshardDef[] = GRADES.map(g => ({
 }));
 export const CHRONOSHARDS_BY_ID: ReadonlyMap<number, ChronoshardDef> = new Map(CHRONOSHARDS.map(c => [c.id, c]));
 
-/** Any supply's name: elixir, Phial or Chronoshard. */
+// ---------------------------------------------------------------- Chisels
+
+/** PERMANENT: part of the supply ID. */
+export const ChiselKind = { Recalibration: 1, Chaos: 2, Binding: 3, Improvement: 4, Corruption: 5 } as const;
+export type ChiselKind = (typeof ChiselKind)[keyof typeof ChiselKind];
+
+/**
+ * Crafting consumables (chisel.ts): each does one thing gold crafting can't. Untiered: any
+ * item tier. Not crafted: the rare loot pool (data/pool.ts) and System gifts.
+ */
+export interface ChiselDef {
+  id: number;
+  kind: ChiselKind;
+  /** e.g. "Chaos Chisel". */
+  name: string;
+  /** What it does, for the client. */
+  text: string;
+  /** The player picks an affix: a regular one, or (Binding) the legendary one too. */
+  target?: 'affix' | 'affixOrLegendary';
+}
+
+export const chiselSupplyId = (kind: ChiselKind) => 700 + kind;
+
+export const CHISELS: ChiselDef[] = [
+  { id: chiselSupplyId(ChiselKind.Recalibration), kind: ChiselKind.Recalibration, name: 'Recalibration Chisel',
+    text: 'Rerolls the value of every affix within its tier, the legendary bonus too. Works on Uniques.' },
+  { id: chiselSupplyId(ChiselKind.Chaos), kind: ChiselKind.Chaos, name: 'Chaos Chisel',
+    text: 'Rerolls every affix as new random ones, the legendary affix included.' },
+  { id: chiselSupplyId(ChiselKind.Binding), kind: ChiselKind.Binding, name: 'Binding Chisel', target: 'affixOrLegendary',
+    text: 'Binds one affix for good: nothing changes it any more. One per item.' },
+  { id: chiselSupplyId(ChiselKind.Improvement), kind: ChiselKind.Improvement, name: 'Improvement Chisel', target: 'affix',
+    text: "Raises one affix a tier, up to the item's tier." },
+  { id: chiselSupplyId(ChiselKind.Corruption), kind: ChiselKind.Corruption, name: 'Corruption Chisel',
+    text: 'Corrupts the item with one random outcome: add or remove an affix, raise or lower an affix tier (past the usual limits), reroll every value, or nothing. It can never be crafted again.' },
+];
+export const CHISELS_BY_ID: ReadonlyMap<number, ChiselDef> = new Map(CHISELS.map(c => [c.id, c]));
+
+/** Any supply's name: elixir, Phial, Chronoshard or Chisel. */
 export const supplyName = (id: number) =>
-  SUPPLIES_BY_ID.get(id)?.name ?? PHIALS_BY_ID.get(id)?.name ?? CHRONOSHARDS_BY_ID.get(id)?.name ?? `Supply ${id}`;
+  SUPPLIES_BY_ID.get(id)?.name ?? PHIALS_BY_ID.get(id)?.name ?? CHRONOSHARDS_BY_ID.get(id)?.name ?? CHISELS_BY_ID.get(id)?.name ?? `Supply ${id}`;
+
+/** Whether `id` is a supply of any kind. */
+export const isSupplyId = (id: number) => SUPPLIES_BY_ID.has(id) || PHIALS_BY_ID.has(id) || CHRONOSHARDS_BY_ID.has(id) || CHISELS_BY_ID.has(id);
 
 /**
  * A pre-2026-10-19 elixir ID (100 + kind × 10 + tier, Greater 200 + …): the graded

@@ -257,6 +257,8 @@ export const Item = __t.object("Item", {
   createdAt: __t.timestamp(),
   effects: __t.array(__t.u16()),
   temper: __t.u8(),
+  boundAffix: __t.u8(),
+  corruption: __t.u8(),
 });
 export type Item = __Infer<typeof Item>;
 

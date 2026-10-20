@@ -112,6 +112,10 @@ export interface NewItem {
   effects: number[];
   /** Temper level (life-skills.md): 0 on new items. */
   temper: number;
+  /** The affix a Binding Chisel bound (chisel.ts): 0 on new items. */
+  boundAffix: number;
+  /** A Corruption Chisel's outcome (chisel.ts): 0, not corrupted, on new items. */
+  corruption: number;
   weapon:
     | {
         damageType: { tag: WeaponDamage };
@@ -153,8 +157,8 @@ export function rollAffix(rng: Rng, tier: number, atTier?: number): NewItem['aff
 export function rollLegendary(rng: Rng, baseId: number, tier: number): NonNullable<NewItem['legendary']> {
   const group = baseType(baseId).group;
   const def = pick(rng, LEGENDARIES.filter(l => l.group === group));
-  const [lo, hi] = affixRange(def.bonusStat, tier);
-  const value = (lo + (hi - lo) * rng()) / 2;
+  const [lo, hi] = legendaryBonusRange(def.bonusStat, tier);
+  const value = lo + (hi - lo) * rng();
   return { effect: def.id, stat: def.bonusStat, value: toStored(roundStat(def.bonusStat, value)) };
 }
 
@@ -173,6 +177,8 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
     uniqueId: undefined,
     effects: [],
     temper: 0,
+    boundAffix: 0,
+    corruption: 0,
     weapon: w && {
       damageType: { tag: w.damageType },
       hit: toStored(w.hit),
@@ -192,14 +198,23 @@ export function makeItem(rng: Rng, baseId: number, tier: number, rarity: RarityN
 export function makeUnique(rng: Rng, u: UniqueDef): NewItem {
   return {
     ...makeItem(rng, u.baseId, u.tier, 'Unique'),
-    affixes: u.stats.map(s => {
-      const [lo, hi] = uniqueRoll(s);
-      const value = affixRef(s.stat, u.tier) * (s.x ?? 1) * (lo + (hi - lo) * rng());
-      return { stat: s.stat, tier: 0, value: toStored(roundStat(s.stat, value)) };
-    }),
+    affixes: u.stats.map(s => rollUniqueStat(rng, u, s)),
     uniqueId: u.id,
     effects: [...u.effects],
   };
+}
+
+/** The range unique `u`'s stat `s` rolls in, display units. */
+export function uniqueStatRange(u: UniqueDef, s: UniqueDef['stats'][number]): [number, number] {
+  const [lo, hi] = uniqueRoll(s);
+  const ref = affixRef(s.stat, u.tier) * (s.x ?? 1);
+  return [ref * lo, ref * hi];
+}
+
+/** Unique `u`'s stat `s`, rolled (stored as an affix of tier 0). */
+export function rollUniqueStat(rng: Rng, u: UniqueDef, s: UniqueDef['stats'][number]): NewItem['affixes'][number] {
+  const [lo, hi] = uniqueStatRange(u, s);
+  return { stat: s.stat, tier: 0, value: toStored(roundStat(s.stat, lo + (hi - lo) * rng())) };
 }
 
 /**
@@ -270,13 +285,29 @@ export function raiseLowestAffix<T extends Pick<NewItem, 'tier' | 'affixes'>>(it
     if (a.tier > 0 && a.tier < it.tier && (low < 0 || a.tier < it.affixes[low].tier)) low = i;
   });
   if (low < 0) return it;
-  const a = it.affixes[low];
+  const raised = affixAtTier(it.affixes[low], it.tier);
+  return { ...it, affixes: it.affixes.map((x, i) => (i === low ? raised : x)) };
+}
+
+/** Regular affix `a` moved to affix tier `tier`, keeping its place in the range (Keen Eye). */
+export function affixAtTier(a: NewItem['affixes'][number], tier: number): NewItem['affixes'][number] {
   const stat = a.stat as StatId;
   const [lo, hi] = affixRange(stat, a.tier);
-  const [lo2, hi2] = affixRange(stat, it.tier);
+  const [lo2, hi2] = affixRange(stat, tier);
   const at = hi > lo ? Math.min(1, Math.max(0, (fromStored(a.value) - lo) / (hi - lo))) : 1;
-  const raised = { stat: a.stat, tier: it.tier, value: toStored(roundStat(stat, lo2 + (hi2 - lo2) * at)) };
-  return { ...it, affixes: it.affixes.map((x, i) => (i === low ? raised : x)) };
+  return { stat: a.stat, tier, value: toStored(roundStat(stat, lo2 + (hi2 - lo2) * at)) };
+}
+
+/** A new value for regular affix `a`, uniform in its tier's range (the Recalibration and Improvement Chisels). */
+export function rerollAffixValue(rng: Rng, a: NewItem['affixes'][number]): NewItem['affixes'][number] {
+  const [lo, hi] = affixRange(a.stat as StatId, a.tier);
+  return { ...a, value: toStored(roundStat(a.stat as StatId, lo + (hi - lo) * rng())) };
+}
+
+/** The range a legendary affix's bonus of `stat` rolls in on a tier-`tier` item (half a regular affix of that tier). */
+export function legendaryBonusRange(stat: number, tier: number): [number, number] {
+  const [lo, hi] = affixRange(stat as StatId, tier);
+  return [lo / 2, hi / 2];
 }
 
 // ---------------------------------------------------------------- drops

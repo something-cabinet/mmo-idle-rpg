@@ -6,7 +6,7 @@ import { MATERIALS, MATERIALS_BY_ID } from '../../../spacetimedb/src/data/materi
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
 import { LISTED_RARITIES, rarityRank, salvageValue, salvageVoidglass } from '../../../spacetimedb/src/loot';
-import { CHRONOSHARDS, ELIXIR_KILLS, SUPPLIES, phialText, type ChronoshardDef } from '../../../spacetimedb/src/data/supplies';
+import { CHISELS, CHRONOSHARDS, ELIXIR_KILLS, SUPPLIES, phialText, type ChronoshardDef } from '../../../spacetimedb/src/data/supplies';
 import { heldPhials } from '../PhialPicker';
 import { SettleReport } from '../AwayReport';
 import { SCRAP_YIELD, isScrapRarity, scrapMaterialId } from '../../../spacetimedb/src/data/recipes';
@@ -111,12 +111,43 @@ function ConsumablesTab({ s }: { s: Snapshot }) {
       )}
       <PhialList s={s} />
       <ChronoshardList s={s} />
+      <ChiselList s={s} />
     </div>
   );
 }
 
 /** Chronoshards in stock, best grade first. */
 const heldChronoshards = (s: Snapshot) => CHRONOSHARDS.filter(c => (s.supplies.get(c.id) ?? 0) > 0).sort((a, b) => b.grade - a.grade);
+
+/** Chisels in stock. */
+const heldChisels = (s: Snapshot) => CHISELS.filter(c => (s.supplies.get(c.id) ?? 0) > 0);
+
+/** Chisels in stock: used on an item in Crafting, so nothing to do here. */
+function ChiselList({ s }: { s: Snapshot }) {
+  const held = heldChisels(s);
+  if (!held.length) return null;
+  return (
+    <>
+      <CardHead title="Chisels">
+        <a className="btn small ghost" href="#crafting">Crafting</a>
+      </CardHead>
+      <ul className="foes">
+        {held.map(c => (
+          <li key={c.id} className="foe">
+            <div className="foe-row">
+              <Icon name="chisel" className="c-magic" />
+              <div className="foe-info">
+                <div className="foe-name">{c.name} <span className="muted">×{s.supplies.get(c.id)}</span></div>
+                <div className="foe-meta muted">{c.text}</div>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="muted">Used on an item in Crafting, in its Chisel tab.</p>
+    </>
+  );
+}
 
 /** "30 minutes", "1 hour", "2 hours". */
 const minutesText = (m: number) => (m < 60 ? `${m} minutes` : `${m / 60} hour${m === 60 ? '' : 's'}`);
@@ -392,7 +423,7 @@ function GearTab({ s }: { s: Snapshot }) {
 }
 
 export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
-  const usable = [...heldSupplies(s), ...heldChronoshards(s)].reduce((n, sup) => n + (s.supplies.get(sup.id) ?? 0), 0);
+  const usable = [...heldSupplies(s), ...heldChronoshards(s), ...heldChisels(s)].reduce((n, sup) => n + (s.supplies.get(sup.id) ?? 0), 0);
   return (
     <>
       <ViewHeader title="Bag" icon="bag" />

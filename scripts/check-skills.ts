@@ -490,10 +490,10 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
     return poolMeans(enemy, zone.tier).find(m => (m.drop.kind === 'material' ? m.drop.materialId : m.drop.supplyId) === drop)?.mean ?? 0;
   };
   check('Voidglass moved to the rare pool: no enemy lists it as a material', ZONES.every(z => z.enemies.every(e => materialMeans(e, z.tier, 1).every(m => m.materialId !== glass))));
-  check('pool Voidglass from T4: Selvara ~1 in 510 kills, a T4 Basic ~1 in 5,200, none below T4',
-    near(poolMean(406, glass), 0.00196) && Math.round(1 / poolMean(403, glass)) === 5208 && poolMean(306, glass) === 0);
-  check('pool rate × rank: Boss 10, Elite 3, Basic 1; an Elite encounter is Elite',
-    near(poolMult({ ...ENEMIES_BY_ID.get(406)!.enemy, level: 0 }), 10) && near(poolMult({ ...eliteOf(ENEMIES_BY_ID.get(101)!.enemy), level: 0 }), 3) && near(poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1));
+  check('pool Voidglass from T4: Selvara ~1 in 510 kills, a T4 Basic ~1 in 2,100, none below T4',
+    near(poolMean(406, glass), 0.00196) && Math.round(1 / poolMean(403, glass)) === 2083 && poolMean(306, glass) === 0);
+  check('pool rate × rank: Boss 4, Elite 2, Basic 1; an Elite encounter is Elite',
+    near(poolMult({ ...ENEMIES_BY_ID.get(406)!.enemy, level: 0 }), 4) && near(poolMult({ ...eliteOf(ENEMIES_BY_ID.get(101)!.enemy), level: 0 }), 2) && near(poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1));
   check('pool rate rises very slightly with level (+0.5% a level)', near(poolMult(ENEMIES_BY_ID.get(101)!.enemy) / poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1.005));
   check('Chronoshards far rarer than Voidglass, and rarer by grade', [1, 2, 3].map(g => poolMean(404, chronoshardSupplyId(g))).every((m, i, ms) => m > 0 && m * 8 <= poolMean(404, glass) && (i === 0 || m < ms[i - 1])));
   check('Chronoshards drop from T1 too', poolMean(101, chronoshardSupplyId(1)) > 0);

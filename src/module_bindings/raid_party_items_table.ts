@@ -43,4 +43,6 @@ export default __t.row({
   createdAt: __t.timestamp().name("created_at"),
   effects: __t.array(__t.u16()),
   temper: __t.u8(),
+  boundAffix: __t.u8().name("bound_affix"),
+  corruption: __t.u8(),
 });

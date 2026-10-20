@@ -23,7 +23,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.1.2',
     date: '2026-10-20',
-    commit: '7947d69',
+    commit: '793835f',
     title: 'Mail, Chisels, Chronoshards and a rare loot pool',
     changes: [
       { tag: 'new', text: 'Mail: messages and gifts from the game now arrive in your mailbox (System › Mail), with a badge when something is unread. Open a mail and press Claim to take what is attached. Some gifts expire, so claim them in time.' },
@@ -34,6 +34,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'new', text: 'Gathering finds Chisels too: about 1 in 1,400 actions with Mining, Woodcutting or Foraging, at any tier, and more often at higher skill levels (twice as often at 99).' },
       { tag: 'new', text: 'Nameplates fade in behind the name from the left, and names keep the same height with or without one. Friend and online lists, raid seats, duels and the Moonwell leaderboard show names on one line, with the title on hover.' },
       { tag: 'new', text: 'New players start with the dark theme. Pick Light or System in Settings › Appearance.' },
+      { tag: 'new', text: 'Corrupted items have a red tint in the Bag and the other item grids, under their rarity color.' },
       { tag: 'balance', text: 'Voidglass now drops from every enemy in tier 4 zones and up, not only zone bosses: about 1 in 2,100 kills from regular enemies and 1 in 1,000 from elites. Selvara stays about the same (1 in 510, was 1 in 500).' },
     ],
   },

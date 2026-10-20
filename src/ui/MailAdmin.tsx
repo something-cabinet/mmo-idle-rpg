@@ -7,7 +7,7 @@ import { BASE_LIST } from '../../spacetimedb/src/data/bases';
 import { COSMETICS, COSMETICS_BY_ID } from '../../spacetimedb/src/data/cosmetics';
 import { MATERIALS, MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
 import { MAX_TIER } from '../../spacetimedb/src/data/stats';
-import { CHRONOSHARDS, PHIALS, SUPPLIES } from '../../spacetimedb/src/data/supplies';
+import { CHISELS, CHRONOSHARDS, PHIALS, SUPPLIES } from '../../spacetimedb/src/data/supplies';
 import { UNIQUES, UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
 import { DEV_RARITIES } from '../../spacetimedb/src/loot';
 import { MAX_MAIL_BODY, MAX_MAIL_SUBJECT, parseGift } from '../../spacetimedb/src/mail';
@@ -29,6 +29,7 @@ const KIND_LABEL: Record<Kind, string> = { mat: 'Material', supply: 'Supply', co
 const COUNTED: Kind[] = ['mat', 'supply', 'item', 'unique'];
 const SUPPLY_GROUPS = [
   ['Chronoshards', CHRONOSHARDS],
+  ['Chisels', CHISELS],
   ['Elixirs', SUPPLIES],
   ['Phials', PHIALS],
 ] as const;

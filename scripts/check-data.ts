@@ -31,6 +31,7 @@ check('raid-only bases: their raid exists and drops them', BASE_LIST.every(b => 
   RAIDS_BY_ID.get(b.raidId)?.boss.drops.includes(b.id) === true));
 check("raids drop no other raid's bases", RAIDS.every(r => r.boss.drops.every(id => [undefined, r.id].includes(base(id).raidId))));
 check('enemy IDs unique', unique(ZONES.flatMap(z => z.enemies.map(e => e.id))));
+check('every overworld enemy has a rank: Boss exactly for bosses', ZONES.every(z => z.enemies.every(e => e.rank !== undefined && (e.rank === 'Boss') === !!e.boss)));
 check('legendary and unique effect IDs unique', unique([...LEGENDARIES, ...UNIQUE_EFFECTS].map(l => l.id)));
 check('legendary effects stack: positive per copy, cap at least one copy', LEGENDARIES.every(l => l.perCopy > 0 && l.cap >= l.perCopy));
 for (const g of ['Offense', 'Defense', 'Utility'] as const) {

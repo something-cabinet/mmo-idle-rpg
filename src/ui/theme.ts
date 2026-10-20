@@ -8,11 +8,11 @@ const listeners = new Set<() => void>();
 export function themePref(): ThemePref {
   try {
     const t = localStorage.getItem(KEY);
-    if (t === 'dark' || t === 'light') return t;
+    if (t === 'system' || t === 'dark' || t === 'light') return t;
   } catch {
-    // storage blocked: follow the system
+    // storage blocked: the default
   }
-  return 'system';
+  return 'dark';
 }
 
 export function effectiveTheme(pref = themePref()): 'dark' | 'light' {
@@ -21,8 +21,7 @@ export function effectiveTheme(pref = themePref()): 'dark' | 'light' {
 
 export function setTheme(pref: ThemePref) {
   try {
-    if (pref === 'system') localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, pref);
+    localStorage.setItem(KEY, pref);
   } catch {
     // ignore
   }

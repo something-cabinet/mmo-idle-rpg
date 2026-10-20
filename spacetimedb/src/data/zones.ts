@@ -8,10 +8,19 @@ import { MIGHT_ACCURACY, accuracyAtLevel, dodgeChance } from './stats';
 
 export type Defense = 'Balanced' | 'Armored' | 'Warded';
 
+/**
+ * How strong an enemy is for its place, which scales the global rare loot pool's drop rate.
+ * Not shown in the UI. Secret enemies are Basic unless stated otherwise; an Elite encounter
+ * (encounters.ts `eliteOf`) is Elite.
+ */
+export type EnemyRank = 'Basic' | 'Elite' | 'Boss';
+
 export interface EnemyDef {
   id: number;
   name: string;
   level: number;
+  /** Every overworld enemy states one (Boss exactly when `boss`); enemies made elsewhere (Abyss, raids) default to Basic. */
+  rank?: EnemyRank;
   damageType: 'Physical' | 'Magic';
   defense: Defense;
   /** Attacks per second (presentation only; DPS decides the outcome). */
@@ -138,16 +147,16 @@ export const ZONES: ZoneDef[] = [
     name: 'Greenhollow',
     blurb: 'Farmland and woods at the edge of the starting village.',
     enemies: [
-      { id: 101, name: 'Field Rat', level: 1, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 23, dps: 4.5, armor: 2.5, resistance: 2.5, xp: 7, gold: 2, drops: T1_DROPS.rat, materials: ['Hide', 'Reagent'] },
-      { id: 102, name: 'Wild Boar', level: 4, damageType: 'Physical', defense: 'Armored', speed: 0.8, hp: 35, dps: 6.9, armor: 24, resistance: 4, xp: 10, gold: 3, drops: T1_DROPS.boar, materials: ['Hide', 'Wood'] },
-      { id: 103, name: 'Goblin Scout', level: 7, damageType: 'Physical', defense: 'Balanced', speed: 1.2, hp: 53, dps: 10.5, armor: 17.5, resistance: 17.5, xp: 14, gold: 4, drops: T1_DROPS.scout, materials: ['Metal', 'Cloth'] },
-      { id: 104, name: 'Bog Wisp', level: 10, damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 80, dps: 16, armor: 10, resistance: 60, xp: 20, gold: 5, drops: T1_DROPS.wisp, materials: ['Core', 'Reagent'] },
-      { id: 105, name: 'Goblin Brute', level: 13, damageType: 'Physical', defense: 'Armored', speed: 0.7, hp: 101, dps: 20.2, armor: 78, resistance: 13, xp: 28, gold: 7, drops: T1_DROPS.brute, materials: ['Metal', 'Gem'] },
-      { id: 106, name: 'Grubnak, Goblin Chief', level: 15, damageType: 'Physical', defense: 'Balanced', speed: 0.9, hp: 138, dps: 27.4, armor: 37.5, resistance: 37.5, xp: 44, gold: 11, drops: all(T1_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
+      { id: 101, name: 'Field Rat', level: 1, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 23, dps: 4.5, armor: 2.5, resistance: 2.5, xp: 7, gold: 2, drops: T1_DROPS.rat, materials: ['Hide', 'Reagent'] },
+      { id: 102, name: 'Wild Boar', level: 4, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.8, hp: 35, dps: 6.9, armor: 24, resistance: 4, xp: 10, gold: 3, drops: T1_DROPS.boar, materials: ['Hide', 'Wood'] },
+      { id: 103, name: 'Goblin Scout', level: 7, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.2, hp: 53, dps: 10.5, armor: 17.5, resistance: 17.5, xp: 14, gold: 4, drops: T1_DROPS.scout, materials: ['Metal', 'Cloth'] },
+      { id: 104, name: 'Bog Wisp', level: 10, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 80, dps: 16, armor: 10, resistance: 60, xp: 20, gold: 5, drops: T1_DROPS.wisp, materials: ['Core', 'Reagent'] },
+      { id: 105, name: 'Goblin Brute', level: 13, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.7, hp: 101, dps: 20.2, armor: 78, resistance: 13, xp: 28, gold: 7, drops: T1_DROPS.brute, materials: ['Metal', 'Gem'] },
+      { id: 106, name: 'Grubnak, Goblin Chief', level: 15, rank: 'Boss', damageType: 'Physical', defense: 'Balanced', speed: 0.9, hp: 138, dps: 27.4, armor: 37.5, resistance: 37.5, xp: 44, gold: 11, drops: all(T1_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
       // Secret (Sunken Chapel): a T2-strength enemy (Ironbark Treant's level, HP and DPS) hidden in T1,
       // magic damage behind armor. Pays far above T1: XP and gold past a strong T2 enemy, so
       // ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
-      { id: 107, name: 'Drowned Bellringer', level: 22, damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 261, dps: 31.1, armor: 132, resistance: 22, xp: 100, gold: 27, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5, uniqueDropMult: 0.5 },
+      { id: 107, name: 'Drowned Bellringer', level: 22, rank: 'Basic', damageType: 'Magic', defense: 'Armored', speed: 0.6, hp: 261, dps: 31.1, armor: 132, resistance: 22, xp: 100, gold: 27, drops: [21, 5, 9, 33, 40, 52], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5, uniqueDropMult: 0.5 },
     ],
     areas: [
       { id: 11, name: 'Village Fields', blurb: 'Trampled wheat and gnawed fences just past the last houses.', enemies: [101, 102], x: 8, y: 90 },
@@ -165,12 +174,12 @@ export const ZONES: ZoneDef[] = [
     name: 'Thornwood',
     blurb: 'A dark, overgrown forest where bandits and beasts hide.',
     enemies: [
-      { id: 201, name: 'Thornback Spider', level: 16, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 147, dps: 17.5, armor: 40, resistance: 40, xp: 37, gold: 9, drops: T2_DROPS.spider, materials: ['Hide', 'Cloth', 'Reagent'] },
-      { id: 202, name: 'Bandit Cutthroat', level: 18, damageType: 'Physical', defense: 'Balanced', speed: 1.3, hp: 178, dps: 21.2, armor: 45, resistance: 45, xp: 48, gold: 12, drops: T2_DROPS.cutthroat, materials: ['Metal', 'Cloth', 'Gem'] },
-      { id: 203, name: 'Briar Shaman', level: 20, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 216, dps: 25.7, armor: 20, resistance: 120, xp: 62, gold: 16, drops: T2_DROPS.shaman, materials: ['Core', 'Reagent'] },
-      { id: 204, name: 'Ironbark Treant', level: 22, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 261, dps: 31.1, armor: 132, resistance: 22, xp: 81, gold: 20, drops: T2_DROPS.treant, materials: ['Core', 'Wood'] },
-      { id: 205, name: 'Dire Wolf', level: 24, damageType: 'Physical', defense: 'Balanced', speed: 1.4, hp: 316, dps: 37.6, armor: 60, resistance: 60, xp: 105, gold: 26, drops: T2_DROPS.wolf, materials: ['Hide', 'Reagent'] },
-      { id: 206, name: 'Morgra, the Thorn Witch', level: 25, damageType: 'Magic', defense: 'Warded', speed: 0.8, hp: 463, dps: 50, armor: 25, resistance: 150, xp: 156, gold: 39, drops: all(T2_DROPS), materials: ['Core', 'Reagent', 'Gem'], boss: true },
+      { id: 201, name: 'Thornback Spider', level: 16, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 147, dps: 17.5, armor: 40, resistance: 40, xp: 37, gold: 9, drops: T2_DROPS.spider, materials: ['Hide', 'Cloth', 'Reagent'] },
+      { id: 202, name: 'Bandit Cutthroat', level: 18, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.3, hp: 178, dps: 21.2, armor: 45, resistance: 45, xp: 48, gold: 12, drops: T2_DROPS.cutthroat, materials: ['Metal', 'Cloth', 'Gem'] },
+      { id: 203, name: 'Briar Shaman', level: 20, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 216, dps: 25.7, armor: 20, resistance: 120, xp: 62, gold: 16, drops: T2_DROPS.shaman, materials: ['Core', 'Reagent'] },
+      { id: 204, name: 'Ironbark Treant', level: 22, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 261, dps: 31.1, armor: 132, resistance: 22, xp: 81, gold: 20, drops: T2_DROPS.treant, materials: ['Core', 'Wood'] },
+      { id: 205, name: 'Dire Wolf', level: 24, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.4, hp: 316, dps: 37.6, armor: 60, resistance: 60, xp: 105, gold: 26, drops: T2_DROPS.wolf, materials: ['Hide', 'Reagent'] },
+      { id: 206, name: 'Morgra, the Thorn Witch', level: 25, rank: 'Boss', damageType: 'Magic', defense: 'Warded', speed: 0.8, hp: 463, dps: 50, armor: 25, resistance: 150, xp: 156, gold: 39, drops: all(T2_DROPS), materials: ['Core', 'Reagent', 'Gem'], boss: true },
     ],
     areas: [
       { id: 21, name: 'Webbed Road', blurb: 'The forest road, strung with webs and watched by bandits.', enemies: [201, 202], x: 50, y: 94 },
@@ -186,12 +195,12 @@ export const ZONES: ZoneDef[] = [
     name: 'Frostmaw Pass',
     blurb: 'A snowbound mountain pass below an abandoned dwarven hold.',
     enemies: [
-      { id: 301, name: 'Ice Harpy', level: 26, damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 363, dps: 26.1, armor: 65, resistance: 65, xp: 107, gold: 27, drops: T3_DROPS.harpy, materials: ['Hide', 'Reagent'] },
-      { id: 302, name: 'Kobold Tunneler', level: 28, damageType: 'Physical', defense: 'Armored', speed: 1.1, hp: 439, dps: 31.6, armor: 168, resistance: 28, xp: 139, gold: 35, drops: T3_DROPS.kobold, materials: ['Metal', 'Wood', 'Gem'] },
-      { id: 303, name: 'Frost Wraith', level: 30, damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 531, dps: 38.3, armor: 30, resistance: 180, xp: 181, gold: 45, drops: T3_DROPS.wraith, materials: ['Core'] },
-      { id: 304, name: 'Rimebound Cultist', level: 32, damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 643, dps: 46.3, armor: 80, resistance: 80, xp: 235, gold: 59, drops: T3_DROPS.cultist, materials: ['Core', 'Cloth'] },
-      { id: 305, name: 'Stone Golem', level: 34, damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 778, dps: 56, armor: 204, resistance: 34, xp: 305, gold: 76, drops: T3_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
-      { id: 306, name: 'Hrimvald, Frost Giant Jarl', level: 35, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1242, dps: 74.6, armor: 210, resistance: 35, xp: 452, gold: 113, drops: all(T3_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
+      { id: 301, name: 'Ice Harpy', level: 26, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 363, dps: 26.1, armor: 65, resistance: 65, xp: 107, gold: 27, drops: T3_DROPS.harpy, materials: ['Hide', 'Reagent'] },
+      { id: 302, name: 'Kobold Tunneler', level: 28, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 1.1, hp: 439, dps: 31.6, armor: 168, resistance: 28, xp: 139, gold: 35, drops: T3_DROPS.kobold, materials: ['Metal', 'Wood', 'Gem'] },
+      { id: 303, name: 'Frost Wraith', level: 30, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 1.0, hp: 531, dps: 38.3, armor: 30, resistance: 180, xp: 181, gold: 45, drops: T3_DROPS.wraith, materials: ['Core'] },
+      { id: 304, name: 'Rimebound Cultist', level: 32, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 643, dps: 46.3, armor: 80, resistance: 80, xp: 235, gold: 59, drops: T3_DROPS.cultist, materials: ['Core', 'Cloth'] },
+      { id: 305, name: 'Stone Golem', level: 34, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 778, dps: 56, armor: 204, resistance: 34, xp: 305, gold: 76, drops: T3_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
+      { id: 306, name: 'Hrimvald, Frost Giant Jarl', level: 35, rank: 'Boss', damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1242, dps: 74.6, armor: 210, resistance: 35, xp: 452, gold: 113, drops: all(T3_DROPS), materials: ['Metal', 'Hide', 'Gem'], boss: true },
     ],
     areas: [
       { id: 31, name: 'Switchbacks', blurb: 'The trail climbs past harpy nests and kobold tunnels.', enemies: [301, 302], x: 10, y: 92 },
@@ -208,15 +217,15 @@ export const ZONES: ZoneDef[] = [
     name: 'Moonveil Vale',
     blurb: 'A hidden elven valley of silver woods and moonlit ruins, under a moon gone dark.',
     enemies: [
-      { id: 401, name: 'Moonmoth Swarm', level: 36, damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 437, evasionRating: 211, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
-      { id: 402, name: 'Owlbear', level: 38, damageType: 'Physical', defense: 'Balanced', speed: 0.7, hp: 814, dps: 47.2, armor: 95, resistance: 95, xp: 403, gold: 101, drops: T4_DROPS.owlbear, materials: ['Hide', 'Reagent'] },
-      { id: 403, name: 'Silverbark Dryad', level: 40, damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 735, regen: 25, dps: 57.1, armor: 40, resistance: 240, xp: 524, gold: 131, drops: T4_DROPS.dryad, materials: ['Core', 'Wood'] },
-      { id: 404, name: 'Hollow Sentinel', level: 42, damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1191, dps: 69.1, armor: 252, resistance: 42, xp: 680, gold: 170, drops: T4_DROPS.sentinel, materials: ['Metal', 'Core', 'Gem'] },
-      { id: 405, name: 'Lunar Spellweaver', level: 44, damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 1441, dps: 83.6, armor: 110, resistance: 110, xp: 884, gold: 221, drops: T4_DROPS.spellweaver, materials: ['Core', 'Cloth', 'Gem'] },
-      { id: 406, name: 'Selvara, the Moonless Queen', level: 45, damageType: 'Magic', defense: 'Armored', speed: 0.8, hp: 2494, dps: 111.2, armor: 270, resistance: 45, xp: 1310, gold: 328, drops: all(T4_DROPS), materials: ['Gem'], boss: true },
+      { id: 401, name: 'Moonmoth Swarm', level: 36, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 437, evasionRating: 211, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
+      { id: 402, name: 'Owlbear', level: 38, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 0.7, hp: 814, dps: 47.2, armor: 95, resistance: 95, xp: 403, gold: 101, drops: T4_DROPS.owlbear, materials: ['Hide', 'Reagent'] },
+      { id: 403, name: 'Silverbark Dryad', level: 40, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 735, regen: 25, dps: 57.1, armor: 40, resistance: 240, xp: 524, gold: 131, drops: T4_DROPS.dryad, materials: ['Core', 'Wood'] },
+      { id: 404, name: 'Hollow Sentinel', level: 42, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.6, hp: 1191, dps: 69.1, armor: 252, resistance: 42, xp: 680, gold: 170, drops: T4_DROPS.sentinel, materials: ['Metal', 'Core', 'Gem'] },
+      { id: 405, name: 'Lunar Spellweaver', level: 44, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.0, hp: 1441, dps: 83.6, armor: 110, resistance: 110, xp: 884, gold: 221, drops: T4_DROPS.spellweaver, materials: ['Core', 'Cloth', 'Gem'] },
+      { id: 406, name: 'Selvara, the Moonless Queen', level: 45, rank: 'Boss', damageType: 'Magic', defense: 'Armored', speed: 0.8, hp: 2494, dps: 111.2, armor: 270, resistance: 45, xp: 1310, gold: 328, drops: all(T4_DROPS), materials: ['Gem'], boss: true },
       // Secret (Moonlight Garden): T5 strength (a T5 +2 enemy, about as tough as Selvara) hidden in T4.
       // Pays like the Bellringer: ~4.5× the drops (`rewardScale`), and Rare and better × 2.5 on top.
-      { id: 407, name: 'Moonlit Champion', level: 52, damageType: 'Magic', defense: 'Balanced', speed: 0.5, hp: 2189, dps: 103, armor: 130, resistance: 130, xp: 2435, gold: 651, drops: [1, 7, 5, 31, 39, 56], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5, uniqueDropMult: 0.5 },
+      { id: 407, name: 'Moonlit Champion', level: 52, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 0.5, hp: 2189, dps: 103, armor: 130, resistance: 130, xp: 2435, gold: 651, drops: [1, 7, 5, 31, 39, 56], materials: ['Core', 'Metal'], secret: true, rareDropMult: 2.5, uniqueDropMult: 0.5 },
     ],
     areas: [
       { id: 41, name: 'Silverbark Glade', blurb: "Pale trees glow under a moon that isn't there.", enemies: [401, 402], x: 10, y: 90 },

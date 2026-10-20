@@ -32,9 +32,9 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'new', text: "Corruption Chisel: one random outcome, good or bad: gain or lose an affix (even past the usual count), raise or lower an affix tier (even past the item's tier, up to T10), reroll every value, or nothing. A corrupted item can never be crafted or tempered again." },
       { tag: 'new', text: 'Rare loot pool: every enemy can now drop Chisels (Chaos and Corruption about 1 in 2,500 kills, the others 1 in 5,000) and, very rarely, Chronoshards. Elites drop pool loot 2× as often as regular enemies, bosses 4×, and higher-level enemies a little more.' },
       { tag: 'new', text: 'Gathering finds Chisels too: about 1 in 1,400 actions with Mining, Woodcutting or Foraging, at any tier, and more often at higher skill levels (twice as often at 99).' },
-      { tag: 'balance', text: 'Voidglass now drops from every enemy in tier 4 zones and up, not only zone bosses: about 1 in 2,100 kills from regular enemies and 1 in 1,000 from elites. Selvara stays about the same (1 in 510, was 1 in 500).' },
       { tag: 'new', text: 'Nameplates fade in behind the name from the left, and names keep the same height with or without one. Friend and online lists, raid seats, duels and the Moonwell leaderboard show names on one line, with the title on hover.' },
       { tag: 'new', text: 'New players start with the dark theme. Pick Light or System in Settings › Appearance.' },
+      { tag: 'balance', text: 'Voidglass now drops from every enemy in tier 4 zones and up, not only zone bosses: about 1 in 2,100 kills from regular enemies and 1 in 1,000 from elites. Selvara stays about the same (1 in 510, was 1 in 500).' },
     ],
   },
   {

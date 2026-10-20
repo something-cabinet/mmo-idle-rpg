@@ -252,7 +252,7 @@ export const CHISELS: ChiselDef[] = [
   { id: chiselSupplyId(ChiselKind.Improvement), kind: ChiselKind.Improvement, name: 'Improvement Chisel', target: 'affix',
     text: "Raises one affix a tier, up to the item's tier." },
   { id: chiselSupplyId(ChiselKind.Corruption), kind: ChiselKind.Corruption, name: 'Corruption Chisel',
-    text: 'Corrupts the item with one random outcome: add or remove an affix, raise or lower an affix tier (past the usual limits), reroll every value, or nothing. It can never be crafted again.' },
+    text: 'Corrupts the item with one random outcome: add or remove an affix, raise or lower an affix tier (past the usual limits), reroll every value, or nothing. It can never be modified again.' },
 ];
 export const CHISELS_BY_ID: ReadonlyMap<number, ChiselDef> = new Map(CHISELS.map(c => [c.id, c]));
 

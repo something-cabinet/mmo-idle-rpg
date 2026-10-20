@@ -243,7 +243,8 @@ against a local server, and make sure `dist/` was built after the last change.
 Players see `src/changelog.ts` in the "What's new" popup: every entry newer than the
 version they last saw. Write it for players: a `new`, `balance` or `fix` tag per line,
 concrete numbers with the old value ("37,000, was 35,000"), and nothing internal (tests,
-refactors, docs).
+refactors, docs). Group the lines by tag: all `new` first, then `fix`, then `balance`.
+Adding to an entry, put each line at the end of its group, not at the end of the list.
 
 **Commit and push without deploying.** Changes that players will notice still get notes
 right away, in a *pending* entry at the top of the list:

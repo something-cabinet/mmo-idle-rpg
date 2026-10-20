@@ -53,7 +53,7 @@ export function ChiselAction({ s, it }: { s: Snapshot; it: Item }) {
 
   const apply = () => {
     if (c.kind === ChiselKind.Chaos && !confirm(`Reroll every ${it.boundAffix ? 'unbound ' : ''}affix of this item? It can't be undone.`)) return;
-    if (c.kind === ChiselKind.Corruption && !confirm("Corrupt this item? One random outcome, good or bad, and it can never be crafted again.")) return;
+    if (c.kind === ChiselKind.Corruption && !confirm("Corrupt this item? One random outcome, good or bad, and it can never be modified again.")) return;
     if (c.kind === ChiselKind.Binding && !confirm("Bind this affix for good? An item can have only one bound affix, and it can't be unbound.")) return;
     call(s.conn.reducers.applyChisel({ itemId: it.id, chiselId: c.id, target: c.target ? target : 0 }));
   };

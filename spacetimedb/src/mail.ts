@@ -12,7 +12,7 @@ import { DEV_RARITIES, type RarityName } from './loot';
 /** `item.characterId` of items attached to mail and not claimed yet. No character has ID 0. */
 export const MAIL_ESCROW = 0n;
 /** Shown as the sender of `System` mail. */
-export const SYSTEM_SENDER_NAME = 'Game Master';
+export const SYSTEM_SENDER_NAME = 'System';
 export const MAX_MAIL_SUBJECT = 80;
 export const MAX_MAIL_BODY = 2000;
 /** Items one mail can carry (each takes a bag slot on claim). */

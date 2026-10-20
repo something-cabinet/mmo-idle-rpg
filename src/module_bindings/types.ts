@@ -65,6 +65,9 @@ export const AccountKind = __t.enum("AccountKind", {
 });
 export type AccountKind = __Infer<typeof AccountKind>;
 
+export const AdminSentMail = __t.object("AdminSentMail", {});
+export type AdminSentMail = __Infer<typeof AdminSentMail>;
+
 export const Affix = __t.object("Affix", {
   stat: __t.u16(),
   tier: __t.u8(),

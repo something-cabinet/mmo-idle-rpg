@@ -14,6 +14,7 @@ import { Icon } from '../Icon';
 import { ItemCard, materialIconName, materialName } from '../items';
 import { CardHead, ViewHeader } from '../shared';
 import type { Snapshot } from '../snapshot';
+import { MailCompose, MailSent } from '../MailAdmin';
 
 /** The mail still shown: not expired (the server deletes expired mail on the next login). */
 export function liveMail(conn: DbConnection): Mail[] {
@@ -109,16 +110,30 @@ export function MailView({ s }: { s: Snapshot }) {
   const [selected, setSelected] = useSticky<bigint | undefined>('mailSelected', undefined);
   const open = mails.find(m => m.id === selected) ?? mails[0];
   const anyRead = mails.some(m => m.read && !hasAttachments(m));
+  const admin = [...s.conn.db.myAccount.iter()][0]?.role.tag === 'Admin';
+  const [tab, setTab] = useSticky<'inbox' | 'compose' | 'sent'>('mailTab', 'inbox');
+  const shown = admin ? tab : 'inbox';
   return (
     <>
       <ViewHeader title="Mail" icon="mail">
-        {anyRead && (
+        {shown === 'inbox' && anyRead && (
           <button className="btn small ghost" onClick={() => call(s.conn.reducers.deleteReadMail({}), 'Read mail deleted')}>
             Delete read mail
           </button>
         )}
       </ViewHeader>
-      {mails.length === 0 ? (
+      {admin && (
+        <div className="seg">
+          <button className={`seg-btn${shown === 'inbox' ? ' active' : ''}`} onClick={() => setTab('inbox')}>Inbox</button>
+          <button className={`seg-btn${shown === 'compose' ? ' active' : ''}`} onClick={() => setTab('compose')}>Compose</button>
+          <button className={`seg-btn${shown === 'sent' ? ' active' : ''}`} onClick={() => setTab('sent')}>Sent</button>
+        </div>
+      )}
+      {shown === 'compose' ? (
+        <MailCompose conn={s.conn} />
+      ) : shown === 'sent' ? (
+        <MailSent conn={s.conn} />
+      ) : mails.length === 0 ? (
         <div className="card">
           <p className="muted">No mail. Messages and gifts from the game show up here.</p>
         </div>

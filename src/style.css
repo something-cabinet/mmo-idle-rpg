@@ -278,7 +278,8 @@ button:disabled {
 }
 
 input,
-select {
+select,
+textarea {
   width: 100%;
   padding: 7px 10px;
   border-radius: var(--radius-sm);
@@ -292,6 +293,7 @@ select {
 }
 input:focus,
 select:focus,
+textarea:focus,
 .btn:focus-visible {
   outline: 2px solid var(--info);
   outline-offset: 1px;
@@ -4512,4 +4514,43 @@ fieldset.affix-pick legend {
   .mail-list {
     max-height: 40vh;
   }
+}
+.mail-compose {
+  display: grid;
+  gap: 6px;
+  max-width: 760px;
+}
+.mail-compose .seg {
+  justify-self: start;
+  margin-bottom: 0;
+}
+.mail-input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+}
+textarea.mail-input {
+  resize: vertical;
+}
+.mail-attach-list,
+.mail-sent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.mail-attach-list li,
+.mail-sent-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.mail-sent-list li {
+  padding: 8px 10px;
+  overflow-wrap: anywhere;
 }

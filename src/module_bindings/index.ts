@@ -103,6 +103,7 @@ import UpgradeToolReducer from "./upgrade_tool_reducer";
 
 // Import all table schema definitions
 import AbyssRecordRow from "./abyss_record_table";
+import AdminSentMailRow from "./admin_sent_mail_table";
 import CharacterRow from "./character_table";
 import ChatMessageRow from "./chat_message_table";
 import InspectedCharacterRow from "./inspected_character_table";
@@ -233,6 +234,13 @@ const tablesSchema = __schema({
       { name: 'raid_party_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, RaidPartyRow),
+  adminSentMail: __table({
+    name: 'admin_sent_mail',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, AdminSentMailRow),
   inspectedCharacter: __table({
     name: 'inspected_character',
     indexes: [
@@ -498,6 +506,8 @@ const proceduresSchema = __procedures(
 
 type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "tables"> & {
   tables: typeof tablesSchema.schemaType.tables & {
+    /** @deprecated Use `adminSentMail` instead. This alias will be removed in the next major version. */
+    readonly "admin_sent_mail": Omit<typeof tablesSchema.schemaType.tables["adminSentMail"], "accessorName"> & { readonly accessorName: "admin_sent_mail" };
     /** @deprecated Use `inspectedCharacter` instead. This alias will be removed in the next major version. */
     readonly "inspected_character": Omit<typeof tablesSchema.schemaType.tables["inspectedCharacter"], "accessorName"> & { readonly accessorName: "inspected_character" };
     /** @deprecated Use `inspectedItems` instead. This alias will be removed in the next major version. */
@@ -570,6 +580,7 @@ const REMOTE_MODULE = {
 >;
 
 const tableAccessorAliases = {
+  "admin_sent_mail": "adminSentMail",
   "inspected_character": "inspectedCharacter",
   "inspected_items": "inspectedItems",
   "inspected_loadout": "inspectedLoadout",
@@ -617,6 +628,8 @@ function __withTableAccessorAliases<T extends object>(target: T, freeze = false)
 
 type __DbViewBase = __DbConnectionImpl<typeof REMOTE_MODULE>["db"];
 export type DbView = __DbViewBase & {
+  /** @deprecated Use `adminSentMail` instead. This alias will be removed in the next major version. */
+  readonly "admin_sent_mail": __DbViewBase["adminSentMail"];
   /** @deprecated Use `inspectedCharacter` instead. This alias will be removed in the next major version. */
   readonly "inspected_character": __DbViewBase["inspectedCharacter"];
   /** @deprecated Use `inspectedItems` instead. This alias will be removed in the next major version. */
@@ -675,6 +688,8 @@ export type DbView = __DbViewBase & {
 
 type __TablesBase = __QueryBuilder<typeof tablesSchema.schemaType>;
 export type Tables = __TablesBase & {
+  /** @deprecated Use `adminSentMail` instead. This alias will be removed in the next major version. */
+  readonly "admin_sent_mail": __TablesBase["adminSentMail"];
   /** @deprecated Use `inspectedCharacter` instead. This alias will be removed in the next major version. */
   readonly "inspected_character": __TablesBase["inspectedCharacter"];
   /** @deprecated Use `inspectedItems` instead. This alias will be removed in the next major version. */

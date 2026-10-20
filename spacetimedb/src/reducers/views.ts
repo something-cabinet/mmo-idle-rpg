@@ -1,6 +1,6 @@
 // Per-player views over private tables: each client sees only its own rows.
 import { t } from 'spacetimedb/server';
-import { abyssLog, bossKill, character, cosmeticUnlock, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, mail, material, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
+import { abyssLog, bossKill, character, cosmeticUnlock, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, mail, material, sentMail, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
 
 export const my_items = spacetimedb.view({ name: 'my_items', public: true }, t.array(item.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
@@ -184,3 +184,8 @@ export const my_mail_items = spacetimedb.view({ name: 'my_mail_items', public: t
     m.claimed ? [] : m.itemIds.flatMap(id => ctx.db.item.id.find(id) ?? [])
   );
 });
+
+/** Every `sendMail` so far, for the admin Mail screen (Sent tab); empty for everyone else. */
+export const admin_sent_mail = spacetimedb.view({ name: 'admin_sent_mail', public: true }, t.array(sentMail.rowType), ctx =>
+  ctx.db.account.identity.find(ctx.sender)?.role.tag === 'Admin' ? [...ctx.db.sentMail.iter()] : []
+);

@@ -167,17 +167,17 @@ export const LOOKS: Record<number, string> = {
     'wielding a huge greatsword with a translucent pale blue crystal blade',
   // Brightvein Hold
   501: 'a glowvein crawler: a big armored tunnel beetle with slate-grey plates cracked by glowing silver-blue veins, ' +
-    'many sharp legs, glowing mandibles',
+    'many sharp legs, bright silver-blue mandibles',
   502: 'a tunnel drake: a lean wingless drake with dusty brown-grey scales, a long neck and tail, ember-orange eyes, ' +
-    'clawing its way out of a rock crack',
+    'heavy digging claws crusted with rock dust',
   503: 'a runeweave warder: a stern old dwarf rune-caster in heavy layered robes stitched with glowing silver-blue runes, ' +
     'a long braided white beard, a rune-carved staff',
-  504: 'a brightsteel golem: a massive forge construct of silver-blue metal plates and bronze bolts, glowing veins at every seam, ' +
-    'a furnace glow in its chest',
-  505: 'a hollowed delver: a gaunt dwarf miner in a dented helmet and torn leathers, silver-blue light pouring from cracks in its skin ' +
-    'and its empty eyes, a glowing pickaxe',
+  504: 'a brightsteel golem: a massive forge construct of silver-blue metal plates and bronze bolts, bright silver-blue veins at every seam, ' +
+    'an open furnace grate in its chest showing ember orange inside',
+  505: 'a hollowed delver: a gaunt dwarf miner in a dented helmet and torn leathers, bright silver-blue cracks across its grey skin, ' +
+    'pale empty eyes, a pickaxe with a silver-blue head',
   506: 'Durgrim the Last Thane: an old dwarf king in heavy rune-carved silver-blue plate, a braided iron-grey beard, a stone crown, ' +
-    'a huge war hammer, a blazing pale moon shard fused into the middle of his chest',
+    'a huge war hammer, a jagged pale white shard fused into the middle of his chest, silver-blue cracks spreading from it',
   // The Moonwell Deep
   9101: 'a moonless shade: a thin hunched elven silhouette of solid black-blue shadow with no legs, its body tapering into ' +
     'ragged tatters, long clawed fingers, two pale silver pinprick eyes and nothing else on its face',

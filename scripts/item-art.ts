@@ -355,10 +355,16 @@ const UNIQUE_LOOKS: Record<number, UniqueLook> = {
   },
   // T5: Brightvein Hold, a dwarven mine whose ore veins glow from a fallen shard.
   23: {
-    type: 'a one-handed war mace, diagonal with the handle at the bottom left and the head at the top right',
+    type: 'a one-handed war mace, diagonal with the handle at the bottom left and the head at the top right, the head large and blocky',
     colors: 'bright silver-blue brightsteel, dark iron, warm forge bronze',
-    look: 'a heavy flanged head shaped like a small blacksmith anvil, brightsteel with thin glowing silver-blue veins running through it, ' +
-      'bronze rune bands where head meets haft, a thick haft of dark iron wrapped in worn leather, a bronze pommel cap',
+    look: 'a massive head shaped like a small heater shield, its face toward the viewer: a thick slab of brightsteel with a flat top, ' +
+      'tapering to a blunt point, its face clad in overlapping armor plates riveted with bronze, a raised bronze rim around its edge, ' +
+      'a bronze boss at its center, thin silver-blue veins in the steel between the plates; ' +
+      'a short thick haft sheathed in iron bands and plate collars, a heavy bronze rune ring where head meets haft, ' +
+      'a grip of worn leather, a blocky bronze pommel weight',
+    detail: 'a named one-of-a-kind masterwork, as fine as tier 7 to 8 of 9 gear: deliberately chunky and overbuilt, a shield-shaped head ' +
+      'nearly as wide as the haft is long, thick armor plating and heavy rivets, a solid heavy silhouette with no thin parts; ' +
+      'superb materials, crisp polished highlights and the full palette; no wings, no spikes',
   },
   24: {
     type: 'a crossbow, front three-quarter view, the stock at the bottom left and the bow arms across the top right',
@@ -371,6 +377,23 @@ const UNIQUE_LOOKS: Record<number, UniqueLook> = {
     colors: 'warm gold, pale white shard, soft silver-blue',
     look: 'a heavy gold band etched with tiny dwarven runes, set with a jagged splinter of pale white stone like a broken piece of the moon, ' +
       'thin silver-blue cracks of light spreading from it into the gold',
+  },
+  // The horn of the hold's last muster: grand, but cracked and worn, its breath running out.
+  26: {
+    type: 'a large curved war horn (a great animal horn) seen from the side, the wide bell at the top right and the mouthpiece at the bottom left, hung on a short strap',
+    colors: 'aged ivory, bright silver-blue brightsteel, warm bronze, dark brown leather',
+    look: 'a long ridged ivory horn yellowed with age, bound by three brightsteel bands engraved with dwarven muster runes, ' +
+      'a wide brightsteel bell rim shaped like a thane\'s crown, a bronze mouthpiece; a long crack running down the ivory ' +
+      'with a faint silver-blue glow fading out along it, the runes bright near the mouthpiece and dimming toward the bell, ' +
+      'a frayed dark leather strap',
+  },
+  // A parrying blade that catches the vein-light: its wide guard flashes like a mirror.
+  27: {
+    type: 'a parrying dagger (main gauche) held point up: a straight slim blade and a large curved shell hand guard',
+    colors: 'bright silver-blue brightsteel, polished white silver, dark blue leather, warm gold',
+    look: 'a narrow brightsteel blade with a fine silver-blue glowing vein down its center, a wide polished shell guard ' +
+      'curving around the grip like a mirror, a bright white glint flashing on it, small gold rune studs around its rim, ' +
+      'a short notched catching tine on each side of the guard for trapping blades, a dark blue leather grip and a round gold pommel',
   },
 };
 

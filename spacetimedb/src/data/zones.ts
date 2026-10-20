@@ -263,7 +263,7 @@ export const ZONES: ZoneDef[] = [
       { id: 503, name: 'Runeweave Warder', level: 50, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 1990, dps: 93.6, armor: 50, resistance: 300, xp: 1518, gold: 380, drops: T5_DROPS.warder, materials: ['Cloth', 'Core', 'Gem'] },
       { id: 504, name: 'Brightsteel Golem', level: 52, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 1808, regen: 60, dps: 113.3, armor: 312, resistance: 52, xp: 1973, gold: 493, drops: T5_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
       { id: 505, name: 'Hollowed Delver', level: 54, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.1, hp: 2913, dps: 137, armor: 135, resistance: 135, xp: 2564, gold: 641, drops: T5_DROPS.delver, materials: ['Metal', 'Wood', 'Cloth'] },
-      { id: 506, name: 'Durgrim, the Last Thane', level: 55, rank: 'Boss', damageType: 'Physical', defense: 'Warded', speed: 0.7, hp: 5041, dps: 182.4, armor: 55, resistance: 330, xp: 3799, gold: 950, drops: all(T5_DROPS), materials: ['Metal', 'Core', 'Gem'], boss: true },
+      { id: 506, name: 'Durgrim, the Last Thane', level: 55, rank: 'Boss', damageType: 'Physical', defense: 'Warded', speed: 0.7, hp: 5041, dps: 182.4, armor: 55, resistance: 330, xp: 3799, gold: 950, drops: all(T5_DROPS), materials: ['Metal'], boss: true },
     ],
     areas: [
       { id: 51, name: 'Brightsteel Lode', blurb: 'Glowing veins light the upper tunnels, and things crawl toward the light.', enemies: [501, 502], x: 17, y: 17 },

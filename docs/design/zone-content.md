@@ -389,7 +389,7 @@ warder [5, 10, 21, 30, 31, 52, 56], golem [7, 20, 22, 38, 39, 37, 53], delver [1
 | Runeweave Warder | Runeweave Bolt, Glowvein Core, Radiant Gem |
 | Brightsteel Golem | Brightsteel Ingot, Glowvein Core, Radiant Gem |
 | Hollowed Delver | Brightsteel Ingot, Ironwood Beam, Runeweave Bolt |
-| Durgrim (boss) | Brightsteel Ingot, Glowvein Core, Radiant Gem |
+| Durgrim (boss) | Brightsteel Ingot |
 
 *Walk lines (flavor.ts):* "The veins in the walls glow brighter the deeper you go." ·
 "Somewhere far below, a hammer strikes once. Then silence." · "The shards in your pack

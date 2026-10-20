@@ -137,7 +137,7 @@ affix rolls tier 1 to N (N = item tier, 1–9).
   enemy (no reward scale, item find or enemy multiplier). It looks like a Common of the
   zone's tier (white, rarity shown as "???", a shimmering, glitching name with its letters scrambled, client only) with 5–9
   affixes from the regular pool, repeats allowed, each uniform between minus and plus
-  the best T9 roll of its stat whatever the item tier (e.g. −756 to +756 Physical
+  the best T9 roll of its stat whatever the item tier (e.g. −107 to +107 Physical
   damage). Always kept: it ignores the loot filter and the bag limit, and drops locked.
   It can't be crafted. Combat floors keep negative totals sane: max HP ≥ 1, hits,
   heals, crit chance, regen and lifesteal ≥ 0, crits never weaker than a normal hit,

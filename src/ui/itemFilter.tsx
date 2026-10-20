@@ -13,9 +13,10 @@ import { SLOT_FILTERS, toggle } from './shared';
 const AFFIX_OPTIONS = AFFIX_STAT_IDS.map(id => ({ id, label: affixLabel(id) })).sort((a, b) => a.label.localeCompare(b.label));
 const TIERS = Array.from({ length: MAX_TIER }, (_, i) => i + 1);
 
-/** Lowercased text the search matches: name, family, rarity and every stat line. */
+/** Lowercased text the search matches: name, family, rarity, "corrupted" if it is, and every stat line. */
 const searchText = (it: Item) =>
-  [itemName(it), base(it.baseId).family, rarityLabel(it.rarity.tag), ...[...it.implicits, ...it.affixes].map(a => statText(a.stat, a.value))].join(' ').toLowerCase();
+  [itemName(it), base(it.baseId).family, rarityLabel(it.rarity.tag), it.corruption > 0 ? 'corrupted' : '',
+    ...[...it.implicits, ...it.affixes].map(a => statText(a.stat, a.value))].join(' ').toLowerCase();
 
 /** The item has every chosen affix at one of the chosen tiers, or (no affix chosen) any affix at one. Empty tiers mean any. */
 function matchesAffixes(it: Item, affixes: readonly number[], tiers: readonly number[]): boolean {

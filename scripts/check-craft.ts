@@ -140,7 +140,7 @@ const isItem = (x: NewItem | string): x is NewItem => typeof x !== 'string';
     const v = fromStored(a.value);
     return a.stat === uniq.affixes[i].stat && a.tier === 0 && v >= Math.min(lo, hi) - 0.011 && v <= Math.max(lo, hi) + 0.011;
   }));
-  check('Uniques take no other chisel', [chaos, bind, improve].every(c => chiselBlocker(c, uniq, 0) === 'Uniques take only the Recalibration Chisel'));
+  check('Uniques take no other chisel but Corruption', [chaos, bind, improve].every(c => chiselBlocker(c, uniq, 0) === 'Uniques take only the Recalibration and Corruption Chisels'));
   check('Anomalies take no chisel', [recal, chaos, bind, improve].every(c => chiselBlocker(c, makeItem(seededRng(3n), 1, 3, 'Anomaly'), 0) !== undefined));
   check('Commons have nothing to chisel', chiselBlocker(chaos, makeItem(seededRng(3n), 1, 3, 'Common')) === 'No affixes to reroll');
 
@@ -202,7 +202,25 @@ const isItem = (x: NewItem | string): x is NewItem => typeof x !== 'string';
   const corrupted = { ...t9, corruption: Corruption.Nothing };
   check('a corrupted item takes no chisel, reroll or upgrade', [recal, chaos, bind, improve, corruptC].every(c => chiselBlocker(c, corrupted, 0) === CORRUPTED) &&
     rerollAffix(rng, corrupted, 0) === CORRUPTED && upgradeRarity(rng, corrupted, 0) === CORRUPTED);
-  check('Uniques take no Corruption Chisel', chiselBlocker(corruptC, uniq) === 'Uniques take only the Recalibration Chisel');
+  // Uniques: a stat's "tier" change moves it past its roll range by half the range's width.
+  let uniqOk = true;
+  const seen = new Set<number>();
+  for (let n = 0; n < 4000; n++) {
+    const out = applyChisel(seededRng(BigInt(n), 13n), corruptC, uniq);
+    if (!isItem(out) || out.uniqueId !== u.id || !out.corruption) { uniqOk = false; continue; }
+    seen.add(out.corruption);
+    if (out.corruption !== Corruption.RaisedTier && out.corruption !== Corruption.LoweredTier) continue;
+    const i = out.affixes.findIndex((a, j) => a.value !== uniq.affixes[j].value);
+    if (i < 0) continue; // rounded to the same value
+    const [lo, hi] = uniqueStatRange(u, u.stats[i]).sort((x, y) => x - y);
+    const over = (hi - lo) / 2;
+    const v = fromStored(out.affixes[i].value);
+    const ok = out.corruption === Corruption.RaisedTier ? v >= roundStat(out.affixes[i].stat as StatId, hi) - 0.011 && v <= roundStat(out.affixes[i].stat as StatId, hi + over) + 0.011
+      : v >= roundStat(out.affixes[i].stat as StatId, lo - over) - 0.011 && v <= roundStat(out.affixes[i].stat as StatId, lo) + 0.011;
+    if (!ok) uniqOk = false;
+  }
+  check('Uniques can be corrupted: every outcome, a stat past its roll range by half its width', uniqOk &&
+    [Corruption.Nothing, Corruption.AddedAffix, Corruption.RemovedAffix, Corruption.RaisedTier, Corruption.LoweredTier, Corruption.Rerolled].every(k => seen.has(k)));
   check("Improvement stops at the item's tier", chiselBlocker(improve, top, 0) === "Already at the item's tier (T6)");
 }
 

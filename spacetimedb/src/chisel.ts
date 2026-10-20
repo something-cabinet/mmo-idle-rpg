@@ -12,6 +12,7 @@ import {
   rollAffix,
   rollLegendary,
   rollUniqueStat,
+  uniqueStatRange,
   type NewItem,
   type Rng,
 } from './loot';
@@ -55,6 +56,12 @@ export const CORRUPTION_TEXT: Record<Corruption, string> = {
 export const CORRUPT_TIER_OVER = 1;
 
 /**
+ * A Unique's stats have no tiers: a corrupted one rises (or falls) this share of its roll
+ * range's width past the range instead, rerolled in that band (×0.8–1.4 → ×1.4–1.7 or ×0.5–0.8).
+ */
+export const CORRUPT_UNIQUE_OVER = 0.5;
+
+/**
  * Corrupted affixes, only from corruption. None yet (to be designed): until there are,
  * that outcome isn't rolled and the other four share its chance.
  */
@@ -69,7 +76,7 @@ export function chiselBlocker(c: ChiselDef, it: ChiselItem, target?: number): st
   const unique = it.uniqueId !== undefined;
   if (rarityRank(it.rarity.tag) > rarityRank('Unique')) return "This item can't be chiseled";
   if (it.corruption) return CORRUPTED;
-  if (unique && c.kind !== ChiselKind.Recalibration) return 'Uniques take only the Recalibration Chisel';
+  if (unique && c.kind !== ChiselKind.Recalibration && c.kind !== ChiselKind.Corruption) return 'Uniques take only the Recalibration and Corruption Chisels';
   if (!unique && !craftable(it)) return "This item can't be chiseled";
   const free = it.affixes.some((_, i) => !isBound(it, i)) || (!!it.legendary && !legendaryBound(it));
   switch (c.kind) {
@@ -114,7 +121,8 @@ const pickOne = <T,>(rng: Rng, xs: readonly T[]) => xs[Math.floor(rng() * xs.len
  * A Corruption Chisel: one of five outcomes, equally likely (four while CORRUPTED_AFFIXES is
  * empty), then the item is corrupted for good. An affix count or tier may go past the
  * usual limits. Bound affixes are never removed or changed: with no unbound affix, a tier
- * change does nothing and an affix count change adds one.
+ * change does nothing and an affix count change adds one. On a Unique, a stat's "tier"
+ * change moves it past its roll range (CORRUPT_UNIQUE_OVER).
  */
 function corrupt<T extends ChiselItem>(rng: Rng, it: T): T {
   const kinds = ['count', 'tier', 'nothing', 'reroll', ...(CORRUPTED_AFFIXES.length ? ['corrupted' as const] : [])] as const;
@@ -133,6 +141,18 @@ function corrupt<T extends ChiselItem>(rng: Rng, it: T): T {
       if (!unbound.length) return done(it, Corruption.Nothing);
       const i = pickOne(rng, unbound);
       const a = it.affixes[i];
+      if (a.tier === 0) {
+        // A Unique's stat: past its roll range instead of a tier.
+        const u = it.uniqueId === undefined ? undefined : UNIQUES_BY_ID.get(it.uniqueId);
+        const s = u?.stats[i];
+        if (!u || !s || s.stat !== a.stat) return done(it, Corruption.Nothing);
+        const [lo, hi] = uniqueStatRange(u, s).sort((x, y) => x - y);
+        const over = (hi - lo) * CORRUPT_UNIQUE_OVER;
+        const rise = rng() < 0.5;
+        const [from, to] = rise ? [hi, hi + over] : [lo - over, lo];
+        const value = toStored(roundStat(a.stat as StatId, from + (to - from) * rng()));
+        return done({ ...it, affixes: it.affixes.map((x, j) => (j === i ? { ...a, value } : x)) }, rise ? Corruption.RaisedTier : Corruption.LoweredTier);
+      }
       const canRise = a.tier < it.tier + CORRUPT_TIER_OVER;
       const rise = canRise && (a.tier <= 1 || rng() < 0.5);
       const tier = a.tier + (rise ? 1 : -1);

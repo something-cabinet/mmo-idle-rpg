@@ -72,7 +72,7 @@ Raises an item one rarity step. Its base and existing affixes stay.
 
 Crafting consumables (chisel.ts), like PoE's orbs: each does one thing gold crafting can't.
 Kept in the `supply` table (IDs 700 + kind), untiered: one chisel works on any item tier.
-Used from the Crafting screen's Chisel tab. Uniques take only Recalibration; Anomalies none.
+Used from the Crafting screen's Chisel tab. Uniques take only Recalibration and Corruption; Anomalies none.
 
 | Chisel | Effect |
 |-|-|
@@ -93,7 +93,10 @@ Used from the Crafting screen's Chisel tab. Uniques take only Recalibration; Ano
 ### Corruption
 
 Five outcomes, equally likely (chisel.ts `corrupt`); `item.corruption` records which one
-happened (0 = not corrupted). Uniques and Anomalies can't be corrupted.
+happened (0 = not corrupted). Anomalies can't be corrupted. Uniques can: their stats have
+no tier, so a "tier" change moves the stat past its roll range instead, by half the range's
+width (`CORRUPT_UNIQUE_OVER`): a ×0.8–1.4 stat rerolls in ×1.4–1.7 or ×0.5–0.8. A Unique can
+also gain a regular affix or lose one of its stats.
 
 - **Add or remove an affix** (half each): adds a random affix even past the rarity's
   count, or removes a random unbound one.

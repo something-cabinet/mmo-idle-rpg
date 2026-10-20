@@ -11,7 +11,7 @@ import { SUPPLIES_BY_ID } from '../../spacetimedb/src/data/supplies';
 import { offlineCapMicros } from '../../spacetimedb/src/game';
 import { RARITIES } from '../../spacetimedb/src/loot';
 import { duration, fmtBig } from './format';
-import { materialsText, rarityCls, rarityLabel } from './items';
+import { materialsText, rarityCls, rarityLabel, suppliesText } from './items';
 import { Icon } from './Icon';
 import { foundName } from './discovery';
 import { encounterText } from './encounters';
@@ -144,6 +144,7 @@ export function SettleReport({ s, logs, title, onClose: close }: { s: Snapshot; 
         <p className="discovery"><Icon name="sparkles" />New discoveries: {discovered.map(foundName).join(', ')}</p>
       )}
       {log.materials.length > 0 && <p>Materials: <span className="c-material">{materialsText(log.materials)}</span></p>}
+      {log.supplies.length > 0 && <p className="discovery"><Icon name="hourglass" />Rare find: {suppliesText(log.supplies)}</p>}
       {kept.length > 0 && (
         <p>
           Items kept ({kept.length}):{' '}

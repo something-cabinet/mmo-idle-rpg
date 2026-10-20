@@ -11,6 +11,7 @@ import {
 } from "spacetimedb";
 import {
   MaterialCount,
+  SupplyCount,
   Found,
   Encounter,
 } from "./types";
@@ -62,4 +63,7 @@ export default __t.row({
   scrapped: __t.array(__t.u32()),
   respawns: __t.u32(),
   herbsUsed: __t.u32().name("herbs_used"),
+  get supplies() {
+    return __t.array(SupplyCount);
+  },
 });

@@ -592,6 +592,9 @@ export const SettleLog = __t.object("SettleLog", {
   scrapped: __t.array(__t.u32()),
   respawns: __t.u32(),
   herbsUsed: __t.u32(),
+  get supplies() {
+    return __t.array(SupplyCount);
+  },
 });
 export type SettleLog = __Infer<typeof SettleLog>;
 

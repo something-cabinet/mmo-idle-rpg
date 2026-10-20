@@ -184,6 +184,12 @@ export const MaterialCount = t.object('MaterialCount', {
   count: t.u32(),
 });
 
+/** A count of one supply (data/supplies.ts). */
+export const SupplyCount = t.object('SupplyCount', {
+  supplyId: t.u16(),
+  count: t.u32(),
+});
+
 /** One rare encounter in a settle (encounters.ts). */
 export const Encounter = t.object('Encounter', {
   /** encounters.ts `EncounterKind`. */
@@ -405,6 +411,8 @@ export const settleLog = table(
     respawns: t.u32().default(0),
     /** Rare herbs auto-renewed elixirs were infused with. */
     herbsUsed: t.u32().default(0),
+    /** Supplies the rare loot pool dropped (data/pool.ts): Chronoshards. Its materials are in `materials`. */
+    supplies: t.array(SupplyCount).default([]),
   }
 );
 
@@ -547,12 +555,6 @@ export const MailSender = t.enum('MailSender', {
   System: t.unit(),
   /** The sending character's ID. */
   Player: t.u64(),
-});
-
-/** A count of one supply (data/supplies.ts). */
-export const SupplyCount = t.object('SupplyCount', {
-  supplyId: t.u16(),
-  count: t.u32(),
 });
 
 /**

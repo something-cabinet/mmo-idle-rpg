@@ -102,15 +102,15 @@ Deep pays the bulk, and these stay a trickle.
   Phials, and their clears are already capped per day.
 - This is the "precious material" raids.md planned, so that note becomes Voidglass.
 
-### 2. Zone bosses
+### 2. The rare loot pool
 
-- Only **zone bosses** drop it, not regular enemies or secret-area bosses: **0.2% per
-  boss kill** in **T4+ zones**, × (T − 3) (T4 0.2%, T9 1.2%).
-- Rolled in the settle like rare encounters: online it's seeded, offline it's one Poisson
-  draw. Closed form stays intact.
-- Very rare: about one per 500 boss kills at T4. Farming the boss pays a little Voidglass
-  on top of its own loot, a reason to farm it after the first kill.
-- Works offline. Shown in the settle log and the away report with the other materials.
+- Moved from zone bosses into the global rare loot pool (data/pool.ts, 2026-10-20): every
+  enemy of a **T4+ zone** can drop it, at **0.016% per kill** × its rank (Basic 1, Elite 3,
+  Boss 10; an Elite encounter counts as Elite) × (1 + 0.5% per enemy level).
+- Selvara (Boss, level 45): ~1 in 510 kills, about as before. A T4 Basic: ~1 in 5,200.
+  The old × (T − 3) tier ramp is gone; only the level term grows it.
+- One Poisson draw per settle (`rollPool`), online and offline. Not in the Forager's Stash,
+  and not on the enemy's drop list. Shown with the other materials in the log and report.
 
 ### 3. Salvaging uniques
 
@@ -163,8 +163,8 @@ On top of that, the Deep's first clears: ~450 over depths 1–100, in bursts whi
 - **Raids:** `setRaidPhial` sets `raid_member.phialId`; `startRaid` takes one from stock per
   member who has one and puts it in the setup (`RaidFighter.phialId`). `raid_log` records
   `phialId` and `voidglass`.
-- **Voidglass sources:** zone bosses through `materialMeans` (loot.ts; the settle, the Forager's
-  Stash encounter and the drop list use it), `salvageVoidglass` (the salvage reducer and a full
+- **Voidglass sources:** the rare loot pool (`RARE_POOL` in data/pool.ts, rolled by `rollPool`
+  in the combat settle), `salvageVoidglass` (the salvage reducer and a full
   bag's overflow), the Void Geode in `RARE_FINDS` (data/skills.ts) and `RaidDef.voidglass`.
 
 ## Open questions

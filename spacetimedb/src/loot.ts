@@ -6,8 +6,9 @@ import { TYPE_LIST, base, baseType, implicitValue, weaponValues, type HealTarget
 import { LEGENDARIES } from './data/legendary';
 import { MAX_TIER, STATS, affixRange, affixRef, fromStored, roundStat, toStored, type StatDef, type StatId } from './data/stats';
 import { uniquePool, uniqueRoll, type UniqueDef } from './data/uniques';
-import { MATERIAL_CHANCE, materialOf, untieredMaterial } from './data/materials';
-import { UNIQUE_SALVAGE_VOIDGLASS, bossVoidglassChance } from './data/supplies';
+import { MATERIAL_CHANCE, materialOf } from './data/materials';
+import { UNIQUE_SALVAGE_VOIDGLASS } from './data/supplies';
+import { poolMeans } from './data/pool';
 import { SCRAP_YIELD, isScrapRarity, scrapMaterialId, type ScrapRarity } from './data/recipes';
 import { DROP_CHANCE, type EnemyDef, type ZoneDef } from './data/zones';
 
@@ -503,14 +504,30 @@ export function scrapMaterials(scrapped: readonly ScrapDrop[]): MaterialDrop[] {
   return out;
 }
 
-/**
- * Mean material drops per kill of `enemy`, per material it drops (as `rollMaterials` samples).
- * A zone boss of tier VOIDGLASS_FROM_TIER+ also drops Voidglass, rarely (phials.md).
- */
+/** Mean material drops per kill of `enemy`, per material it drops (as `rollMaterials` samples). The rare pool is separate (`rollPool`). */
 export function materialMeans(enemy: EnemyDef, tier: number, rewardScale: number): { materialId: number; mean: number }[] {
-  const means = enemy.materials.map(kind => ({ materialId: materialOf(tier, kind).id, mean: rewardScale * MATERIAL_CHANCE[kind] }));
-  const voidglass = enemy.boss ? bossVoidglassChance(tier) : 0;
-  return voidglass > 0 ? [...means, { materialId: untieredMaterial('Voidglass').id, mean: voidglass }] : means;
+  return enemy.materials.map(kind => ({ materialId: materialOf(tier, kind).id, mean: rewardScale * MATERIAL_CHANCE[kind] }));
+}
+
+export interface SupplyDrop {
+  supplyId: number;
+  count: number;
+}
+
+/**
+ * The global rare loot pool's drops from `kills` of `enemy` in a zone of `tier` (data/pool.ts):
+ * one Poisson draw per entry. Only nonzero counts.
+ */
+export function rollPool(rng: Rng, enemy: EnemyDef, tier: number, kills: number): { materials: MaterialDrop[]; supplies: SupplyDrop[] } {
+  const materials: MaterialDrop[] = [];
+  const supplies: SupplyDrop[] = [];
+  for (const { drop, mean } of poolMeans(enemy, tier)) {
+    const count = samplePoisson(rng, kills * mean);
+    if (count <= 0) continue;
+    if (drop.kind === 'material') materials.push({ materialId: drop.materialId, count });
+    else supplies.push({ supplyId: drop.supplyId, count });
+  }
+  return { materials, supplies };
 }
 
 /**

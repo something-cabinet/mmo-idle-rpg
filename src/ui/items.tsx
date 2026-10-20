@@ -4,6 +4,7 @@ import type { Item } from '../module_bindings/types';
 import { base, baseType } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
 import { MATERIALS_BY_ID } from '../../spacetimedb/src/data/materials';
+import { supplyName } from '../../spacetimedb/src/data/supplies';
 import { STATS, fromStored, type StatId } from '../../spacetimedb/src/data/stats';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
 import { MAX_TEMPER } from '../../spacetimedb/src/data/recipes';
@@ -25,6 +26,9 @@ export const materialIconName = (id: number) => `m-${(MATERIALS_BY_ID.get(id)?.k
 /** "3 Rough Hide, 1 Faint Core". */
 export const materialsText = (ms: readonly { materialId: number; count: number }[]) =>
   ms.map(m => `${m.count.toLocaleString()} ${materialName(m.materialId)}`).join(', ');
+
+export const suppliesText = (ss: readonly { supplyId: number; count: number }[]) =>
+  ss.map(x => `${x.count.toLocaleString()} ${supplyName(x.supplyId)}`).join(', ');
 
 export const itemIconName = (it: { baseId: number }) => `i-${baseType(it.baseId).icon}`;
 

@@ -158,8 +158,8 @@ export const activateChronoshard = spacetimedb.reducer({ supplyId: t.u16() }, (c
   if (supplyCount(ctx, ch.id, supplyId) < 1) throw new SenderError('None in stock');
   const settled = settle(ctx, ch);
   takeSupply(ctx, ch.id, supplyId, 1);
-  // Moves the settle start back by the shard's hours; the cap is the whole span, so nothing is cut.
-  const from = settled.lastSettledAt.microsSinceUnixEpoch - BigInt(shard.hours * 3600) * 1_000_000n;
+  // Moves the settle start back by the shard's time; the cap is the whole span, so nothing is cut.
+  const from = settled.lastSettledAt.microsSinceUnixEpoch - BigInt(shard.minutes * 60) * 1_000_000n;
   ctx.db.character.id.update(settle(ctx, { ...settled, lastSettledAt: new Timestamp(from) }, ctx.timestamp.microsSinceUnixEpoch - from));
 });
 

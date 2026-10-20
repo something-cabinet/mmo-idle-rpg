@@ -22,7 +22,7 @@ import {
   tierRequirement,
 } from '../spacetimedb/src/data/skills';
 import { materialOf, untieredMaterial } from '../spacetimedb/src/data/materials';
-import { makeItem, materialMeans, rollDrops, salvageVoidglass, scrapMaterials, seededRng } from '../spacetimedb/src/loot';
+import { makeItem, materialMeans, rollDrops, rollPool, salvageVoidglass, scrapMaterials, seededRng } from '../spacetimedb/src/loot';
 import { addSkillXp, gatherCharacterXp, projectGathering, relicGold, rollGathering, rollGatheringActions } from '../spacetimedb/src/gather';
 import {
   RECIPES,
@@ -36,12 +36,14 @@ import {
   temperCost,
   toolRecipeId,
 } from '../spacetimedb/src/data/recipes';
-import { CHRONOSHARDS, ELIXIR_KILLS, PHIALS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir, phialBuffs, phialSupplyId } from '../spacetimedb/src/data/supplies';
+import { poolMeans, poolMult } from '../spacetimedb/src/data/pool';
+import { eliteOf } from '../spacetimedb/src/encounters';
+import { CHRONOSHARDS, ELIXIR_KILLS, chronoshardSupplyId, PHIALS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir, phialBuffs, phialSupplyId } from '../spacetimedb/src/data/supplies';
 import { RAIDS } from '../spacetimedb/src/data/raids';
 import { simulateDepth } from '../spacetimedb/src/abyss';
 import { forgeItem, forged, productionCharacterXp, projectProduction, temperBlocker } from '../spacetimedb/src/produce';
 import { SLOTS } from '../spacetimedb/src/data/bases';
-import { ENEMIES_BY_ID } from '../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, ZONES } from '../spacetimedb/src/data/zones';
 import { combatStats, matchup, tempered } from '../spacetimedb/src/combat';
 import { project } from '../spacetimedb/src/game';
 import { simulate } from '../spacetimedb/src/sim';
@@ -483,14 +485,27 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   const g = rollGathering(seededRng(5n), SKILLS_BY_ID.get(SkillId.Mining)! as never, 4, { actions: 1_000_000, doubleMean: 0, runs: [{ start: 0n, step: 1n, n: 1_000_000, level: 0 }] });
   const got = g.materials.find(m => m.materialId === glass)?.count ?? 0;
   check('… and come in pairs', got > 0 && got % 2 === 0, `${got}`);
-  const bossGlass = (id: number, tier: number) => materialMeans(ENEMIES_BY_ID.get(id)!.enemy, tier, 1).find(m => m.materialId === glass)?.mean;
-  check('zone bosses from T4 drop Voidglass (0.2% a kill)', near(bossGlass(406, 4), 0.002) && bossGlass(306, 3) === undefined && bossGlass(401, 4) === undefined);
+  const poolMean = (id: number, drop: number) => {
+    const { zone, enemy } = ENEMIES_BY_ID.get(id)!;
+    return poolMeans(enemy, zone.tier).find(m => (m.drop.kind === 'material' ? m.drop.materialId : m.drop.supplyId) === drop)?.mean ?? 0;
+  };
+  check('Voidglass moved to the rare pool: no enemy lists it as a material', ZONES.every(z => z.enemies.every(e => materialMeans(e, z.tier, 1).every(m => m.materialId !== glass))));
+  check('pool Voidglass from T4: Selvara ~1 in 510 kills, a T4 Basic ~1 in 5,200, none below T4',
+    near(poolMean(406, glass), 0.00196) && Math.round(1 / poolMean(403, glass)) === 5208 && poolMean(306, glass) === 0);
+  check('pool rate × rank: Boss 10, Elite 3, Basic 1; an Elite encounter is Elite',
+    near(poolMult({ ...ENEMIES_BY_ID.get(406)!.enemy, level: 0 }), 10) && near(poolMult({ ...eliteOf(ENEMIES_BY_ID.get(101)!.enemy), level: 0 }), 3) && near(poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1));
+  check('pool rate rises very slightly with level (+0.5% a level)', near(poolMult(ENEMIES_BY_ID.get(101)!.enemy) / poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1.005));
+  check('Chronoshards far rarer than Voidglass, and rarer by grade', [1, 2, 3].map(g => poolMean(404, chronoshardSupplyId(g))).every((m, i, ms) => m > 0 && m * 8 <= poolMean(404, glass) && (i === 0 || m < ms[i - 1])));
+  check('Chronoshards drop from T1 too', poolMean(101, chronoshardSupplyId(1)) > 0);
+  const pool = rollPool(seededRng(3n), ENEMIES_BY_ID.get(406)!.enemy, 4, 100_000);
+  const pooled = (n: number) => pool.materials.find(m => m.materialId === glass)?.count ?? 0;
+  check('rollPool: 100k Selvara kills ~196 Voidglass, some Chronoshards', pooled(0) > 150 && pooled(0) < 250 && pool.supplies.some(x => x.supplyId === chronoshardSupplyId(1)));
   check('Uniques salvage into 2 Voidglass, Legendaries none', salvageVoidglass('Unique') === 2 && salvageVoidglass('Legendary') === 0);
   check('raid clears pay Voidglass (2, then 4)', RAIDS.map(r => r.voidglass).join() === '2,4');
 }
 
-check('Chronoshards are supplies 501–503, fast-forwarding 1, 2 and 4 hours', JSON.stringify(CHRONOSHARDS.map(c => [c.id, c.hours, c.name])) ===
-  JSON.stringify([[501, 1, 'Chronoshard'], [502, 2, 'Greater Chronoshard'], [503, 4, 'Divine Chronoshard']]));
+check('Chronoshards are supplies 501–503, fast-forwarding 30, 60 and 120 minutes', JSON.stringify(CHRONOSHARDS.map(c => [c.id, c.minutes, c.name])) ===
+  JSON.stringify([[501, 30, 'Chronoshard'], [502, 60, 'Greater Chronoshard'], [503, 120, 'Divine Chronoshard']]));
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
 process.exit(failed ? 1 : 0);

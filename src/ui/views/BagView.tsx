@@ -118,9 +118,10 @@ function ConsumablesTab({ s }: { s: Snapshot }) {
 /** Chronoshards in stock, best grade first. */
 const heldChronoshards = (s: Snapshot) => CHRONOSHARDS.filter(c => (s.supplies.get(c.id) ?? 0) > 0).sort((a, b) => b.grade - a.grade);
 
-const hoursText = (h: number) => `${h} hour${h === 1 ? '' : 's'}`;
+/** "30 minutes", "1 hour", "2 hours". */
+const minutesText = (m: number) => (m < 60 ? `${m} minutes` : `${m / 60} hour${m === 60 ? '' : 's'}`);
 
-/** Chronoshards in stock: rare, so using one asks first, then shows what its hours earned. */
+/** Chronoshards in stock: rare, so using one asks first, then shows what its time earned. */
 function ChronoshardList({ s }: { s: Snapshot }) {
   const held = heldChronoshards(s);
   const [confirming, setConfirming] = useState<ChronoshardDef>();
@@ -141,21 +142,21 @@ function ChronoshardList({ s }: { s: Snapshot }) {
               <Icon name="hourglass" className="c-magic" />
               <div className="foe-info">
                 <div className="foe-name">{c.name} <span className="muted">×{s.supplies.get(c.id)}</span></div>
-                <div className="foe-meta muted">Fast-forward {hoursText(c.hours)}</div>
+                <div className="foe-meta muted">Fast-forward {minutesText(c.minutes)}</div>
               </div>
               <button className="btn small" onClick={() => setConfirming(c)}>Use</button>
             </div>
           </li>
         ))}
       </ul>
-      <p className="muted">Plays its hours of what you're doing at once, like time away. Doesn't count against the offline cap.</p>
+      <p className="muted">Plays its time of what you're doing at once, like time away. Doesn't count against the offline cap.</p>
       {confirming && (
         <Modal onClose={() => setConfirming(undefined)}>
           <CardHead title={`Use ${confirming.name}?`} />
           <p>
             {activity
-              ? <>Fast-forwards {hoursText(confirming.hours)} of {activity}, as if you'd been away.</>
-              : <span className="c-bad">You have no target or life skill: the {hoursText(confirming.hours)} would pass idle.</span>}
+              ? <>Fast-forwards {minutesText(confirming.minutes)} of {activity}, as if you'd been away.</>
+              : <span className="c-bad">You have no target or life skill: the {minutesText(confirming.minutes)} would pass idle.</span>}
           </p>
           <p className="muted">It can't be undone. {s.supplies.get(confirming.id) ?? 0} in stock.</p>
           <div className="row">
@@ -175,7 +176,7 @@ function ChronoshardList({ s }: { s: Snapshot }) {
         </Modal>
       )}
       {used && report.length > 0 && (
-        <SettleReport s={s} logs={report} title={`${used.shard.name}: ${hoursText(used.shard.hours)} later`} onClose={() => setUsed(undefined)} />
+        <SettleReport s={s} logs={report} title={`${used.shard.name}: ${minutesText(used.shard.minutes)} later`} onClose={() => setUsed(undefined)} />
       )}
     </>
   );

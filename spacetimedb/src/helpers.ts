@@ -4,10 +4,10 @@ import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
 import { Encounter as EncounterType, Found as FoundType, account, character, item, mail, presence, settleLog, skill, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project, type ElixirLeft, type ElixirRun } from './game';
-import { rollEncounters } from './encounters';
+import { EncounterKind, eliteOf, rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { materialAt, untieredMaterial } from './data/materials';
-import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type ZoneDef } from './data/zones';
+import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type EnemyDef, type ZoneDef } from './data/zones';
 import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, gatherSpot, type ProductionSkillDef } from './data/skills';
 import { recipeOf, scrapMaterialId, type MaterialCost, type ScrapRarity } from './data/recipes';
 import { SUPPLIES_BY_ID, elixirBuffs, infuseHerbIds } from './data/supplies';
@@ -24,6 +24,7 @@ import {
   makeItem,
   rollDrops,
   rollMaterials,
+  rollPool,
   salvageValue,
   salvageVoidglass,
   samplePoisson,
@@ -32,6 +33,7 @@ import {
   type DropResult,
   type MaterialDrop,
   type ScrapDrop,
+  type SupplyDrop,
   type Seen,
 } from './loot';
 import { simulate } from './sim';
@@ -248,6 +250,26 @@ function settleCombat(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
     }
   }
 
+  // The rare loot pool (data/pool.ts): the kills (Patience's extra included), then each Elite encounter beaten, at Elite rank.
+  const supplies: SupplyDrop[] = [];
+  if (target && p.kills > 0) {
+    const rng = seededRng(ch.id, ch.lastSettledAt.microsSinceUnixEpoch, POOL_SALT);
+    const eliteWins = encounters.filter(e => e.kind === EncounterKind.Elite && e.won).length;
+    const rolls: [EnemyDef, number][] = [[target.enemy, p.kills + (p.bonusKills ?? 0)], [eliteOf(target.enemy), eliteWins]];
+    for (const [enemy, kills] of rolls) {
+      if (kills <= 0) continue;
+      const pool = rollPool(rng, enemy, target.zone.tier, kills);
+      addMaterials(ctx, ch.id, pool.materials);
+      materials = mergeMaterials(materials, pool.materials);
+      for (const s of pool.supplies) {
+        addSupply(ctx, ch.id, s.supplyId, s.count);
+        const row = supplies.find(x => x.supplyId === s.supplyId);
+        if (row) row.count += s.count;
+        else supplies.push({ ...s });
+      }
+    }
+  }
+
   const elixirAfter = p.elixir ? spendElixir(ctx, ch, p.elixir) : undefined;
 
   const offline = capMicros !== undefined;
@@ -280,6 +302,7 @@ function settleCombat(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       elixirEmpty: !!p.elixir && p.elixir.killsLeft <= 0,
       herbsUsed: p.elixir?.herbsUsed ?? 0,
       respawns: respawned,
+      supplies,
     });
   }
 
@@ -599,6 +622,7 @@ function logSettle(ctx: Ctx, ch: Character, row: Partial<Omit<SettleLog, 'id' | 
     elixirEmpty: false,
     herbsUsed: 0,
     respawns: 0,
+    supplies: [],
     ...row,
   });
   pruneSettleLog(ctx, ch.id);
@@ -715,6 +739,7 @@ export const MAX_FRIENDS = 100;
 const MATERIAL_SALT = 0x6d6174n; // "mat"
 const DISCOVER_SALT = 0x6469736376n; // "discv"
 const ENCOUNTER_SALT = 0x656e636fn; // "enco"
+const POOL_SALT = 0x706f6f6cn; // "pool"
 const SALVAGER_SALT = 0x73616c76n; // "salv"
 const PROSPECT_SALT = 0x70726f73n; // "pros"
 

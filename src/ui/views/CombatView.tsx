@@ -16,7 +16,7 @@ import { foundName } from '../discovery';
 import { encounterText } from '../encounters';
 import { duration, fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { itemName, materialsText, rarityCls, rarityLabel } from '../items';
+import { itemName, materialsText, rarityCls, rarityLabel, suppliesText } from '../items';
 import { CardHead, openCraft, perHour, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
 import { activityText } from './SkillView';
@@ -72,6 +72,14 @@ function LootLines({ s, logs, max = 30 }: { s: Snapshot; logs: SettleLog[]; max?
         <li key={`m${log.id}`}>
           <span className="c-material">{materialsText(log.materials)}</span>
           <span className="muted">materials</span>
+        </li>
+      );
+    }
+    if (log.supplies.length) {
+      lines.push(
+        <li key={`p${log.id}`}>
+          <span className="c-magic">{suppliesText(log.supplies)}</span>
+          <span className="muted">rare find</span>
         </li>
       );
     }

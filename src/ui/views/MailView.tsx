@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 import type { DbConnection } from '../../module_bindings';
 import type { Mail } from '../../module_bindings/types';
 import { COSMETICS_BY_ID } from '../../../spacetimedb/src/data/cosmetics';
-import { CHRONOSHARDS_BY_ID, PHIALS_BY_ID, SUPPLIES_BY_ID } from '../../../spacetimedb/src/data/supplies';
+import { supplyName } from '../../../spacetimedb/src/data/supplies';
 import { hasAttachments } from '../../../spacetimedb/src/mail';
 import { call, useSticky } from '../../store';
 import { nowMicros } from '../clock';
@@ -34,7 +34,7 @@ function Attachments({ s, m }: { s: Snapshot; m: Mail }) {
   if (m.raidTokens > 0n) rows.push(['crown', 'c-gold', `${fmtBig(m.raidTokens)} raid tokens`]);
   for (const x of m.materials) rows.push([materialIconName(x.materialId), 'c-material', `${x.count.toLocaleString()} × ${materialName(x.materialId)}`]);
   for (const x of m.supplies) {
-    const name = SUPPLIES_BY_ID.get(x.supplyId)?.name ?? PHIALS_BY_ID.get(x.supplyId)?.name ?? CHRONOSHARDS_BY_ID.get(x.supplyId)?.name ?? `Supply ${x.supplyId}`;
+    const name = supplyName(x.supplyId);
     rows.push(['flask', 'c-material', `${x.count.toLocaleString()} × ${name}`]);
   }
   for (const id of m.cosmetics) {

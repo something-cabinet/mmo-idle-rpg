@@ -184,44 +184,44 @@ export const phialVoidglass = (tier: number) => PHIAL_VOIDGLASS[(tier - 1) % TIE
 
 // Voidglass sources beyond the Deep's first clears (phials.md, "Where Voidglass comes from").
 
-/** Zone bosses and Mining nodes pay Voidglass from this tier (where the Deep opens). */
+/** The rare loot pool (data/pool.ts) and Mining nodes pay Voidglass from this tier (where the Deep opens). */
 export const VOIDGLASS_FROM_TIER = 4;
-/** Chance per zone boss kill of 1 Voidglass, × (T − 3). */
-export const BOSS_VOIDGLASS_CHANCE = 0.002;
 /** Voidglass per Unique salvaged, any tier. */
 export const UNIQUE_SALVAGE_VOIDGLASS = 2;
 /** Voidglass one Void Geode (Mining rare find) cracks into. */
 export const GEODE_VOIDGLASS = 2;
-/** Chance per zone boss kill at `tier` of 1 Voidglass (0 below VOIDGLASS_FROM_TIER). */
-export const bossVoidglassChance = (tier: number) => (tier >= VOIDGLASS_FROM_TIER ? BOSS_VOIDGLASS_CHANCE * (tier - VOIDGLASS_FROM_TIER + 1) : 0);
 
 // ---------------------------------------------------------------- Chronoshards
 
 /**
- * Using one plays `hours` of the current activity at once, the way time away does
+ * Using one plays `minutes` of the current activity at once, the way time away does
  * (offline formulas, not counted against the offline cap). Not crafted: System gifts
- * (mail `supply:` tokens) and, later, ultra-rare loot.
+ * (mail `supply:` tokens) and the rare loot pool (data/pool.ts).
  */
 export interface ChronoshardDef {
   id: number;
   grade: number;
   /** e.g. "Greater Chronoshard". */
   name: string;
-  hours: number;
+  minutes: number;
 }
 
 export const chronoshardSupplyId = (grade: number) => 500 + grade;
 
-/** Hours fast-forwarded, by grade. */
-export const CHRONOSHARD_HOURS = [1, 2, 4];
+/** Minutes fast-forwarded, by grade. */
+export const CHRONOSHARD_MINUTES = [30, 60, 120];
 
 export const CHRONOSHARDS: ChronoshardDef[] = GRADES.map(g => ({
   id: chronoshardSupplyId(g.grade),
   grade: g.grade,
   name: `${g.prefix}Chronoshard`,
-  hours: CHRONOSHARD_HOURS[g.grade - 1],
+  minutes: CHRONOSHARD_MINUTES[g.grade - 1],
 }));
 export const CHRONOSHARDS_BY_ID: ReadonlyMap<number, ChronoshardDef> = new Map(CHRONOSHARDS.map(c => [c.id, c]));
+
+/** Any supply's name: elixir, Phial or Chronoshard. */
+export const supplyName = (id: number) =>
+  SUPPLIES_BY_ID.get(id)?.name ?? PHIALS_BY_ID.get(id)?.name ?? CHRONOSHARDS_BY_ID.get(id)?.name ?? `Supply ${id}`;
 
 /**
  * A pre-2026-10-19 elixir ID (100 + kind × 10 + tier, Greater 200 + …): the graded

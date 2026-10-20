@@ -73,6 +73,8 @@ export interface ZoneDef {
   tier: number;
   name: string;
   blurb: string;
+  /** Story line on the boss's first kill: the shard it held and where it points (story.md). */
+  bossLine: string;
   enemies: EnemyDef[];
   /** Every enemy is in exactly one area; one is the boss's lair. */
   areas: AreaDef[];
@@ -145,7 +147,8 @@ export const ZONES: ZoneDef[] = [
     id: 1,
     tier: 1,
     name: 'Greenhollow',
-    blurb: 'Farmland and woods at the edge of the starting village.',
+    blurb: 'Farmland and woods at the edge of the starting village, raided every night since the goblin chief found a glowing stone.',
+    bossLine: "The stone in Grubnak's crown is still warm. It tugs, faintly, north.",
     enemies: [
       { id: 101, name: 'Field Rat', level: 1, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 23, dps: 4.5, armor: 2.5, resistance: 2.5, xp: 7, gold: 2, drops: T1_DROPS.rat, materials: ['Hide', 'Reagent'] },
       { id: 102, name: 'Wild Boar', level: 4, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.8, hp: 35, dps: 6.9, armor: 24, resistance: 4, xp: 10, gold: 3, drops: T1_DROPS.boar, materials: ['Hide', 'Wood'] },
@@ -172,7 +175,8 @@ export const ZONES: ZoneDef[] = [
     id: 2,
     tier: 2,
     name: 'Thornwood',
-    blurb: 'A dark, overgrown forest where bandits and beasts hide.',
+    blurb: 'A forest that went wild overnight, dark and overgrown, where bandits and beasts hide.',
+    bossLine: 'Her cauldron runs dry around a shard of pale stone. Both shards pull toward the mountains.',
     enemies: [
       { id: 201, name: 'Thornback Spider', level: 16, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 147, dps: 17.5, armor: 40, resistance: 40, xp: 37, gold: 9, drops: T2_DROPS.spider, materials: ['Hide', 'Cloth', 'Reagent'] },
       { id: 202, name: 'Bandit Cutthroat', level: 18, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.3, hp: 178, dps: 21.2, armor: 45, resistance: 45, xp: 48, gold: 12, drops: T2_DROPS.cutthroat, materials: ['Metal', 'Cloth', 'Gem'] },
@@ -193,7 +197,8 @@ export const ZONES: ZoneDef[] = [
     id: 3,
     tier: 3,
     name: 'Frostmaw Pass',
-    blurb: 'A snowbound mountain pass below an abandoned dwarven hold.',
+    blurb: 'A snowbound mountain pass below an abandoned dwarven hold. Frost giants came down it, chasing a falling star.',
+    bossLine: "The jarl's star was a shard like yours. Beyond the pass, the shards pull toward a hidden valley.",
     enemies: [
       { id: 301, name: 'Ice Harpy', level: 26, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.5, hp: 363, dps: 26.1, armor: 65, resistance: 65, xp: 107, gold: 27, drops: T3_DROPS.harpy, materials: ['Hide', 'Reagent'] },
       { id: 302, name: 'Kobold Tunneler', level: 28, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 1.1, hp: 439, dps: 31.6, armor: 168, resistance: 28, xp: 139, gold: 35, drops: T3_DROPS.kobold, materials: ['Metal', 'Wood', 'Gem'] },
@@ -215,7 +220,8 @@ export const ZONES: ZoneDef[] = [
     id: 4,
     tier: 4,
     name: 'Moonveil Vale',
-    blurb: 'A hidden elven valley of silver woods and moonlit ruins, under a moon gone dark.',
+    blurb: 'A hidden elven valley of silver woods and moonlit ruins, where the moon broke and went dark.',
+    bossLine: 'The moon broke here. Her shard points east, to where the largest piece fell.',
     enemies: [
       { id: 401, name: 'Moonmoth Swarm', level: 36, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.5, hp: 437, evasionRating: 211, dps: 39, armor: 90, resistance: 90, xp: 310, gold: 77, drops: T4_DROPS.moth, materials: ['Cloth', 'Reagent'] },
       { id: 402, name: 'Owlbear', level: 38, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 0.7, hp: 814, dps: 47.2, armor: 95, resistance: 95, xp: 403, gold: 101, drops: T4_DROPS.owlbear, materials: ['Hide', 'Reagent'] },

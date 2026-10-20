@@ -69,7 +69,8 @@ export function useToast() {
   useEffect(() => {
     if (!t.id) return;
     setShown(t.id);
-    const timer = window.setTimeout(() => setShown(0), 3000);
+    // Long enough to read: 3 s, plus time for longer lines (a boss's story line).
+    const timer = window.setTimeout(() => setShown(0), Math.max(3000, t.message.length * 50));
     return () => window.clearTimeout(timer);
   }, [t.id]);
   return shown && shown === t.id ? t : undefined;

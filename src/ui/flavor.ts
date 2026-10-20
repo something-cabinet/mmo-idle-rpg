@@ -15,6 +15,7 @@ const ZONE_LINES: Record<number, readonly string[]> = {
     'An old shrine by the road, its offerings long gone.',
     'Crows lift from the field all at once.',
     'You find goblin tracks, small and far too many.',
+    'A villager swears a star fell into the goblin woods.',
   ],
   2: [
     'Thorns catch at your sleeves.',
@@ -22,6 +23,7 @@ const ZONE_LINES: Record<number, readonly string[]> = {
     'Something large moved through here. Recently.',
     'The trees seem closer together than a moment ago.',
     'Roots twist across the path like grasping fingers.',
+    'The stone in your pack hums louder where the thorns grow thickest.',
   ],
   3: [
     'Snow crunches under your boots.',
@@ -29,6 +31,7 @@ const ZONE_LINES: Record<number, readonly string[]> = {
     'Your breath freezes in the air.',
     'The cold seeps through your armor.',
     'An avalanche rumbles somewhere above you.',
+    'The shards in your pack tug uphill, toward the pass.',
   ],
   4: [
     'Silver leaves fall, though there is no wind.',
@@ -36,6 +39,7 @@ const ZONE_LINES: Record<number, readonly string[]> = {
     'An elven statue watches the path, its face worn smooth.',
     'Pale light seeps up from cracks in the old marble road.',
     'Somewhere, a harp plays three notes and stops.',
+    'The shards in your pack pull toward the throne, like iron to a lodestone.',
   ],
 };
 
@@ -68,6 +72,7 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'A throne of stolen chairs, lashed together with rope.',
     'Shiny trinkets are heaped around the tent pole.',
     'The guards are gone. Only the chief remains.',
+    "A pale stone glows in Grubnak's crown, brighter than any of his trinkets.",
   ],
   15: [
     'Cold water drips from the vaulted ceiling.',
@@ -98,6 +103,7 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'The thorns part for you. That is not a good sign.',
     'A cauldron steams outside a crooked hut.',
     'Dolls of woven briar hang from every branch.',
+    'Something pale glints at the bottom of the cauldron.',
   ],
   31: [
     'Harpies circle high overhead.',
@@ -121,6 +127,7 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'The tracks in the snow are each the size of a shield.',
     'A drinking horn the size of a barrel lies on its side.',
     "The hall's great fire has burned down to blue embers.",
+    "A pale shard the size of a fist hangs from a chain around the jarl's neck.",
   ],
   41: [
     'Moths drift between the pale trunks like falling snow.',
@@ -143,6 +150,7 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'Silver banners hang in tatters from the throne-hall pillars.',
     'A black moon hangs above the throne. It does not shine.',
     'The court still kneels, though none of them have breathed in years.',
+    "A pale shard rests in the queen's lap, cradled like a child.",
   ],
   45: [
     'White petals drift past, though nothing here is in bloom.',

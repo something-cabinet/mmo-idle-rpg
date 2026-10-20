@@ -75,6 +75,7 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
           <div>
             <h2>{z.name} <span className="muted">{levels(z.enemies.filter(e => !e.secret))}</span></h2>
             <p className="muted">{z.blurb}</p>
+            {s.killedZones.has(z.id) && <p className="muted"><em>{z.bossLine}</em></p>}
           </div>
           {!unlocked && (
             <div className="lock-note"><Icon name="lock" />Defeat {prevBoss?.name ?? 'the previous boss'} to unlock</div>

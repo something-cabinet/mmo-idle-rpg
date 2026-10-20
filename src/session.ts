@@ -4,7 +4,7 @@
 
 import type { DbConnection } from './module_bindings';
 import type { SettleLog } from './module_bindings/types';
-import { ZONES_BY_ID, bossOf } from '../spacetimedb/src/data/zones';
+import { ZONES, ZONES_BY_ID, bossOf } from '../spacetimedb/src/data/zones';
 import { COSMETICS_BY_ID } from '../spacetimedb/src/data/cosmetics';
 import { toast } from './store';
 import { encounterText } from './ui/encounters';
@@ -26,7 +26,9 @@ export function trackSettles(conn: DbConnection) {
     if (ctx.event.tag === 'SubscribeApplied') return;
     const zone = ZONES_BY_ID.get(kill.zoneId);
     const boss = zone && bossOf(zone);
-    if (boss) toast(`${boss.name} defeated! The next zone is open.`, 'info');
+    if (!boss) return;
+    const next = ZONES.some(z => z.tier === zone.tier + 1) ? ' The next zone is open.' : '';
+    toast(`${boss.name} defeated! ${zone.bossLine}${next}`, 'info');
   });
   // A new cosmetic (cosmetics.md): not the ones loaded on connect, nor the backfill on entering the world.
   const SLOT_NAME = { title: 'Title', visual: 'Name effect', plate: 'Nameplate' } as const;

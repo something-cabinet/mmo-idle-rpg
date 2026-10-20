@@ -74,13 +74,15 @@ has stood silent since.
 | Walk lines | One or two per zone hinting at the shard ("The stone in your pack hums."). |
 | Boss first kill | One line on the first-kill toast: the shard and where it points. |
 
-Proposed first-kill lines for the live zones:
+Built for T1–T4: the zone blurbs, a shard walk line per zone and per lair (flavor.ts),
+and the boss line (zones.ts `bossLine`), shown on the first-kill toast and under a
+cleared zone's blurb on the Zones page. The lines:
 
 - **Grubnak:** "The stone in Grubnak's crown is still warm. It tugs, faintly, north."
-- **Morgra:** "Her cauldron runs dry around a shard of pale stone. It pulls toward the mountains."
+- **Morgra:** "Her cauldron runs dry around a shard of pale stone. Both shards pull toward the mountains."
 - **Hrimvald:** "The jarl's star was a shard like yours. Beyond the pass, the shards pull toward a hidden valley."
 - **Selvara:** "The moon broke here. Her shard points east, to where the largest piece fell."
-- **The Last Thane:** "The seal breaks. Below, something opens its eyes."
+- **The Last Thane** (with T5): "The seal breaks. Below, something opens its eyes."
 
 It fits what's already there: the Moonwell Deep opens when Selvara's death unseals the
 moonwell, The Drowned Moon raid and the Moonlit Champion keep the last of the moon's

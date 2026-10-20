@@ -16,6 +16,9 @@
   --info: #5b8cff;
   --ok: #3ecf8e;
   --bad: #f06363;
+  /* Corrupted items (chisel.ts): glowing vein light and the charred dark under it. */
+  --corrupt: #ff3348;
+  --corrupt-deep: #1c0206;
   --phys: #e8a15a;
   --magicdmg: #8f7dff;
   --frost: #6fd3ff;
@@ -56,6 +59,8 @@
   --info: #3a6ff0;
   --ok: #17a36b;
   --bad: #d64545;
+  --corrupt: #c8102e;
+  --corrupt-deep: #9e1a2e;
   --phys: #c26a17;
   --magicdmg: #6a55e6;
   --frost: #1593c9;
@@ -1478,6 +1483,9 @@ button.version:hover {
   flex: none;
   min-width: 80px;
 }
+.foe-row .btn.details {
+  min-width: 0;
+}
 .foe-detail {
   padding: 10px 10px 12px;
   border-top: 1px dashed var(--border);
@@ -2147,12 +2155,75 @@ button.version:hover {
 .item-tile.r-unique .tile-ico {
   filter: drop-shadow(0 0 4px color-mix(in srgb, var(--rc) 60%, transparent));
 }
-/* Corrupted (chisel.ts): a red wash rising from the bottom, under the rarity glow; border and icon keep the rarity color. */
-.item-tile.corrupted {
+/* Corrupted (chisel.ts): charred from below, cracked with glowing veins that slowly breathe.
+   Border and icon keep the rarity color, so the rarity still reads. Not hue alone: Mythic
+   (reserved) will be red, so the cue is the dark char and the crack shapes, which show on a
+   red tile too. Quiet on purpose: the tile and icon never move, so
+   Anomaly's tearing stays the one loud effect. */
+.tile-corrupt {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(to top, color-mix(in srgb, var(--corrupt-deep) 75%, transparent), transparent 55%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--corrupt) 35%, transparent), inset 0 -6px 10px -4px color-mix(in srgb, var(--corrupt) 45%, transparent);
+}
+/* The veins: the crack shapes as a mask, filled with the vein light, so they follow the theme. */
+.tile-corrupt::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--corrupt);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 100 14 83 9 71 23 59 19 47 31 37M14 83 28 87 40 79M23 59 35 63M100 93 86 80 90 66 78 56 82 45M86 80 72 85M90 66 100 60M52 100 55 89 47 79'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 100 14 83 9 71 23 59 19 47 31 37M14 83 28 87 40 79M23 59 35 63M100 93 86 80 90 66 78 56 82 45M86 80 72 85M90 66 100 60M52 100 55 89 47 79'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  filter: drop-shadow(0 0 2px var(--corrupt));
+  opacity: 0.6;
+  animation: corrupt-breathe 4s ease-in-out infinite;
+}
+.item-tile.corrupted .tile-ico { position: relative; }
+@keyframes corrupt-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tile-corrupt::before { animation: none; opacity: 0.7; }
+}
+/* The item card: the same char and veins, faint, in its bottom right corner. */
+.item-card.corrupted {
+  position: relative;
   background:
-    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rc) 22%, transparent), transparent 70%),
-    linear-gradient(to top, color-mix(in srgb, var(--bad) 30%, transparent), transparent 65%),
-    var(--surface-2);
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--corrupt-deep) 55%, transparent), transparent 45%),
+    linear-gradient(180deg, color-mix(in srgb, var(--rc) 9%, transparent), transparent 46px),
+    var(--surface);
+}
+.item-card.corrupted::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 72px;
+  height: 72px;
+  border-bottom-right-radius: inherit;
+  background: var(--corrupt);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 100 14 83 9 71 23 59 19 47 31 37M14 83 28 87 40 79M23 59 35 63M100 93 86 80 90 66 78 56 82 45M86 80 72 85M90 66 100 60M52 100 55 89 47 79'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M0 100 14 83 9 71 23 59 19 47 31 37M14 83 28 87 40 79M23 59 35 63M100 93 86 80 90 66 78 56 82 45M86 80 72 85M90 66 100 60M52 100 55 89 47 79'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  opacity: 0.35;
+  pointer-events: none;
+  animation: corrupt-breathe 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .item-card.corrupted::after { animation: none; }
+}
+/* The card's "Corrupted" line: bigger red text in the vein color, centered at the bottom, over the corner veins. */
+.item-corrupted {
+  position: relative;
+  margin-top: 2px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--corrupt);
 }
 .bag-grid .item-tile.selected::after {
   content: '✔';

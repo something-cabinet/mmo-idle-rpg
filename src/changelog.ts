@@ -31,6 +31,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'new', text: 'Tier 5 materials, from Brightsteel Ingot and Drake Scale to Radiant Gem, and for gatherers Brightsteel Ore and the rare herb Lanternroot.' },
       { tag: 'new', text: 'The Broken Moon: the zones now tell a story. Selvara cracked the moon, and every boss holds one of its shards. Zone descriptions say why you have come, new walk lines hint at the shard, and each boss leaves a line when you first beat it, kept under the zone on the Zones page.' },
       { tag: 'new', text: '5 new Uniques for tier 5. Find them in Brightvein Hold and beyond.' },
+      { tag: 'new', text: 'Corrupted items are easier to spot: charred from below, with glowing cracks that slowly pulse, in the Bag, item grids and item cards. The rarity border stays, so you can still tell what it was.' },
       { tag: 'balance', text: 'The Moonwell Deep pays tier 5 rewards from its deeper floors, now that a tier 5 zone exists (was capped at tier 4).' },
       { tag: 'balance', text: 'The Starless nameplate is renamed Night Sky: it has stars. Same look and unlock.' },
     ],

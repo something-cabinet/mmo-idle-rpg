@@ -17,9 +17,36 @@ import { ItemArt, ItemIcon, itemArtUrl } from './itemArt';
 export const rarityCls = (tag: string) => tag.toLowerCase();
 /** A rarity's name in the game: an Anomaly is never named. */
 export const rarityLabel = (tag: string) => (tag === 'Anomaly' ? '???' : tag);
-/** "Wolfhide Cap +3": the unique's or the base's name, then the temper level. */
-export const itemName = (it: { baseId: number; tier: number; uniqueId?: number; temper?: number }) =>
-  ((it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier)) + (it.temper ? ` +${it.temper}` : '');
+/** "Wolfhide Cap +3": the unique's or the base's name, then the temper level. An Anomaly's name is scrambled. */
+export const itemName = (it: { id?: bigint; baseId: number; tier: number; rarity?: { tag: string }; uniqueId?: number; temper?: number }) => {
+  const name = (it.uniqueId !== undefined && UNIQUES_BY_ID.get(it.uniqueId)?.name) || base(it.baseId).name(it.tier);
+  return (it.rarity?.tag === 'Anomaly' ? scramble(name, Number((it.id ?? 0n) % 2_147_483_647n) ^ (it.baseId * 16 + it.tier)) : name) + (it.temper ? ` +${it.temper}` : '');
+};
+
+/**
+ * "Bogiron Sword" → "Gbronio Wdros": each word's letters shuffled, the word capitalized as
+ * before. Seeded, so an item keeps its scramble; never left as it was if it can change.
+ */
+function scramble(name: string, seed: number): string {
+  let x = seed | 0;
+  const rand = () => {
+    x = (x + 0x6d2b79f5) | 0;
+    let t = Math.imul(x ^ (x >>> 15), 1 | x);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  return name.replace(/[A-Za-z]+/g, word => {
+    const letters = [...word.toLowerCase()];
+    for (let i = letters.length - 1; i > 0; i--) {
+      const j = Math.floor(rand() * (i + 1));
+      [letters[i], letters[j]] = [letters[j], letters[i]];
+    }
+    let out = letters.join('');
+    // A shuffle that came back unchanged (or a word of repeated letters) rotates by one.
+    if (out === word.toLowerCase()) out = out.slice(1) + out[0];
+    return word[0] === word[0].toUpperCase() ? out[0].toUpperCase() + out.slice(1) : out;
+  });
+}
 
 /** Bag glyph for an item: weapon/off-hand family, armor slot, or ring/amulet. */
 export const materialName = (id: number) => MATERIALS_BY_ID.get(id)?.name ?? `Material ${id}`;
@@ -105,7 +132,7 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
     </>
   );
   return (
-    <div className={`item-card r-${r}${compact ? ' compact' : ''}`}>
+    <div className={`item-card r-${r}${compact ? ' compact' : ''}${it.corruption > 0 ? ' corrupted' : ''}`}>
       {itemArtUrl(it) ? (
         <div className="item-top">
           <ItemArt it={it} className="card-art" />
@@ -113,11 +140,6 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
         </div>
       ) : (
         top
-      )}
-      {it.corruption > 0 && (
-        <div className="item-sub">
-          <span className="c-bad" title={`Corruption Chisel: ${CORRUPTION_TEXT[it.corruption as Corruption] ?? 'changed'}. It can't be crafted any more.`}>Corrupted</span>
-        </div>
       )}
       {it.temper > 0 && (
         <div className="item-sub">
@@ -164,6 +186,11 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
           ))}
         </div>
       )}
+      {it.corruption > 0 && (
+        <div className="item-corrupted" title={`Corruption Chisel: ${CORRUPTION_TEXT[it.corruption as Corruption] ?? 'changed'}. It can't be crafted any more.`}>
+          Corrupted
+        </div>
+      )}
     </div>
   );
 }
@@ -182,6 +209,7 @@ export function ItemTile({ it, selected, badge, title, onClick }: { it: Item; se
       title={title ?? `${rarityLabel(it.rarity.tag)} ${itemName(it)}${it.corruption ? ' (Corrupted)' : ''}`}
       onClick={onClick}
     >
+      {it.corruption > 0 && <span className="tile-corrupt" aria-hidden="true" />}
       <ItemIcon it={it} className="tile-ico" />
       <span className="tile-tier">T{it.tier}</span>
       {it.temper > 0 && <span className={`tile-temper${it.temper >= MAX_TEMPER ? ' maxed' : ''}`}>+{it.temper}</span>}

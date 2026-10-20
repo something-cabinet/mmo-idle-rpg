@@ -47,6 +47,8 @@ if (clientOnly && serverOnly) {
 }
 
 const env = loadEnv('production', process.cwd(), 'VITE_');
+// Admin emails (reducers/account.ts) go to the database from .env.production, never git.
+process.env.ADMIN_EMAILS = loadEnv('production', process.cwd(), 'ADMIN_').ADMIN_EMAILS ?? '';
 const host = env.VITE_SPACETIMEDB_HOST ?? '';
 const dbName = env.VITE_SPACETIMEDB_DB_NAME;
 if (!host.includes('maincloud') || !dbName) {

@@ -6,6 +6,13 @@ import { deleteCharacter, enterWorld, leaveWorld, requireAccount, requireAdmin, 
 import { runMigrations } from '../migrate';
 
 /**
+ * Emails (lowercase) that get the Admin role on login: the database's ADMIN_EMAILS value,
+ * comma or space separated. Every login method carrying one of them gets it, but only when
+ * SpacetimeAuth marks the email verified, so nobody claims the role with an unverified address.
+ */
+const adminEmails = (ctx: Ctx) => (ctx.env.ADMIN_EMAILS ?? '').toLowerCase().split(/[\s,]+/).filter(Boolean);
+
+/**
  * Every connection is either a guest (any token not issued by our
  * SpacetimeAuth project, including SpacetimeDB's anonymous tokens) or a
  * registered user. Throwing here rejects the connection. A connecting
@@ -28,6 +35,7 @@ export const onConnect = spacetimedb.clientConnected(ctx => {
     const claim = jwt.fullPayload['email'];
     if (typeof claim === 'string') email = claim;
     emailVerified = jwt.fullPayload['email_verified'] === true;
+    if (email && emailVerified && adminEmails(ctx).includes(email.toLowerCase())) role = { tag: 'Admin' };
   }
   if (ADMIN_IDENTITIES.includes(ctx.sender.toHexString())) role = { tag: 'Admin' };
 

@@ -813,7 +813,9 @@ export const spacetimedb = schema({
   scrap,
   migration,
 }, {
-  // Set only when publishing locally (package.json `spacetime:publish:local`); never on
-  // Maincloud, so the dev cheats (reducers/dev.ts) refuse there.
-  env: { DEV_CHEATS: t.option(t.string()) },
+  // DEV_CHEATS: set only when publishing locally (package.json `spacetime:publish:local`);
+  // never on Maincloud, so the dev cheats (reducers/dev.ts) refuse there.
+  // ADMIN_EMAILS: comma-separated emails that get Admin (reducers/account.ts), from the
+  // gitignored .env files (scripts/deploy.ts, scripts/publish-local.ts).
+  env: { DEV_CHEATS: t.option(t.string()), ADMIN_EMAILS: t.option(t.string()) },
 });

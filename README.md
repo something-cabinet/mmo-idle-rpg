@@ -39,7 +39,7 @@ Vite + React (TSX) browser client, SpacetimeDB (TypeScript module) backend.
   with the stored guest token and calls `offerLink`; the logged-in connection then calls
   `acceptLink`. Each side proves ownership with its own connection. If both have a character,
   the player must explicitly confirm deleting the guest one.
-- **Moderation.** `role` (Player/Admin, from `ADMIN_SUBJECTS`) and `banned`; admins call
+- **Moderation.** `role` (Player/Admin, from `ADMIN_EMAILS`, `ADMIN_SUBJECTS` or `ADMIN_IDENTITIES`) and `banned`; admins call
   `setBanned`. Banned accounts are rejected on connect.
 - **Mail.** Admins send messages with optional attachments to one, several or all characters
   from the CLI (see "Sending mail"); players read and claim them in the Mail view. Attached
@@ -146,7 +146,14 @@ Without this the game is guest-only, which is fine for development.
 4. Put the same ID in `.env` as `VITE_SPACETIMEAUTH_CLIENT_ID` and restart `npm run dev`.
 5. Optional: enable Google/Discord/GitHub under Identity Providers (magic-link email works
    out of the box).
-6. To make yourself admin, add your token's `sub` claim to `ADMIN_SUBJECTS` and republish.
+6. To make yourself admin, set `ADMIN_EMAILS=you@example.com` (comma-separated for more) in
+   `.env.production` for Maincloud and `.env` for local, then republish (`npm run deploy`,
+   `npm run spacetime:publish:local`). The scripts pass it to the database, so no address
+   is ever in git. Every login with that email gets Admin on connect (Google, magic link,
+   …), but only when SpacetimeAuth marks the email verified; a magic-link login always is.
+   Removing it takes Admin away on the next connect. For one specific login instead, use its `sub` claim in
+   `ADMIN_SUBJECTS`. Both are shown in the browser console while logged in:
+   `JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k => k.startsWith('oidc.user:')))).profile`.
 
 SpacetimeAuth is in beta. Login sessions expire; the client sends the player back through
 login when that happens (usually instant).
@@ -232,7 +239,7 @@ Publish the server first, then the client, so a new client never talks to an old
 | Tables, columns, or reducer signatures | `npm run spacetime:publish -- <db-name>`, `npm run spacetime:generate`, `npm run typecheck`, `npm run build`, `wrangler pages deploy` |
 | Breaking schema change (removing or changing columns) | Same as above, but publish with `--delete-data`. This **wipes all players**, so warn testers first |
 | `.env*` values (`VITE_*`) | Rebuild and redeploy the client; the module is unaffected |
-| `OIDC_CLIENT_IDS` or `ADMIN_SUBJECTS` in `config.ts` | Publish the module (add `--delete-data` only if the schema also broke) |
+| `OIDC_CLIENT_IDS` or `ADMIN_SUBJECTS` in `config.ts`, or `ADMIN_EMAILS` in `.env*` | Publish the module (add `--delete-data` only if the schema also broke) |
 | New site URL or project name | Add it to the SpacetimeAuth redirect and post-logout redirect URIs (with trailing `/`) |
 
 Checklist before deploying: `npm run typecheck`, then the relevant `npm run test:*` scripts

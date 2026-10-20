@@ -3,9 +3,12 @@
 //   npm run spacetime:publish:local            # keep data
 //   npm run spacetime:publish:local:reset      # wipe the local database
 import { spawnSync } from 'node:child_process';
+import { loadEnv } from 'vite';
 
 const reset = process.argv.includes('--delete-data');
 const cmd = `spacetime publish --module-path spacetimedb --server local${reset ? ' --delete-data' : ''} mmo-idle-rpg`;
 console.log(`> DEV_CHEATS=1 ${cmd}`);
-const { status } = spawnSync(cmd, { stdio: 'inherit', shell: true, env: { ...process.env, DEV_CHEATS: '1' } });
+// Admin emails (reducers/account.ts) from .env / .env.development, never git.
+const ADMIN_EMAILS = loadEnv('development', process.cwd(), 'ADMIN_').ADMIN_EMAILS ?? '';
+const { status } = spawnSync(cmd, { stdio: 'inherit', shell: true, env: { ...process.env, DEV_CHEATS: '1', ADMIN_EMAILS } });
 process.exit(status ?? 1);

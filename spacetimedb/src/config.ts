@@ -17,6 +17,12 @@ export const OIDC_CLIENT_IDS: readonly string[] = [
 export const ADMIN_SUBJECTS: readonly string[] = [];
 
 /**
+ * Admin emails aren't here: they're the database's ADMIN_EMAILS environment value
+ * (reducers/account.ts `adminEmails`), set from the gitignored .env files on publish, so
+ * no address lands in git.
+ */
+
+/**
  * Identities (hex, no 0x) that get the Admin role on connect, whatever logged
  * them in. For the `spacetime` CLI login (`spacetime login show`), so admin
  * reducers can be run with `spacetime call`.

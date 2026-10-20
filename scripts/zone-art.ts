@@ -47,7 +47,8 @@ function arts(): { arts: Art[]; missing: string[] } {
     const num = new Map(areas.map((a, i) => [a.id, i + 1]));
     const lair = areas.find(a => a.enemies.some(id => ENEMIES_BY_ID.get(id)?.enemy.boss));
     const roads = z.links.filter(([a, b]) => num.has(a) && num.has(b)).map(([a, b]) => `${num.get(a)} and ${num.get(b)}`);
-    const setting = region.setting.startsWith(`${z.name}, `) ? region.setting.slice(z.name.length + 2) : region.setting;
+    const place = region.map ?? region.setting;
+    const setting = place.startsWith(`${z.name}, `) ? place.slice(z.name.length + 2) : place;
     out.push({
       key: `zone-${z.id}`,
       name: z.name,

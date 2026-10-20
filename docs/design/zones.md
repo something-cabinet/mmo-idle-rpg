@@ -15,7 +15,8 @@ fixed route (data/zones.ts `areas`, `links`).
 
 - **4 areas per zone:** the enemies grouped by place (e.g. Greenhollow: Village
   Fields, Old Mill, Goblin Camp, Chieftain's Tent), the last being the boss's lair.
-  Paths branch, so the map has more than one way through.
+  Paths usually branch, so the map has more than one way through; a zone can instead
+  be a single route when the place calls for it (T5's mine shaft).
 - **Nothing inside an open zone is locked.** Any enemy can be fought at any time; the
   real limit is gear, not a grind gate, and an idle player never has to switch
   targets to make progress.

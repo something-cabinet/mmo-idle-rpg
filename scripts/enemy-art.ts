@@ -50,6 +50,8 @@ const RULES =
 export interface Region {
   /** Where it lives and what the place feels like. */
   setting: string;
+  /** The zone map's own setting, when the map should show the place differently (zone-art.ts); else `setting`. */
+  map?: string;
   /** The region's colors, used across every enemy (each adds its own on top). */
   palette: string;
   /** One recurring visual motif every enemy of the region carries somewhere. */
@@ -86,6 +88,8 @@ export const REGIONS: Record<number, Region> = {
   },
   5: {
     setting: 'Brightvein Hold, a silent dwarven mining hold deep in a mountain, its tunnels lit by glowing silver-blue ore veins, a cold broken forge and a rune-sealed breach',
+    map: 'Brightvein Hold, a vast terraced dwarven mine pit cut into a dark mountain, seen from above: the rim at the top of the map, ' +
+      'stepped stone terraces and ramps winding down in one switchback road, glowing silver-blue ore veins in the rock walls, growing deeper and darker toward the bottom of the map, where a glowing rift breaks open at the lowest point',
     palette: 'dark slate and granite grey, glowing silver-blue vein light, warm forge bronze, soot black',
     motif: 'glowing veins: cracks of silver-blue light running through stone, metal and skin, with heavy dwarven runes and bronze where it fits',
     menace: 'tier 5 of 9: grim and powerful, heavy rune-carved detail, a mighty dwarven realm gone wrong',

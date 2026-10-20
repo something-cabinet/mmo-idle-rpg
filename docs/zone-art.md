@@ -37,7 +37,9 @@ setting: when the prompt held names, the model painted them onto the map as labe
    (`blurb`, `x`, `y`) and `links`. Blurbs should describe something visible (a mill, a
    ring of thorns, a glass dome): that is what gets painted.
 2. **Region.** Add `REGIONS[<zoneId>]` in `scripts/enemy-art.ts` (enemy art needs it too).
-   Start `setting` with `"<Zone name>, "`; the script drops that part for the map.
+   Start `setting` with `"<Zone name>, "`; the script drops that part for the map. An
+   optional `map` replaces `setting` for the map only, when the map should show the place
+   differently from the enemies' setting (T5: a terraced pit seen from above).
 3. **Fallback color.** Add `.zmap-<id> { --land: #…; }` next to the others in
    `src/style.css`, for when art is off.
 4. **Check the list:**

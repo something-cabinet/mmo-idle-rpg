@@ -354,9 +354,10 @@ the Chaos Dungeon is the first wall.
 
 **Areas:**
 
-**Map:** a mine, unlike the climbs before it: you descend from the Lode at the top,
-through the Forge (right) or the Gate (left), joined by a cross-tunnel, down to the Breach
-at the bottom.
+**Map:** a terraced mine pit seen from above, unlike the climbs before it: one road down
+from the tunnels at the rim (top left), across to the forge ruins (right), back to the
+rune gate (left) and down to the glowing rift at the bottom. No branches: the only zone so
+far with a single route. Spots are placed beside the landmarks of the map art.
 
 | Area | Enemies | Blurb |
 |---|---|---|

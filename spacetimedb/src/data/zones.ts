@@ -266,14 +266,14 @@ export const ZONES: ZoneDef[] = [
       { id: 506, name: 'Durgrim, the Last Thane', level: 55, rank: 'Boss', damageType: 'Physical', defense: 'Warded', speed: 0.7, hp: 5041, dps: 182.4, armor: 55, resistance: 330, xp: 3799, gold: 950, drops: all(T5_DROPS), materials: ['Metal', 'Core', 'Gem'], boss: true },
     ],
     areas: [
-      { id: 51, name: 'Brightsteel Lode', blurb: 'Glowing veins light the upper tunnels, and things crawl toward the light.', enemies: [501, 502], x: 50, y: 6 },
-      { id: 52, name: 'Collapsed Forge', blurb: 'The great forge lies cold and broken. Its rune-keepers still tend it.', enemies: [503, 504], x: 88, y: 38 },
-      { id: 53, name: 'Runebound Gate', blurb: 'Rune-carved doors to the lowest shafts, and the miners who never came back up.', enemies: [505], x: 14, y: 62 },
-      { id: 54, name: 'Sealed Breach', blurb: 'The Last Thane stands fused to the seal, the shard blazing in his chest.', enemies: [506], x: 56, y: 96 },
+      { id: 51, name: 'Brightsteel Lode', blurb: 'Glowing veins light the upper tunnels, and things crawl toward the light.', enemies: [501, 502], x: 17, y: 17 },
+      { id: 52, name: 'Collapsed Forge', blurb: 'The great forge lies cold and broken. Its rune-keepers still tend it.', enemies: [503, 504], x: 78, y: 44 },
+      { id: 53, name: 'Runebound Gate', blurb: 'Rune-carved doors to the lowest shafts, and the miners who never came back up.', enemies: [505], x: 14, y: 57 },
+      { id: 54, name: 'Sealed Breach', blurb: 'The Last Thane stands fused to the seal, the shard blazing in his chest.', enemies: [506], x: 50, y: 96 },
     ],
-    // A mine, unlike the climbs before it: you descend from the entrance at the top to the breach at
-    // the bottom, with a cross-tunnel between the forge and the gate.
-    links: [[51, 52], [51, 53], [52, 53], [52, 54], [53, 54]],
+    // A mine pit, unlike the climbs before it: one switchback road down from the rim at the top to the
+    // breach at the bottom, no branches (the map art is drawn to match).
+    links: [[51, 52], [52, 53], [53, 54]],
   },
 ];
 

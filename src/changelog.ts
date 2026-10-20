@@ -23,7 +23,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.2.0',
     date: '2026-10-20',
-    commit: 'b39b0c8',
+    commit: 'a58ef85',
     title: 'Brightvein Hold, five new Uniques and the Broken Moon',
     changes: [
       { tag: 'new', text: 'Tier 5 zone, Brightvein Hold: a silent dwarven mine where the largest shard of the moon fell, opened by your first Selvara kill. Levels 46 to 55, and a real step up: from T5 on, enemies have 10% more HP and damage on top of the usual climb. One road leads down the pit, from the glowing tunnels at the rim to the rift at the bottom.' },

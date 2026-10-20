@@ -207,7 +207,7 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 51, name: 'Anvil Strength', text: `Your hits deal +1 physical damage per ${ANVIL_ARMOR === 1 ? 'point of' : ANVIL_ARMOR} armor you have, but ${Math.round((1 - ANVIL_SPEED) * 100)}% less attack speed.` },
   { id: 52, name: 'True Shot', text: `Your attacks never miss, and each 1% accuracy above your level's own gives ${TRUE_SHOT}% more damage.` },
   { id: 53, name: 'Resonance', text: `Each other unique you wear gives ${Math.round(RESONANCE * 100)}% more damage and ${Math.round(RESONANCE * 100)}% more max HP.` },
-  { id: 54, name: 'Fading Rally', text: 'Each fight starts with 50% more attack speed, falling by 10% per attack, down to 50% less from the 11th attack on.' },
+  { id: 54, name: 'Fading Rally', text: 'Each fight starts with 50% more attack speed, falling by 10% per attack, down to 20% less from the 8th attack on.' },
   { id: 55, name: 'Parry and Thrust', text: `You can't crit normally: each 1% crit chance gives ${PARRY_RATING} evasion rating instead, and every attack you evade makes your next attack crit.` },
 ];
 
@@ -227,16 +227,18 @@ export function waxingAttacks(x: number): number {
   return 11 + (x - 12.1) / 1.6;
 }
 
+/** Fading Rally: the attack speed multiplier it falls to (from the 8th attack on). */
+export const RALLY_FLOOR = 0.8;
 /** Fading Rally: attack `k` (from 1) comes at × this attack speed. */
-export const rallyMult = (k: number) => Math.max(0.5, 1.6 - 0.1 * k);
+export const rallyMult = (k: number) => Math.max(RALLY_FLOOR, 1.6 - 0.1 * k);
 /**
  * Fading Rally: periods (at the base attack speed) that `x` attacks take (continuous):
- * Σ 1 / rallyMult(k), a fraction of the next attack for the rest, 2 per attack from the 11th.
+ * Σ 1 / rallyMult(k) while it falls, then 1 / RALLY_FLOOR per attack (a fraction for the rest).
  */
 export function rallyPeriods(x: number): number {
   let t = 0;
   let k = 1;
-  for (; k <= 10 && k <= x; k++) t += 1 / rallyMult(k);
+  for (; rallyMult(k) > RALLY_FLOOR && k <= x; k++) t += 1 / rallyMult(k);
   return t + (x - (k - 1)) / rallyMult(k);
 }
 

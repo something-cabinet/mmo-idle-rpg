@@ -3,7 +3,7 @@
 // The back-to-back online settle (`simulate`) is in sim.ts.
 
 import { type CombatStats, type Matchup } from './combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONLIGHT_MULT, effectAmount, waxingMult } from './data/legendary';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONLIGHT_MULT, effectAmount, rallyMult, waxingMult } from './data/legendary';
 import type { EnemyDef } from './data/zones';
 import { seededRng, type Rng } from './loot';
 
@@ -118,8 +118,9 @@ export interface Fight {
  * Follow-through lands the average overkill as the fight starts (so each fight stays
  * on its own). Second Skin's shield takes hits first; Bulwark halves some hits; Last
  * Stand shrinks hits while you are below its threshold. Moonlight doubles every 3rd
- * swing; Waxing Moon scales swing k by `waxingMult(k)`; Afterimage shrinks the enemy's
- * hit after a dodge. A Phial of Renewal heals once when a hit leaves you below half HP. New effects draw from the
+ * swing; Waxing Moon scales swing k by `waxingMult(k)`; Fading Rally times swing k at
+ * `rallyMult(k)` × your speed; Parry and Thrust crits the swing after a dodge (and only
+ * then); Afterimage shrinks the enemy's hit after a dodge. A Phial of Renewal heals once when a hit leaves you below half HP. New effects draw from the
  * generator only when worn, so fights without them replay as before. `mods` (Moonwell Deep
  * fights only) change the start, the time limit and the enemy; see FightMods.
  */
@@ -131,10 +132,14 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const crit = Math.min(1, src?.critChance ?? 0);
   const foeRegen = enemy.regen ?? 0;
   // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = DPS.
-  // Moonlight's wave, Waxing Moon's average and the enemy's evasion are in `m.dps`; take
-  // them out, then apply them per swing.
+  // Moonlight's wave, Waxing Moon's and Fading Rally's averages and the enemy's evasion are
+  // in `m.dps`; take them out, then apply them per swing.
   const moonlight = s.effects.has(Effect.Moonlight);
   const waxing = s.effects.has(Effect.WaxingMoon);
+  const rally = s.effects.has(Effect.FadingRally);
+  const parry = s.effects.has(Effect.ParryAndThrust);
+  /** Parry and Thrust: you evaded since your last swing. */
+  let parried = false;
   const healMult = mods.healMult ?? 1;
   const regen = s.regen * healMult;
   const lifesteal = s.lifesteal * healMult;
@@ -147,9 +152,10 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   const face = (x: Matchup) => {
     cur = x;
     evade = x.enemyEvasion;
-    hit = src && x.dps > 0 ? x.dps / (1 - evade) / src.attacksPerSec / x.critMult / x.waxing / (moonlight ? MOONLIGHT_MULT : 1) : 0;
-    critX = crit > 0 && src ? 1 + (x.critMult - 1) / crit : 1;
-    healPerSwing = src && x.hps > 0 ? (x.hps / src.attacksPerSec) * healMult : 0;
+    hit = src && x.dps > 0 ? x.dps / (1 - evade) / src.attacksPerSec / x.critMult / x.waxing / x.rally / (moonlight ? MOONLIGHT_MULT : 1) : 0;
+    const c = parry ? x.parry : crit;
+    critX = c > 0 && src ? 1 + (x.critMult - 1) / c : 1;
+    healPerSwing = src && x.hps > 0 ? (x.hps / src.attacksPerSec / x.rally) * healMult : 0;
     enemyHit = x.enemyHit;
   };
   face(m);
@@ -182,7 +188,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   let youHp = startHp;
   let foeHp = enemy.hp;
   let now = walk;
-  let nextYou = walk + yourPeriod / 2;
+  let nextYou = walk + yourPeriod / 2 / (rally ? rallyMult(1) : 1);
   let nextFoe = walk + foePeriod / 2;
   let nextBurst = mods.burst ? walk + mods.burst.every : Infinity;
   const events: FightEvent[] = [];
@@ -234,13 +240,14 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       events.push({ t, by: 'enemy', kind: 'hit', damage, healed, youHp, foeHp, burst: true, ...(saved && { secondWind: true }), ...(renewed > 0 && { renewed }), ...shieldNote() });
       if (youHp <= 0) return done(t, 'defeat');
     } else if (nextYou <= nextFoe) {
-      nextYou += yourPeriod;
+      swings += 1;
+      nextYou += yourPeriod / (rally ? rallyMult(swings + 1) : 1);
       // Rolled only against an evasive enemy, so other fights replay as before.
       const missed = evade > 0 && rng() < evade;
-      const isCrit = !missed && rng() < crit;
+      const isCrit = parry ? !missed && parried : !missed && rng() < crit;
+      parried = false;
       const doubled = foeHp < executeBelow || foeHp > bullyAbove ? 2 : 1;
       const rage = berserk > 0 ? 1 + (berserk * (s.maxHp - youHp)) / s.maxHp : 1;
-      swings += 1;
       const wave = moonlight && swings % MOONLIGHT_EVERY === 0;
       const shielded = !missed && immune(t);
       const damage = missed || shielded ? 0 : hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1);
@@ -258,6 +265,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     } else {
       nextFoe += foePeriod;
       const dodged = rng() < cur.evasion;
+      if (dodged) parried = true;
       let damage = dodged ? 0 : enemyHit * (0.9 + 0.2 * rng()) * ramp(t);
       const blocked = !dodged && bulwark > 0 && rng() < bulwark;
       if (blocked) damage /= 2;

@@ -101,6 +101,10 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.Finesse }, { stat: Stat.CritDamage }, { stat: Stat.ArmorPenPct }] },
   { id: 25, name: 'Shardbound Band', tier: 5, baseId: 53, effects: [Effect.Resonance],
     stats: [{ stat: Stat.BaseDamagePct }, { stat: Stat.MaxHpPct }, { stat: Stat.ItemFindPct }] },
+  { id: 26, name: "Thane's Failing Breath", tier: 5, baseId: 23, effects: [Effect.FadingRally],
+    stats: [{ stat: Stat.AttackSpeedPct }, { stat: Stat.Might }, { stat: Stat.PhysDamagePct }] },
+  { id: 27, name: 'Glimmerguard', tier: 5, baseId: 24, effects: [Effect.ParryAndThrust],
+    stats: [{ stat: Stat.CritChancePct }, { stat: Stat.EvasionRatingPct }, { stat: Stat.CritDamage }] },
 ];
 
 export const UNIQUES_BY_ID: ReadonlyMap<number, UniqueDef> = new Map(UNIQUES.map(u => [u.id, u]));

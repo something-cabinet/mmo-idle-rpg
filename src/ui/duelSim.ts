@@ -4,8 +4,8 @@
 // on its own timer with the matchup formulas of combat.ts applied player against player
 // (penetration, evasion, crits, heals, lifesteal, regen and the effects).
 
-import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from '../../spacetimedb/src/combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, waxingMult } from '../../spacetimedb/src/data/legendary';
+import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, parrySource, type CombatStats } from '../../spacetimedb/src/combat';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, rallyMult, waxingMult } from '../../spacetimedb/src/data/legendary';
 import { seededRng, type Rng } from '../../spacetimedb/src/loot';
 
 /** A duel still going after this long is decided on points (share of HP left). */
@@ -62,8 +62,10 @@ function offense(a: CombatStats, b: CombatStats) {
     physShare: phys + magic > 0 ? phys / (phys + magic) : 1,
     heal: src.heal,
     crit,
-    // Deadeye: crits ignore a share of `b`'s mitigation.
-    critX: crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
+    // Deadeye: crits ignore a share of `b`'s mitigation. Parry and Thrust: a parried swing's crit.
+    critX: a.effects.has(Effect.ParryAndThrust)
+      ? critMultAgainst(parrySource(src, a.critDamage), { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye))
+      : crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
     // True Shot: `a` never misses.
     evasion: a.effects.has(Effect.TrueShot) ? 0 : defenseAgainst(b, type, a.level, a.accuracy).evasion,
     mitP,
@@ -82,10 +84,14 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
   const shield = [amount(0, Effect.SecondSkin) * maxHp[0], amount(1, Effect.SecondSkin) * maxHp[1]];
   const swings = [0, 0];
   const lastDodged = [false, false];
+  // Parry and Thrust: dodged since their last swing. Fading Rally: swing k at rallyMult(k) × speed.
+  const parried = [false, false];
+  const rally = [sides[0].effects.has(Effect.FadingRally), sides[1].effects.has(Effect.FadingRally)];
+  const rallied = (i: number, k: number) => (rally[i] ? rallyMult(k) : 1);
   // Each side's first swing lands at a random point of its first period (half a period on
   // average, like `simulateFight`), so neither seat always strikes first.
   const first = (period: number) => (Number.isFinite(period) ? rng() * period : Infinity);
-  const next = [first(off[0].period), first(off[1].period)];
+  const next = [first(off[0].period / rallied(0, 1)), first(off[1].period / rallied(1, 1))];
   const events: DuelEvent[] = [];
   let now = 0;
 
@@ -120,11 +126,14 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
     const a = (next[0] <= next[1] ? 0 : 1) as 0 | 1;
     const b = (1 - a) as 0 | 1;
     const o = off[a];
-    next[a] += o.period;
     swings[a] += 1;
+    next[a] += o.period / rallied(a, swings[a] + 1);
+    const parriedNow = parried[a];
+    parried[a] = false;
     if (rng() < o.evasion) {
       ambush[a] = 1;
       lastDodged[b] = true;
+      parried[b] = true;
       // Riposte: `b` counters for a share of an average hit.
       const counter = amount(b, Effect.Riposte) * off[b].hit * (1 + off[b].crit * (off[b].critX - 1));
       const saved = counter > 0 && hurt(a, counter);
@@ -132,7 +141,7 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
       if (hp[a] <= 0) return done(t, b, 'ko');
       continue;
     }
-    const isCrit = rng() < o.crit;
+    const isCrit = sides[a].effects.has(Effect.ParryAndThrust) ? parriedNow : rng() < o.crit;
     const critX = isCrit ? o.critX : 1;
     // Executioner and Bully: double damage below / above their thresholds. Berserker: more the more HP `a` is missing.
     const execute = hp[b] < amount(a, Effect.Executioner) * maxHp[b] || hp[b] > (1 - amount(a, Effect.Bully)) * maxHp[b] ? 2 : 1;

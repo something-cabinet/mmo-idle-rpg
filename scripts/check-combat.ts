@@ -4,7 +4,7 @@
 import { SLOTS, STARTER_ARMOR, STARTER_WEAPONS, base, weaponValues, type Slot } from '../spacetimedb/src/data/bases';
 import { MIGHT_ACCURACY, Stat, accuracyAtLevel, fromStored, toStored } from '../spacetimedb/src/data/stats';
 import { ENEMIES_BY_ID, WALK_SECONDS } from '../spacetimedb/src/data/zones';
-import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LEGENDARIES_BY_ID, RESONANCE, TRUE_SHOT } from '../spacetimedb/src/data/legendary';
+import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LEGENDARIES_BY_ID, PARRY_RATING, RESONANCE, TRUE_SHOT } from '../spacetimedb/src/data/legendary';
 import { simulateFight } from '../spacetimedb/src/fight';
 import { MAX_LEVEL, bonusHp, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
 import { scoreGear } from '../spacetimedb/src/equip';
@@ -395,6 +395,52 @@ function withEffect(it: GearItem, effect: number): GearItem {
   check('Resonance: alone, nothing more', near(res0.sources[0].hit.Physical, combatStats(10, kit(sword, { Ring1: item(53, 1) })).sources[0].hit.Physical, 1e-9));
   check('Resonance: 2 other uniques, 16% more damage and max HP', near(res2.sources[0].hit.Physical, plain2.sources[0].hit.Physical * (1 + 2 * RESONANCE), 1e-9) &&
     near(res2.maxHp, plain2.maxHp * (1 + 2 * RESONANCE), 1e-9), `${f(plain2.maxHp)} → ${f(res2.maxHp)}`);
+
+  // Fading Rally (T5): attack k at max(0.8, 1.5 − 0.1 (k − 1)) × attack speed.
+  const fr = combatStats(10, kit(sword, { OffHand: withEffect(item(23, 1), Effect.FadingRally) }));
+  const noFr = combatStats(10, kit(sword, { OffHand: item(23, 1) }));
+  const frPeriod = 1 / fr.sources[0].attacksPerSec;
+  const frHits = (n: number) => ({ ...voidRat, hp: matchup(noFr, voidRat).dps * frPeriod * n, dps: 0.01 });
+  check('Fading Rally: 3 attacks take 1/1.5 + 1/1.4 + 1/1.3 periods', near(matchup(fr, frHits(3)).timeToKill, (1 / 1.5 + 1 / 1.4 + 1 / 1.3) * frPeriod, 1e-9),
+    f(matchup(fr, frHits(3)).timeToKill / frPeriod));
+  check('Fading Rally: break-even near 11 attacks, long fights approach × 0.8',
+    near(matchup(fr, frHits(11)).rally, 1, 0.01) && near(matchup(fr, frHits(1000)).rally, 0.8, 0.01), f(matchup(fr, frHits(11)).rally));
+  const frFoe = frHits(20);
+  const frM = matchup(fr, frFoe);
+  const frFights = Array.from({ length: 300 }, (_, i) => simulateFight(fr, frM, frFoe, seededRng(BigInt(i))));
+  const frLen = frFights.reduce((a, x) => a + x.end - x.walk, 0) / frFights.length;
+  check('Fading Rally in live fights: average length matches the formula', near(frLen, frM.timeToKill, frM.timeToKill * 0.06), `${f(frLen)} s vs ${f(frM.timeToKill)} s`);
+  const frSwings = frFights[0].events.filter(e => e.by === 'you').map(e => e.t);
+  check('Fading Rally in a live fight: swings 1→2 at 1/1.4 period, 11→12 at 1/0.8 periods',
+    near(frSwings[1] - frSwings[0], frPeriod / 1.4, 1e-9) && near(frSwings[11] - frSwings[10], frPeriod / 0.8, 1e-9));
+
+  // Parry and Thrust (T5): crit chance becomes evasion rating; an attack after a dodge crits.
+  const pt = combatStats(10, kit(sword, { OffHand: withEffect(item(24, 1), Effect.ParryAndThrust), Chest: item(35, 1, [[Stat.EvasionRating, 100]]) }));
+  const noPt = combatStats(10, kit(sword, { OffHand: item(24, 1), Chest: item(35, 1, [[Stat.EvasionRating, 100]]) }));
+  check('Parry and Thrust: no normal crits, + PARRY_RATING evasion rating per 1% crit',
+    pt.sources[0].critChance === 0 && near(pt.evasionRating, noPt.evasionRating + PARRY_RATING * 100 * noPt.sources[0].critChance, 1e-9),
+    `${f(noPt.evasionRating)} → ${f(pt.evasionRating)}`);
+  const ptFoe = { ...voidRat, hp: 1e4, dps: 0.5 };
+  const ptM = matchup(pt, ptFoe);
+  const ptP = 1 - (1 - ptM.evasion) ** (ptFoe.speed / pt.sources[0].attacksPerSec);
+  check('Parry and Thrust: crit chance per attack = 1 − (1 − evasion)^(enemy attacks per attack)',
+    near(ptM.parry, ptP, 1e-9) && near(ptM.critMult, 1 + ptP * (pt.critDamage - 1), 1e-9), `${f(100 * ptM.parry)}% crits at ${f(100 * ptM.evasion)}% evasion`);
+  const ptFight = simulateFight(pt, ptM, ptFoe, seededRng(5n), { timeLimit: 120 });
+  let dodgedSince = false;
+  let ptOk = true;
+  for (const e of ptFight.events) {
+    if (e.by === 'enemy') dodgedSince ||= e.kind === 'dodge';
+    else {
+      if ((e.kind === 'crit') !== dodgedSince) ptOk = false;
+      dodgedSince = false;
+    }
+  }
+  check('Parry and Thrust in a live fight: crits exactly after a dodge', ptOk && ptFight.events.some(e => e.kind === 'crit'));
+  const ptFoe2 = { ...ptFoe, hp: matchup(pt, ptFoe).dps * 30 };
+  const ptM2 = matchup(pt, ptFoe2);
+  const ptFights = Array.from({ length: 300 }, (_, i) => simulateFight(pt, ptM2, ptFoe2, seededRng(BigInt(i))));
+  const ptLen = ptFights.reduce((a, x) => a + x.end - x.walk, 0) / ptFights.length;
+  check('Parry and Thrust in live fights: average length matches the formula', near(ptLen, ptM2.timeToKill, ptM2.timeToKill * 0.06), `${f(ptLen)} s vs ${f(ptM2.timeToKill)} s`);
 
   const ac = (effect: number) => combatStats(10, kit(sword, { Chest: withEffect(item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]), effect) }));
   const acBase = combatStats(10, kit(sword, { Chest: item(39, 1, [[Stat.Armor, 200], [Stat.Resistance, 100]]) }));

@@ -5,7 +5,7 @@
 
 import type { Item } from '../module_bindings/types';
 import { MITIGATION_CAP, bonusHp, defenseAgainst, tempered, type CombatStats } from '../../spacetimedb/src/combat';
-import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LEGENDARIES_BY_ID, RESONANCE, TRUE_SHOT, effectAmount } from '../../spacetimedb/src/data/legendary';
+import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LEGENDARIES_BY_ID, PARRY_RATING, RESONANCE, TRUE_SHOT, effectAmount } from '../../spacetimedb/src/data/legendary';
 import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, fromStored } from '../../spacetimedb/src/data/stats';
 import { scoreGear } from '../../spacetimedb/src/equip';
 import { WALK_SECONDS } from '../../spacetimedb/src/data/zones';
@@ -113,9 +113,11 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
         row('Attack speed', `${src.attacksPerSec.toFixed(2)} /s`,
           from([Stat.AttackSpeedPct], w && `Weapon: ${w.speedMilli / 1000}/s`, `Finesse ${n1(finesse)}: +${n1(0.1 * finesse)}%`, hymn && `Moonlit Vigil, Mind ${n1(mind)}: +${n1(0.08 * mind)}%`, "Floor: 25% of the weapon's speed",
             has(Effect.Ambush) && 'Ambush: 30% less; first attack each fight deals 5×', has(Effect.FrozenBlood) && 'Frozen Blood: 20% less',
-            has(Effect.AnvilStrength) && `Anvil Strength: ${pct(1 - ANVIL_SPEED)} less`)),
+            has(Effect.AnvilStrength) && `Anvil Strength: ${pct(1 - ANVIL_SPEED)} less`,
+            has(Effect.FadingRally) && 'Fading Rally: 50% more on the first attack, 10% less each attack after, down to 20% less from the 8th')),
         row('Crit chance', pct(src.critChance, 1),
           from([Stat.BaseCritChance, Stat.CritChancePct], w && `Weapon base: ${w.baseCritBp / 100}%`, `Finesse ${n1(finesse)}: +${n1(0.4 * finesse)}% increased`, 'Rolls use at most 100%',
+            has(Effect.ParryAndThrust) && 'Parry and Thrust: no normal crits; the attack after each dodge crits',
             leg(Effect.Overcrit))),
         row('Crit damage', pct(st.critDamage), from([Stat.CritDamage], 'Base 150%', `Mind ${n1(mind)}: +${n1(0.25 * mind)}%`,
           has(Effect.Frostbite) && `Frostbite: crits deal no extra damage; enemy damage −${pct(st.chill)}`)),
@@ -145,7 +147,8 @@ export function statSheet(level: number, gear: readonly (Item | undefined)[], st
     row('Evasion', pct(phys.evasion), from([Stat.EvasionRating, Stat.EvasionRatingPct], `Rating ${fmt(st.evasionRating)} vs a Lv ${level} enemy's accuracy: rating / (rating + ${accuracyAtLevel(level)})`,
       `Finesse ${n1(finesse)}: +${n1(0.25 * finesse)}% rating`, `Cap ${pct(evasionCap)}${has(Effect.PhantomStep) ? ' (Phantom Step)' : ''}`,
       (has(Effect.Juggernaut) || has(Effect.Spellward)) && "Juggernaut / Spellward: you can't evade",
-      has(Effect.Moonshadow) && 'Moonshadow: + 1 rating per point of armor and resistance', leg(Effect.Afterimage))),
+      has(Effect.Moonshadow) && 'Moonshadow: + 1 rating per point of armor and resistance',
+      has(Effect.ParryAndThrust) && `Parry and Thrust: + ${PARRY_RATING} rating per 1% crit chance`, leg(Effect.Afterimage))),
     row('Lifesteal', pct(st.lifesteal, 1), from([Stat.LifestealPct], `Cap ${pct(CAPS.lifesteal / 100 + effectAmount(st.effects, Effect.Bloodthirst))}`, leg(Effect.Bloodthirst), has(Effect.FrozenBlood) && 'Frozen Blood: no lifesteal')),
   ];
 

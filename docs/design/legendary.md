@@ -188,6 +188,8 @@ this split keep working.
 | 51 | **Anvil Strength** | Your hits deal **+1 physical damage per point of armor** you have, but **25% less attack speed**. |
 | 52 | **True Shot** | Your attacks **never miss**, and each **1% accuracy above your level's own** gives **1% more damage**. |
 | 53 | **Resonance** | Each **other unique** you wear gives **8% more damage** and **8% more max HP**. |
+| 54 | **Fading Rally** | Each fight starts with **50% more attack speed**, falling by **10% per attack**, down to **20% less** from the 8th attack on. Only the wearer's swings. |
+| 55 | **Parry and Thrust** | You **can't crit normally**: each **1% crit chance gives 4 evasion rating** instead, and **every attack you evade makes your next attack crit**. |
 
 ```
 Spellblade:   each damage term moves to the other type; damage multiplier =
@@ -203,6 +205,13 @@ Anvil Str.:   flat_phys += armor (after Moonshadow) / ANVIL_ARMOR (1);  attack s
 True Shot:    enemy evasion = 0;  damage × (1 + max(0, accuracy / levelAccuracy − 1))
               levelAccuracy = 10 × level × (1 + 0.25% × level), your level's own with its Might
 Resonance:    damage × (1 + 0.08 × n);  maxHP × (1 + 0.08 × n);  n = other uniques worn
+Fading Rally: attack k (from 1) comes at × r(k) = max(0.8, 1.5 − 0.1(k − 1)) attack speed;
+              x = enemyHP / (DPS × period);  P(x) = Σ 1/r(k) periods for x attacks (1.25 each
+              from the 8th);  DPS and HPS × x / P(x). The first 7 attacks take 6 periods
+              (break-even at ~11 attacks), long fights approach × 0.8
+Parry/Thrust: critChance = 0;  evasionRating += PARRY_RATING (4) × crit% (uncapped; Overcrit gives nothing);
+              each attack crits with p = 1 − (1 − evasion)^(enemy speed ×
+              your period), at your crit damage (Deadeye applies)
 Moonlight:    hit_magic = (weaponBase + flat_phys + flat_magic) × (1 + pct_magic) × … × (1 + 1/3);
               hit_phys = 0;  magicPen = min(cap, magicPen% + armorPen%)
 Waxing Moon:  attack k (from 1) deals × w(k) = min(1.6, 0.5 + 0.1k);

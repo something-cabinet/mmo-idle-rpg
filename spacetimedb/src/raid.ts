@@ -3,8 +3,8 @@
 // fight when the leader starts it (that decides the outcome), and every client in the
 // party replays the very same fight from the stored setup and seed to animate it.
 
-import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, type CombatStats } from './combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, waxingMult } from './data/legendary';
+import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, parrySource, type CombatStats } from './combat';
+import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, rallyMult, waxingMult } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, type RaidDef } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { base, type DamageType } from './data/bases';
@@ -95,8 +95,10 @@ function offense(s: CombatStats, boss: EnemyDef) {
     heal: src.heal,
     healAll: src.healAll,
     crit,
-    // Deadeye: crits ignore a share of the boss's mitigation.
-    critX: crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
+    // Deadeye: crits ignore a share of the boss's mitigation. Parry and Thrust: a parried swing's crit.
+    critX: s.effects.has(Effect.ParryAndThrust)
+      ? critMultAgainst(parrySource(src, s.critDamage), { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye))
+      : crit > 0 ? 1 + (critMultAgainst(src, { Physical: mitP, Magic: mitM }, amount(Effect.Deadeye)) - 1) / crit : 1,
     mitP,
     mitM,
   };
@@ -113,8 +115,8 @@ function offense(s: CombatStats, boss: EnemyDef) {
  * living ally ("single") or are split across the living party ("all"); lifesteal and
  * regen heal yourself. The highest Frostbite chill in the party shrinks all the boss's
  * damage. Executioner, Bully, Berserker, Ambush, Riposte, Second Wind, Second Skin,
- * Stoneskin, Bulwark, Last Stand, Thornshell, Zealot's Oath, Moonlight, Waxing Moon and
- * Afterimage work as in a solo fight, and so do Phials (Warding shrinks the hits taken, Renewal heals once below half HP).
+ * Stoneskin, Bulwark, Last Stand, Thornshell, Zealot's Oath, Moonlight, Waxing Moon, Fading
+ * Rally (the wearer's swings only), Parry and Thrust and Afterimage work as in a solo fight, and so do Phials (Warding shrinks the hits taken, Renewal heals once below half HP).
  * Follow-through does nothing here: there is no next enemy. The party wins when the boss dies, and loses when everyone is dead or at the
  * enrage timer.
  */
@@ -136,6 +138,9 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const ambush = fighters.map(s => (s.effects.has(Effect.Ambush) ? 5 : 1));
   const swings = fighters.map(() => 0);
   const lastDodged = fighters.map(() => false);
+  // Parry and Thrust: dodged since their last swing.
+  const parried = fighters.map(() => false);
+  const rally = fighters.map(s => s.effects.has(Effect.FadingRally));
   const secondWind = fighters.map((_, i) => amount(i, Effect.SecondWind));
   const renewal = fighters.map(s => s.renewal ?? 0);
   const executeBelow = fighters.map((_, i) => amount(i, Effect.Executioner) * boss.hp);
@@ -149,7 +154,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const aoeHit = raid.aoe.damage * (1 - chill);
   // First swings land at a random point of their first period (half a period on average).
   const first = (period: number) => (Number.isFinite(period) ? rng() * period : Infinity);
-  const next = off.map(o => first(o.period));
+  const next = off.map((o, i) => first(o.period / (rally[i] ? rallyMult(1) : 1)));
   let nextBoss = first(bossPeriod);
   let nextAoe = raid.aoe.every;
   let nextPhase = raid.phases?.every ?? Infinity;
@@ -225,6 +230,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       const target = living.find(i => (r -= weight[i]) < 0) ?? living[living.length - 1];
       if (rng() < defense[target].evasion) {
         lastDodged[target] = true;
+        parried[target] = true;
         // Riposte: the dodge counters for a share of an average hit.
         const counter = amount(target, Effect.Riposte) * off[target].hit * (1 + off[target].crit * (off[target].critX - 1));
         if (counter > 0) bossHp = Math.max(0, bossHp - counter);
@@ -237,15 +243,17 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     } else {
       const a = next.indexOf(fighterAt);
       const o = off[a];
-      next[a] += o.period;
-      const isCrit = rng() < o.crit;
+      // Fading Rally: swing k comes at rallyMult(k) × the fighter's speed.
+      swings[a] += 1;
+      next[a] += o.period / (rally[a] ? rallyMult(swings[a] + 1) : 1);
+      const fx = fighters[a].effects;
+      const isCrit = fx.has(Effect.ParryAndThrust) ? parried[a] : rng() < o.crit;
+      parried[a] = false;
       const critX = isCrit ? o.critX : 1;
       const doubled = bossHp < executeBelow[a] || bossHp > bullyAbove[a] ? 2 : 1;
       // Berserker: more damage the more of your max HP is missing.
       const rage = 1 + (10 * amount(a, Effect.Berserker) * (maxHp[a] - hp[a])) / maxHp[a];
-      swings[a] += 1;
       // Moonlight: every 3rd swing hits twice. Waxing Moon: swing k × waxingMult(k).
-      const fx = fighters[a].effects;
       const wave = fx.has(Effect.Moonlight) && swings[a] % MOONLIGHT_EVERY === 0 ? 2 : 1;
       const wax = fx.has(Effect.WaxingMoon) ? waxingMult(swings[a]) : 1;
       let damage = o.hit * critX * (0.9 + 0.2 * rng()) * doubled * ambush[a] * rage * wave * wax;

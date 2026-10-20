@@ -70,6 +70,8 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 23 | T5 | **Forgefather's Maul** | Mace | Anvil Strength | Armor %, max HP, physical damage % |
 | 24 | T5 | **Veinseeker** | Crossbow | True Shot | Finesse, crit damage, armor pen % |
 | 25 | T5 | **Shardbound Band** | Sunstone (Vitality) ring | Resonance | Base damage %, max HP %, item find % |
+| 26 | T5 | **Thane's Failing Breath** | War Horn | Fading Rally | Attack speed %, Might, physical damage % |
+| 27 | T5 | **Glimmerguard** | Main Gauche | Parry and Thrust | Increased crit chance %, evasion rating %, crit damage |
 | 19 | T4 | **Lunatic's Wager** | Sapphire (Moonstone) ring | None | Max HP %, attack speed %, item find %, XP gain %, gold find %, each rolled **−3 to +3** × value |
 
 Unique IDs are permanent, like effect IDs.
@@ -92,7 +94,8 @@ one per build style, and Lunatic's Wager with none:
 ### T5 uniques
 
 Brightvein Hold's uniques (zone-content.md), each with a new unique-only effect
-(legendary.md, IDs 51–53), for builds T5 asks for: armor, accuracy, and the shard story.
+(legendary.md, IDs 51–55), for builds T5 asks for: armor, accuracy, the shard story, and
+one for each physical off-hand.
 
 - **Forgefather's Maul** (Brightsteel Mace): the last forge-hammer of the hold. **Anvil
   Strength** turns armor into damage: +1 physical per hit per point of armor, 25% less
@@ -109,6 +112,20 @@ Brightvein Hold's uniques (zone-content.md), each with a new unique-only effect
   collector's chase: alone it's just its stats (Delver 87%); with 2 other uniques 99% and
   Durgrim 28%, with 4 other uniques Durgrim 65%. A full unique set is uncapped (+64% with
   8 others) but trades away every rolled affix, so it isn't a concern.
+- **Thane's Failing Breath** (Brightsteel War Horn): the horn that called the last muster,
+  blown by lungs that have little left. **Fading Rally**: 50% more attack speed on the
+  first attack, 10% less each attack after, 20% less from the 8th on; only your swings.
+  Break-even at ~11 attacks: a farming horn for short fights. Simulated at level 55 in
+  random T5 gear, against the same horn's stats without the effect (T5 fights take 10–30
+  attacks): kill speed × 1.04 (Crawler), × 1.02 (Drake), × 0.89 (Golem), × 0.87 (Durgrim);
+  Golem won 80% → 60%, Delver 74% → 61%, Durgrim 11% → 5% (a plain Rare/Epic horn: 54%,
+  50%, 4%).
+- **Glimmerguard** (Brightsteel Main Gauche): a parrying blade that catches the vein-light.
+  **Parry and Thrust**: no normal crits; each 1% crit chance gives 4 evasion rating, and
+  the attack after each dodge crits. Best against fast attackers (more parries per swing),
+  weak against the slow Golem. Simulated (sword or dagger, against its stats alone):
+  Delver 41% → 55%, Durgrim 3% → 5%, Golem 29% → 30%. Ratio 2 / 6 / 8 gave Delver 48% /
+  61% / 68%.
 
 ### Lunatic's Wager
 

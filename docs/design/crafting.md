@@ -86,6 +86,8 @@ Used from the Crafting screen's Chisel tab. Uniques take only Recalibration; Ano
   all leave it, and Epic → Legendary can't remove it.
 - Sources: the rare loot pool (data/pool.ts), per Basic kill before rank and level:
   Chaos and Corruption 1 in 2,500 each; Binding, Recalibration and Improvement 1 in 5,000 each.
+  Gathering finds them too: 0.07% per action, any skill and tier (× the find level
+  multiplier), Chaos and Corruption twice as often as the others (`CHISEL_WEIGHT`).
   Also System mail gifts (`supply:701` to `705`).
 
 ### Corruption

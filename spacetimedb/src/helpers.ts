@@ -338,10 +338,11 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const g = projectGathering({ ...row, settledMicros: start }, { tier, toolTier: toolTier(ctx, ch.id, def.id) }, now, capMicros);
   // Online, action by action, as the client shows them; the time away (nobody watching) in one draw.
   const offline = capMicros !== undefined;
-  const { materials, gold } = offline
+  const { materials, gold, supplies } = offline
     ? rollGathering(seededRng(ch.id, start, GATHER_SALT), def, tier, g, node)
     : rollGatheringActions(ch.id, def, tier, g, node);
   addMaterials(ctx, ch.id, materials);
+  for (const x of supplies) addSupply(ctx, ch.id, x.supplyId, x.count);
   ctx.db.skill.id.update({ ...row, level: g.level, xp: g.xp });
   // Skilling also levels the character (no drops; only Mining's Relics sell for gold).
   const charXp = gatherCharacterXp(g.actions, tier);
@@ -363,6 +364,7 @@ function settleSkill(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
       skillLevelTo: g.level,
       materials,
       gold,
+      supplies,
     });
   }
   return { ...base, level, xp, gold: base.gold + gold, lastSettledAt: new Timestamp(g.settledMicros) };

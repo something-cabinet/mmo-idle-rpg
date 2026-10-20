@@ -256,6 +256,22 @@ export const CHISELS: ChiselDef[] = [
 ];
 export const CHISELS_BY_ID: ReadonlyMap<number, ChiselDef> = new Map(CHISELS.map(c => [c.id, c]));
 
+/** How often each chisel is the one found, against the others: Chaos and Corruption twice as often, as in the rare loot pool. */
+export const CHISEL_WEIGHT: Record<ChiselKind, number> = {
+  [ChiselKind.Recalibration]: 1,
+  [ChiselKind.Chaos]: 2,
+  [ChiselKind.Binding]: 1,
+  [ChiselKind.Improvement]: 1,
+  [ChiselKind.Corruption]: 2,
+};
+const CHISEL_WEIGHT_TOTAL = CHISELS.reduce((sum, c) => sum + CHISEL_WEIGHT[c.kind], 0);
+
+/** A chisel picked by CHISEL_WEIGHT, from a roll in [0, 1). */
+export function pickChisel(roll: number): ChiselDef {
+  let r = roll * CHISEL_WEIGHT_TOTAL;
+  return CHISELS.find(c => (r -= CHISEL_WEIGHT[c.kind]) < 0) ?? CHISELS[CHISELS.length - 1];
+}
+
 /** Any supply's name: elixir, Phial, Chronoshard or Chisel. */
 export const supplyName = (id: number) =>
   SUPPLIES_BY_ID.get(id)?.name ?? PHIALS_BY_ID.get(id)?.name ?? CHRONOSHARDS_BY_ID.get(id)?.name ?? CHISELS_BY_ID.get(id)?.name ?? `Supply ${id}`;

@@ -115,6 +115,7 @@ what only that skill gives, and each feeds something different. Numbers are illu
 | Mining | **Ancient Meteor Fragment** | Untiered | 0.1% × node tier | None yet (kept for a later sink) |
 | Woodcutting | **Dryad's Tear** (amber sap of the oldest trees) | Untiered | 0.1% × node tier | Smithing: an empowered forge |
 | Foraging | **Rare herb** (Bloodcap, Wraithbloom, Rimepetal …) | Tier of the node | 1% | Alchemy: Infuse elixirs |
+| Every gathering skill | **Chisel** (crafting.md, "Chisels") | Any tier | 0.07% | One chisel: Chaos and Corruption 2/7 each, the others 1/7 |
 
 - Materials: rare herbs are kind 10 (`1000 + tier`), Meteor Fragment kind 11 and Dryad's
   Tear kind 12, both untiered (tier 0: IDs 1100 and 1200). Relics are never stored.

@@ -8,6 +8,7 @@ import {
   MAX_SKILL_LEVEL,
   SKILLS,
   SKILLS_BY_ID,
+  GATHERING_SKILLS,
   SkillId,
   GATHER_NODES,
   findChances,
@@ -38,7 +39,7 @@ import {
 } from '../spacetimedb/src/data/recipes';
 import { poolMeans, poolMult } from '../spacetimedb/src/data/pool';
 import { eliteOf } from '../spacetimedb/src/encounters';
-import { CHRONOSHARDS, ELIXIR_KILLS, chronoshardSupplyId, PHIALS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir, phialBuffs, phialSupplyId } from '../spacetimedb/src/data/supplies';
+import { CHRONOSHARDS, ChiselKind, ELIXIR_KILLS, chiselSupplyId, chronoshardSupplyId, PHIALS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir, phialBuffs, phialSupplyId } from '../spacetimedb/src/data/supplies';
 import { RAIDS } from '../spacetimedb/src/data/raids';
 import { simulateDepth } from '../spacetimedb/src/abyss';
 import { forgeItem, forged, productionCharacterXp, projectProduction, temperBlocker } from '../spacetimedb/src/produce';
@@ -485,6 +486,17 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   const g = rollGathering(seededRng(5n), SKILLS_BY_ID.get(SkillId.Mining)! as never, 4, { actions: 1_000_000, doubleMean: 0, runs: [{ start: 0n, step: 1n, n: 1_000_000, level: 0 }] });
   const got = g.materials.find(m => m.materialId === glass)?.count ?? 0;
   check('… and come in pairs', got > 0 && got % 2 === 0, `${got}`);
+
+  // Chisels from gathering: every gathering skill, any tier, Chaos and Corruption twice as often.
+  check('every gathering skill finds chisels, 0.07% an action', GATHERING_SKILLS.every(s =>
+    findChances(s.id, 1, 0, 0).some(f => f.find.what.kind === 'chisel' && near(f.chance, 0.0007))));
+  const chiselCount = (y: { supplies: { supplyId: number; count: number }[] }, k?: ChiselKind) =>
+    y.supplies.filter(x => k === undefined || x.supplyId === chiselSupplyId(k)).reduce((sum, x) => sum + x.count, 0);
+  const lots = rollGathering(seededRng(6n), SKILLS_BY_ID.get(SkillId.Woodcutting)! as never, 2, { actions: 1_000_000, doubleMean: 0, runs: [{ start: 0n, step: 1n, n: 1_000_000, level: 0 }] });
+  check('1M actions: ~700 chisels, ~2/7 of them Chaos', Math.abs(chiselCount(lots) - 700) < 90 && Math.abs(chiselCount(lots, ChiselKind.Chaos) / chiselCount(lots) - 2 / 7) < 0.06,
+    `${chiselCount(lots)}, Chaos ${chiselCount(lots, ChiselKind.Chaos)}`);
+  const steps = rollGatheringActions(9n, SKILLS_BY_ID.get(SkillId.Foraging)! as never, 1, { runs: [{ start: 0n, step: 1n, n: 200_000, level: 99 }] });
+  check('online, action by action: ~280 chisels in 200k actions at level 99', Math.abs(chiselCount(steps) - 280) < 60, `${chiselCount(steps)}`);
   const poolMean = (id: number, drop: number) => {
     const { zone, enemy } = ENEMIES_BY_ID.get(id)!;
     return poolMeans(enemy, zone.tier).find(m => (m.drop.kind === 'material' ? m.drop.materialId : m.drop.supplyId) === drop)?.mean ?? 0;

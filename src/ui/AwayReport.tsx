@@ -144,7 +144,7 @@ export function SettleReport({ s, logs, title, onClose: close }: { s: Snapshot; 
         <p className="discovery"><Icon name="sparkles" />New discoveries: {discovered.map(foundName).join(', ')}</p>
       )}
       {log.materials.length > 0 && <p>Materials: <span className="c-material">{materialsText(log.materials)}</span></p>}
-      {log.supplies.length > 0 && <p className="discovery"><Icon name="hourglass" />Rare find: {suppliesText(log.supplies)}</p>}
+      {log.supplies.length > 0 && <p className="discovery"><Icon name="sparkles" />Rare find: {suppliesText(log.supplies)}</p>}
       {kept.length > 0 && (
         <p>
           Items kept ({kept.length}):{' '}

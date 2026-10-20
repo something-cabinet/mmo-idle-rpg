@@ -105,7 +105,7 @@ export const temperRequirement = (temper: number) => (temper >= 10 ? MAX_SKILL_L
 export interface RareFindDef {
   skillId: number;
   /** `count`: materials one find gives (default 1; a Void Geode cracks into GEODE_VOIDGLASS). */
-  what: { kind: 'material'; material: MaterialKind | UntieredKind; untiered: boolean; count?: number; name?: string } | { kind: 'relic' };
+  what: { kind: 'material'; material: MaterialKind | UntieredKind; untiered: boolean; count?: number; name?: string } | { kind: 'relic' } | { kind: 'chisel' };
   /** Chance per action at tier `tier`, before the level and node multipliers (0: not found there). */
   chance: (tier: number) => number;
 }
@@ -120,7 +120,13 @@ export const RARE_FINDS: RareFindDef[] = [
     skillId: SkillId.Mining, what: { kind: 'material', material: 'Voidglass', untiered: true, count: GEODE_VOIDGLASS, name: 'Void Geode' },
     chance: tier => (tier >= VOIDGLASS_FROM_TIER ? 0.001 * (tier - VOIDGLASS_FROM_TIER + 1) : 0),
   },
+  // A chisel (chisel.ts), any tier, every gathering skill: which one by CHISEL_WEIGHT, so Chaos
+  // ~1 in 5,000 actions like its base chance per kill. After the others, so older rolls replay as before.
+  ...GATHERING_SKILLS.map(s => ({ skillId: s.id, what: { kind: 'chisel' as const }, chance: () => GATHER_CHISEL_CHANCE })),
 ];
+
+/** Chance per gathering action of a chisel, any of them (before the level multiplier). */
+export const GATHER_CHISEL_CHANCE = 0.0007;
 
 /** Rare finds come `1 + level / 99` times as often: double at 99. */
 export const findLevelMult = (level: number) => 1 + level / MAX_SKILL_LEVEL;

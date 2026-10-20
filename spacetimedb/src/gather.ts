@@ -17,7 +17,8 @@ import {
 } from './data/skills';
 import { materialOf } from './data/materials';
 import { craftCost } from './craft';
-import { samplePoisson, seededRng, type MaterialDrop, type Rng } from './loot';
+import { samplePoisson, seededRng, type MaterialDrop, type Rng, type SupplyDrop } from './loot';
+import { pickChisel } from './data/supplies';
 
 export interface SkillProgress {
   level: number;
@@ -95,12 +96,25 @@ export const gatherCharacterXp = (actions: number, tier: number): bigint => BigI
 /** Mixed into gathering seeds. */
 export const GATHER_SALT = 0x676174686572n; // "gather"
 
-/** What gathering actions yield: materials (the main one, Mining's Gems, rare finds) and Relics, sold on the spot. */
+/** What gathering actions yield: materials (the main one, Mining's Gems, rare finds), Relics, sold on the spot, and chisels. */
 export interface GatherYield {
   materials: MaterialDrop[];
   relics: number;
   /** What the Relics sold for. */
   gold: bigint;
+  /** Chisels found (data/supplies.ts). */
+  supplies: SupplyDrop[];
+}
+
+/** A rare find's key while counting: its material, a Relic or a chisel. */
+type FindKey = number | 'relic' | 'chisel';
+const findKey = (f: { find: { what: { kind: string } }; materialId?: number }): FindKey =>
+  f.find.what.kind === 'chisel' ? 'chisel' : (f.materialId ?? 'relic');
+
+/** Adds one chisel, picked with `rng`, to `chisels`. */
+function addChisel(rng: Rng, chisels: Map<number, number>) {
+  const id = pickChisel(rng()).id;
+  chisels.set(id, (chisels.get(id) ?? 0) + 1);
 }
 
 /** Gold one Relic of `tier` sells for (life-skills.md, "Mining: Relics"). */
@@ -118,7 +132,8 @@ export function rollGatheringActions(characterId: bigint, skill: GatheringSkillD
   const gem = gemChance(node);
   let made = 0;
   let gems = 0;
-  const found = new Map<number | undefined, number>();
+  const found = new Map<FindKey, number>();
+  const chisels = new Map<number, number>();
   for (const run of g.runs) {
     const double = doubleYieldChance(run.level);
     const finds = findChances(skill.id, tier, node, run.level);
@@ -128,23 +143,29 @@ export function rollGatheringActions(characterId: bigint, skill: GatheringSkillD
       const twice = rng() < double;
       if (skill.id === SkillId.Mining && rng() < gem) gems++;
       if (main >= 1 || rng() < main) made += twice ? 2 : 1;
-      for (const f of finds) if (rng() < f.chance) found.set(f.materialId, (found.get(f.materialId) ?? 0) + f.count);
+      for (const f of finds) {
+        if (rng() >= f.chance) continue;
+        const key = findKey(f);
+        if (key === 'chisel') addChisel(rng, chisels);
+        else found.set(key, (found.get(key) ?? 0) + f.count);
+      }
     }
   }
-  return gatheredYield(skill, tier, made, gems, found);
+  return gatheredYield(skill, tier, made, gems, found, chisels);
 }
 
-function gatheredYield(skill: GatheringSkillDef, tier: number, made: number, gems: number, found: Map<number | undefined, number>): GatherYield {
+function gatheredYield(skill: GatheringSkillDef, tier: number, made: number, gems: number, found: Map<FindKey, number>, chisels: Map<number, number>): GatherYield {
   const materials: MaterialDrop[] = [];
   if (made > 0) materials.push({ materialId: materialOf(tier, skill.makes).id, count: made });
   if (gems > 0) materials.push({ materialId: materialOf(tier, 'Gem').id, count: gems });
   let relics = 0;
-  for (const [materialId, count] of found) {
+  for (const [key, count] of found) {
     if (count <= 0) continue;
-    if (materialId === undefined) relics += count;
-    else materials.push({ materialId, count });
+    if (key === 'relic') relics += count;
+    else if (key !== 'chisel') materials.push({ materialId: key, count });
   }
-  return { materials, relics, gold: BigInt(relics) * relicGold(tier) };
+  const supplies = [...chisels].map(([supplyId, count]) => ({ supplyId, count }));
+  return { materials, relics, gold: BigInt(relics) * relicGold(tier), supplies };
 }
 
 /**
@@ -158,16 +179,23 @@ export function rollGathering(
   g: Pick<Gathered, 'actions' | 'doubleMean'> & Partial<Pick<Gathered, 'runs'>>,
   node = 0
 ): GatherYield {
-  const found = new Map<number | undefined, number>();
-  if (g.actions <= 0) return gatheredYield(skill, tier, 0, 0, found);
+  const found = new Map<FindKey, number>();
+  const chisels = new Map<number, number>();
+  if (g.actions <= 0) return gatheredYield(skill, tier, 0, 0, found, chisels);
   const main = mainChance(node);
   const made = main >= 1 ? g.actions + samplePoisson(rng, g.doubleMean) : samplePoisson(rng, main * (g.actions + g.doubleMean));
   const gems = skill.id === SkillId.Mining ? samplePoisson(rng, g.actions * gemChance(node)) : 0;
   // Finds, then the materials each gives (a Void Geode cracks into several).
-  const means = new Map<number | undefined, { mean: number; count: number }>();
+  const means = new Map<FindKey, { mean: number; count: number }>();
   for (const run of g.runs ?? [])
-    for (const f of findChances(skill.id, tier, node, run.level))
-      means.set(f.materialId, { mean: (means.get(f.materialId)?.mean ?? 0) + run.n * f.chance, count: f.count });
-  for (const [id, { mean, count }] of means) found.set(id, samplePoisson(rng, mean) * count);
-  return gatheredYield(skill, tier, made, gems, found);
+    for (const f of findChances(skill.id, tier, node, run.level)) {
+      const key = findKey(f);
+      means.set(key, { mean: (means.get(key)?.mean ?? 0) + run.n * f.chance, count: f.count });
+    }
+  for (const [key, { mean, count }] of means) {
+    const n = samplePoisson(rng, mean);
+    if (key === 'chisel') for (let i = 0; i < n; i++) addChisel(rng, chisels);
+    else found.set(key, n * count);
+  }
+  return gatheredYield(skill, tier, made, gems, found, chisels);
 }

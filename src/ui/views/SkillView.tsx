@@ -28,7 +28,7 @@ import { nowMicros } from '../clock';
 import { zoneUnlocked } from '../discovery';
 import { duration, fmt, fmtBig } from '../format';
 import { Icon } from '../Icon';
-import { materialIconName, materialsText } from '../items';
+import { materialIconName, materialsText, suppliesText } from '../items';
 import { CardHead, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
 import { recipeLabel } from '../lifeSkills';
@@ -86,7 +86,9 @@ function extrasPerHour(skill: GatheringSkillDef, tier: number, node: number, lev
     const n = actions * f.chance;
     const name = f.find.what.kind === 'material' ? f.find.what.name : undefined;
     out.push(
-      f.materialId === undefined
+      f.find.what.kind === 'chisel'
+        ? `${fmt(n)} Chisels`
+        : f.materialId === undefined
         ? `${fmt(n)} Relics (${fmtBig(BigInt(Math.round(n * Number(relicGold(tier)))))} gold)`
         : name
           ? `${fmt(n)} ${name}s (${fmt(n * f.count)} ${MATERIALS_BY_ID.get(f.materialId)!.name})`
@@ -283,6 +285,7 @@ export const SkillView = memo(function SkillView({ s, skill }: { s: Snapshot; sk
               <li key={String(l.id)}>
                 <span className="c-material">{materialsText(l.materials)}</span>
                 {l.gold > 0n && <span className="c-gold"> +{fmtBig(l.gold)} gold</span>}
+                {l.supplies.length > 0 && <span className="c-magic"> +{suppliesText(l.supplies)}</span>}
                 <span className="muted">
                   +{fmtBig(l.skillXp)} {skill.name} XP · +{fmtBig(l.xp)} XP{l.skillLevelTo > l.skillLevelFrom ? ` · Level ${l.skillLevelTo}!` : ''}
                 </span>

@@ -4,7 +4,7 @@ import type { Encounter, Item } from '../module_bindings/types';
 import { EncounterKind } from '../../spacetimedb/src/encounters';
 import { ENEMIES_BY_ID } from '../../spacetimedb/src/data/zones';
 import { fmtBig } from './format';
-import { itemName, materialsText } from './items';
+import { itemName, materialsText, rarityLabel } from './items';
 
 /** One line for `e`, met while fighting `enemyId`. `item` finds a cache's item (it may since be gone). */
 export function encounterText(e: Encounter, enemyId: number, item: (id: bigint) => Item | undefined): string {
@@ -17,7 +17,7 @@ export function encounterText(e: Encounter, enemyId: number, item: (id: bigint) 
     case EncounterKind.Cache: {
       if (e.itemId === 0n) return 'You found a hidden cache, but your bag was full: salvaged';
       const it = item(e.itemId);
-      return `You found a hidden cache: ${it ? `${it.rarity.tag} ${itemName(it)}` : 'an item'}`;
+      return `You found a hidden cache: ${it ? `${rarityLabel(it.rarity.tag)} ${itemName(it)}` : 'an item'}`;
     }
     case EncounterKind.Elite:
       return e.won

@@ -135,7 +135,7 @@ affix rolls tier 1 to N (N = item tier, 1–9).
   nothing drops or uses them yet.
 - **Anomaly** is a secret rarity the game never names. 1 in 1,000,000 kills from any
   enemy (no reward scale, item find or enemy multiplier). It looks like a Common of the
-  zone's tier (white, rarity shown as "???", a shimmering, glitching name) with 5–9
+  zone's tier (white, rarity shown as "???", a shimmering, glitching name with its letters scrambled, client only) with 5–9
   affixes from the regular pool, repeats allowed, each uniform between minus and plus
   the best T9 roll of its stat whatever the item tier (e.g. −756 to +756 Physical
   damage). Always kept: it ignores the loot filter and the bag limit, and drops locked.

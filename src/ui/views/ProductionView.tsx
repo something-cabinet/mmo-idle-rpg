@@ -30,7 +30,7 @@ import { nowMicros } from '../clock';
 import { zoneUnlocked } from '../discovery';
 import { duration, fmt, fmtBig, pct } from '../format';
 import { Icon } from '../Icon';
-import { itemName, materialIconName, materialName, rarityCls } from '../items';
+import { itemName, materialIconName, materialName, rarityCls, rarityLabel } from '../items';
 import type { Item } from '../../module_bindings/types';
 import { CardHead, ViewHeader } from '../shared';
 import { snapshot, type Snapshot } from '../snapshot';
@@ -470,7 +470,7 @@ function TemperCard({ s }: { s: Snapshot }) {
   const worn = all.filter(it => s.inLoadouts.has(it.id));
   const bag = all.filter(it => !s.inLoadouts.has(it.id));
   const it = (pick !== undefined && s.items.get(pick)) || worn[0] || bag[0];
-  const option = (x: Item) => <option key={String(x.id)} value={String(x.id)}>{itemName(x)} (T{x.tier} {x.rarity.tag})</option>;
+  const option = (x: Item) => <option key={String(x.id)} value={String(x.id)}>{itemName(x)} (T{x.tier} {rarityLabel(x.rarity.tag)})</option>;
   return (
     <div className="card">
       <CardHead title="Temper an item" />

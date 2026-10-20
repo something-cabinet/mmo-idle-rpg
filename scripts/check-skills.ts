@@ -259,9 +259,9 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
 {
   check('temper cap: +1 per 10 levels, +10 at 99', [1, 9, 10, 55, 90, 98, 99].map(temperCap).join() === '0,0,1,5,9,9,10');
   const common = { baseId: 1, rarity: { tag: 'Common' as const }, tier: 1, temper: 0 };
-  check('no temper cost above the material tiers', temperCost({ baseId: 1, tier: 5, temper: 0 }) === undefined &&
-    temperBlocker({ ...common, tier: 5 }, 99, true) === 'No tier 5 materials yet');
-  check('no scrap above the material tiers', scrapMaterialId(1, 5) === undefined);
+  check('no temper cost above the material tiers', temperCost({ baseId: 1, tier: 6, temper: 0 }) === undefined &&
+    temperBlocker({ ...common, tier: 6 }, 99, true) === 'No tier 6 materials yet');
+  check('no scrap above the material tiers', scrapMaterialId(1, 6) === undefined);
   check('temper blocked below level 10', temperBlocker(common, 9, true) === '+1 needs level 10');
   check('temper allowed at level 10', temperBlocker(common, 10, true) === undefined);
   check('temper +10 needs level 99', temperBlocker({ ...common, temper: 9 }, 98, true) === '+10 needs level 99' && temperBlocker({ ...common, temper: 9 }, 99, true) === undefined);

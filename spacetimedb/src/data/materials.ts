@@ -56,6 +56,7 @@ const NAMES: Record<number, Record<MaterialKind, string>> = {
   2: { Metal: 'Bog Iron Bar', Hide: 'Thick Hide', Core: 'Thorn Heart', Cloth: 'Homespun Bolt', Wood: 'Ironbark Plank', Reagent: 'Nightshade', Gem: 'Cut Gem', Ore: 'Bog Iron Ore', Herb: 'Wraithbloom' },
   3: { Metal: 'Dwarven Steel Ingot', Hide: 'Frostfur Hide', Core: 'Rime Core', Cloth: 'Spidersilk Thread', Wood: 'Heartoak Timber', Reagent: 'Frostbloom', Gem: 'Flawless Gem', Ore: 'Dwarven Steel Ore', Herb: 'Rimepetal' },
   4: { Metal: 'Moonsteel Ingot', Hide: 'Owlbear Pelt', Core: 'Lunar Core', Cloth: 'Mageweave Bolt', Wood: 'Silverbark Bough', Reagent: 'Moonpetal', Gem: 'Moonlit Gem', Ore: 'Moonsteel Ore', Herb: 'Moonshade' },
+  5: { Metal: 'Brightsteel Ingot', Hide: 'Drake Scale', Core: 'Glowvein Core', Cloth: 'Runeweave Bolt', Wood: 'Ironwood Beam', Reagent: 'Glowcap', Gem: 'Radiant Gem', Ore: 'Brightsteel Ore', Herb: 'Lanternroot' },
 };
 
 const UNTIERED_NAMES: Record<UntieredKind, string> = { Meteor: 'Ancient Meteor Fragment', Tear: "Dryad's Tear", Voidglass: 'Voidglass' };

@@ -1,4 +1,4 @@
-# Zone content: tiers 1–4
+# Zone content: tiers 1–5
 
 Concrete zones built on the rules in zones.md. All numbers *illustrative*.
 
@@ -308,6 +308,80 @@ A greatsword for a Mind build: it swings like a greatsword but cuts with moonlig
 *Walk lines (flavor.ts):* "White petals drift past, though nothing here is in bloom." ·
 "Your shadow falls the wrong way, toward a moon that isn't there." · "The fountain shows
 a full moon. The sky above it is empty."
+
+## T5: Brightvein Hold
+
+A dwarven hold in the mountain the largest moon shard fell through (story.md). Its light
+got into the stone and the veins began to glow: **brightsteel**, the T5 metal. The dwarves
+dug after it until the mine broke into the rift; their last thane sealed the breach and
+bound himself to the shard to hold it. Levels 46–55. HP and DPS × 1.22 over the reference
+curve (zones.md, "Difficulty climb"), boss at the full HP bonus (× 1.3).
+
+| Enemy | Level | Damage | Defense | Speed | HP | DPS | Armor / Res | XP | Gold |
+|---|---|---|---|---|---|---|---|---|---|
+| Glowvein Crawler | 46 | Phys | Armored | 1.4/s | 802 | 58.1 | 276 / 46 | 899 | 225 |
+| Tunnel Drake | 48 | Phys | Balanced | 1.0/s | 1,495 | 70.3 | 120 / 120 | 1,168 | 292 |
+| Runeweave Warder | 50 | **Magic** | Warded | 0.9/s | 1,809 | 85.1 | 50 / 300 | 1,518 | 380 |
+| Brightsteel Golem | 52 | Phys | Armored | 0.5/s | 1,639 | 103 | 312 / 52 | 1,973 | 493 |
+| Hollowed Delver | 54 | **Magic** | Balanced | 1.1/s | 2,649 | 124.6 | 135 / 135 | 2,564 | 641 |
+| **Boss: Durgrim, the Last Thane** | 55 | Phys | **Warded** | 0.7/s | 4,583 | 165.8 | 55 / 330 | 3,799 | 950 |
+
+- **Traits**, each paid for with HP: the **Glowvein Crawler** is hard to hit (**evasion
+  rating 277**: 35% dodge against a same-level player without accuracy gear, HP 1,236 →
+  802) behind armor, so physical builds need accuracy *and* armor penetration, or magic.
+  The **Brightsteel Golem** regenerates (**55 HP/s**, HP 2,189 → 1,639) behind armor: the
+  zone's burst check.
+- **The boss is the last mix: physical damage behind Warded defense**, a runeforged
+  king in runed brightsteel plate. Plate soaks his hits; magic builds hit
+  his resistance and need magic penetration or a switch to physical. All four
+  combinations are now used: Grubnak (phys, balanced), Morgra (magic, warded), Hrimvald
+  (phys, armored), Selvara (magic, armored), Durgrim (phys, warded).
+- Physical-leaning zone (4 of 6 physical) after T4's three casters, so armor matters again.
+- **First kill** unlocks the next tier and, once built, **the Chaos Dungeon**
+  (chaos-dungeon.md): the seal breaks and the rift opens.
+- **Bases are dealt by theme** rather than shuffled: the Golem drops plate and shields,
+  the Warder Runeweave and the tome, the Drake Drakehide, the Delver weapons.
+- No secret area yet, and no T5 uniques yet: the zone drops T1–T4 uniques like any
+  zone above their tier (uniques.md).
+- Not simulated yet.
+
+**Areas:**
+
+| Area | Enemies | Blurb |
+|---|---|---|
+| Brightsteel Lode | Glowvein Crawler, Tunnel Drake | Glowing veins light the upper tunnels, and things crawl toward the light. |
+| Collapsed Forge | Runeweave Warder, Brightsteel Golem | The great forge lies cold and broken. Its rune-keepers still tend it. |
+| Runebound Gate | Hollowed Delver | Rune-carved doors to the lowest shafts, and the miners who never came back up. |
+| Sealed Breach (lair) | Durgrim | The Last Thane stands fused to the seal, the shard blazing in his chest. |
+
+**Drops:**
+
+| Enemy | Bases |
+|---|---|
+| Glowvein Crawler (8) | Brightsteel Dagger, Ironwood Bow, Drakehide Bracers, Runeweave Shoes, Brightsteel Greaves, Brightsteel Main Gauche, Cut Windstone Ring, Cut Windstone Amulet |
+| Tunnel Drake (7) | Brightsteel Mace, Ironwood Crossbow, Drakehide Vest, Drakehide Cap, Brightsteel Gauntlets, Cut Bloodstone Ring, Cut Bloodstone Amulet |
+| Runeweave Warder (7) | Ironwood Wand, Ironwood Healing Staff, Arcanist's Tome, Runeweave Hood, Runeweave Robe, Cut Moonstone Ring, Cut Moonstone Amulet |
+| Brightsteel Golem (7) | Brightsteel Greatsword, Brightsteel Shield, Brightsteel Greatshield, Brightsteel Helm, Brightsteel Breastplate, Drakehide Boots, Cut Sunstone Ring |
+| Hollowed Delver (7) | Brightsteel Sword, Brightsteel Scepter, Brightsteel Katana, Ironwood Fire Staff, Brightsteel War Horn, Runeweave Gloves, Cut Sunstone Amulet |
+| Durgrim (boss) | Any T5 base |
+
+Base IDs for zones.ts `T5_DROPS`: crawler [2, 8, 36, 33, 41, 24, 51, 55], drake [3, 11, 35, 34, 40, 50, 54],
+warder [5, 10, 21, 30, 31, 52, 56], golem [7, 20, 22, 38, 39, 37, 53], delver [1, 4, 6, 9, 23, 32, 57].
+
+**Materials:** Brightsteel Ingot (Metal), Drake Scale (Hide), Glowvein Core (Core), Runeweave Bolt (Cloth), Ironwood Beam (Wood), Glowcap (Reagent), Radiant Gem (Gem). Gathering only: Brightsteel Ore (Mining), Lanternroot (rare herb, Foraging).
+
+| Enemy | Materials |
+|---|---|
+| Glowvein Crawler | Drake Scale, Glowcap |
+| Tunnel Drake | Drake Scale, Glowcap |
+| Runeweave Warder | Runeweave Bolt, Glowvein Core, Radiant Gem |
+| Brightsteel Golem | Brightsteel Ingot, Glowvein Core, Radiant Gem |
+| Hollowed Delver | Brightsteel Ingot, Ironwood Beam, Runeweave Bolt |
+| Durgrim (boss) | Brightsteel Ingot, Glowvein Core, Radiant Gem |
+
+*Walk lines (flavor.ts):* "The veins in the walls glow brighter the deeper you go." ·
+"Somewhere far below, a hammer strikes once. Then silence." · "The shards in your pack
+pull downward, through the stone."
 
 ## Open
 

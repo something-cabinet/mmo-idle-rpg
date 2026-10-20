@@ -1224,6 +1224,7 @@ button.version:hover {
 .zmap-2 { --land: #3f6b4a; }
 .zmap-3 { --land: #8fb3d9; }
 .zmap-4 { --land: #6f74c9; }
+.zmap-5 { --land: #c9a25a; }
 /* A painted map (assets/zones, enemyArt.tsx) in place of the colors, a little darker toward the edges. */
 .zmap.has-art {
   background-position: center;

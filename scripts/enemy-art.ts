@@ -84,6 +84,12 @@ export const REGIONS: Record<number, Region> = {
     motif: 'crescent moons: crescent shapes, elegant flowing elven lines and silver filigree on every enemy, beautiful but corrupted and sorrowful',
     menace: 'tier 4 of 9: graceful and eerie, refined detail, the fallen splendor of an elven realm',
   },
+  5: {
+    setting: 'Brightvein Hold, a silent dwarven mining hold deep in a mountain, its tunnels lit by glowing silver-blue ore veins, a cold broken forge and a rune-sealed breach',
+    palette: 'dark slate and granite grey, glowing silver-blue vein light, warm forge bronze, soot black',
+    motif: 'glowing veins: cracks of silver-blue light running through stone, metal and skin, with heavy dwarven runes and bronze where it fits',
+    menace: 'tier 5 of 9: grim and powerful, heavy rune-carved detail, a mighty dwarven realm gone wrong',
+  },
 };
 
 /** By raid ID (data/raids.ts): a raid boss takes its own region. */
@@ -155,6 +161,19 @@ export const LOOKS: Record<number, string> = {
     'a crown shaped like an eclipsed black crescent moon, holding a black moon orb',
   407: 'the moonlit champion: the queen\'s last elven knight in pale silver-blue plate and a long cape, ' +
     'wielding a huge greatsword with a translucent pale blue crystal blade',
+  // Brightvein Hold
+  501: 'a glowvein crawler: a big armored tunnel beetle with slate-grey plates cracked by glowing silver-blue veins, ' +
+    'many sharp legs, glowing mandibles',
+  502: 'a tunnel drake: a lean wingless drake with dusty brown-grey scales, a long neck and tail, ember-orange eyes, ' +
+    'clawing its way out of a rock crack',
+  503: 'a runeweave warder: a stern old dwarf rune-caster in heavy layered robes stitched with glowing silver-blue runes, ' +
+    'a long braided white beard, a rune-carved staff',
+  504: 'a brightsteel golem: a massive forge construct of silver-blue metal plates and bronze bolts, glowing veins at every seam, ' +
+    'a furnace glow in its chest',
+  505: 'a hollowed delver: a gaunt dwarf miner in a dented helmet and torn leathers, silver-blue light pouring from cracks in its skin ' +
+    'and its empty eyes, a glowing pickaxe',
+  506: 'Durgrim the Last Thane: an old dwarf king in heavy rune-carved silver-blue plate, a braided iron-grey beard, a stone crown, ' +
+    'a huge war hammer, a blazing pale moon shard fused into the middle of his chest',
   // The Moonwell Deep
   9101: 'a moonless shade: a thin hunched elven silhouette of solid black-blue shadow with no legs, its body tapering into ' +
     'ragged tatters, long clawed fingers, two pale silver pinprick eyes and nothing else on its face',

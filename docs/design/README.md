@@ -19,7 +19,7 @@ not decisions.
 | [chaos-dungeon.md](chaos-dungeon.md) | The Chaos Dungeon (brainstorm, not built): weekly solo roguelike of 5 floors (branching maps of battles, Elites, shops, events, rests, a boss), gear locked in, run-only boons and Ethereal gear in a separate table and dungeon loadout, weekly resource rewards, free replays |
 | [story.md](story.md) | The Broken Moon: the light T1–T9 story that moves the player between zones (a shard per boss), T5 Brightvein Hold and the Chaos Dungeon's rift |
 | [duels.md](duels.md) | Friendly duels against a friend's character (client-only, no rewards) |
-| [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass, T4 Moonveil Vale: enemies, bosses, drops, starter kit |
+| [zone-content.md](zone-content.md) | T1 Greenhollow, T2 Thornwood, T3 Frostmaw Pass, T4 Moonveil Vale, T5 Brightvein Hold: enemies, bosses, drops, starter kit |
 | [legendary.md](legendary.md) | Legendary affixes: effects, slot pools, formulas |
 | [uniques.md](uniques.md) | Uniques: rules, global drops, the list |
 | [cosmetics.md](cosmetics.md) | Titles, name effects and nameplates: earned from milestones, worn from the Character page, shown wherever a player name is |
@@ -39,6 +39,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-20 | T5 **Brightvein Hold** (zone-content.md): dwarven hold, levels 46–55, boss Durgrim, the Last Thane (phys, Warded: the last damage/defense mix). Glowvein Crawler evades behind armor, Brightsteel Golem regenerates. Bases dealt by theme, not shuffled. No secret area or T5 uniques yet. The Moonwell Deep's reward tier now reaches T5 (capped at the highest zone). |
 | 2026-10-20 | Story spine **The Broken Moon** (story.md): Selvara cracked the moon, every zone boss holds a shard that points to the next zone. T5 is **Brightvein Hold**, a dwarven mine the largest shard fell into; the Last Thane's death opens the rift, so the **Chaos Dungeon unlocks with the T5 boss** (was T2). Tier metal words renamed: Mithril → **Brightsteel** (T5), Adamant → **Verdite** (T6); names are built at runtime, so no migration, and the art stays. |
 | 2026-10-19 | The Drowned Moon eased back to its target (test:raid: a full party of random T4 gear won 72%, aim 75–92%): Umbriel's HP 38,000 → 35,000, Moonfall 440 → 400, and enrage 4:30 → 3:40 so two players alone still almost never win (they only won near the old enrage). Now 78% for four, 50% for three, 4% for two. |
 | 2026-10-19 | Elixirs are for farming only: the Moonwell Deep and raids ignore them and use no charges. **Phials** (phials.md): one-fight consumables for those modes, picked per attempt and used up win or lose, brewed by Alchemy from Voidglass. The Deep's first clears pay 3× the Voidglass (3 a depth, 18 on every 10th; past 100: 6 + 2 per 10 depths), since they pay once. Four slow sources: raid clears, a rare drop from T4+ zone bosses, unique salvage (2, any tier) and Mining's Void Geode. |

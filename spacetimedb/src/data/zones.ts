@@ -140,6 +140,13 @@ const T4_DROPS = {
   sentinel: [1, 7, 39, 37, 20, 50, 55, 23],
   spellweaver: [4, 6, 21, 31, 40, 56, 57],
 };
+const T5_DROPS = {
+  crawler: [2, 8, 36, 33, 41, 24, 51, 55],
+  drake: [3, 11, 35, 34, 40, 50, 54],
+  warder: [5, 10, 21, 30, 31, 52, 56],
+  golem: [7, 20, 22, 38, 39, 37, 53],
+  delver: [1, 4, 6, 9, 23, 32, 57],
+};
 const all = (d: Record<string, number[]>) => Object.values(d).flat();
 
 export const ZONES: ZoneDef[] = [
@@ -242,6 +249,29 @@ export const ZONES: ZoneDef[] = [
         secret: { enemyId: 401, kills: 1000, hint: 500, rumour: "The moths all drift the same way at night, toward a light that isn't the moon…" } },
     ],
     links: [[41, 42], [41, 43], [42, 44], [43, 44], [41, 45]],
+  },
+  {
+    // The largest shard fell here (story.md). The boss's first kill will also open the Chaos Dungeon.
+    id: 5,
+    tier: 5,
+    name: 'Brightvein Hold',
+    blurb: 'A dwarven hold, silent for an age, where the largest shard fell through the mountain and set the veins glowing.',
+    bossLine: 'The seal breaks. Below, something opens its eyes.',
+    enemies: [
+      { id: 501, name: 'Glowvein Crawler', level: 46, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 1.4, hp: 802, evasionRating: 277, dps: 58.1, armor: 276, resistance: 46, xp: 899, gold: 225, drops: T5_DROPS.crawler, materials: ['Hide', 'Reagent'] },
+      { id: 502, name: 'Tunnel Drake', level: 48, rank: 'Basic', damageType: 'Physical', defense: 'Balanced', speed: 1.0, hp: 1495, dps: 70.3, armor: 120, resistance: 120, xp: 1168, gold: 292, drops: T5_DROPS.drake, materials: ['Hide', 'Reagent'] },
+      { id: 503, name: 'Runeweave Warder', level: 50, rank: 'Basic', damageType: 'Magic', defense: 'Warded', speed: 0.9, hp: 1809, dps: 85.1, armor: 50, resistance: 300, xp: 1518, gold: 380, drops: T5_DROPS.warder, materials: ['Cloth', 'Core', 'Gem'] },
+      { id: 504, name: 'Brightsteel Golem', level: 52, rank: 'Basic', damageType: 'Physical', defense: 'Armored', speed: 0.5, hp: 1639, regen: 55, dps: 103, armor: 312, resistance: 52, xp: 1973, gold: 493, drops: T5_DROPS.golem, materials: ['Metal', 'Core', 'Gem'] },
+      { id: 505, name: 'Hollowed Delver', level: 54, rank: 'Basic', damageType: 'Magic', defense: 'Balanced', speed: 1.1, hp: 2649, dps: 124.6, armor: 135, resistance: 135, xp: 2564, gold: 641, drops: T5_DROPS.delver, materials: ['Metal', 'Wood', 'Cloth'] },
+      { id: 506, name: 'Durgrim, the Last Thane', level: 55, rank: 'Boss', damageType: 'Physical', defense: 'Warded', speed: 0.7, hp: 4583, dps: 165.8, armor: 55, resistance: 330, xp: 3799, gold: 950, drops: all(T5_DROPS), materials: ['Metal', 'Core', 'Gem'], boss: true },
+    ],
+    areas: [
+      { id: 51, name: 'Brightsteel Lode', blurb: 'Glowing veins light the upper tunnels, and things crawl toward the light.', enemies: [501, 502], x: 10, y: 90 },
+      { id: 52, name: 'Collapsed Forge', blurb: 'The great forge lies cold and broken. Its rune-keepers still tend it.', enemies: [503, 504], x: 90, y: 62 },
+      { id: 53, name: 'Runebound Gate', blurb: 'Rune-carved doors to the lowest shafts, and the miners who never came back up.', enemies: [505], x: 12, y: 32 },
+      { id: 54, name: 'Sealed Breach', blurb: 'The Last Thane stands fused to the seal, the shard blazing in his chest.', enemies: [506], x: 84, y: 6 },
+    ],
+    links: [[51, 52], [51, 53], [52, 54], [53, 54]],
   },
 ];
 

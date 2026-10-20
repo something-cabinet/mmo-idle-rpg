@@ -41,6 +41,13 @@ const ZONE_LINES: Record<number, readonly string[]> = {
     'Somewhere, a harp plays three notes and stops.',
     'The shards in your pack pull toward the throne, like iron to a lodestone.',
   ],
+  5: [
+    'The veins in the walls glow brighter the deeper you go.',
+    'A dwarven pick lies where it fell, its handle worn to the shape of a hand.',
+    'Mine carts sit on rusted rails, still full of glowing ore.',
+    'Somewhere far below, a hammer strikes once. Then silence.',
+    'The shards in your pack pull downward, through the stone.',
+  ],
 };
 
 /** By area ID (zones.ts `areas`): lines about that place. */
@@ -156,6 +163,26 @@ const AREA_LINES: Record<number, readonly string[]> = {
     'White petals drift past, though nothing here is in bloom.',
     "Your shadow falls the wrong way, toward a moon that isn't there.",
     'The fountain shows a full moon. The sky above it is empty.',
+  ],
+  51: [
+    'Something with too many legs skitters out of the light.',
+    'Drake scales glitter in the rubble, shed and left behind.',
+    'A seam of brightsteel pulses softly, like a heartbeat.',
+  ],
+  52: [
+    'The forge fires are cold, but the anvils are still warm.',
+    'Runes flicker along the walls as you pass.',
+    'A half-made golem lies on the forge floor, one eye glowing.',
+  ],
+  53: [
+    'The gate is carved with a thousand runes, half of them scratched out from below.',
+    'Lanterns hang along the shaft. They glow without flame.',
+    "A miners' song echoes up the shaft, sung wrong.",
+  ],
+  54: [
+    'The Thane does not move. Only the shard in his chest burns.',
+    'The stone around the seal is cracked like an eggshell.',
+    'Runes circle the breach, each one fainter than the last.',
   ],
 };
 

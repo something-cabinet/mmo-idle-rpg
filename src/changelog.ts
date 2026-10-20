@@ -23,7 +23,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.2.0',
     date: '2026-10-20',
-    commit: 'a58ef85',
+    commit: 'bb2aa0e',
     title: 'Brightvein Hold, five new Uniques and the Broken Moon',
     changes: [
       { tag: 'new', text: 'Tier 5 zone, Brightvein Hold: a silent dwarven mine where the largest shard of the moon fell, opened by your first Selvara kill. Levels 46 to 55, and a real step up: from T5 on, enemies have 10% more HP and damage on top of the usual climb. One road leads down the pit, from the glowing tunnels at the rim to the rift at the bottom.' },
@@ -32,6 +32,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'new', text: 'The Broken Moon: the zones now tell a story. Selvara cracked the moon, and every boss holds one of its shards. Zone descriptions say why you have come, new walk lines hint at the shard, and each boss leaves a line when you first beat it, kept under the zone on the Zones page.' },
       { tag: 'new', text: '5 new Uniques for tier 5. Find them in Brightvein Hold and beyond.' },
       { tag: 'new', text: 'Corrupted items are easier to spot: charred from below, with glowing cracks that slowly pulse, in the Bag, item grids and item cards. The rarity border stays, so you can still tell what it was.' },
+      { tag: 'new', text: 'Type "corrupt" in the Bag or Crafting search to find your corrupted items.' },
+      { tag: 'new', text: 'Gathering spots are tidier: each shows its main material and XP per hour, and a Details button lists every action, both XPs and all yields per hour, from Gems and Relics to rare finds and Chisels.' },
       { tag: 'balance', text: 'The Moonwell Deep pays tier 5 rewards from its deeper floors, now that a tier 5 zone exists (was capped at tier 4).' },
       { tag: 'balance', text: 'The Starless nameplate is renamed Night Sky: it has stars. Same look and unlock.' },
     ],

@@ -103,13 +103,46 @@ also gain a regular affix or lose one of its stats.
 - **Raise or lower an affix tier** (half each): a random unbound affix, value rerolled in
   its new tier. It may rise one tier past the item's tier: a T9 item can get a T10 affix,
   whose range comes from the stat's curve formula past T9 (`affixRange` already extends).
-- **A corrupted affix:** exclusive to corruption. Not designed yet: until then this outcome
-  isn't rolled and the other four are 25% each.
+- **A corrupted affix:** exclusive to corruption (see "Corrupted affixes" below). Designed,
+  not built: until then this outcome isn't rolled and the other four are 25% each.
 - **Nothing.**
 - **Reroll every value**, as a Recalibration Chisel does.
 
 Bound affixes are never removed or changed. With no unbound affix, a tier change does
 nothing and an affix count change adds one.
+
+### Corrupted affixes
+
+*Designed 2026-10-20, not built.* The one clearly good outcome of a Corruption Chisel, to
+balance the bad ones (a lost affix, a lowered tier). Numbers *illustrative*.
+
+- **Conditional "more" only:** damage or defence against a kind of content.
+  Something no regular affix gives. Ruled out: plain "more damage / max HP" (boring), cap
+  breakers (balance trouble) and effect-like mechanics (too close to uniques).
+- **One pool for every slot:** any corrupted item, weapon, armor or jewelry, can roll any of them.
+- **Tier = the item's tier:** the value scales with the item's tier like a regular affix's
+  (a T9 item rolls the T9 range).
+- **Its own line**, not one of the item's affix slots: shown at the bottom of the affix
+  list, in red (above the card's big "Corrupted" line, not under it). One per item, never
+  rerolled (the item is corrupted, so nothing changes it again).
+- **Closed form:** each is a fixed multiplier for a given fight (whether it's a boss, an
+  Elite, a raid or the Deep is known up front), so offline settles stay exact.
+- **Odds:** the outcome joins the others at 1 in 6 (the rest drop from 25% to about 20%).
+
+Four conditions for now, each as more damage or as less damage taken, so 8 affixes:
+
+| Condition | Applies to | More damage, T1 → T9 | Less damage taken, T1 → T9 |
+|---|---|---|---|
+| Bosses | Every boss: zone bosses, raid bosses and the Deep's depth bosses (Chaos Dungeon floor bosses later). Broadest condition, so lower values | 4% → 10% | 2% → 5% |
+| Elites | Elite enemies (the Moonwell Deep, the Chaos Dungeon later) | 6% → 15% | 3% → 8% |
+| Raids | Raid bosses | 6% → 15% | 3% → 8% |
+| The Deep | Every Moonwell Deep fight | 6% → 15% | 3% → 8% |
+
+Conditions can overlap: a Deep Elite counts for both "Elites" and "The Deep", a Deep boss for "Bosses" and "The Deep", a raid boss for "Bosses" and "Raids".
+
+Open: storage (a new item field `corruptedAffix` with stat and value, or a flagged affix
+with tier 0 like a unique's), and exact ranges (simulate against T5–T9 bosses, the raids and the
+Deep). More conditions can join later.
 
 ## Bag expansion
 

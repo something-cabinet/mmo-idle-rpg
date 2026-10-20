@@ -177,7 +177,11 @@ export const EmptyCard = ({ text = 'Empty' }: { text?: string }) => (
 /** Square item icon tile (bag, equipment, slot picker). */
 export function ItemTile({ it, selected, badge, title, onClick }: { it: Item; selected?: boolean; badge?: React.ReactNode; title?: string; onClick: (ev: React.MouseEvent) => void }) {
   return (
-    <button className={`item-tile r-${rarityCls(it.rarity.tag)}${selected ? ' selected' : ''}`} title={title ?? `${rarityLabel(it.rarity.tag)} ${itemName(it)}`} onClick={onClick}>
+    <button
+      className={`item-tile r-${rarityCls(it.rarity.tag)}${it.corruption ? ' corrupted' : ''}${selected ? ' selected' : ''}`}
+      title={title ?? `${rarityLabel(it.rarity.tag)} ${itemName(it)}${it.corruption ? ' (Corrupted)' : ''}`}
+      onClick={onClick}
+    >
       <ItemIcon it={it} className="tile-ico" />
       <span className="tile-tier">T{it.tier}</span>
       {it.temper > 0 && <span className={`tile-temper${it.temper >= MAX_TEMPER ? ' maxed' : ''}`}>+{it.temper}</span>}

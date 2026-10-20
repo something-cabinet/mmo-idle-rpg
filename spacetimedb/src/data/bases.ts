@@ -78,7 +78,7 @@ export interface BaseDef {
 
 /** Tier name tracks: T1–T2 sound cheap, T3 solid, T4 a little fancy, T5+ legendary materials. */
 export const TRACKS = {
-  metal: ['Rusted', 'Bogiron', 'Dwarven', 'Elven', 'Mithril', 'Adamant', 'Runic', 'Dragonbone', 'Celestial'],
+  metal: ['Rusted', 'Bogiron', 'Dwarven', 'Elven', 'Brightsteel', 'Verdite', 'Runic', 'Dragonbone', 'Celestial'],
   wood: ['Driftwood', 'Gnarled', 'Heartoak', 'Silverbark', 'Ironwood', 'Elderwood', 'Ghostwood', 'Dragonwood', 'Worldroot'],
   cloth: ['Sackcloth', 'Homespun', 'Spidersilk', 'Mageweave', 'Runeweave', 'Moonsilk', 'Spellsilk', 'Voidweave', 'Starweave'],
   leather: ['Ratskin', 'Boarhide', 'Wolfhide', 'Owlbear', 'Drakehide', 'Shadowhide', 'Wyrmscale', 'Phoenixhide', 'Starhide'],

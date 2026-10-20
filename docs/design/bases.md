@@ -27,8 +27,8 @@ Concrete templates for every base. Rules for how bases work are in equipment.md.
 | 2 | Bogiron | Gnarled | Homespun | Boarhide | Dog-eared |
 | 3 | Dwarven | Heartoak | Spidersilk | Wolfhide | Scholar's |
 | 4 | Elven | Silverbark | Mageweave | Owlbear | Gilded |
-| 5 | Mithril | Ironwood | Runeweave | Drakehide | Arcanist's |
-| 6 | Adamant | Elderwood | Moonsilk | Shadowhide | Archmage's |
+| 5 | Brightsteel | Ironwood | Runeweave | Drakehide | Arcanist's |
+| 6 | Verdite | Elderwood | Moonsilk | Shadowhide | Archmage's |
 | 7 | Runic | Ghostwood | Spellsilk | Wyrmscale | Runebound |
 | 8 | Dragonbone | Dragonwood | Voidweave | Phoenixhide | Astral |
 | 9 | Celestial | Worldroot | Starweave | Starhide | Celestial |

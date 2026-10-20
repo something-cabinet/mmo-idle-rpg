@@ -3,8 +3,8 @@ b-1-t1,Rusted Sword,sword,1
 b-1-t2,Bogiron Sword,sword,2
 b-1-t3,Dwarven Sword,sword,3
 b-1-t4,Elven Sword,sword,4
-b-1-t5,Mithril Sword,sword,5
-b-1-t6,Adamant Sword,sword,6
+b-1-t5,Brightsteel Sword,sword,5
+b-1-t6,Verdite Sword,sword,6
 b-1-t7,Runic Sword,sword,7
 b-1-t8,Dragonbone Sword,sword,8
 b-1-t9,Celestial Sword,sword,9
@@ -12,8 +12,8 @@ b-2-t1,Rusted Dagger,dagger,1
 b-2-t2,Bogiron Dagger,dagger,2
 b-2-t3,Dwarven Dagger,dagger,3
 b-2-t4,Elven Dagger,dagger,4
-b-2-t5,Mithril Dagger,dagger,5
-b-2-t6,Adamant Dagger,dagger,6
+b-2-t5,Brightsteel Dagger,dagger,5
+b-2-t6,Verdite Dagger,dagger,6
 b-2-t7,Runic Dagger,dagger,7
 b-2-t8,Dragonbone Dagger,dagger,8
 b-2-t9,Celestial Dagger,dagger,9
@@ -21,8 +21,8 @@ b-3-t1,Rusted Mace,mace,1
 b-3-t2,Bogiron Mace,mace,2
 b-3-t3,Dwarven Mace,mace,3
 b-3-t4,Elven Mace,mace,4
-b-3-t5,Mithril Mace,mace,5
-b-3-t6,Adamant Mace,mace,6
+b-3-t5,Brightsteel Mace,mace,5
+b-3-t6,Verdite Mace,mace,6
 b-3-t7,Runic Mace,mace,7
 b-3-t8,Dragonbone Mace,mace,8
 b-3-t9,Celestial Mace,mace,9
@@ -30,8 +30,8 @@ b-4-t1,Rusted Scepter,scepter,1
 b-4-t2,Bogiron Scepter,scepter,2
 b-4-t3,Dwarven Scepter,scepter,3
 b-4-t4,Elven Scepter,scepter,4
-b-4-t5,Mithril Scepter,scepter,5
-b-4-t6,Adamant Scepter,scepter,6
+b-4-t5,Brightsteel Scepter,scepter,5
+b-4-t6,Verdite Scepter,scepter,6
 b-4-t7,Runic Scepter,scepter,7
 b-4-t8,Dragonbone Scepter,scepter,8
 b-4-t9,Celestial Scepter,scepter,9
@@ -48,8 +48,8 @@ b-6-t1,Rusted Katana,katana,1
 b-6-t2,Bogiron Katana,katana,2
 b-6-t3,Dwarven Katana,katana,3
 b-6-t4,Elven Katana,katana,4
-b-6-t5,Mithril Katana,katana,5
-b-6-t6,Adamant Katana,katana,6
+b-6-t5,Brightsteel Katana,katana,5
+b-6-t6,Verdite Katana,katana,6
 b-6-t7,Runic Katana,katana,7
 b-6-t8,Dragonbone Katana,katana,8
 b-6-t9,Celestial Katana,katana,9
@@ -57,8 +57,8 @@ b-7-t1,Rusted Greatsword,greatsword,1
 b-7-t2,Bogiron Greatsword,greatsword,2
 b-7-t3,Dwarven Greatsword,greatsword,3
 b-7-t4,Elven Greatsword,greatsword,4
-b-7-t5,Mithril Greatsword,greatsword,5
-b-7-t6,Adamant Greatsword,greatsword,6
+b-7-t5,Brightsteel Greatsword,greatsword,5
+b-7-t6,Verdite Greatsword,greatsword,6
 b-7-t7,Runic Greatsword,greatsword,7
 b-7-t8,Dragonbone Greatsword,greatsword,8
 b-7-t9,Celestial Greatsword,greatsword,9
@@ -102,8 +102,8 @@ b-20-t1,Rusted Shield,shield,1
 b-20-t2,Bogiron Shield,shield,2
 b-20-t3,Dwarven Shield,shield,3
 b-20-t4,Elven Shield,shield,4
-b-20-t5,Mithril Shield,shield,5
-b-20-t6,Adamant Shield,shield,6
+b-20-t5,Brightsteel Shield,shield,5
+b-20-t6,Verdite Shield,shield,6
 b-20-t7,Runic Shield,shield,7
 b-20-t8,Dragonbone Shield,shield,8
 b-20-t9,Celestial Shield,shield,9
@@ -111,8 +111,8 @@ b-22-t1,Rusted Greatshield,greatshield,1
 b-22-t2,Bogiron Greatshield,greatshield,2
 b-22-t3,Dwarven Greatshield,greatshield,3
 b-22-t4,Elven Greatshield,greatshield,4
-b-22-t5,Mithril Greatshield,greatshield,5
-b-22-t6,Adamant Greatshield,greatshield,6
+b-22-t5,Brightsteel Greatshield,greatshield,5
+b-22-t6,Verdite Greatshield,greatshield,6
 b-22-t7,Runic Greatshield,greatshield,7
 b-22-t8,Dragonbone Greatshield,greatshield,8
 b-22-t9,Celestial Greatshield,greatshield,9
@@ -129,8 +129,8 @@ b-23-t1,Rusted War Horn,war-horn,1
 b-23-t2,Bogiron War Horn,war-horn,2
 b-23-t3,Dwarven War Horn,war-horn,3
 b-23-t4,Elven War Horn,war-horn,4
-b-23-t5,Mithril War Horn,war-horn,5
-b-23-t6,Adamant War Horn,war-horn,6
+b-23-t5,Brightsteel War Horn,war-horn,5
+b-23-t6,Verdite War Horn,war-horn,6
 b-23-t7,Runic War Horn,war-horn,7
 b-23-t8,Dragonbone War Horn,war-horn,8
 b-23-t9,Celestial War Horn,war-horn,9
@@ -138,8 +138,8 @@ b-24-t1,Rusted Main Gauche,main-gauche,1
 b-24-t2,Bogiron Main Gauche,main-gauche,2
 b-24-t3,Dwarven Main Gauche,main-gauche,3
 b-24-t4,Elven Main Gauche,main-gauche,4
-b-24-t5,Mithril Main Gauche,main-gauche,5
-b-24-t6,Adamant Main Gauche,main-gauche,6
+b-24-t5,Brightsteel Main Gauche,main-gauche,5
+b-24-t6,Verdite Main Gauche,main-gauche,6
 b-24-t7,Runic Main Gauche,main-gauche,7
 b-24-t8,Dragonbone Main Gauche,main-gauche,8
 b-24-t9,Celestial Main Gauche,main-gauche,9
@@ -219,8 +219,8 @@ b-38-t1,Rusted Helm,plate-head,1
 b-38-t2,Bogiron Helm,plate-head,2
 b-38-t3,Dwarven Helm,plate-head,3
 b-38-t4,Elven Helm,plate-head,4
-b-38-t5,Mithril Helm,plate-head,5
-b-38-t6,Adamant Helm,plate-head,6
+b-38-t5,Brightsteel Helm,plate-head,5
+b-38-t6,Verdite Helm,plate-head,6
 b-38-t7,Runic Helm,plate-head,7
 b-38-t8,Dragonbone Helm,plate-head,8
 b-38-t9,Celestial Helm,plate-head,9
@@ -228,8 +228,8 @@ b-39-t1,Rusted Breastplate,plate-chest,1
 b-39-t2,Bogiron Breastplate,plate-chest,2
 b-39-t3,Dwarven Breastplate,plate-chest,3
 b-39-t4,Elven Breastplate,plate-chest,4
-b-39-t5,Mithril Breastplate,plate-chest,5
-b-39-t6,Adamant Breastplate,plate-chest,6
+b-39-t5,Brightsteel Breastplate,plate-chest,5
+b-39-t6,Verdite Breastplate,plate-chest,6
 b-39-t7,Runic Breastplate,plate-chest,7
 b-39-t8,Dragonbone Breastplate,plate-chest,8
 b-39-t9,Celestial Breastplate,plate-chest,9
@@ -237,8 +237,8 @@ b-40-t1,Rusted Gauntlets,plate-hands,1
 b-40-t2,Bogiron Gauntlets,plate-hands,2
 b-40-t3,Dwarven Gauntlets,plate-hands,3
 b-40-t4,Elven Gauntlets,plate-hands,4
-b-40-t5,Mithril Gauntlets,plate-hands,5
-b-40-t6,Adamant Gauntlets,plate-hands,6
+b-40-t5,Brightsteel Gauntlets,plate-hands,5
+b-40-t6,Verdite Gauntlets,plate-hands,6
 b-40-t7,Runic Gauntlets,plate-hands,7
 b-40-t8,Dragonbone Gauntlets,plate-hands,8
 b-40-t9,Celestial Gauntlets,plate-hands,9
@@ -246,8 +246,8 @@ b-41-t1,Rusted Greaves,plate-feet,1
 b-41-t2,Bogiron Greaves,plate-feet,2
 b-41-t3,Dwarven Greaves,plate-feet,3
 b-41-t4,Elven Greaves,plate-feet,4
-b-41-t5,Mithril Greaves,plate-feet,5
-b-41-t6,Adamant Greaves,plate-feet,6
+b-41-t5,Brightsteel Greaves,plate-feet,5
+b-41-t6,Verdite Greaves,plate-feet,6
 b-41-t7,Runic Greaves,plate-feet,7
 b-41-t8,Dragonbone Greaves,plate-feet,8
 b-41-t9,Celestial Greaves,plate-feet,9

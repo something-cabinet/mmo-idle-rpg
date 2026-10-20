@@ -20,9 +20,10 @@ from idling, without breaking the idle pillar: nothing in here is ever settled o
 
 ## Name
 
-Working name **The Chaos Dungeon**. Possible lore: a rift where pieces of every zone collide
-and shift each week, with echoes of old enemies inside, and gear made of rift-stuff that
-falls apart when you leave.
+Working name **The Chaos Dungeon**. Lore (story.md): the rift beneath Brightvein Hold (T5),
+opened when the Last Thane dies and his seal breaks. Inside, pieces of every zone collide
+and shift each week, with echoes of old enemies, and gear made of rift-stuff that falls
+apart when you leave.
 
 | Option | Feel |
 |---|---|
@@ -33,7 +34,8 @@ falls apart when you leave.
 
 ## Rules at a glance
 
-- **Unlocks** once the character has killed the **T2 boss**, so it's open before the raids.
+- **Unlocks** once the character has killed the **T5 boss** (the Last Thane, story.md):
+  his death breaks the seal on the rift.
 - **Solo and online only**: never settled offline, never a farming target. **Farming
   continues** during a run, with the active loadout.
 - **A run is 5 floors.** Each floor is a small branching map: ~6 rows of nodes (battles,
@@ -408,7 +410,6 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 ## Open questions
 
 - **Name:** Chaos Dungeon or a lore name.
-- **Unlock:** T2 boss, or later (T3 boss, alongside Wyrm Hollow)?
 - **Pacing:** is ~30 fights per run right for an idle game, or should floors be shorter
   (~4 rows) for a ~15-minute run?
 - **Riftstone:** what it crafts. Could share the answer with the raid token shop and

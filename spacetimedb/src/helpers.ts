@@ -2,7 +2,7 @@
 // may only export reducers/views.
 import { Timestamp, type Identity } from 'spacetimedb';
 import { SenderError, type Infer, type ReducerCtx } from 'spacetimedb/server';
-import { Encounter as EncounterType, Found as FoundType, account, character, item, presence, settleLog, skill, spacetimedb } from './schema';
+import { Encounter as EncounterType, Found as FoundType, account, character, item, mail, presence, settleLog, skill, spacetimedb } from './schema';
 import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project, type ElixirLeft, type ElixirRun } from './game';
 import { rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
@@ -51,6 +51,7 @@ export type SettleLog = Infer<typeof settleLog.rowType>;
 export type Found = Infer<typeof FoundType>;
 export type Encounter = Infer<typeof EncounterType>;
 export type SkillRow = Infer<typeof skill.rowType>;
+export type Mail = Infer<typeof mail.rowType>;
 
 /** The caller's account; throws if missing or banned. */
 export function requireAccount(ctx: Ctx): Account {
@@ -107,7 +108,7 @@ export function bagCount(ctx: Ctx, characterId: bigint): number {
  * lost fight in a matchup won on average costs a respawn (fight.ts), any other lost fight
  * clears the target (idle). Call before anything that changes gear or
  * target. `capMicros` is only passed for the login settle, which covers the time
- * away and is always logged.
+ * away and is always logged, and for a Chronoshard's hours (reducers/skills.ts).
  */
 export function settle(ctx: Ctx, ch: Character, capMicros?: bigint): Character {
   const out = ch.activitySkill !== 0 ? settleSkill(ctx, ch, capMicros) : settleCombat(ctx, ch, capMicros);
@@ -815,7 +816,22 @@ export function raidMembers(ctx: Ctx, partyId: bigint) {
 /** The party is in a fight that hasn't been settled yet. */
 export const raidFighting = (party: { fight?: { finished: boolean } }) => !!party.fight && !party.fight.finished;
 
+/** Deletes a mail and its unclaimed (escrowed) items. */
+export function deleteMail(ctx: Ctx, m: Mail) {
+  if (!m.claimed) for (const id of m.itemIds) ctx.db.item.id.delete(id);
+  ctx.db.mail.id.delete(m.id);
+}
+
+/** Deletes the character's expired mail, unclaimed attachments included. */
+export function purgeExpiredMail(ctx: Ctx, characterId: bigint) {
+  const now = ctx.timestamp.microsSinceUnixEpoch;
+  for (const m of [...ctx.db.mail.characterId.filter(characterId)]) {
+    if (m.expiresAt && m.expiresAt.microsSinceUnixEpoch <= now) deleteMail(ctx, m);
+  }
+}
+
 export function deleteCharacter(ctx: Ctx, characterId: bigint) {
+  for (const m of [...ctx.db.mail.characterId.filter(characterId)]) deleteMail(ctx, m);
   leaveRaidParty(ctx, characterId);
   ctx.db.cosmeticUnlock.characterId.delete(characterId);
   ctx.db.look.characterId.delete(characterId);
@@ -855,6 +871,7 @@ export function enterWorld(ctx: Ctx) {
   ctx.db.character.id.update(settled);
   // Also backfills what was earned before a cosmetic existed.
   grantCosmetics(ctx, ch.id, settled.level);
+  purgeExpiredMail(ctx, ch.id);
   ctx.db.presence.insert({
     identity: ctx.sender,
     connectionId: ctx.connectionId,

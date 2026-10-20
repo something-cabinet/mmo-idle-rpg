@@ -1,10 +1,11 @@
+import { Timestamp } from 'spacetimedb';
 import { SenderError, t } from 'spacetimedb/server';
 import { spacetimedb } from '../schema';
 import { GATHER_NODES_BY_ID, SKILLS_BY_ID, SkillId, gatherBlocker, gatherSpotId, productionBlocker, productionXpPerAction } from '../data/skills';
 import { affordable, recipeOf, temperCost, toolRecipeId } from '../data/recipes';
 import { addSkillXp } from '../gather';
 import { addXp } from '../game';
-import { ELIXIR_KILLS, SUPPLIES_BY_ID } from '../data/supplies';
+import { CHRONOSHARDS_BY_ID, ELIXIR_KILLS, SUPPLIES_BY_ID } from '../data/supplies';
 import { ABYSS_UNLOCK_ZONE } from '../data/abyss';
 import { temperBlocker } from '../produce';
 import {
@@ -143,6 +144,23 @@ export const drinkElixir = spacetimedb.reducer({ supplyId: t.u16() }, (ctx, { su
   const infused = settled.elixirInfuse && herbCount(ctx, ch.id, sup.grade) > 0;
   if (infused) takeHerbs(ctx, ch.id, sup.grade, 1);
   ctx.db.character.id.update({ ...settled, elixirId: supplyId, elixirKillsLeft: ELIXIR_KILLS, elixirInfused: infused });
+});
+
+/**
+ * Uses a Chronoshard from stock: settles what is pending, then plays its hours of the
+ * current activity (combat, gathering or a production queue) at once, as time away does
+ * (offline formulas, logged as offline) but not against the offline cap.
+ */
+export const activateChronoshard = spacetimedb.reducer({ supplyId: t.u16() }, (ctx, { supplyId }) => {
+  const { ch } = requireActive(ctx);
+  const shard = CHRONOSHARDS_BY_ID.get(supplyId);
+  if (!shard) throw new SenderError('No such Chronoshard');
+  if (supplyCount(ctx, ch.id, supplyId) < 1) throw new SenderError('None in stock');
+  const settled = settle(ctx, ch);
+  takeSupply(ctx, ch.id, supplyId, 1);
+  // Moves the settle start back by the shard's hours; the cap is the whole span, so nothing is cut.
+  const from = settled.lastSettledAt.microsSinceUnixEpoch - BigInt(shard.hours * 3600) * 1_000_000n;
+  ctx.db.character.id.update(settle(ctx, { ...settled, lastSettledAt: new Timestamp(from) }, ctx.timestamp.microsSinceUnixEpoch - from));
 });
 
 /** Turns Infuse on or off: from the next elixir drunk or auto-renewed, use a rare herb of its grade for INFUSE_BONUS × the bonus. */

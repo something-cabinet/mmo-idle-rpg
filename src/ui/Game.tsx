@@ -30,6 +30,7 @@ import { FilterView } from './views/FilterView';
 import { ItemIndexView } from './views/ItemIndexView';
 import { RaidsView } from './views/RaidsView';
 import { AbyssView } from './views/AbyssView';
+import { MailView, liveMail } from './views/MailView';
 import { SettingsView } from './views/SettingsView';
 import { SkillView, activityText } from './views/SkillView';
 import { ProductionView } from './views/ProductionView';
@@ -42,7 +43,7 @@ const NAV: [string, [View, string, string][]][] = [
   ['Character', [['character', 'user', 'Character'], ['equipment', 'shield', 'Equipment'], ['bag', 'bag', 'Bag']]],
   ['Workshop', [['crafting', 'hammer', 'Crafting'], ['filter', 'filter', 'Loot filter']]],
   ['Codex', [['index', 'book', 'Item index']]],
-  ['System', [['settings', 'settings', 'Settings']]],
+  ['System', [['mail', 'mail', 'Mail'], ['settings', 'settings', 'Settings']]],
 ];
 
 function TopStats({ s }: { s: Snapshot }) {
@@ -110,7 +111,10 @@ function AccountFoot({ conn }: { conn: DbConnection }) {
   );
 }
 
-function NavLinks({ view, exclude = [] }: { view: View; exclude?: View[] }) {
+/** Counts shown on nav links (unread mail). */
+type Badges = Partial<Record<View, number>>;
+
+function NavLinks({ view, exclude = [], badges = {} }: { view: View; exclude?: View[]; badges?: Badges }) {
   return NAV.map(([group, links]) => {
     const shown = links.filter(([v]) => !exclude.includes(v));
     if (!shown.length) return null;
@@ -121,6 +125,7 @@ function NavLinks({ view, exclude = [] }: { view: View; exclude?: View[] }) {
           <a key={v} href={`#${v}`} className={v === navOf(view) ? 'active' : ''} title={label}>
             <Icon name={icon} />
             <span className="nav-label">{label}</span>
+            {!!badges[v] && <span className="unread nav-badge">{badges[v]! > 9 ? '9+' : badges[v]}</span>}
           </a>
         ))}
       </div>
@@ -128,17 +133,17 @@ function NavLinks({ view, exclude = [] }: { view: View; exclude?: View[] }) {
   });
 }
 
-function Sidebar({ conn, view }: { conn: DbConnection; view: View }) {
+function Sidebar({ conn, view, badges }: { conn: DbConnection; view: View; badges: Badges }) {
   return (
     <nav className="sidebar">
-      <NavLinks view={view} />
+      <NavLinks view={view} badges={badges} />
       <AccountFoot conn={conn} />
     </nav>
   );
 }
 
 /** Mobile navigation (the sidebar is hidden on narrow screens): main views as tabs, the rest in a sheet. */
-function BottomNav({ conn, view, onNavigate }: { conn: DbConnection; view: View; onNavigate: () => void }) {
+function BottomNav({ conn, view, badges, onNavigate }: { conn: DbConnection; view: View; badges: Badges; onNavigate: () => void }) {
   const [more, setMore] = useState(false);
   return (
     <>
@@ -155,12 +160,13 @@ function BottomNav({ conn, view, onNavigate }: { conn: DbConnection; view: View;
         <button className={!TAB_BAR.includes(navOf(view)) ? 'active' : ''} onClick={() => setMore(true)}>
           <Icon name="menu" />
           <span>More</span>
+          {Object.entries(badges).some(([v, n]) => n && !TAB_BAR.includes(v as View)) && <span className="unread nav-badge dot-badge" />}
         </button>
       </nav>
       {more && (
         <Modal className="nav-sheet" onClose={() => setMore(false)}>
           <nav className="sidebar" onClick={e => (e.target as HTMLElement).closest('a') && setMore(false)}>
-            <NavLinks view={view} exclude={TAB_BAR} />
+            <NavLinks view={view} exclude={TAB_BAR} badges={badges} />
             <AccountFoot conn={conn} />
           </nav>
         </Modal>
@@ -271,6 +277,7 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
     case 'crafting': return <CraftingView s={s} />;
     case 'filter': return <FilterView s={s} />;
     case 'index': return <ItemIndexView s={s} />;
+    case 'mail': return <MailView s={s} />;
     case 'settings': return <SettingsView s={s} />;
     default: {
       const skill = SKILLS.find(sk => sk.slug === view);
@@ -346,6 +353,17 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
     else if (rumour?.secret) toast(rumour.secret.rumour, 'info');
   }, [mapKey]); // eslint-disable-line react-hooks/exhaustive-deps -- the lists change with the key
 
+  // New mail since this session started: say so once.
+  const mail = liveMail(conn);
+  const badges: Badges = { mail: mail.filter(m => !m.read).length };
+  const newestMail = mail[0];
+  const mailBefore = useRef<bigint | undefined>(undefined);
+  useEffect(() => {
+    const before = mailBefore.current;
+    mailBefore.current = newestMail?.id ?? 0n;
+    if (before !== undefined && newestMail && newestMail.id > before && !newestMail.read) toast(`New mail: ${newestMail.subject}`, 'info');
+  }, [newestMail]);
+
   if (!row || !viewSnap || !live) return <TopBar />;
   const online = conn.db.presence.count();
   return (
@@ -363,7 +381,7 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
         }
       />
       <div className={`screen shell${socialCollapsed ? ' social-collapsed' : ''}${chatOpen ? ' chat-open' : ''}`}>
-        <Sidebar conn={conn} view={view} />
+        <Sidebar conn={conn} view={view} badges={badges} />
         <main className="content" ref={content}>
           <section className="view" key={view}>
             <CurrentView view={view} s={viewSnap} />
@@ -377,7 +395,7 @@ export function Game({ conn, pres, version }: { conn: DbConnection; pres: Presen
           onInspect={(id, tab) => setInspecting({ id, tab })}
         />
       </div>
-      <BottomNav conn={conn} view={view} onNavigate={() => setChatOpen(false)} />
+      <BottomNav conn={conn} view={view} badges={badges} onNavigate={() => setChatOpen(false)} />
       {/* Before the away report, so that one sits on top and is read first. */}
       <WhatsNew conn={conn} />
       <AwayReport s={viewSnap} pres={pres} />

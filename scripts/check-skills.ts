@@ -36,7 +36,7 @@ import {
   temperCost,
   toolRecipeId,
 } from '../spacetimedb/src/data/recipes';
-import { ELIXIR_KILLS, PHIALS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir, phialBuffs, phialSupplyId } from '../spacetimedb/src/data/supplies';
+import { CHRONOSHARDS, ELIXIR_KILLS, PHIALS, SUPPLIES, brewYield, elixirBuffs, elixirSupplyId, gradeOf, infuseHerbIds, legacyElixir, phialBuffs, phialSupplyId } from '../spacetimedb/src/data/supplies';
 import { RAIDS } from '../spacetimedb/src/data/raids';
 import { simulateDepth } from '../spacetimedb/src/abyss';
 import { forgeItem, forged, productionCharacterXp, projectProduction, temperBlocker } from '../spacetimedb/src/produce';
@@ -488,6 +488,9 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('Uniques salvage into 2 Voidglass, Legendaries none', salvageVoidglass('Unique') === 2 && salvageVoidglass('Legendary') === 0);
   check('raid clears pay Voidglass (2, then 4)', RAIDS.map(r => r.voidglass).join() === '2,4');
 }
+
+check('Chronoshards are supplies 501–503, fast-forwarding 1, 2 and 4 hours', JSON.stringify(CHRONOSHARDS.map(c => [c.id, c.hours, c.name])) ===
+  JSON.stringify([[501, 1, 'Chronoshard'], [502, 2, 'Greater Chronoshard'], [503, 4, 'Divine Chronoshard']]));
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nAll checks passed');
 process.exit(failed ? 1 : 0);

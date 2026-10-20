@@ -1,6 +1,6 @@
 // Per-player views over private tables: each client sees only its own rows.
 import { t } from 'spacetimedb/server';
-import { abyssLog, bossKill, character, cosmeticUnlock, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, material, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
+import { abyssLog, bossKill, character, cosmeticUnlock, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, mail, material, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
 
 export const my_items = spacetimedb.view({ name: 'my_items', public: true }, t.array(item.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
@@ -168,4 +168,19 @@ export const raid_party_items = spacetimedb.view({ name: 'raid_party_items', pub
 export const my_cosmetics = spacetimedb.view({ name: 'my_cosmetics', public: true }, t.array(cosmeticUnlock.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
   return ch ? [...ctx.db.cosmeticUnlock.characterId.filter(ch.id)] : [];
+});
+
+/** The caller's mailbox (reducers/mail.ts), newest last. Expired mail is purged on entering the world; the client hides it before that. */
+export const my_mail = spacetimedb.view({ name: 'my_mail', public: true }, t.array(mail.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.mail.characterId.filter(ch.id)] : [];
+});
+
+/** The items attached to the caller's unclaimed mail (held in escrow until claimed). */
+export const my_mail_items = spacetimedb.view({ name: 'my_mail_items', public: true }, t.array(item.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  if (!ch) return [];
+  return [...ctx.db.mail.characterId.filter(ch.id)].flatMap(m =>
+    m.claimed ? [] : m.itemIds.flatMap(id => ctx.db.item.id.find(id) ?? [])
+  );
 });

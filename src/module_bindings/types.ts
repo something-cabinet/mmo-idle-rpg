@@ -305,6 +305,41 @@ export const LootFilter = __t.object("LootFilter", {
 });
 export type LootFilter = __Infer<typeof LootFilter>;
 
+export const Mail = __t.object("Mail", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  sentMailId: __t.u64(),
+  get sender() {
+    return MailSender;
+  },
+  senderName: __t.string(),
+  subject: __t.string(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+  expiresAt: __t.option(__t.timestamp()),
+  read: __t.bool(),
+  claimed: __t.bool(),
+  gold: __t.u64(),
+  dust: __t.u64(),
+  raidTokens: __t.u64(),
+  get materials() {
+    return __t.array(MaterialCount);
+  },
+  get supplies() {
+    return __t.array(SupplyCount);
+  },
+  cosmetics: __t.array(__t.u16()),
+  itemIds: __t.array(__t.u64()),
+});
+export type Mail = __Infer<typeof Mail>;
+
+// The tagged union or sum type for the algebraic type `MailSender`.
+export const MailSender = __t.enum("MailSender", {
+  System: __t.unit(),
+  Player: __t.u64(),
+});
+export type MailSender = __Infer<typeof MailSender>;
+
 export const Material = __t.object("Material", {
   id: __t.u64(),
   characterId: __t.u64(),
@@ -360,6 +395,12 @@ export type MyLoadouts = __Infer<typeof MyLoadouts>;
 
 export const MyLootFilter = __t.object("MyLootFilter", {});
 export type MyLootFilter = __Infer<typeof MyLootFilter>;
+
+export const MyMail = __t.object("MyMail", {});
+export type MyMail = __Infer<typeof MyMail>;
+
+export const MyMailItems = __t.object("MyMailItems", {});
+export type MyMailItems = __Infer<typeof MyMailItems>;
 
 export const MyMaterials = __t.object("MyMaterials", {});
 export type MyMaterials = __Infer<typeof MyMaterials>;
@@ -490,6 +531,18 @@ export const Scrap = __t.object("Scrap", {
 });
 export type Scrap = __Infer<typeof Scrap>;
 
+export const SentMail = __t.object("SentMail", {
+  id: __t.u64(),
+  sentBy: __t.identity(),
+  subject: __t.string(),
+  gift: __t.string(),
+  to: __t.array(__t.string()),
+  recipients: __t.u32(),
+  sentAt: __t.timestamp(),
+  recalled: __t.u32(),
+});
+export type SentMail = __Infer<typeof SentMail>;
+
 export const SettleLog = __t.object("SettleLog", {
   id: __t.u64(),
   characterId: __t.u64(),
@@ -567,6 +620,12 @@ export const Supply = __t.object("Supply", {
   count: __t.u64(),
 });
 export type Supply = __Infer<typeof Supply>;
+
+export const SupplyCount = __t.object("SupplyCount", {
+  supplyId: __t.u16(),
+  count: __t.u32(),
+});
+export type SupplyCount = __Infer<typeof SupplyCount>;
 
 export const Tool = __t.object("Tool", {
   id: __t.u64(),

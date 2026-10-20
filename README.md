@@ -41,6 +41,10 @@ Vite + React (TSX) browser client, SpacetimeDB (TypeScript module) backend.
   the player must explicitly confirm deleting the guest one.
 - **Moderation.** `role` (Player/Admin, from `ADMIN_SUBJECTS`) and `banned`; admins call
   `setBanned`. Banned accounts are rejected on connect.
+- **Mail.** Admins send messages with optional attachments to one, several or all characters
+  from the CLI (see "Sending mail"); players read and claim them in the Mail view. Attached
+  items wait in escrow (`item` rows with `characterId` 0) until claimed. Only the game sends
+  mail for now; the `sender` column (`System` / `Player`) leaves room for player gifts.
 - **Idle progress without a server tick.** A `character` row is a snapshot as of
   `lastSettledAt`. Gains since then are computed by `project()` in `game.ts`, which both sides
   share: the client runs it on a timer for display; the server runs it only when it must know
@@ -146,6 +150,31 @@ Without this the game is guest-only, which is fine for development.
 
 SpacetimeAuth is in beta. Login sessions expire; the client sends the player back through
 login when that happens (usually instant).
+
+## Sending mail
+
+Mail is sent by an admin identity (`ADMIN_IDENTITIES` in `config.ts`, which holds the CLI
+login: `spacetime login show`) with `spacetime call`. Arguments are JSON, in order:
+recipients, subject, body, gift, days.
+
+```sh
+# To two characters (names in any case), with attachments, expiring in 30 days:
+spacetime call --server maincloud <db> send_mail '["Alice","Bob"]' '"Sorry about the outage"' '"Here is something for the trouble."' '"gold:50000 dust:2000 mat:101x20 supply:311x3"' 30
+# To every character, no attachments, never expiring:
+spacetime call --server maincloud <db> send_mail '[]' '"Patch 0.2 is live"' '"The notes are in What is new."' '""' 0
+```
+
+- **Recipients:** `[]` sends to every character that exists now (later characters don't
+  get it). One unknown name fails the whole send.
+- **Gift tokens** (space separated, repeat to add up): `gold:N`, `dust:N`, `tokens:N` (raid
+  tokens), `mat:ID×N`, `supply:ID×N`, `cosmetic:ID`, `item:BASE/TIER/RARITY`, `unique:ID`
+  (`×` may be written `x`). IDs are the ones in `spacetimedb/src/data/`. Every recipient
+  gets their own freshly rolled items. A typo fails the send, so nothing goes out half-made.
+- **Days:** the mail and its unclaimed attachments are deleted that long after sending; `0`
+  keeps it until the player deletes it.
+- **Audit and recall:** every send is a `sent_mail` row
+  (`spacetime sql <db> "SELECT * FROM sent_mail"`). `spacetime call <db> recall_mail <id>`
+  deletes the copies nobody has claimed yet.
 
 ## Deploying to Maincloud (free tier)
 

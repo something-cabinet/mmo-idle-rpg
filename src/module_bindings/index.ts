@@ -35,11 +35,15 @@ import {
 
 // Import all reducer arg schemas
 import AcceptLinkReducer from "./accept_link_reducer";
+import ActivateChronoshardReducer from "./activate_chronoshard_reducer";
 import AddFriendReducer from "./add_friend_reducer";
 import AutoEquipReducer from "./auto_equip_reducer";
+import ClaimMailReducer from "./claim_mail_reducer";
 import CopyLoadoutReducer from "./copy_loadout_reducer";
 import CreateCharacterReducer from "./create_character_reducer";
 import CreateRaidPartyReducer from "./create_raid_party_reducer";
+import DeleteMailMessageReducer from "./delete_mail_message_reducer";
+import DeleteReadMailReducer from "./delete_read_mail_reducer";
 import DescendReducer from "./descend_reducer";
 import DevGiveItemReducer from "./dev_give_item_reducer";
 import DevGiveUniqueReducer from "./dev_give_unique_reducer";
@@ -63,6 +67,8 @@ import LockItemReducer from "./lock_item_reducer";
 import LockSlotReducer from "./lock_slot_reducer";
 import OfferLinkReducer from "./offer_link_reducer";
 import PlayHereReducer from "./play_here_reducer";
+import ReadMailReducer from "./read_mail_reducer";
+import RecallMailReducer from "./recall_mail_reducer";
 import RemoveFriendReducer from "./remove_friend_reducer";
 import RenameLoadoutReducer from "./rename_loadout_reducer";
 import RerollAffixReducer from "./reroll_affix_reducer";
@@ -70,6 +76,7 @@ import SalvageReducer from "./salvage_reducer";
 import ScrapItemsReducer from "./scrap_items_reducer";
 import SeeChangelogReducer from "./see_changelog_reducer";
 import SendChatReducer from "./send_chat_reducer";
+import SendMailReducer from "./send_mail_reducer";
 import SetBannedReducer from "./set_banned_reducer";
 import SetElixirAutoRenewReducer from "./set_elixir_auto_renew_reducer";
 import SetElixirInfuseReducer from "./set_elixir_infuse_reducer";
@@ -114,6 +121,8 @@ import MyFriendsRow from "./my_friends_table";
 import MyItemsRow from "./my_items_table";
 import MyLoadoutsRow from "./my_loadouts_table";
 import MyLootFilterRow from "./my_loot_filter_table";
+import MyMailRow from "./my_mail_table";
+import MyMailItemsRow from "./my_mail_items_table";
 import MyMaterialsRow from "./my_materials_table";
 import MyRaidLogRow from "./my_raid_log_table";
 import MyScrapRow from "./my_scrap_table";
@@ -329,6 +338,20 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyLootFilterRow),
+  myMail: __table({
+    name: 'my_mail',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyMailRow),
+  myMailItems: __table({
+    name: 'my_mail_items',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyMailItemsRow),
   myMaterials: __table({
     name: 'my_materials',
     indexes: [
@@ -404,11 +427,15 @@ const tablesSchema = __schema({
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
   __reducerSchema("accept_link", AcceptLinkReducer),
+  __reducerSchema("activate_chronoshard", ActivateChronoshardReducer),
   __reducerSchema("add_friend", AddFriendReducer),
   __reducerSchema("auto_equip", AutoEquipReducer),
+  __reducerSchema("claim_mail", ClaimMailReducer),
   __reducerSchema("copy_loadout", CopyLoadoutReducer),
   __reducerSchema("create_character", CreateCharacterReducer),
   __reducerSchema("create_raid_party", CreateRaidPartyReducer),
+  __reducerSchema("delete_mail_message", DeleteMailMessageReducer),
+  __reducerSchema("delete_read_mail", DeleteReadMailReducer),
   __reducerSchema("descend", DescendReducer),
   __reducerSchema("dev_give_item", DevGiveItemReducer),
   __reducerSchema("dev_give_unique", DevGiveUniqueReducer),
@@ -432,6 +459,8 @@ const reducersSchema = __reducers(
   __reducerSchema("lock_slot", LockSlotReducer),
   __reducerSchema("offer_link", OfferLinkReducer),
   __reducerSchema("play_here", PlayHereReducer),
+  __reducerSchema("read_mail", ReadMailReducer),
+  __reducerSchema("recall_mail", RecallMailReducer),
   __reducerSchema("remove_friend", RemoveFriendReducer),
   __reducerSchema("rename_loadout", RenameLoadoutReducer),
   __reducerSchema("reroll_affix", RerollAffixReducer),
@@ -439,6 +468,7 @@ const reducersSchema = __reducers(
   __reducerSchema("scrap_items", ScrapItemsReducer),
   __reducerSchema("see_changelog", SeeChangelogReducer),
   __reducerSchema("send_chat", SendChatReducer),
+  __reducerSchema("send_mail", SendMailReducer),
   __reducerSchema("set_banned", SetBannedReducer),
   __reducerSchema("set_elixir_auto_renew", SetElixirAutoRenewReducer),
   __reducerSchema("set_elixir_infuse", SetElixirInfuseReducer),
@@ -498,6 +528,10 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_loadouts": Omit<typeof tablesSchema.schemaType.tables["myLoadouts"], "accessorName"> & { readonly accessorName: "my_loadouts" };
     /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
     readonly "my_loot_filter": Omit<typeof tablesSchema.schemaType.tables["myLootFilter"], "accessorName"> & { readonly accessorName: "my_loot_filter" };
+    /** @deprecated Use `myMail` instead. This alias will be removed in the next major version. */
+    readonly "my_mail": Omit<typeof tablesSchema.schemaType.tables["myMail"], "accessorName"> & { readonly accessorName: "my_mail" };
+    /** @deprecated Use `myMailItems` instead. This alias will be removed in the next major version. */
+    readonly "my_mail_items": Omit<typeof tablesSchema.schemaType.tables["myMailItems"], "accessorName"> & { readonly accessorName: "my_mail_items" };
     /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
     readonly "my_materials": Omit<typeof tablesSchema.schemaType.tables["myMaterials"], "accessorName"> & { readonly accessorName: "my_materials" };
     /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
@@ -551,6 +585,8 @@ const tableAccessorAliases = {
   "my_items": "myItems",
   "my_loadouts": "myLoadouts",
   "my_loot_filter": "myLootFilter",
+  "my_mail": "myMail",
+  "my_mail_items": "myMailItems",
   "my_materials": "myMaterials",
   "my_raid_log": "myRaidLog",
   "my_scrap": "myScrap",
@@ -611,6 +647,10 @@ export type DbView = __DbViewBase & {
   readonly "my_loadouts": __DbViewBase["myLoadouts"];
   /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
   readonly "my_loot_filter": __DbViewBase["myLootFilter"];
+  /** @deprecated Use `myMail` instead. This alias will be removed in the next major version. */
+  readonly "my_mail": __DbViewBase["myMail"];
+  /** @deprecated Use `myMailItems` instead. This alias will be removed in the next major version. */
+  readonly "my_mail_items": __DbViewBase["myMailItems"];
   /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
   readonly "my_materials": __DbViewBase["myMaterials"];
   /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
@@ -665,6 +705,10 @@ export type Tables = __TablesBase & {
   readonly "my_loadouts": __TablesBase["myLoadouts"];
   /** @deprecated Use `myLootFilter` instead. This alias will be removed in the next major version. */
   readonly "my_loot_filter": __TablesBase["myLootFilter"];
+  /** @deprecated Use `myMail` instead. This alias will be removed in the next major version. */
+  readonly "my_mail": __TablesBase["myMail"];
+  /** @deprecated Use `myMailItems` instead. This alias will be removed in the next major version. */
+  readonly "my_mail_items": __TablesBase["myMailItems"];
   /** @deprecated Use `myMaterials` instead. This alias will be removed in the next major version. */
   readonly "my_materials": __TablesBase["myMaterials"];
   /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */

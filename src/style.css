@@ -4400,3 +4400,116 @@ fieldset.affix-pick legend {
   font-size: 11px;
   line-height: 1.3;
 }
+
+/* Mail (views/MailView.tsx) */
+.sidebar a {
+  position: relative;
+}
+.unread.nav-badge {
+  position: static;
+  margin-left: auto;
+}
+.bottom-nav button {
+  position: relative;
+}
+.unread.nav-badge.dot-badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 16px);
+  min-width: 8px;
+  height: 8px;
+  padding: 0;
+}
+.mail-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr);
+  gap: 12px;
+  align-items: start;
+}
+.mail-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  display: grid;
+  gap: 2px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.mail-row {
+  width: 100%;
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.mail-row:hover {
+  background: var(--surface-2);
+}
+.mail-row.active {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text);
+}
+.mail-row.unread-mail {
+  color: var(--text);
+  font-weight: 650;
+}
+.mail-row-subject {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mail-row-meta {
+  font-size: 12px;
+  font-weight: 400;
+}
+.mail-from {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.mail-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0 0 12px;
+}
+.mail-h {
+  margin: 12px 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.mail-gifts {
+  display: grid;
+  gap: 6px;
+}
+.mail-gifts.claimed {
+  opacity: 0.6;
+}
+.mail-gift {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+@media (max-width: 700px) {
+  .mail-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mail-list {
+    max-height: 40vh;
+  }
+}

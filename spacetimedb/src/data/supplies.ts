@@ -4,7 +4,7 @@
 //
 // PERMANENT IDS: supply IDs are stored in `supply` rows, `character.elixirId`,
 // `raid_member.phialId`, settle and Abyss logs; never reuse or renumber them. Elixirs are
-// 300 + kind × 10 + grade, Phials 400 + kind × 10 + grade. Before
+// 300 + kind × 10 + grade, Phials 400 + kind × 10 + grade, Chronoshards 500 + grade. Before
 // 2026-10-19 elixirs were tiered: 100 + kind × 10 + tier, Greater (rare herb) 200 + kind
 // × 10 + tier; migrate.ts turned those into graded ones (`legacyElixir`).
 
@@ -194,6 +194,34 @@ export const UNIQUE_SALVAGE_VOIDGLASS = 2;
 export const GEODE_VOIDGLASS = 2;
 /** Chance per zone boss kill at `tier` of 1 Voidglass (0 below VOIDGLASS_FROM_TIER). */
 export const bossVoidglassChance = (tier: number) => (tier >= VOIDGLASS_FROM_TIER ? BOSS_VOIDGLASS_CHANCE * (tier - VOIDGLASS_FROM_TIER + 1) : 0);
+
+// ---------------------------------------------------------------- Chronoshards
+
+/**
+ * Using one plays `hours` of the current activity at once, the way time away does
+ * (offline formulas, not counted against the offline cap). Not crafted: System gifts
+ * (mail `supply:` tokens) and, later, ultra-rare loot.
+ */
+export interface ChronoshardDef {
+  id: number;
+  grade: number;
+  /** e.g. "Greater Chronoshard". */
+  name: string;
+  hours: number;
+}
+
+export const chronoshardSupplyId = (grade: number) => 500 + grade;
+
+/** Hours fast-forwarded, by grade. */
+export const CHRONOSHARD_HOURS = [1, 2, 4];
+
+export const CHRONOSHARDS: ChronoshardDef[] = GRADES.map(g => ({
+  id: chronoshardSupplyId(g.grade),
+  grade: g.grade,
+  name: `${g.prefix}Chronoshard`,
+  hours: CHRONOSHARD_HOURS[g.grade - 1],
+}));
+export const CHRONOSHARDS_BY_ID: ReadonlyMap<number, ChronoshardDef> = new Map(CHRONOSHARDS.map(c => [c.id, c]));
 
 /**
  * A pre-2026-10-19 elixir ID (100 + kind × 10 + tier, Greater 200 + …): the graded

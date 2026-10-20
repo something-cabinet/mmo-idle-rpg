@@ -539,6 +539,77 @@ export const chatMessage = table(
   }
 );
 
+/**
+ * Who sent a mail. Only the game sends mail for now (admins, through `sendMail` from the
+ * CLI); `Player` is for gifts later (trading.md). New variants go at the end.
+ */
+export const MailSender = t.enum('MailSender', {
+  System: t.unit(),
+  /** The sending character's ID. */
+  Player: t.u64(),
+});
+
+/** A count of one supply (data/supplies.ts). */
+export const SupplyCount = t.object('SupplyCount', {
+  supplyId: t.u16(),
+  count: t.u32(),
+});
+
+/**
+ * A message in a character's mailbox, with optional attachments taken by `claimMail`.
+ * Attached items are real `item` rows held in escrow (`characterId` = MAIL_ESCROW) until
+ * claimed, so a player gift can later move an existing item without copying it. Private;
+ * owners read theirs via `my_mail` and the attached items via `my_mail_items`.
+ */
+export const mail = table(
+  { name: 'mail' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    /** The `sent_mail` that sent it, for recalls; 0 for none. */
+    sentMailId: t.u64().index('btree'),
+    sender: MailSender,
+    /** Snapshot, so the mail still reads right after the sender is renamed or deleted. */
+    senderName: t.string(),
+    subject: t.string(),
+    body: t.string(),
+    sentAt: t.timestamp(),
+    /** After this the mail and its unclaimed attachments are deleted; none = kept until deleted. */
+    expiresAt: t.timestamp().optional(),
+    read: t.bool(),
+    /** The attachments were taken (always true once claimed, also for mail without any). */
+    claimed: t.bool(),
+    gold: t.u64(),
+    dust: t.u64(),
+    raidTokens: t.u64(),
+    materials: t.array(MaterialCount),
+    supplies: t.array(SupplyCount),
+    /** data/cosmetics.ts IDs; already unlocked ones are skipped on claim. */
+    cosmetics: t.array(t.u16()),
+    /** Escrowed `item` rows. */
+    itemIds: t.array(t.u64()),
+  }
+);
+
+/** One `sendMail` call: an audit log for admins (`spacetime sql`), and what `recallMail` recalls. Private. */
+export const sentMail = table(
+  { name: 'sent_mail' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    /** The admin who sent it. */
+    sentBy: t.identity(),
+    subject: t.string(),
+    /** The attachments as given to `sendMail` (mail.ts `parseGift`). */
+    gift: t.string(),
+    /** Empty: every character. */
+    to: t.array(t.string()),
+    recipients: t.u32(),
+    sentAt: t.timestamp(),
+    /** Unclaimed copies taken back by `recallMail`. */
+    recalled: t.u32(),
+  }
+);
+
 /** A raid fight, decided when the leader starts it (raid.ts `simulateRaid`); clients replay it from `setup`. */
 export const RaidFight = t.object('RaidFight', {
   startedAt: t.timestamp(),
@@ -710,6 +781,8 @@ export const spacetimedb = schema({
   linkOffer,
   chatMessage,
   chatCooldown,
+  mail,
+  sentMail,
   item,
   material,
   loadout,

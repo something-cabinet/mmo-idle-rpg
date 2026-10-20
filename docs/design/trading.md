@@ -157,6 +157,12 @@ another without limit.
 
 Holds items waiting for their owner: gifts, and market items returned to a full bag.
 
+> **Built since (2026-10-20) for system mail:** the `mail` table (reducers/mail.ts, README
+> "Sending mail"). It already has a `sender` (`System` / `Player(characterId)`) and holds
+> attached items in escrow as `item` rows with `characterId` = 0, so a gift can move the
+> existing row instead of copying it. Build gifts on it rather than the table below: add
+> `Gift` / `Returned` as needed, and the cap and claim-all rules here.
+
 `mailbox` (private, read via a `my_mailbox` view):
 
 | Column | Notes |

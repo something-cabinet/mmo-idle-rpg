@@ -58,11 +58,17 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
     if (ls.reduce((sum, l) => sum + l.elapsedMicros, 0n) >= MIN_AWAY_MICROS) setLogs(ls);
   }, [s, pres]);
   if (!logs) return null;
+  const elapsed = logs.reduce((sum, l) => sum + l.elapsedMicros, 0n);
+  return <SettleReport s={s} logs={logs} title={`While you were away (${duration(elapsed)})`} onClose={() => setLogs(undefined)} />;
+}
 
-  const close = () => setLogs(undefined);
+/**
+ * What one offline-style settle earned, from its log rows (newest first): the login
+ * settle, or a Chronoshard's hours.
+ */
+export function SettleReport({ s, logs, title, onClose: close }: { s: Snapshot; logs: SettleLog[]; title: string; onClose: () => void }) {
   const log = logs[0];
   const queues = logs.slice(1).reverse();
-  const elapsed = logs.reduce((sum, l) => sum + l.elapsedMicros, 0n);
   const xp = logs.reduce((sum, l) => sum + l.xp, 0n);
   const levelFrom = logs[logs.length - 1].levelFrom;
   const enemy = ENEMIES_BY_ID.get(log.enemyId)?.enemy;
@@ -84,7 +90,7 @@ export function AwayReport({ s, pres }: { s: Snapshot; pres: Presence }) {
   const scrapped = RARITIES.map((r, i) => [r, log.scrapped[i] ?? 0] as const).filter(([, n]) => n > 0);
   return (
     <Modal onClose={close}>
-      <CardHead title={`While you were away (${duration(elapsed)})`} />
+      <CardHead title={title} />
       {log.capped && <p className="muted">Offline progress is capped at {duration(offlineCapMicros(s.stats))}.</p>}
       {queues.map(q => <SkillLine key={String(q.id)} l={q} salvage />)}
       {queues.length > 0 && <p className="muted">The queue ran out, then:</p>}

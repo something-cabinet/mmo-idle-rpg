@@ -6,8 +6,9 @@ import { MATERIALS, MATERIALS_BY_ID } from '../../../spacetimedb/src/data/materi
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
 import { LISTED_RARITIES, rarityRank, salvageValue, salvageVoidglass } from '../../../spacetimedb/src/loot';
-import { ELIXIR_KILLS, SUPPLIES, phialText } from '../../../spacetimedb/src/data/supplies';
+import { CHRONOSHARDS, ELIXIR_KILLS, SUPPLIES, phialText, type ChronoshardDef } from '../../../spacetimedb/src/data/supplies';
 import { heldPhials } from '../PhialPicker';
+import { SettleReport } from '../AwayReport';
 import { SCRAP_YIELD, isScrapRarity, scrapMaterialId } from '../../../spacetimedb/src/data/recipes';
 
 /** Common to Legendary items of a tier with materials can be scrapped. */
@@ -109,7 +110,74 @@ function ConsumablesTab({ s }: { s: Snapshot }) {
         <p className="muted">No elixirs. Brew them with Alchemy; each lasts {ELIXIR_KILLS} kills.</p>
       )}
       <PhialList s={s} />
+      <ChronoshardList s={s} />
     </div>
+  );
+}
+
+/** Chronoshards in stock, best grade first. */
+const heldChronoshards = (s: Snapshot) => CHRONOSHARDS.filter(c => (s.supplies.get(c.id) ?? 0) > 0).sort((a, b) => b.grade - a.grade);
+
+const hoursText = (h: number) => `${h} hour${h === 1 ? '' : 's'}`;
+
+/** Chronoshards in stock: rare, so using one asks first, then shows what its hours earned. */
+function ChronoshardList({ s }: { s: Snapshot }) {
+  const held = heldChronoshards(s);
+  const [confirming, setConfirming] = useState<ChronoshardDef>();
+  /** The shard used and the newest log row before it: its report is the offline rows after. */
+  const [used, setUsed] = useState<{ shard: ChronoshardDef; afterLogId: bigint }>();
+  const reportLogs = used ? s.logs.filter(l => l.offline && l.id > used.afterLogId) : [];
+  // A production queue that ran out logs its part, then combat the rest, in one transaction.
+  const report = reportLogs.filter(l => l.at.microsSinceUnixEpoch === reportLogs[0]?.at.microsSinceUnixEpoch);
+  const activity = s.row.activitySkill !== 0 ? 'your life skill' : s.row.targetEnemyId !== 0 ? 'your current fight' : undefined;
+  if (!held.length && !used) return null;
+  return (
+    <>
+      <CardHead title="Chronoshards" />
+      <ul className="foes">
+        {held.map(c => (
+          <li key={c.id} className="foe">
+            <div className="foe-row">
+              <Icon name="hourglass" className="c-magic" />
+              <div className="foe-info">
+                <div className="foe-name">{c.name} <span className="muted">×{s.supplies.get(c.id)}</span></div>
+                <div className="foe-meta muted">Fast-forward {hoursText(c.hours)}</div>
+              </div>
+              <button className="btn small" onClick={() => setConfirming(c)}>Use</button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className="muted">Plays its hours of what you're doing at once, like time away. Doesn't count against the offline cap.</p>
+      {confirming && (
+        <Modal onClose={() => setConfirming(undefined)}>
+          <CardHead title={`Use ${confirming.name}?`} />
+          <p>
+            {activity
+              ? <>Fast-forwards {hoursText(confirming.hours)} of {activity}, as if you'd been away.</>
+              : <span className="c-bad">You have no target or life skill: the {hoursText(confirming.hours)} would pass idle.</span>}
+          </p>
+          <p className="muted">It can't be undone. {s.supplies.get(confirming.id) ?? 0} in stock.</p>
+          <div className="row">
+            <button className="btn ghost" onClick={() => setConfirming(undefined)}>Cancel</button>
+            <button
+              className="btn primary"
+              onClick={() => {
+                const shard = confirming;
+                const afterLogId = s.logs[0]?.id ?? 0n;
+                setConfirming(undefined);
+                call(s.conn.reducers.activateChronoshard({ supplyId: shard.id }).then(() => setUsed({ shard, afterLogId })));
+              }}
+            >
+              <Icon name="hourglass" />Use
+            </button>
+          </div>
+        </Modal>
+      )}
+      {used && report.length > 0 && (
+        <SettleReport s={s} logs={report} title={`${used.shard.name}: ${hoursText(used.shard.hours)} later`} onClose={() => setUsed(undefined)} />
+      )}
+    </>
   );
 }
 
@@ -323,7 +391,7 @@ function GearTab({ s }: { s: Snapshot }) {
 }
 
 export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
-  const elixirs = heldSupplies(s).reduce((n, sup) => n + (s.supplies.get(sup.id) ?? 0), 0);
+  const usable = [...heldSupplies(s), ...heldChronoshards(s)].reduce((n, sup) => n + (s.supplies.get(sup.id) ?? 0), 0);
   return (
     <>
       <ViewHeader title="Bag" icon="bag" />
@@ -331,7 +399,7 @@ export const BagView = memo(function BagView({ s }: { s: Snapshot }) {
         id="bag"
         tabs={[
           { key: 'gear', label: `Gear ${s.bag.length}/${s.row.bagSize}`, body: <GearTab s={s} /> },
-          { key: 'consumables', label: `Consumables${elixirs ? ` ${elixirs}` : ''}`, body: <ConsumablesTab s={s} /> },
+          { key: 'consumables', label: `Consumables${usable ? ` ${usable}` : ''}`, body: <ConsumablesTab s={s} /> },
           { key: 'materials', label: 'Materials', body: <MaterialsTab s={s} /> },
         ]}
       />

@@ -66,6 +66,9 @@ export const Effect = {
   Resonance: 53,
   FadingRally: 54,
   ParryAndThrust: 55,
+  DrawingFire: 56,
+  TwinFlame: 57,
+  StokeTheFire: 58,
 } as const;
 
 export type LegendaryGroup = 'Offense' | 'Defense' | 'Utility';
@@ -105,6 +108,12 @@ export const RESONANCE = 0.08;
 export const TRUE_SHOT = 1;
 /** Parry and Thrust: evasion rating per 1% crit chance. */
 export const PARRY_RATING = 4;
+/** Drawing Fire: × this threat against every enemy you aren't attacking (a duo raid boss). */
+export const DRAWING_FIRE = 1.5;
+/** Twin Flame: a single-target heal also heals the next most hurt ally for this share. */
+export const TWIN_FLAME = 0.5;
+/** Stoke the Fire: more damage per ally or enemy fallen in this fight. */
+export const STOKE = 0.25;
 
 function legendary(def: Omit<LegendaryDef, 'text'>): LegendaryDef {
   return { ...def, text: def.describe(def.perCopy) };
@@ -156,7 +165,7 @@ export const LEGENDARIES: LegendaryDef[] = [
     describe: a => `Below 30% HP, you take ${pc(a)} less damage.` }),
   legendary({ id: 35, name: 'Berserker', group: 'Defense', bonusStat: Stat.Might, perCopy: 0.03, cap: 0.09,
     describe: a => `${pc(a)} more damage per 10% of your max HP missing.` }),
-  legendary({ id: 36, name: 'Bulwark', group: 'Defense', bonusStat: Stat.EvasionRating, perCopy: 0.15, cap: 0.5,
+  legendary({ id: 36, name: 'Bulwark', group: 'Defense', bonusStat: Stat.ThreatPct, perCopy: 0.15, cap: 0.5,
     describe: a => `${pc(a)} chance to block half of each enemy hit.` }),
   legendary({ id: 49, name: 'Afterimage', group: 'Defense', bonusStat: Stat.EvasionRating, perCopy: 0.5, cap: 0.75,
     describe: a => `After you evade, the enemy's next hit deals ${pc(a)} less.` }),
@@ -208,6 +217,9 @@ export const UNIQUE_EFFECTS: EffectDef[] = [
   { id: 52, name: 'True Shot', text: `Your attacks never miss, and each 1% accuracy above your level's own gives ${TRUE_SHOT}% more damage.` },
   { id: 53, name: 'Resonance', text: `Each other unique you wear gives ${Math.round(RESONANCE * 100)}% more damage and ${Math.round(RESONANCE * 100)}% more max HP.` },
   { id: 54, name: 'Fading Rally', text: 'Each fight starts with 50% more attack speed, falling by 10% per attack, down to 20% less from the 8th attack on.' },
+  { id: 56, name: 'Drawing Fire', text: `${Math.round((DRAWING_FIRE - 1) * 100)}% more threat against every enemy you aren't attacking.` },
+  { id: 57, name: 'Twin Flame', text: `Your single-target heals also heal the next most hurt ally for ${Math.round(TWIN_FLAME * 100)}% of the heal.` },
+  { id: 58, name: 'Stoke the Fire', text: `${Math.round(STOKE * 100)}% more damage for each ally or enemy fallen in this fight.` },
   { id: 55, name: 'Parry and Thrust', text: `You can't crit normally: each 1% crit chance gives ${PARRY_RATING} evasion rating instead, and every attack you evade makes your next attack crit.` },
 ];
 

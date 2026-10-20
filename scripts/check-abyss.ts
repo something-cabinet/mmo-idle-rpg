@@ -12,6 +12,7 @@ import { SUPPLIES_BY_ID } from '../spacetimedb/src/data/supplies';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
 import { decodeStats, depthFoes, depthOdds, depthRng, encodeStats, mainDamageType, simulateDepth, weakerDefense } from '../spacetimedb/src/abyss';
 import { simulateFight } from '../spacetimedb/src/fight';
+import { Effect } from '../spacetimedb/src/data/legendary';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -182,6 +183,20 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
   check('the reference player clears depths 1–5 comfortably', at(1) >= 0.95 && at(5) >= 0.85, `${at(1).toFixed(2)} / ${at(5).toFixed(2)}`);
   const median = walls[walls.length >> 1];
   check('the reference player walls around depth 8–12', median >= 8 && median <= 12, `median ${median}`);
+}
+{
+  // Stoke the Fire: 25% more damage on each depth's second enemy, 50% on its boss (same seed, same swings).
+  const stoked = { ...hero, effects: new Map([...hero.effects, [Effect.StokeTheFire, 1]]) };
+  // Average normal hit per enemy of the depth, over many depths (each run's swings differ once kills come sooner).
+  const avgHit = (s: CombatStats, k: number) => {
+    const hits = Array.from({ length: 200 }, (_, i) => simulateDepth(s, 5, depthRng(9n, BigInt(i))))
+      .flatMap(r => r.fights[k]?.events.filter(e => e.by === 'you' && e.kind === 'hit').map(e => e.damage) ?? []);
+    return hits.reduce((a, b) => a + b, 0) / hits.length;
+  };
+  const ratio = [0, 1, 2].map(k => avgHit(stoked, k) / avgHit(hero, k));
+  check("Stoke the Fire: no bonus on a depth's first enemy", Math.abs(ratio[0] - 1) < 0.02, ratio[0].toFixed(3));
+  check('Stoke the Fire: +25% on the second, +50% on the boss', Math.abs(ratio[1] - 1.25) < 0.03 && Math.abs(ratio[2] - 1.5) < 0.03,
+    `${ratio[1].toFixed(2)} / ${ratio[2].toFixed(2)}`);
 }
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

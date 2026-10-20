@@ -19,7 +19,8 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
   unique-only effects (legendary.md "Unique effects": may have a trade-off, apply once)
   and legendary effects. A legendary effect on a unique counts as **one copy** toward
   stacking.
-- **Can't be crafted.** Salvage gives 60 Dust × 2.9^(T−1) at the unique's tier.
+- **Can't be crafted, but can be tempered** (only the base part grows: weapon hit, armor,
+  implicits; life-skills.md). Salvage gives 60 Dust × 2.9^(T−1) at the unique's tier.
 
 ## Drops
 
@@ -63,6 +64,9 @@ Handcrafted items, the rarest drops. Data in `spacetimedb/src/data/uniques.ts`.
 | 20 | T4 | **Eclipse Aegis** | Greatshield | Ironclad, Runeguard | Threat % (×1.5), armor %, resistance %. *Raid only: The Drowned Moon.* |
 | 21 | T4 | **Lantern of the Drowned Moon** | Healing Staff | Second Skin, Moonlit Vigil | Heal, heal % (×1.25), Mind. *Raid only: The Drowned Moon.* |
 | 22 | T4 | **Umbriel's Edge** | Umbral Katana (Split) | Rending, Spellbreaker | Armor pen %, magic pen %, crit damage. *Raid only: The Drowned Moon.* |
+| 28 | T5 | **Twinstep Sabatons** | Plate feet | Drawing Fire, Bulwark | Threat % (×1.5), armor %, resistance %. *Raid only: The Brothers' Forge.* |
+| 29 | T5 | **Sindri's Bellows** | Scepter | Twin Flame, Zealot's Oath | Heal, heal % (×1.25), Mind. *Raid only: The Brothers' Forge.* |
+| 30 | T5 | **Brokk's Last Ember** | Greatsword | Stoke the Fire | Physical damage %, crit damage, attack speed %. *Raid only: The Brothers' Forge.* |
 | 15 | T4 | **Moonlight Greatsword** | Greatsword | Moonlight | Magic damage %, Mind, crit damage. *Only from the Moonlit Champion (Moonlight Garden).* |
 | 16 | T4 | **Waxing Crescent** | Katana | Waxing Moon | Physical damage %, attack speed %, crit damage |
 | 17 | T4 | **Moonshadow Jerkin** | Leather chest | Moonshadow | Max HP, evasion rating %, Finesse |

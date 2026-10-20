@@ -97,8 +97,8 @@ Deep pays the bulk, and these stay a trickle.
 ### 1. Raid clears
 
 - Each rewarded clear (up to 3 per raid per day, as now) pays Voidglass along with the
-  tokens: **Wyrm Hollow 2, The Drowned Moon 4**, then +2 per later raid.
-- Up to **18 a day** with both raids. That's the largest source, which fits: raids use
+  tokens: **Wyrm Hollow 2, The Drowned Moon 4, The Brothers' Forge 6**, +2 per later raid.
+- Up to **36 a day** with all three raids. That's the largest source, which fits: raids use
   Phials, and their clears are already capped per day.
 - This is the "precious material" raids.md planned, so that note becomes Voidglass.
 

@@ -267,8 +267,9 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('temper +10 needs level 99', temperBlocker({ ...common, temper: 9 }, 98, true) === '+10 needs level 99' && temperBlocker({ ...common, temper: 9 }, 99, true) === undefined);
   check('fully tempered at +10', temperBlocker({ ...common, temper: 10 }, 99, true) === 'Fully tempered');
   check('no tier level rule: a T3 item tempers at level 10', temperBlocker({ ...common, tier: 3 }, 10, true) === undefined);
-  check("uniques and anomalies can't be tempered",
-    temperBlocker({ ...common, rarity: { tag: 'Unique' } }, 99, true) !== undefined && temperBlocker({ ...common, rarity: { tag: 'Anomaly' } }, 99, true) !== undefined);
+  check("uniques can be tempered, anomalies can't",
+    temperBlocker({ ...common, rarity: { tag: 'Unique' } }, 99, true) === undefined && temperBlocker({ ...common, rarity: { tag: 'Anomaly' } }, 99, true) !== undefined);
+  check("a corrupted unique still can't be tempered", temperBlocker({ ...common, rarity: { tag: 'Unique' }, corruption: 1 }, 99, true) !== undefined);
 
   const sword = makeItem(seededRng(3n), 1, 5, 'Rare');
   const plate = makeItem(seededRng(3n), 39, 5, 'Magic');
@@ -513,7 +514,7 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   const pooled = (n: number) => pool.materials.find(m => m.materialId === glass)?.count ?? 0;
   check('rollPool: 100k Selvara kills ~196 Voidglass, some Chronoshards', pooled(0) > 150 && pooled(0) < 250 && pool.supplies.some(x => x.supplyId === chronoshardSupplyId(1)));
   check('Uniques salvage into 2 Voidglass, Legendaries none', salvageVoidglass('Unique') === 2 && salvageVoidglass('Legendary') === 0);
-  check('raid clears pay Voidglass (2, then 4)', RAIDS.map(r => r.voidglass).join() === '2,4');
+  check('raid clears pay Voidglass (2, 4, then 6)', RAIDS.map(r => r.voidglass).join() === '2,4,6');
 }
 
 check('Chronoshards are supplies 501–503, fast-forwarding 30, 60 and 120 minutes', JSON.stringify(CHRONOSHARDS.map(c => [c.id, c.minutes, c.name])) ===

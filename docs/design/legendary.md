@@ -93,7 +93,7 @@ Discipline:     hit × (1 + a × max(Might, Finesse, Mind, Vitality) / 100)   (a
 | 33 | **Stoneskin** | Armor | Each enemy hit is reduced by a flat **1%** of your max HP (after mitigation) | 3% |
 | 34 | **Last Stand** | Vitality | Below 30% HP, you take **20%** less damage | 50% |
 | 35 | **Berserker** | Might | **3% more damage** per 10% of your max HP missing | +9% |
-| 36 | **Bulwark** | Evasion rating | **15%** chance to block half of each enemy hit | 50% |
+| 36 | **Bulwark** | Threat % | **15%** chance to block half of each enemy hit | 50% |
 | 49 | **Afterimage** | Evasion rating | After you evade, the enemy's **next hit deals 50% less** | 75% |
 | 37 | **Second Skin** | Max HP | Each fight starts with a shield of **15%** of your max HP | 50% |
 
@@ -188,6 +188,9 @@ this split keep working.
 | 51 | **Anvil Strength** | Your hits deal **+1 physical damage per point of armor** you have, but **25% less attack speed**. |
 | 52 | **True Shot** | Your attacks **never miss**, and each **1% accuracy above your level's own** gives **1% more damage**. |
 | 53 | **Resonance** | Each **other unique** you wear gives **8% more damage** and **8% more max HP**. |
+| 56 | **Drawing Fire** | **50% more threat** against every enemy **you aren't attacking** (a duo raid's other brother). |
+| 57 | **Twin Flame** | Your single-target heals also heal the **next most hurt ally for 50%** of the heal. |
+| 58 | **Stoke the Fire** | **25% more damage** for each **ally or enemy fallen** in this fight (raids, and the Moonwell Deep's depths). |
 | 54 | **Fading Rally** | Each fight starts with **50% more attack speed**, falling by **10% per attack**, down to **20% less** from the 8th attack on. Only the wearer's swings. |
 | 55 | **Parry and Thrust** | You **can't crit normally**: each **1% crit chance gives 4 evasion rating** instead, and **every attack you evade makes your next attack crit**. |
 

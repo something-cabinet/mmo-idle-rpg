@@ -6,7 +6,7 @@ not decisions.
 | Doc | Covers |
 |---|---|
 | [combat.md](combat.md) | Auto-combat model, formulas, viability, settlement |
-| [raids.md](raids.md) | Raid bosses: party of 4 online, threat, NPC hires, rewards and daily lockout |
+| [raids.md](raids.md) | Raid bosses: party of 4 online, threat, NPC hires, rewards and daily lockout; Wyrm Hollow (T3), The Drowned Moon (T4), the duo The Brothers' Forge (T5) |
 | [attributes.md](attributes.md) | Primary attributes, combat stats, stat IDs |
 | [equipment.md](equipment.md) | Slots, hands, weapon/armor bases, storage, loadouts |
 | [bases.md](bases.md) | Base templates and names per tier |
@@ -39,6 +39,7 @@ not decisions.
 
 | Date | Decision |
 |---|---|
+| 2026-10-20 | Raid 3 **The Brothers' Forge** (raids.md), opened by the first Durgrim kill: a duo boss, Brokk (physical, Armored, Anvil Slam) and Sindri (magic, Warded, Fire Bellows). The leader assigns each seat to a brother; attacking one draws his attacks (+20 threat). When one falls the other absorbs him for 5 s and empowers (Molten Hammer: the slam hits everyone, slower; Anvil Hide: armor and resistance 900) unless killed in time. **Brothers in arms**: while both stand each hits at half strength, so a balanced split beats focusing one (simulated 74% vs 47–49%). Enrage 1:55. Six Forgefire variants, three raid uniques with Drawing Fire, Twin Flame and Stoke the Fire (effects 56–58; Stoke also works in the Moonwell Deep). The raid sim takes any number of bosses; Wyrm Hollow and The Drowned Moon play as before. |
 | 2026-10-20 | T5 off-hand uniques (uniques.md): **Thane's Failing Breath** (War Horn, Fading Rally: 50% more attack speed on the first attack, 10% less per attack, down to 20% less from the 8th; the wearer only) and **Glimmerguard** (Main Gauche, Parry and Thrust: no normal crits, each 1% crit chance gives 4 evasion rating, the attack after a dodge crits). Effects 54–55, in the matchup formulas and the fight, raid and duel sims. |
 | 2026-10-20 | T5 uniques (uniques.md): **Forgefather's Maul** (Anvil Strength: +1 physical damage per point of armor, 25% less attack speed), **Veinseeker** (True Shot: never misses; each 1% accuracy above your level's own gives 1% more damage), **Shardbound Band** (Resonance: 8% more damage and max HP per other unique worn). Effects 51–53. Uniques now carry `uniqueId` into combat so Resonance can count them. |
 | 2026-10-20 | **The T5 step**: enemy HP and DPS × 1.1 from T5 on, on top of the × 1.05 climb (`TIER_STEP`), so T5, which opens the Chaos Dungeon, is the first wall. Simulated: the hardest regular enemy 84% won at T4 → 22% at T5 with farming gear; well-geared players beat Selvara 25%, Durgrim 4%. T5's map is a single road down a terraced mine pit to the lair at the bottom, instead of a branching climb. |

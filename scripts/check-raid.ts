@@ -6,7 +6,8 @@ import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equi
 import { NPC_POWER, RAIDS, RAIDS_BY_ID, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, phaseAt, type RaidDef } from '../spacetimedb/src/data/raids';
 import { raidUniques } from '../spacetimedb/src/data/uniques';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
-import { aggroShares, clearsToday, decodeSetup, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, rollRaidItem, simulateRaid, type RaidSetup } from '../spacetimedb/src/raid';
+import { Effect } from '../spacetimedb/src/data/legendary';
+import { aggroShares, balancedTargets, clearsToday, decodeSetup, duoFallTimes, duoThreat, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, rollRaidItem, simulateRaid, threatWeight, type RaidFighter, type RaidSetup } from '../spacetimedb/src/raid';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -16,8 +17,9 @@ function check(name: string, ok: boolean, detail = '') {
 
 const raid = RAIDS_BY_ID.get(1)!;
 const moon = RAIDS_BY_ID.get(2)!;
+const forge = RAIDS_BY_ID.get(3)!;
 /** The level each raid is tested at: a few levels past its zone boss, a player who has just cleared the tier. */
-const LEVELS: Record<number, number> = { 1: 38, 2: 48 };
+const LEVELS: Record<number, number> = { 1: 38, 2: 48, 3: 58 };
 const MAIN = SLOTS.indexOf('MainHand');
 
 /**
@@ -43,10 +45,15 @@ function character(seed: number, role: 'tank' | 'healer' | 'dps', r: RaidDef = r
   return combatStats(level, gear);
 }
 
-const party = (stats: CombatStats[], npcs = 0, r: RaidDef = raid): RaidSetup => {
-  const fighters = stats.map((s, i) => ({ characterId: BigInt(i + 1), name: `P${i + 1}`, stats: s }));
+/** A party of `stats` and `npcs` hired NPCs. A duo: assigned by `targets` (one per fighter), else balanced (`balancedTargets`). */
+const party = (stats: CombatStats[], npcs = 0, r: RaidDef = raid, targets?: number[]): RaidSetup => {
+  const fighters: RaidFighter[] = stats.map((s, i) => ({ characterId: BigInt(i + 1), name: `P${i + 1}`, stats: s }));
   const npc = npcStats(r);
   for (let i = 0; i < npcs; i++) fighters.push({ characterId: 0n, name: `NPC ${i + 1}`, stats: npc });
+  if (r.duo) {
+    const t = targets ?? balancedTargets(r, fighters.map(f => f.stats));
+    fighters.forEach((f, i) => (f.target = t[i]));
+  }
   return { raidId: r.id, fighters };
 };
 
@@ -68,11 +75,11 @@ const again = simulateRaid(four, raid, raidRng(5n, 1000n));
 check('same seed, same fight', one.end === again.end && one.won === again.won && one.events.length === again.events.length);
 const decoded = simulateRaid(decodeSetup(encodeSetup(four)), raid, raidRng(5n, 1000n));
 check('a stored setup replays the same fight', decoded.end === one.end && decoded.won === one.won && decoded.events.length === one.events.length &&
-  decoded.events.every((e, i) => e.bossHp === one.events[i].bossHp));
+  decoded.events.every((e, i) => e.bossHp.every((h, j) => h === one.events[i].bossHp[j])));
 const many = Array.from({ length: 100 }, (_, i) => simulateRaid(four, raid, raidRng(6n, BigInt(i))));
 check(`every fight ends by the enrage (${raid.enrageSeconds} s)`, many.every(r => r.end <= raid.enrageSeconds));
 check('HP stays within 0 and max', many.every(r => r.events.every(e => e.bossHp >= 0 && e.hp.every((h, i) => h >= 0 && h <= r.maxHp[i] + 1e-6))));
-check('a win ends with the boss dead', many.filter(r => r.won).every(r => r.events.at(-1)!.bossHp <= 0));
+check('a win ends with the boss dead', many.filter(r => r.won).every(r => r.events.at(-1)!.bossHp.every(h => h <= 0)));
 check('a loss ends with everyone dead, or at the enrage', many.filter(r => !r.won).every(r => r.enraged || r.events.at(-1)!.hp.every(h => h <= 0)));
 check('the dead never swing', many.every(r => r.events.every((e, k) => e.by < 0 || k === 0 || r.events[k - 1].hp[e.by] > 0)));
 // Threat: every boss attack picks a living fighter weighted by e^(THREAT_FOCUS × threat).
@@ -145,9 +152,9 @@ check("an NPC doesn't depend on the party", encodeSetup({ raidId: 1, fighters: [
   // Moonfall is shared by the living.
   const falls = fights.flatMap(r => r.events.flatMap((e, k) => (e.kind === 'aoe' ? [{ e, before: r.events[k - 1] ?? e }] : [])));
   check('Moonfall splits its damage among the living', falls.length > 0 &&
-    falls.every(({ e, before }) => Math.abs(e.damage * before.hp.filter(h => h > 0).length - moon.aoe.damage) < 1e-6));
+    falls.every(({ e, before }) => Math.abs(e.damage * before.hp.filter(h => h > 0).length - moon.aoe!.damage) < 1e-6));
   const duo = simulateRaid(party(mp.slice(0, 2), 0, moon), moon, raidRng(7n, 0n)).events.find(e => e.kind === 'aoe');
-  check('Moonfall hits harder the fewer are alive', duo?.damage === moon.aoe.damage / 2);
+  check('Moonfall hits harder the fewer are alive', duo?.damage === moon.aoe!.damage / 2);
   // Split weapons (the Umbral variants): half the hit physical, half magic; better against Umbriel than one damage type.
   const lone = (baseId: number) => {
     const gear: (OwnedItem | undefined)[] = SLOTS.map(() => undefined);
@@ -167,6 +174,86 @@ check("an NPC doesn't depend on the party", encodeSetup({ raidId: 1, fighters: [
     Math.abs(mean(u) / 1.5 / (mean(k) / 1.4) - 1) < 0.05 && Math.abs(u[0] - u[1]) < 0.2 * Math.abs(k[0] - k[1]),
     `plain ${k.map(x => x.toFixed(0)).join('/')}, split ${u.map(x => x.toFixed(0)).join('/')}`);
   check('Wyrm Hollow has no phases', !raid.phases && bossPhases(raid).length === 1 && phaseAt(raid, 100) === 0);
+}
+
+
+// ---------------------------------------------------------------- the duo (The Brothers' Forge)
+
+{
+  const d = forge.duo!;
+  const fp = roles4(forge);
+  const split = balancedTargets(forge, fp);
+  const fights = Array.from({ length: 80 }, (_, i) => simulateRaid(party(fp, 0, forge), forge, raidRng(11n, BigInt(i))));
+  check('both brothers attack', fights.every(r => r.events.some(e => e.by === -1 && e.boss === 0) && r.events.some(e => e.by === -1 && e.boss === 1)));
+  check('the balanced split puts fighters on both brothers', split.includes(0) && split.includes(1), split.join(''));
+  // Every fighter hits its own brother until he falls, then the other.
+  check('fighters hit their assigned brother until he falls', fights.every(r => {
+    const fall = r.events.find(e => e.kind === 'fall');
+    return r.events.every(e => e.by < 0 || (fall && e.t > fall.t) || e.boss === split[e.by]);
+  }));
+  check('…then turn on the other one', fights.every(r => {
+    const fall = r.events.find(e => e.kind === 'fall');
+    return !fall || r.events.every(e => e.by < 0 || e.t <= fall.t || e.boss !== fall.boss);
+  }));
+  // Absorption: empowered exactly absorbSeconds after the first fall, unless the survivor fell first.
+  const empowers = fights.flatMap(r => {
+    const fall = r.events.find(e => e.kind === 'fall');
+    const emp = r.events.find(e => e.kind === 'empower');
+    return fall ? [{ r, fall, emp }] : [];
+  });
+  check(`the survivor empowers ${d.absorbSeconds} s after his brother falls, if still standing`, empowers.length > 0 && empowers.every(({ r, fall, emp }) => {
+    const second = r.events.filter(e => e.kind === 'fall')[1];
+    const killedInTime = r.won && r.events.at(-1)!.t <= fall.t + d.absorbSeconds;
+    return emp ? Math.abs(emp.t - fall.t - d.absorbSeconds) < 1e-9 && emp.boss !== fall.boss : killedInTime || !second || second.t <= fall.t + d.absorbSeconds || !r.won;
+  }));
+  // A fight forced into each empowerment: everyone on one brother, so the other empowers.
+  const forced = (b: number) => Array.from({ length: 40 }, (_, i) => simulateRaid(party(fp, 0, forge, fp.map(() => b)), forge, raidRng(12n, BigInt(i))));
+  const brokkLast = forced(1); // Sindri falls first: Brokk empowers (Molten Hammer)
+  const sindriLast = forced(0); // Brokk falls first: Sindri empowers (Anvil Hide)
+  const molten = brokkLast.flatMap(r => {
+    const emp = r.events.find(e => e.kind === 'empower');
+    return emp ? r.events.filter(e => e.boss === 0 && (e.kind === 'aoe' || e.kind === 'special') && e.t > emp.t).map(e => ({ e, emp })) : [];
+  });
+  check('Molten Hammer: Brokk\'s slam hits everyone after he empowers, on its slower timer', molten.length > 0 &&
+    molten.every(({ e }) => e.kind === 'aoe') && molten.every(({ e, emp }) => Math.abs(((e.t - emp.t) / d.bosses[0].empowered.signature!.every!) % 1) < 1e-6));
+  const slams = fights.flatMap(r => r.events.filter(e => e.boss === 0 && e.kind === 'special'));
+  check('Anvil Slam hits one fighter before', slams.length > 0 && slams.every(e => e.target >= 0));
+  // Anvil Hide: a physical dealer hits Sindri far softer once he's armored.
+  const phys = fp.findIndex(st => st.sources[0] && st.sources[0].heal === 0 && st.sources[0].hit.Physical > st.sources[0].hit.Magic);
+  const hide = sindriLast.flatMap(r => {
+    const emp = r.events.find(e => e.kind === 'empower');
+    const fall = r.events.find(e => e.kind === 'fall');
+    if (!emp || !fall) return [];
+    const hits = (from: number, to: number) => r.events.filter(e => e.by === phys && e.kind === 'hit' && e.boss === 1 && e.t > from && e.t <= to).map(e => e.damage);
+    return [{ before: hits(fall.t, emp.t), after: hits(emp.t, Infinity) }];
+  });
+  const before = mean(hide.flatMap(h => h.before));
+  const after = mean(hide.flatMap(h => h.after));
+  check('Anvil Hide: physical damage on Sindri drops once he empowers', phys >= 0 && after < 0.75 * before, `${before.toFixed(0)} → ${after.toFixed(0)}`);
+  // Threat: attacking a brother draws his attention (focusThreat); Drawing Fire draws the other one.
+  const tankStats = { ...fp[0], threat: 0.6 };
+  const dps = { ...fp[2], threat: 0.15 };
+  const share = (r: RaidDef, stats: CombatStats[], targets: number[], b: number) => {
+    const w = stats.map((st, i) => threatWeight(duoThreat(r, st, targets[i], b)));
+    return w[0] / w.reduce((a, x) => a + x, 0);
+  };
+  const ts = [tankStats, dps, dps, dps];
+  const tg = [1, 0, 0, 1];
+  const plain = share(forge, ts, tg, 0);
+  const drawing = share(forge, [{ ...tankStats, effects: new Map([[Effect.DrawingFire, 1]]) }, dps, dps, dps], tg, 0);
+  check('the brother a tank doesn\'t attack goes for those who do', share(forge, ts, tg, 1) > 0.8 && plain < 0.7, `${share(forge, ts, tg, 1).toFixed(2)} / ${plain.toFixed(2)}`);
+  check('Drawing Fire: the tank holds the brother it isn\'t attacking', drawing > plain + 0.15, `${plain.toFixed(2)} → ${drawing.toFixed(2)}`);
+  check('one boss: threat as always (no focus)', duoThreat(raid, tankStats, 0, 0) === tankStats.threat);
+  // Stoke the Fire: 25% more damage per fallen fighter or boss.
+  const stoker = { ...fp[2], effects: new Map([...fp[2].effects, [Effect.StokeTheFire, 1]]) };
+  const sf = Array.from({ length: 30 }, (_, i) => simulateRaid(party([fp[0], fp[1], stoker, fp[3]], 0, forge), forge, raidRng(13n, BigInt(i))));
+  const stokeHits = (afterFall: boolean) => mean(sf.flatMap(r => {
+    const fall = r.events.find(e => e.kind === 'fall');
+    if (!fall) return [];
+    return r.events.filter(e => e.by === 2 && e.kind === 'hit' && e.boss === fall.boss ^ 1 && (afterFall ? e.t > fall.t && e.hp.every(h => h > 0) : e.t < fall.t)).map(e => e.damage);
+  }));
+  check('Stoke the Fire: more damage once a brother has fallen', stokeHits(true) > 1.1 * stokeHits(false), `${stokeHits(false).toFixed(0)} → ${stokeHits(true).toFixed(0)}`);
+  check('the fall-time estimate: nobody on a brother never kills him', duoFallTimes(forge, fp, fp.map(() => 0))[1] === Infinity);
 }
 
 // ---------------------------------------------------------------- loot
@@ -242,6 +329,18 @@ function balance(r: RaidDef) {
   check('The Drowned Moon: hiring NPCs into empty seats helps a little', shortHired >= short - 0.02 && pairHired >= pair && pairHired < short,
     `${shortHired.toFixed(2)} / ${pairHired.toFixed(2)}`);
   check('The Drowned Moon: an NPC is worse than a player', shortHired < full);
+}
+{
+  // The T5 duo: a balanced split usually wins; all on one brother lets the other empower, and wins less.
+  const { full, short, pair } = balance(forge);
+  const parties = Array.from({ length: 48 }, (_, p) => roles4(forge, 100 + p * 4));
+  const oneSided = (b: number) => mean(parties.map((p, i) => raidOdds(party(p, 0, forge, p.map(() => b)), forge, BigInt(i))));
+  const [allBrokk, allSindri] = [oneSided(0), oneSided(1)];
+  console.log(`  The Brothers' Forge, all on one brother: Brokk first ${allBrokk.toFixed(2)} · Sindri first ${allSindri.toFixed(2)}`);
+  check("The Brothers' Forge: a full party on a balanced split usually wins", full >= 0.65 && full <= 0.9, full.toFixed(2));
+  check("The Brothers' Forge: letting a brother empower wins less", Math.max(allBrokk, allSindri) < full - 0.1, `${allBrokk.toFixed(2)} / ${allSindri.toFixed(2)} vs ${full.toFixed(2)}`);
+  check("The Brothers' Forge: a party one short wins far less often", short <= full - 0.2, `${short.toFixed(2)} vs ${full.toFixed(2)}`);
+  check("The Brothers' Forge: two players alone almost never win", pair < 0.1, pair.toFixed(2));
 }
 check('every raid has a test level', RAIDS.every(r => LEVELS[r.id] !== undefined));
 

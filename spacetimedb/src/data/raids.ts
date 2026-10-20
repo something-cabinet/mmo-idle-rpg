@@ -37,6 +37,49 @@ export interface RaidPhase {
   damageType: 'Physical' | 'Magic';
 }
 
+/**
+ * A boss's special attack: every `every` seconds, `damage` (before mitigation) to every living
+ * fighter (`aoe`), or to one fighter picked by threat. It can't be dodged. `icon` names its UI icon.
+ */
+export interface RaidSignature {
+  name: string;
+  icon: string;
+  every: number;
+  damage: number;
+  damageType: 'Physical' | 'Magic';
+  aoe: boolean;
+}
+
+/**
+ * One brother of a duo raid (raids.md, "Raid 3"). When the other falls, this one absorbs him for
+ * `DuoDef.absorbSeconds`; if it's still standing then, it becomes `empowered`: one twist.
+ */
+export interface DuoBoss {
+  enemy: EnemyDef;
+  signature: RaidSignature;
+  empowered: {
+    name: string;
+    /** What changes, for the Raids page. */
+    text: string;
+    signature?: Partial<RaidSignature>;
+    /** Share of his max HP he heals as he empowers. */
+    heal?: number;
+    armor?: number;
+    resistance?: number;
+  };
+}
+
+/** Two bosses at once: each fighter attacks the one the leader assigned (`RaidFighter.target`). */
+export interface DuoDef {
+  bosses: [DuoBoss, DuoBoss];
+  /** Seconds the survivor spends absorbing his fallen brother: kill him in time and he never empowers. */
+  absorbSeconds: number;
+  /** Threat added against the brother a fighter attacks (you hit him, he hits back). */
+  focusThreat: number;
+  /** × each brother's damage (attacks and signature) while the other still stands: alone, he hits at full strength. */
+  together: number;
+}
+
 export interface RaidDef {
   id: number;
   name: string;
@@ -45,13 +88,16 @@ export interface RaidDef {
   tier: number;
   /** Open to characters who have killed this zone's boss. */
   unlockZoneId: number;
-  /** Its `drops` are the bases its Epic and Legendary drops pick from. XP and gold are per kill. */
+  /** Its `drops` are the bases its Epic and Legendary drops pick from. XP and gold are per kill. A duo's first brother. */
   boss: EnemyDef;
+  /** A duo raid: two bosses at once (`boss` is the first's enemy); `aoe` and `phases` are unused. */
+  duo?: DuoDef;
   /**
    * Every `every` seconds the boss hits every living fighter for `damage` (before their mitigation), or with
    * `split`, `damage` shared evenly by the living. It can't be dodged. `icon` names its UI icon.
+   * A duo raid has none: each brother has its own signature.
    */
-  aoe: { every: number; damage: number; damageType: 'Physical' | 'Magic'; name: string; icon: string; split?: boolean };
+  aoe?: { every: number; damage: number; damageType: 'Physical' | 'Magic'; name: string; icon: string; split?: boolean };
   /**
    * Lunar Phases: the boss cycles through `list` from the first, `every` seconds each, and takes each phase's
    * defenses and damage type in turn (its `boss` stats are the first phase's).
@@ -89,6 +135,16 @@ export const RAID_RARITY_ODDS = { Epic: 0.75, Legendary: 0.22, Unique: 0.03 } as
 
 // Every zone base plus the raid's own: a raid can drop gear for any slot.
 const raidDrops = (raidId: number) => [...ZONE_BASES, ...BASE_LIST.filter(b => b.raidId === raidId)].map(b => b.id);
+
+/** A duo raid's second brother has enemy ID 9200 + raid ID (the first is 9000 + raid ID, like every raid boss). */
+const BROKK: EnemyDef = {
+  id: 9003, name: 'Brokk, the Hammer', level: 60, damageType: 'Physical', defense: 'Armored', speed: 0.5,
+  hp: 34000, dps: 190, armor: 380, resistance: 70, xp: 300000, gold: 220000, drops: raidDrops(3), materials: [], boss: true,
+};
+const SINDRI: EnemyDef = {
+  id: 9203, name: 'Sindri, the Bellows', level: 60, damageType: 'Magic', defense: 'Warded', speed: 1.2,
+  hp: 30000, dps: 170, armor: 70, resistance: 380, xp: 0, gold: 0, drops: [], materials: [], boss: true,
+};
 
 export const RAIDS: RaidDef[] = [
   {
@@ -148,6 +204,49 @@ export const RAIDS: RaidDef[] = [
       attacksPerSec: 1.16, physicalPerSec: 96, magicPerSec: 96, critChance: 0.1, critMult: 1.09, armorPen: 0.06, magicPen: 0.04,
     },
   },
+  {
+    id: 3,
+    name: "The Brothers' Forge",
+    blurb: "Beneath Brightvein Hold lies the great forge where brightsteel was first smelted from the shard's light. Two dwarven smith brothers still guard it, bound by the Thane's oath.",
+    tier: 5,
+    unlockZoneId: 5,
+    boss: BROKK,
+    duo: {
+      bosses: [
+        {
+          enemy: BROKK,
+          signature: { name: 'Anvil Slam', icon: 'hammer', every: 15, damage: 1000, damageType: 'Physical', aoe: false },
+          // A tank-buster becomes a raid-wide nuke, but slower.
+          empowered: {
+            name: 'Molten Hammer',
+            text: 'Anvil Slam hits every living fighter, every 25 s instead of 15',
+            signature: { name: 'Molten Hammer', every: 25, aoe: true, icon: 'flame', damage: 700 },
+          },
+        },
+        {
+          enemy: SINDRI,
+          signature: { name: 'Fire Bellows', icon: 'flame', every: 12, damage: 210, damageType: 'Magic', aoe: true },
+          // No weak side left: a penetration and damage race.
+          empowered: { name: 'Anvil Hide', text: 'He becomes Armored as well as Warded: high armor and high resistance', armor: 900, resistance: 900 },
+        },
+      ],
+      absorbSeconds: 5,
+      focusThreat: 0.2,
+      together: 0.5,
+    },
+    enrageSeconds: 115,
+    clearsPerDay: 3,
+    itemsPerClear: 3,
+    ownBaseShare: 1 / 2,
+    tokens: 20,
+    voidglass: 6,
+    hireCost: 12000,
+    // The average of level-58 characters with random T5 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
+    reference: {
+      level: 58, maxHp: 1100, regen: 4, armor: 95, resistance: 103, evasionRating: 40, threat: 0.34,
+      attacksPerSec: 1.1, physicalPerSec: 167, magicPerSec: 167, critChance: 0.1, critMult: 1.1, armorPen: 0.06, magicPen: 0.05,
+    },
+  },
 ];
 
 export const RAIDS_BY_ID: ReadonlyMap<number, RaidDef> = new Map(RAIDS.map(r => [r.id, r]));
@@ -155,6 +254,19 @@ export const RAIDS_BY_ID: ReadonlyMap<number, RaidDef> = new Map(RAIDS.map(r => 
 /** The phase the boss is in at `t` seconds (its index in `phases.list`); 0 without phases or before the fight. */
 export const phaseAt = (raid: RaidDef, t: number): number =>
   raid.phases ? Math.floor(Math.max(0, t) / raid.phases.every) % raid.phases.list.length : 0;
+
+/** Every boss of a raid: the duo's two brothers, or just `boss`. */
+export const raidBosses = (raid: RaidDef): EnemyDef[] => (raid.duo ? raid.duo.bosses.map(b => b.enemy) : [raid.boss]);
+
+/** A duo brother as he is once empowered (its sprite and stats). */
+export const empoweredBoss = (b: DuoBoss): EnemyDef => ({ ...b.enemy, id: empoweredArtId(b.enemy.id), name: `${b.enemy.name.split(',')[0]}, ${b.empowered.name}`,
+  ...(b.empowered.armor !== undefined && { armor: b.empowered.armor }), ...(b.empowered.resistance !== undefined && { resistance: b.empowered.resistance }) });
+
+/** The sprite key of a duo brother's empowered form: its enemy ID × 10 + 1 (like the Deep Warden's variants). */
+export const empoweredArtId = (enemyId: number) => enemyId * 10 + 1;
+
+/** A duo brother's signature once empowered. */
+export const empoweredSignature = (b: DuoBoss): RaidSignature => ({ ...b.signature, ...b.empowered.signature });
 
 /** The boss as it is in each phase (just `boss` without phases): what DPS against it is measured on. */
 export const bossPhases = (raid: RaidDef): EnemyDef[] =>

@@ -46,7 +46,7 @@ const RULES =
   'Solid flat magenta background (#FF00FF) everywhere, no gradient, no floor, no cast shadows, no frame.';
 
 /** Every word a tier's item names start with: the tier lines (bases.ts), the gems, raid variants. */
-type TierWord = (typeof TRACKS)[keyof typeof TRACKS][number] | (typeof GEMS)[keyof typeof GEMS][number] | 'Rime' | 'Umbral';
+type TierWord = (typeof TRACKS)[keyof typeof TRACKS][number] | (typeof GEMS)[keyof typeof GEMS][number] | 'Rime' | 'Umbral' | 'Forgefire';
 
 /** A tier's main colors (most of the item first, then trim and accents) and its material. */
 interface Look { colors: string; look: string }
@@ -120,6 +120,7 @@ const TIERS: Record<TierWord, Look> = {
   // raid variants
   Rime: { colors: 'pale ice blue, white, silver', look: 'frost-forged steel and clear ice crystal, frosted edges, icicle points' },
   Umbral: { colors: 'bright silver, jet black, deep indigo', look: 'split down the middle: polished moon-silver on one side, starry black void on the other, a thin eclipse ring inlaid where they meet' },
+  Forgefire: { colors: 'blackened iron, glowing ember orange, warm bronze', look: 'hammered blackened iron with glowing ember-orange seams like metal fresh from the forge, heavy bronze rivets and dwarven runes' },
 };
 
 /** How much detail and ornament an item carries, by tier (1 to MAX_TIER): plain and crude at
@@ -352,6 +353,24 @@ const UNIQUE_LOOKS: Record<number, UniqueLook> = {
       'from the guard to halfway up, its trailing edge ragged like a torn crescent sail; ' +
       'a round guard shaped like an eclipse: a black disc ringed by a thin silver corona, flanked on both sides by layered silver gill flaps ' +
       'and two small swept-back dark teal fins; a grip wrapped in dark scaled fish skin',
+  },
+  // The Brothers' Forge (raid 3, T5): the smith brothers Brokk (hammer) and Sindri (bellows and fire).
+  28: {
+    type: 'a pair of heavy plate sabatons (armored boots) side by side, front three-quarter view',
+    colors: 'blackened iron, glowing ember orange, polished brightsteel',
+    look: 'thick overlapping plates of blackened iron, the left boot with a small anvil-shaped knee guard, the right with a bellows-shaped one, ' +
+      'glowing ember-orange seams between the plates, heavy bronze rivets',
+  },
+  29: {
+    type: 'a one-handed scepter standing upright, the head at the top',
+    colors: 'warm bronze, glowing ember orange, soot black',
+    look: 'the head a small ornate forge bellows of bronze and dark leather, glowing embers drifting from its nozzle, a slim bronze haft wrapped in soot-dark leather',
+  },
+  30: {
+    type: 'a huge two-handed greatsword, held point up, diagonal with the handle at the bottom left and the point at the top right',
+    colors: 'blackened iron, glowing ember orange and yellow, dark bronze',
+    look: 'a broad heavy blade of blackened iron with a single glowing ember-orange crack running down its middle like a coal that never cooled, ' +
+      'a hammer-head crossguard, a dark bronze grip wrapped in leather',
   },
   // T5: Brightvein Hold, a dwarven mine whose ore veins glow from a fallen shard.
   23: {

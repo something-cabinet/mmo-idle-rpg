@@ -132,6 +132,8 @@ from it at the raid's tier. Variant base IDs start at 1000.
 | Umbral Fire Staff | Fire Staff | The Drowned Moon (T4) | **Split** | 18.75 / 132 (T4) | 0.9 | 119 (T4) | 5% | +15T accuracy (T4: 60), +15 Mind (P; T4: 10) |
 | Umbral Scepter | Scepter | The Drowned Moon (T4) | **Split** | 9.1 / 64 (T4) | 0.9 | 58 (T4) | 5% | Heal 6.8 per hit (T4: 16), single target; +15T accuracy (T4: 60) |
 | Umbral Crossbow | Crossbow | The Drowned Moon (T4) | **Split** | 18 / 127 (T4) | 0.8 | 102 (T4) | 12% | +40% crit damage (P), +25T accuracy (T4: 100) |
+| Forgefire Mace | Mace | The Brothers' Forge (T5) | Physical | 13.5 | 0.7 | | 5% | +15% armor pen (P), +6T armor: a slower, heavier hit that guards |
+| Forgefire Wand | Wand | The Brothers' Forge (T5) | Magic | 5.75 | 1.5 | | 6% | +15% magic pen (P), +4T resistance: a little less hit |
 
 | Variant | Type | Source | Implicits (T1 template; T3) |
 |---|---|---|---|
@@ -141,6 +143,10 @@ from it at the raid's tier. Variant base IDs start at 1000.
 | Umbral Greatshield | Greatshield | The Drowned Moon (T4) | 6T armor, 6T resistance, 7 max HP (life), +25% threat (P), −10% attack speed; T4: 24, 24, 29, 17% |
 | Umbral Ring | Ring · Amber | The Drowned Moon (T4) | +10% armor (P), +10% resistance (P); T4: 7%, 7% |
 | Umbral Amulet | Amulet · Ruby | The Drowned Moon (T4) | +15% physical damage (P), +15% magic damage (P); T4: 10%, 10% |
+| Forgefire Shield | Shield | The Brothers' Forge (T5) | 6T armor, 6T resistance, 5 max HP (life), +20% threat (P) |
+| Forgefire Tome | Tome | The Brothers' Forge (T5) | +20 Mind (P), +15% heal (P) |
+| Forgefire Ring | Ring · Amber | The Brothers' Forge (T5) | +10% max HP (P), +10% threat (P) |
+| Forgefire Amulet | Amulet · Ruby | The Brothers' Forge (T5) | +10% armor pen (P), +10% magic pen (P) |
 
 Each Rime variant trades something its type has for resistance against Frost Breath, so
 none is a straight upgrade. Named "Rime", apart from the Wyrmscale leather track and the

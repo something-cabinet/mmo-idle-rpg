@@ -81,6 +81,8 @@ export interface FightMods {
   healMult?: number;
   /** Share of each of your hits that comes back to you as damage (after your mitigation). */
   reflect?: number;
+  /** × your hits (Stoke the Fire in the Moonwell Deep: more for each enemy already fallen this depth). */
+  damageMult?: number;
 }
 
 export interface Fight {
@@ -250,7 +252,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       const rage = berserk > 0 ? 1 + (berserk * (s.maxHp - youHp)) / s.maxHp : 1;
       const wave = moonlight && swings % MOONLIGHT_EVERY === 0;
       const shielded = !missed && immune(t);
-      const damage = missed || shielded ? 0 : hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1);
+      const damage = missed || shielded ? 0 : hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1) * (mods.damageMult ?? 1);
       // Ambush is spent on the first swing that can land.
       if (!shielded) ambush = 1;
       foeHp = Math.max(0, foeHp - damage);

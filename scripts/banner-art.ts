@@ -16,7 +16,7 @@
 // resized: the model's pixel blocks don't sit on any grid of ours, and resampling them blurs.
 // The Raids list shows it as a thin strip across the page (the middle band of a 4:1 picture),
 // so the prompt keeps the boss inside that band.
-import { RAIDS } from '../spacetimedb/src/data/raids';
+import { RAIDS, raidBosses } from '../spacetimedb/src/data/raids';
 import { runArt, type Art } from './art-lib';
 import { LOOKS, RAID_REGIONS } from './enemy-art';
 
@@ -38,17 +38,22 @@ function arts(): { arts: Art[]; missing: string[] } {
   const missing: string[] = [];
   for (const r of RAIDS) {
     const region = RAID_REGIONS[r.id];
-    const look = LOOKS[r.boss.id];
+    // A duo raid: both brothers, side by side.
+    const bosses = raidBosses(r);
+    const looks = bosses.map(b => LOOKS[b.id]);
     if (!region) { missing.push(`raid-${r.id} ${r.name}: no RAID_REGIONS entry`); continue; }
-    if (!look) { missing.push(`raid-${r.id} ${r.name}: no LOOKS entry for its boss (e-${r.boss.id})`); continue; }
+    if (looks.some(l => !l)) { missing.push(`raid-${r.id} ${r.name}: no LOOKS entry for a boss (${bosses.map(b => `e-${b.id}`).join(', ')})`); continue; }
     out.push({
       key: `raid-${r.id}`,
       name: r.name,
       group: 'raids',
       tier: r.tier,
-      subject:
-        `One raid banner: the raid ${r.name}, its boss ${r.boss.name} waiting in its lair.\nStory: ${r.blurb}\n` +
-        `Boss: ${look}.\nLair: ${region.setting}.\nPalette: ${region.palette}.\nMotif: ${region.motif}.\nMood: ${region.menace}.`,
+      subject: bosses.length > 1
+        ? `One raid banner: the raid ${r.name}, its two bosses side by side in their lair.\nStory: ${r.blurb}\n` +
+          bosses.map((b, i) => `Boss ${i + 1}: ${looks[i]}.`).join('\n') +
+          `\nLair: ${region.setting}.\nPalette: ${region.palette}.\nMotif: ${region.motif}.\nMood: ${region.menace}.`
+        : `One raid banner: the raid ${r.name}, its boss ${r.boss.name} waiting in its lair.\nStory: ${r.blurb}\n` +
+          `Boss: ${looks[0]}.\nLair: ${region.setting}.\nPalette: ${region.palette}.\nMotif: ${region.motif}.\nMood: ${region.menace}.`,
     });
   }
   return { arts: out, missing };

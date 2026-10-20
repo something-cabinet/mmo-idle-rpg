@@ -9,7 +9,7 @@ import {
   ABYSS_KINDS_BY_ID, ABYSS_SEASON, BossAffix, DEEP_WARDEN, DEPTH_TIME_LIMIT, EliteAffix, PROFILE, bossName, depthEnemy, depthLineup,
   eliteName, evasiveRating, type DepthLineup, type DepthSlot,
 } from './data/abyss';
-import { Effect, effectAmount } from './data/legendary';
+import { Effect, STOKE, effectAmount } from './data/legendary';
 import type { Defense, EnemyDef } from './data/zones';
 import { seededRng, type Rng } from './loot';
 import { simulateFight, type Fight, type FightMods } from './fight';
@@ -155,9 +155,12 @@ export function simulateDepth(s: CombatStats, depth: number, rng: Rng, season = 
   let secondWind = effectAmount(s.effects, Effect.SecondWind);
   let renewal = s.renewal ?? 0;
   let elapsed = 0;
+  // Stoke the Fire: more damage for each enemy already fallen this depth.
+  const stoke = s.effects.has(Effect.StokeTheFire);
   for (const foe of foes) {
     const f = simulateFight(s, foe.matchup, foe.enemy, rng, {
       ...foe.mods, walk: 0, startHp: hp, secondWind, renewal, timeLimit: DEPTH_TIME_LIMIT - elapsed,
+      ...(stoke && fights.length > 0 && { damageMult: 1 + STOKE * fights.length }),
     });
     fights.push(f);
     starts.push(elapsed);

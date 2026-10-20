@@ -85,6 +85,98 @@ per hired NPC. Its own bases are the seven **Umbral** variants (bases.md) and it
 uniques the Eclipse Aegis, the Lantern of the Drowned Moon and Umbriel's Edge
 (uniques.md), each built to answer both phases.
 
+## Raid 3: The Brothers' Forge (T5)
+
+Opens for a character once it has killed **Durgrim, the Last Thane** (T5 boss). Beneath
+Brightvein Hold lies the great forge where brightsteel was first smelted from the shard's
+light. Two dwarven smith brothers still guard it, bound to it by the Thane's oath. Named
+after Brokkr and Sindri, the dwarf smith brothers of Norse myth.
+
+**A duo boss** (after Ornstein and Smough): two bosses fought at once, very different, and
+the one left standing takes something from his fallen brother (`RaidDef.duo`).
+
+| | **Brokk, the Hammer** | **Sindri, the Bellows** |
+|---|---|---|
+| Level, HP | 60, 34,000 | 60, 30,000 |
+| Attack | 190 DPS, **physical**, 0.5 attacks/s (heavy, slow) | 170 DPS, **magic**, 1.2 attacks/s (quick) |
+| Defense | **Armored** (armor 380, resistance 70) | **Warded** (armor 70, resistance 380) |
+| Signature | **Anvil Slam:** every 15 s, 1,000 physical damage to one fighter, picked by threat | **Fire Bellows:** every 12 s, 210 magic damage to every living fighter |
+
+- **Two attack streams:** each brother attacks on its own timer, so the tank can face both
+  damage types at once. Signatures can't be dodged.
+- **Brothers in arms:** while both stand, **each hits at half strength** (attacks and
+  signatures, `duo.together` 0.5). Alone, the survivor hits at full strength. Without this,
+  killing one brother fast always won (two brothers alive is double damage), whatever the
+  absorption cost; with it, balancing the party is the better plan (below).
+- **Threat, per brother:** each attack picks a living fighter by threat as today
+  (`e^(5 × threat)`), but fighters attacking that brother count **+20 points of threat**
+  with him (about 2.7× the weight). You hit him, he hits back: assignment decides who gets
+  hit as well as damage. Example, a 60%-threat tank on Sindri, two 15% damage dealers on
+  Brokk and one on Sindri: the tank takes ~85% of Sindri's attacks but only ~60% of
+  Brokk's; the damage dealers on Brokk take the rest.
+- **The leader assigns each seat** (players and hired NPCs) to Brokk or Sindri before the
+  start (`setRaidTarget`; `raid_member.target`, `raid_party.hiredTargets`). A fighter whose
+  brother falls switches to the other one. The Raids page shows, for the current
+  assignment, about when each brother falls from DPS alone (`duoFallTimes`; planning
+  information, not win odds), and **Auto-assign** splits the party so both fall as close
+  together as possible (`balancedTargets`, every split tried).
+- **Absorption:** when one brother dies, the survivor spends **5 seconds** absorbing him,
+  still attacking and taking damage as normal. **Kill him within those 5 s and he never
+  empowers:** the reward for balancing the party's damage across both brothers.
+- **Empowered**, if absorption finishes: one twist, different for each survivor. The
+  fight swaps his sprite.
+
+| Survivor | Empowered | What it tests |
+|---|---|---|
+| Brokk | **Molten Hammer:** his slam hits **every living fighter** for 700 instead of one for 1,000, every 25 s instead of 15 | The healer and everyone's HP |
+| Sindri | **Anvil Hide:** armor and resistance both 900: no weak side, and far less damage gets through | Penetration and raw damage, against the enrage |
+
+- **What it asks for:** a plan made before the fight. Ideally both brothers fall within 5 s
+  of each other. If the party can't balance that, the leader picks which empowered brother
+  it would rather face.
+- **Enrage** at **1:55**: tight on purpose, so a long fight against Anvil Hide runs out of time.
+
+Tuned in `npm run test:raid` against random T5 characters at level 58 (T5 bags, same
+roles), averaged over 48 parties. A win takes about 1:10. Win odds:
+
+| Party | Odds |
+|---|---|
+| 4 players, balanced split (`balancedTargets`) | ~74% |
+| 4 players, all on Brokk (Sindri empowers) | ~47% |
+| 4 players, all on Sindri (Brokk empowers) | ~49% |
+| 3 players | ~20% |
+| 3 players + 1 NPC | ~40% |
+| 2 players (+ 2 NPCs) | ~0% |
+
+Rewards as the others', at T5: 20 tokens, 6 Voidglass, 220,000 gold, 300,000 XP; 12,000 gold
+per hired NPC. Its own bases are the six **Forgefire** variants (bases.md) and its own
+uniques the three below.
+
+**Raid uniques** (uniques.md, effects 56–58 in legendary.md):
+
+| Unique | Base | Effects | Stats |
+|---|---|---|---|
+| **Twinstep Sabatons** (tank) | Brightsteel Greaves | **Drawing Fire**: 50% more threat against every enemy you aren't attacking; **Bulwark** | Threat % (×1.5), armor %, resistance % |
+| **Sindri's Bellows** (healer) | Brightsteel Scepter | **Twin Flame**: your single-target heals also heal the next most hurt ally for 50%; **Zealot's Oath** | Heal, heal % (×1.25), Mind |
+| **Brokk's Last Ember** (damage) | Brightsteel Greatsword | **Stoke the Fire**: 25% more damage for each ally or enemy fallen in this fight | Physical damage %, crit damage, attack speed % |
+
+- **Drawing Fire** lets the tank hold the brother it isn't attacking: in the example
+  above, its share of Brokk's attacks goes from ~60% to ~87% (60% → 90% threat against
+  him), so the leader can put the damage dealers on either brother. Solo it does nothing
+  (you always attack the one enemy): a raid piece, no risk in zones.
+- **Twin Flame** gives the Scepter (single heal) a place next to the Healing Staff when two
+  attackers hurt two people at once. Solo it only heals you: a raid piece, like the Censer.
+- **Stoke the Fire** is never active solo (the fight ends when the enemy falls). In this
+  raid it's +25% the moment the first brother dies, the burst for the absorption window,
+  and +25% per fallen ally: a comeback weapon. In the Moonwell Deep, +25% on each depth's
+  second enemy and +50% on its boss.
+
+**Art: four sprites**, one per brother (`e-9003`, `e-9203`) and one per Empowered form
+(`empoweredArtId`: `e-90031`, `e-92031`). Like the Moonwell Deep Warden's variants, each
+Empowered form is its brother's look plus a variant line (scripts/enemy-art.ts
+`DUO_VARIANTS`), generated with the base sprite as `--ref`, so it reads as the same dwarf,
+changed. The banner shows both brothers.
+
 ## The fight
 
 One fight per start, played in full by the server when the leader starts it (seeded by
@@ -104,6 +196,9 @@ live fights (combat.md). The server's outcome is final.
 - **Frostbite:** the highest chill in the party shrinks all the boss's damage.
 - Executioner, Ambush, Second Wind, Thornshell (on any damage taken) and Zealot's Oath
   work as in a duel. The dead stop swinging and can't be healed.
+- **A duo** (`RaidDef.duo`, The Brothers' Forge): two bosses, each with its own HP, attack
+  timer and signature; each fighter attacks its assigned brother; absorption and
+  empowerment as in "Raid 3". The party wins when both have fallen.
 - **Lunar Phases** (`RaidDef.phases`, Drowned Moon only): at each phase change the boss
   takes the phase's armor, resistance and damage type; every fighter's mitigation and
   penetration against it, and their defense against its attacks, are recomputed for the
@@ -166,9 +261,10 @@ player (`raid_log`): win, rewarded, item, tokens, Voidglass, gold, XP, hire cost
 
 - **Raid token shop:** trade tokens for things (not decided what).
 - **Precious material:** Voidglass, paid per rewarded clear (Wyrm Hollow 2, The Drowned
-  Moon 4), for Phials (phials.md). Built.
+  Moon 4, The Brothers' Forge 6), for Phials (phials.md). Built.
 - More raids, one per later tier pair, each with a mechanic of its own (Wyrm Hollow: none
-  beyond the breath; The Drowned Moon: Lunar Phases and a split Moonfall). Ideas kept for
+  beyond the breath; The Drowned Moon: Lunar Phases and a split Moonfall; The Brothers'
+  Forge: a duo with absorption). Ideas kept for
   later: an Eclipse (a few seconds where heals fail and the boss ignores threat), a Tidal
   Pull (every fighter's HP % pulled to the party average).
 - Invitations by name or from the friend list (today: open parties only).

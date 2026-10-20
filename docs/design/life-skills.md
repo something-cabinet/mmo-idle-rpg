@@ -296,7 +296,8 @@ want. Tempering is the steady goal: it makes gear the player already owns better
 
 - **Each temper level adds +2% to the item's base stats and implicits** (weapon hit,
   armor, evasion rating, resistance, the base's trait). Affixes, legendary affixes and
-  unique effects are not changed.
+  unique effects are not changed. **Uniques can be tempered** (their base part grows, their
+  rolled stats and effects don't); Anomalies and corrupted items can't.
 - The bonus is a multiplier on the base part, `× (1 + 0.02 × temper)`, applied when stats
   are computed and rounded once like any other stat (attributes.md). The item stores only
   its `temper` level (0–10), so the original values stay intact.
@@ -487,8 +488,6 @@ What is left, phase 1 leftovers included, is tracked in [TODO.md](../../TODO.md)
 
 ## Open
 
-- Whether uniques can be tempered (only their base part would change; uniques can't be
-  crafted today).
 - Whether temper should carry over when an item is replaced (e.g. transfer at a cost).
 - Whether item find (or a new "gathering find" stat) should raise gathering yield.
 - Whether forged bases should be marked as forged (inspect flair, or excluded from

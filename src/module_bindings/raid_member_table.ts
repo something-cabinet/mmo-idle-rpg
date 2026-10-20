@@ -16,4 +16,5 @@ export default __t.row({
   name: __t.string(),
   joinedAt: __t.timestamp().name("joined_at"),
   phialId: __t.u16().name("phial_id"),
+  target: __t.u8(),
 });

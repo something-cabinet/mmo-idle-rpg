@@ -473,6 +473,7 @@ export const RaidMember = __t.object("RaidMember", {
   name: __t.string(),
   joinedAt: __t.timestamp(),
   phialId: __t.u16(),
+  target: __t.u8(),
 });
 export type RaidMember = __Infer<typeof RaidMember>;
 
@@ -485,6 +486,7 @@ export const RaidParty = __t.object("RaidParty", {
   get fight() {
     return __t.option(RaidFight);
   },
+  hiredTargets: __t.u8(),
 });
 export type RaidParty = __Infer<typeof RaidParty>;
 

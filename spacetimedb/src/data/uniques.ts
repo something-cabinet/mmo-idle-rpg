@@ -81,6 +81,13 @@ export const UNIQUES: UniqueDef[] = [
     stats: [{ stat: Stat.Heal }, { stat: Stat.HealPct, x: 1.25 }, { stat: Stat.Mind }] },
   { id: 22, name: "Umbriel's Edge", tier: 4, baseId: 1007, effects: [Effect.Rending, Effect.Spellbreaker], raidId: 2,
     stats: [{ stat: Stat.ArmorPenPct }, { stat: Stat.MagicPenPct }, { stat: Stat.CritDamage }] },
+  // Raid: The Brothers' Forge (T5). One per raid role, each built for two bosses at once.
+  { id: 28, name: 'Twinstep Sabatons', tier: 5, baseId: 41, effects: [Effect.DrawingFire, Effect.Bulwark], raidId: 3,
+    stats: [{ stat: Stat.ThreatPct, x: 1.5 }, { stat: Stat.ArmorPct }, { stat: Stat.ResistancePct }] },
+  { id: 29, name: "Sindri's Bellows", tier: 5, baseId: 4, effects: [Effect.TwinFlame, Effect.ZealotsOath], raidId: 3,
+    stats: [{ stat: Stat.Heal }, { stat: Stat.HealPct, x: 1.25 }, { stat: Stat.Mind }] },
+  { id: 30, name: "Brokk's Last Ember", tier: 5, baseId: 7, effects: [Effect.StokeTheFire], raidId: 3,
+    stats: [{ stat: Stat.PhysDamagePct }, { stat: Stat.CritDamage }, { stat: Stat.AttackSpeedPct }] },
   // T4
   { id: 15, name: 'Moonlight Greatsword', tier: 4, baseId: 7, effects: [Effect.Moonlight], enemyId: 407,
     stats: [{ stat: Stat.MagicDamagePct }, { stat: Stat.Mind }, { stat: Stat.CritDamage }] },

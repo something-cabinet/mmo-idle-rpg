@@ -645,6 +645,8 @@ export const raidParty = table(
     createdAt: t.timestamp(),
     /** The fight in progress, or the last one (until the next starts). */
     fight: RaidFight.optional(),
+    /** A duo raid: bit i set = hired NPC i attacks the second brother (raids.md, "Raid 3"). */
+    hiredTargets: t.u8().default(0),
   }
 );
 
@@ -659,6 +661,8 @@ export const raidMember = table(
     joinedAt: t.timestamp(),
     /** The Phial (data/supplies.ts) this player brings to the next fight, or 0; taken from stock when it starts. */
     phialId: t.u16().default(0),
+    /** A duo raid: the brother this player attacks (0 or 1), as the leader assigned. */
+    target: t.u8().default(0),
   }
 );
 

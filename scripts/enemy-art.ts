@@ -22,7 +22,7 @@
 // 168 px; the fight scene 96, Zones 44), so the browser only ever shrinks it further.
 // The prompt still asks for a 64 px grid: it sets how chunky the model draws.
 import { ZONES } from '../spacetimedb/src/data/zones';
-import { RAIDS } from '../spacetimedb/src/data/raids';
+import { empoweredArtId, empoweredBoss, raidBosses, RAIDS } from '../spacetimedb/src/data/raids';
 import { ABYSS_KINDS, BOSS_AFFIXES, DEEP_WARDEN, wardenArtId } from '../spacetimedb/src/data/abyss';
 import { runArt, type Art } from './art-lib';
 
@@ -113,6 +113,14 @@ export const RAID_REGIONS: Record<number, Region> = {
       'every surface, the crescent and elven filigree of Moonveil Vale',
     menace: 'a raid boss for a party of four: ancient, colossal and awe-inspiring, the most detailed art of its tier',
   },
+  // Two smith brothers, hammer and fire: the art is one forge with both sides.
+  3: {
+    setting: "The Brothers' Forge, the great dwarven forge deep beneath Brightvein Hold: a cavernous hall of black stone, " +
+      'a colossal anvil and a cold furnace the size of a house, chains and bellows hanging from the dark, glowing silver-blue ore veins in the walls',
+    palette: 'soot black, blackened iron, glowing ember orange, warm bronze, faint silver-blue vein light',
+    motif: 'hammer and fire: forge embers, glowing seams in hammered iron, dwarven runes, the silver-blue glow of brightsteel',
+    menace: 'a raid boss for a party of four: mighty and grim, the most detailed art of its tier',
+  },
 };
 
 /** The Moonwell Deep (data/abyss.ts): its pool enemies and the Deep Warden. */
@@ -178,6 +186,11 @@ export const LOOKS: Record<number, string> = {
     'pale empty eyes, a pickaxe with a silver-blue head',
   506: 'Durgrim the Last Thane: an old dwarf king in heavy rune-carved silver-blue plate, a braided iron-grey beard, a stone crown, ' +
     'a huge war hammer, a jagged pale white shard fused into the middle of his chest, silver-blue cracks spreading from it',
+  // The Brothers' Forge (raid 3): two dwarven smith brothers, each with an empowered form (DUO_VARIANTS).
+  9003: 'Brokk the Hammer: a huge broad dwarf smith in a heavy leather apron over brightsteel plate, a braided iron-grey beard, ' +
+    'bare scarred forearms, a massive two-handed forge hammer raised over one shoulder',
+  9203: 'Sindri the Bellows: a lean quick dwarf in soot-stained robes and bronze bracers, a long braided red beard, ' +
+    'a great leather bellows strapped to his back, a short fire-tongs blade glowing at the tip in each hand',
   // The Moonwell Deep
   9101: 'a moonless shade: a thin hunched elven silhouette of solid black-blue shadow with no legs, its body tapering into ' +
     'ragged tatters, long clawed fingers, two pale silver pinprick eyes and nothing else on its face',
@@ -235,6 +248,17 @@ const WARDEN_VARIANTS: Record<number, string> = {
     'its eye a black disc ringed by a thin silver corona',
 };
 
+/**
+ * A duo raid brother's empowered form (raids.md, "Raid 3"), by his enemy ID: added to his own
+ * look, so it reads as the same dwarf, changed. Generate his base sprite first and --ref it.
+ */
+const DUO_VARIANTS: Record<number, string> = {
+  9003: 'Molten Hammer: he has absorbed his brother\'s fire: his hammer head glows molten orange and drips like lava, ' +
+    'cracks of fire run up his arms and through his beard, embers in his eyes',
+  9203: 'Anvil Hide: he has absorbed his brother\'s iron: his skin turned to dark cold iron like an anvil, brightsteel plates ' +
+    'fused onto his shoulders, arms and chest, heavier and harder, his bellows now banded with iron',
+};
+
 /** Normal enemies, the zone's boss, its secret enemy. */
 const ROLES = {
   normal: 'a regular enemy of the region',
@@ -272,7 +296,15 @@ function arts(): { arts: Art[]; missing: string[] } {
       add(e.id, e.name, `${z.name}, ${area?.name ?? 'unknown area'}`, slug(z.name), z.tier, REGIONS[z.id], e.boss ? 'boss' : e.secret ? 'secret' : 'normal');
     }
   }
-  for (const r of RAIDS) add(r.boss.id, r.boss.name, `the raid ${r.name}`, `raid-${slug(r.name)}`, r.tier, RAID_REGIONS[r.id], 'boss');
+  for (const r of RAIDS) {
+    // A duo: both brothers, and each one's empowered form.
+    for (const e of raidBosses(r)) add(e.id, e.name, `the raid ${r.name}`, `raid-${slug(r.name)}`, r.tier, RAID_REGIONS[r.id], 'boss');
+    for (const b of r.duo?.bosses ?? []) {
+      const v = DUO_VARIANTS[b.enemy.id];
+      add(empoweredArtId(b.enemy.id), empoweredBoss(b).name, `the raid ${r.name}`, `raid-${slug(r.name)}`, r.tier, RAID_REGIONS[r.id], 'boss',
+        v && LOOKS[b.enemy.id] && `${LOOKS[b.enemy.id]}. This one is ${v}`);
+    }
+  }
   for (const k of ABYSS_KINDS) add(k.id, k.name, 'the Moonwell Deep', 'moonwell-deep', 4, DEEP_REGION, 'normal');
   add(DEEP_WARDEN.id, DEEP_WARDEN.name, 'the Moonwell Deep', 'moonwell-deep-warden', 4, DEEP_REGION, 'boss');
   for (const a of BOSS_AFFIXES) {

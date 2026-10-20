@@ -5,11 +5,11 @@ import { memo, useEffect, useMemo, useState, type CSSProperties } from 'react';
 import type { Item, RaidLog, RaidMember, RaidParty } from '../../module_bindings/types';
 import { combatStats, matchup, type CombatStats } from '../../../spacetimedb/src/combat';
 import { Effect, effectAmount } from '../../../spacetimedb/src/data/legendary';
-import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, bossPhases, phaseAt, type RaidDef } from '../../../spacetimedb/src/data/raids';
+import { RAIDS, RAID_PARTY_SIZE, NPC_POWER, RAID_RARITY_ODDS, bossPhases, empoweredArtId, empoweredBoss, empoweredSignature, phaseAt, raidBosses, type RaidDef, type RaidSignature } from '../../../spacetimedb/src/data/raids';
 import { raidUniques } from '../../../spacetimedb/src/data/uniques';
 import { BASE_LIST } from '../../../spacetimedb/src/data/bases';
 import { ZONES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
-import { aggroShares, clearsToday, decodeSetup, lockoutEnd, npcStats, raidRng, simulateRaid, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
+import { aggroShares, balancedTargets, clearsToday, decodeSetup, duoFallTimes, duoThreat, lockoutEnd, npcStats, raidRng, simulateRaid, threatWeight, type RaidEvent, type RaidFighter } from '../../../spacetimedb/src/raid';
 import { call, useSticky } from '../../store';
 import { nowMicros } from '../clock';
 import { UNKNOWN, baseFound, uniqueFound } from '../discovery';
@@ -30,6 +30,10 @@ import { rarityRank } from '../../../spacetimedb/src/loot';
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const byJoin = (a: RaidMember, b: RaidMember) => (a.joinedAt.microsSinceUnixEpoch < b.joinedAt.microsSinceUnixEpoch ? -1 : 1);
 const fightingNow = (p: RaidParty) => !!p.fight && !p.fight.finished;
+/** A boss's short name: "Brokk, the Hammer" → "Brokk". */
+const short = (name: string) => name.split(',')[0];
+/** The raid's boss or bosses, short: "Skaldrith", "Brokk and Sindri". */
+const bossTitle = (raid: RaidDef) => raidBosses(raid).map(b => short(b.name)).join(' and ');
 /** Seconds the frost flash and damage numbers stay up after the special attack. */
 const BREATH_FLASH = 1.4;
 /** How long a floating number stays up, s (the `raid-float-up` animation). */
@@ -51,15 +55,15 @@ interface RaidFloat {
  * boss's bar, marked with who dealt them; the boss's hits, blocks and dodges, and every
  * heal (marked when from an ally), over the fighter's own bar. The Breath has its own.
  */
-function raidFloats(events: readonly RaidEvent[], t: number, maxHp: readonly number[]): { boss: RaidFloat[]; party: RaidFloat[][] } {
-  const boss: RaidFloat[] = [];
+function raidFloats(events: readonly RaidEvent[], t: number, maxHp: readonly number[], bosses: number): { boss: RaidFloat[][]; party: RaidFloat[][] } {
+  const boss: RaidFloat[][] = Array.from({ length: bosses }, () => []);
   const party: RaidFloat[][] = maxHp.map(() => []);
   const left = (i: number) => 15 + ((i * 37) % 60);
   for (let i = events.length - 1; i >= 0 && t - events[i].t < FLOAT_SECONDS; i--) {
     const e = events[i];
     const prev = events[i - 1];
     if (e.by >= 0 && e.kind !== 'dodge') {
-      boss.push({ key: i, text: `${fmt(e.damage)}${e.kind === 'crit' ? '!' : ''}`, cls: e.kind, from: e.by, left: left(i) });
+      boss[e.boss ?? 0].push({ key: i, text: `${fmt(e.damage)}${e.kind === 'crit' ? '!' : ''}`, cls: e.kind, from: e.by, left: left(i) });
       // Heals and lifesteal from this swing (regen since the last event is too small to show).
       e.hp.forEach((h, j) => {
         const gain = h - (prev?.hp[j] ?? maxHp[j]);
@@ -67,14 +71,14 @@ function raidFloats(events: readonly RaidEvent[], t: number, maxHp: readonly num
       });
     } else if (e.kind === 'dodge' && e.target >= 0) {
       party[e.target].push({ key: i, text: 'Dodge', cls: 'dodge', left: left(i) });
-    } else if (e.kind === 'hit' && e.target >= 0) {
+    } else if ((e.kind === 'hit' || e.kind === 'special') && e.target >= 0) {
       const hpLost = (prev?.hp[e.target] ?? maxHp[e.target]) - e.hp[e.target];
       const cls = e.blocked ? 'block' : hpLost < 0.5 && e.shield ? 'shielded' : 'taken';
       party[e.target].push({ key: i, text: `${e.blocked ? 'Block ' : ''}−${fmt(e.dealt ?? e.damage)}`, cls, left: left(i) });
     }
     for (const j of e.saved ?? []) party[j].push({ key: -i - 1, text: 'Second Wind', cls: 'heal', left: 50 });
   }
-  return { boss: boss.slice(0, MAX_FLOATS), party: party.map(f => f.slice(0, MAX_FLOATS)) };
+  return { boss: boss.map(f => f.slice(0, MAX_FLOATS)), party: party.map(f => f.slice(0, MAX_FLOATS)) };
 }
 
 /** One floating number, with the dot of the fighter it comes from when that is not the bar's owner. */
@@ -152,12 +156,12 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
   const beaten = (s.kills.get(boss.id) ?? 0) > 0 || [...conn.db.myRaidLog.iter()].some(l => l.raidId === raid.id && l.won);
 
   return (
-    <li className={`raid-entry${open ? ' open' : ''}${unlocked ? '' : ' locked'}${raid.phases ? ' raid-moon' : ''}`}>
+    <li className={`raid-entry${open ? ' open' : ''}${unlocked ? '' : ' locked'}${raid.phases ? ' raid-moon' : ''}${raid.duo ? ' raid-forge' : ''}`}>
       <button className="raid-head" aria-expanded={open} onClick={toggle}>
         <RaidBanner raidId={raid.id} fallback={<EnemyArt enemyId={boss.id} className="raid-head-sprite" />} />
         <div className="raid-head-text">
           <div className="raid-head-name">{raid.name}</div>
-          <div className="raid-head-boss"><Icon name="skull" className="boss" />{boss.name}</div>
+          <div className="raid-head-boss"><Icon name="skull" className="boss" />{raid.duo ? bossTitle(raid) : boss.name}</div>
           <div className="raid-head-tags">
             <span className="tag">T{raid.tier}</span>
             <span className="tag">Lv {boss.level}</span>
@@ -177,7 +181,7 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
         <div className="raid-body">
           <p className="muted">{raid.blurb} {RAID_PARTY_SIZE} players, online only.</p>
           {!unlocked && <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} to unlock</div>}
-          <div className="raid-boss">
+          {raid.duo ? <DuoBosses s={s} raid={raid} beaten={beaten} /> : <div className="raid-boss">
             <EnemyArt enemyId={boss.id} className="raid-boss-sprite" />
             <div className="raid-boss-info">
               <div className="tags">
@@ -192,13 +196,13 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
                 <div title="The party wipes when the timer runs out"><span>Enrage</span><strong className="c-bad">{clock(raid.enrageSeconds)}</strong></div>
               </div>
               <div className="raid-special">
-                <Icon name={raid.aoe.icon} className="raid-special-icon" />
+                <Icon name={raid.aoe!.icon} className="raid-special-icon" />
                 <div>
                   <div className="raid-special-label">Special attack</div>
-                  <div className="raid-special-name">{raid.aoe.name}</div>
+                  <div className="raid-special-name">{raid.aoe!.name}</div>
                   <div className="raid-special-text">
-                    Every <strong>{raid.aoe.every} s</strong>: <strong>{fmt(raid.aoe.damage)} {raid.aoe.damageType.toLowerCase()}</strong> damage{' '}
-                    {raid.aoe.split ? 'shared by the living: the fewer left standing, the harder each is hit' : 'to the whole party'}. Can't be dodged.
+                    Every <strong>{raid.aoe!.every} s</strong>: <strong>{fmt(raid.aoe!.damage)} {raid.aoe!.damageType.toLowerCase()}</strong> damage{' '}
+                    {raid.aoe!.split ? 'shared by the living: the fewer left standing, the harder each is hit' : 'to the whole party'}. Can't be dodged.
                   </div>
                 </div>
               </div>
@@ -229,7 +233,7 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
                 <p className="muted"><Icon name="lock" />Beat {boss.name.split(',')[0]} once to reveal its full stats.</p>
               )}
             </div>
-          </div>
+          </div>}
           <div className="raid-rewards">
             <h3>Rewards <span className="muted">each player, for {raid.clearsPerDay} wins a day (losses don't count; resets 00:00 UTC)</span></h3>
             <ul>
@@ -302,6 +306,78 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
   );
 }
 
+/** A signature attack, in words: "Every 15 s: 1,000 physical damage to one fighter, picked by threat." */
+const signatureText = (sg: RaidSignature) => (
+  <>
+    Every <strong>{sg.every} s</strong>: <strong>{fmt(sg.damage)} {sg.damageType.toLowerCase()}</strong> damage{' '}
+    {sg.aoe ? 'to the whole party' : 'to one fighter, picked by threat'}. Can't be dodged.
+  </>
+);
+
+/** A duo raid's two brothers, each with his signature and his empowered twist, then the rules they share. */
+function DuoBosses({ s, raid, beaten }: { s: Snapshot; raid: RaidDef; beaten: boolean }) {
+  const duo = raid.duo!;
+  return (
+    <div className="raid-duo">
+      <div className="raid-duo-pair">
+        {duo.bosses.map(b => {
+          const e = b.enemy;
+          return (
+            <div key={e.id} className="raid-boss">
+              <EnemyArt enemyId={e.id} className="raid-boss-sprite" />
+              <div className="raid-boss-info">
+                <div className="raid-duo-name"><Icon name="skull" className="boss" />{e.name}</div>
+                <div className="tags">
+                  <span className="tag">Lv {e.level}</span>
+                  <DmgTag magic={e.damageType === 'Magic'} />
+                  <DefTag defense={e.defense} />
+                </div>
+                <div className="raid-stats">
+                  <div><span>HP</span><strong>{e.hp.toLocaleString()}</strong></div>
+                  <div><span>DPS</span><strong>{fmt(e.dps)}</strong></div>
+                </div>
+                <div className="raid-special">
+                  <Icon name={b.signature.icon} className="raid-special-icon" />
+                  <div>
+                    <div className="raid-special-label">Signature</div>
+                    <div className="raid-special-name">{b.signature.name}</div>
+                    <div className="raid-special-text">{signatureText(b.signature)}</div>
+                  </div>
+                </div>
+                <div className="raid-special raid-empowered">
+                  <EnemyArt enemyId={empoweredArtId(e.id)} className="raid-empowered-sprite" fallback={<Icon name="zap" className="raid-special-icon" />} />
+                  <div>
+                    <div className="raid-special-label">If he absorbs his brother</div>
+                    <div className="raid-special-name">{b.empowered.name}</div>
+                    <div className="raid-special-text">{b.empowered.text}.</div>
+                  </div>
+                </div>
+                {beaten && (
+                  <details className="raid-boss-stats">
+                    <summary>{short(e.name)}'s stats</summary>
+                    <EnemyStats e={e} m={matchup(s.stats, e)} />
+                  </details>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="raid-boss raid-duo-rules">
+        <div className="raid-stats">
+          <div title="The party wipes when the timer runs out"><span>Enrage</span><strong className="c-bad">{clock(raid.enrageSeconds)}</strong></div>
+        </div>
+        <ul>
+          <li><strong>Brothers in arms:</strong> while both stand, each hits at {pct(duo.together)} strength. Alone, he hits at full strength.</li>
+          <li><strong>Absorption:</strong> when one falls, the other absorbs him for <strong>{duo.absorbSeconds} s</strong>. Kill him within that time and he never empowers.</li>
+          <li><strong>Who attacks whom:</strong> the leader assigns each seat to a brother. Attacking a brother draws his attacks (+{pct(duo.focusThreat)} threat with him).</li>
+        </ul>
+        {!beaten && <p className="muted"><Icon name="lock" />Beat the brothers once to reveal their full stats.</p>}
+      </div>
+    </div>
+  );
+}
+
 function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; party: RaidParty; members: RaidMember[] }) {
   const conn = s.conn;
   const me = s.row.id;
@@ -323,9 +399,19 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   });
   const known = players.every(p => p) ? (players as RaidFighter[]) : undefined;
   const npc = npcStats(raid);
+  const duo = raid.duo;
+  const bosses = raidBosses(raid);
+  // A duo: each seat's brother (players in join order, then hired NPCs).
+  const targets = [...members.map(m => m.target), ...Array.from({ length: party.hired }, (_, i) => (party.hiredTargets >> i) & 1)];
   const setup = known && { raidId: raid.id, fighters: [...known, ...Array.from({ length: party.hired }, (_, i) => ({ characterId: 0n, name: `Hireling ${i + 1}`, stats: npc }))] };
-  // Each seat's share of the boss's attacks while everyone is alive.
+  // Each seat's share of the boss's attacks while everyone is alive; a duo: of each brother's.
   const aggro = setup && aggroShares(setup.fighters.map(f => f.stats.threat));
+  const aggroBy = setup && duo && bosses.map((_, b) => {
+    const w = setup.fighters.map((f, i) => threatWeight(duoThreat(raid, f.stats, targets[i], b)));
+    const total = w.reduce((a, x) => a + x, 0);
+    return w.map(x => x / total);
+  });
+  const fall = setup && duo && duoFallTimes(raid, setup.fighters.map(f => f.stats), targets);
 
   const offline = members.filter(m => !online.has(m.characterId));
   const cost = BigInt(party.hired) * BigInt(raid.hireCost);
@@ -344,8 +430,8 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   const seat = (stats: CombatStats | undefined, i: number) => {
     if (!stats) return undefined;
     const m = matchup(stats, raid.boss);
-    // DPS against the boss, averaged over its Lunar Phases (each has its own armor and resistance).
-    const phases = bossPhases(raid);
+    // DPS against the boss, averaged over its Lunar Phases (each has its own armor and resistance); a duo: against its brother.
+    const phases = duo ? [bosses[targets[i]]] : bossPhases(raid);
     const dps = phases.reduce((sum, b) => sum + matchup(stats, b).dps, 0) / phases.length;
     // Heal per second from the weapon (crits included), given to allies: split across the party or to the most hurt one.
     const hps = m.hps;
@@ -353,7 +439,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
     return (
       <div className="raid-seat-stats muted">
         HP {fmt(stats.maxHp)} ·{' '}
-        <span title={raid.phases ? `Damage per second against the boss, averaged over its ${raid.phases.list.map(p => p.name).join(' and ')}` : 'Damage per second against the boss'}>
+        <span title={raid.phases ? `Damage per second against the boss, averaged over its ${raid.phases.list.map(p => p.name).join(' and ')}` : duo ? `Damage per second against ${short(bosses[targets[i]].name)}` : 'Damage per second against the boss'}>
           DPS {fmt(dps)}
         </span>{' '}
         ·{' '}
@@ -361,13 +447,38 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
           HPS {fmt(hps)}{hps > 0 ? (healAll ? ' (party)' : ' (one ally)') : ''}
         </span>{' '}
         · Threat {pct(stats.threat)}
-        {aggro && (
+        {aggroBy ? (
+          <span className="tag" title="Share of each brother's attacks while everyone is alive (more threat, more attacks; attacking a brother draws his)">
+            <Icon name="shield" />Aggro {bosses.map((b, k) => `${short(b.name)} ${pct(aggroBy[k][i])}`).join(' · ')}
+          </span>
+        ) : aggro && (
           <span className={`tag${aggro[i] === Math.max(...aggro) ? ' raid-target' : ''}`} title="Share of the boss's attacks while everyone is alive (more threat, more attacks)">
             <Icon name="shield" />Aggro {pct(aggro[i])}
           </span>
         )}
       </div>
     );
+  };
+
+  /** A duo: which brother seat `i` attacks; the leader picks, outside a fight. */
+  const picker = (i: number) => duo && (
+    <div className="raid-seat-target">
+      <span className="muted">Attacks</span>
+      <div className="seg">
+        {bosses.map((b, k) => (
+          <button key={b.id} className={`seg-btn${targets[i] === k ? ' active' : ''}`} disabled={!leading || fighting}
+            title={leading ? `Attack ${short(b.name)}` : 'The leader assigns who attacks whom'}
+            onClick={() => targets[i] !== k && call(conn.reducers.setRaidTarget({ seat: i, target: k }))}>
+            {short(b.name)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+  /** A duo: every seat on its balanced brother (`balancedTargets`). */
+  const autoAssign = () => {
+    if (!setup) return;
+    balancedTargets(raid, setup.fighters.map(f => f.stats)).forEach((k, i) => k !== targets[i] && call(conn.reducers.setRaidTarget({ seat: i, target: k })));
   };
 
   return (
@@ -394,6 +505,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
               )}
             </div>
             {seat(players[i]?.stats, i)}
+            {picker(i)}
             {m.characterId === me && !fighting ? (
               <div className="raid-seat-phial">
                 <span className="muted">Phial</span>
@@ -416,6 +528,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
               )}
             </div>
             {seat(npc, members.length + i)}
+            {picker(members.length + i)}
           </div>
         ))}
         {Array.from({ length: Math.max(0, empty) }, (_, i) => (
@@ -441,6 +554,25 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
             setClosed(closedFights());
           }}
         />
+      )}
+
+      {duo && !fighting && (
+        <div className="raid-plan">
+          {fall ? (
+            <span>
+              {bosses.map((b, k) => `${short(b.name)} falls in ${Number.isFinite(fall[k]) ? `~${Math.round(fall[k])} s` : 'never: nobody attacks him'}`).join(', ')}
+              {fall.every(Number.isFinite) && (
+                <strong className={Math.abs(fall[0] - fall[1]) <= duo.absorbSeconds ? 'c-ok' : 'c-bad'}>
+                  {' '}{Math.round(Math.abs(fall[0] - fall[1]))} s apart (absorbing takes {duo.absorbSeconds} s)
+                </strong>
+              )}
+              <span className="muted"> · from DPS alone, before deaths and twists</span>
+            </span>
+          ) : (
+            <span className="muted">Waiting for every member's stats…</span>
+          )}
+          {leading && setup && <button className="btn small" onClick={autoAssign} title="Split the party so both brothers fall as close together as possible">Auto-assign</button>}
+        </div>
       )}
 
       {!fighting && (
@@ -473,7 +605,7 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
 
       {confirming && (
         <Modal className="raid-confirm" onClose={() => setConfirming(false)}>
-          <CardHead title={`Fight ${raid.boss.name.split(',')[0]}?`} />
+          <CardHead title={`Fight ${bossTitle(raid)}?`} />
           <ul className="raid-confirm-list">
             <li><span>Party</span><strong>{[...members.map(m => m.name), ...Array.from({ length: party.hired }, (_, i) => `Hireling ${i + 1}`)].join(', ')}</strong></li>
             {cost > 0n && <li><span>Hiring {party.hired} NPC{party.hired === 1 ? '' : 's'}</span><strong>{fmtBig(cost)} gold, paid now, win or lose</strong></li>}
@@ -519,31 +651,52 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
   const shown = live ? result.events.filter(e => e.t <= t) : result.events;
   const last = shown.at(-1);
   const hp = last?.hp ?? result.maxHp;
-  const bossHp = last?.bossHp ?? raid.boss.hp;
+  const bosses = raidBosses(raid);
+  const bossHp = last?.bossHp ?? bosses.map(b => b.hp);
   const names = setup.fighters.map(f => f.name);
-  const floats = live ? raidFloats(shown, t, result.maxHp) : undefined;
+  const floats = live ? raidFloats(shown, t, result.maxHp, bosses.length) : undefined;
+  // A duo: who has empowered so far, and who is absorbing his brother now.
+  const empowered = new Set(shown.filter(e => e.kind === 'empower').map(e => e.boss ?? 0));
+  const lastFall = [...shown].reverse().find(e => e.kind === 'fall');
+  const absorbing = raid.duo && lastFall && live && bossHp.filter(h => h > 0).length === 1 && t < lastFall.t + raid.duo.absorbSeconds && empowered.size === 0
+    ? { boss: bossHp.findIndex(h => h > 0), left: lastFall.t + raid.duo.absorbSeconds - t } : undefined;
+  const bossName = (b: number) => (raid.duo && empowered.has(b) ? empoweredBoss(raid.duo.bosses[b]).name : bosses[b].name);
+  /** A boss's special as it is at `at` (a duo brother's empowered signature once he has empowered). */
+  const specialOf = (b: number, at: number): RaidSignature | undefined => {
+    if (!raid.duo) return raid.aoe && { ...raid.aoe, aoe: true };
+    const d = raid.duo.bosses[b];
+    return shown.some(e => e.kind === 'empower' && e.boss === b && e.t <= at) ? empoweredSignature(d) : d.signature;
+  };
   // Second Skin: each fighter's shield left, drawn over the top end of their HP bar.
   const shield = last?.shield ?? setup.fighters.map((f, i) => effectAmount(f.stats.effects, Effect.SecondSkin) * result.maxHp[i]);
   // The special attack: a frost flash with each fighter's damage for a moment after it lands, and a countdown to the next.
   const lastAoe = live ? [...shown].reverse().find(e => e.kind === 'aoe') : undefined;
   const breath = lastAoe && t - lastAoe.t < BREATH_FLASH ? lastAoe : undefined;
   const beforeBreath = breath && shown[shown.indexOf(breath) - 1];
-  const nextAoe = Math.ceil((t + 1e-9) / raid.aoe.every) * raid.aoe.every;
-  const charge = 1 - (nextAoe - t) / raid.aoe.every;
+  const aoeEvery = raid.aoe?.every ?? 1;
+  const nextAoe = Math.ceil((t + 1e-9) / aoeEvery) * aoeEvery;
+  const charge = 1 - (nextAoe - t) / aoeEvery;
   const log = [...s.conn.db.myRaidLog.iter()].find(l => l.partyId === party.id && l.startedAt.microsSinceUnixEpoch === start);
   const loot = (log?.itemIds ?? []).flatMap(id => s.items.get(id) ?? []);
 
   return (
     <div className={`raid-fight${breath ? ' breath' : ''}`}>
       {breath && <div key={breath.t} className="raid-frost" aria-hidden="true" />}
-      <div className="raid-boss-bar">
-        <div className="duelist-name"><Icon name="skull" className="boss" />{raid.boss.name}</div>
-        <div className="hpbar enemy">
-          {floats?.boss.map(f => <FloatNumber key={f.key} f={f} />)}
-          <div className="hp-fill" style={{ width: `${(bossHp / raid.boss.hp) * 100}%` }} />
-          <span className="hp-text">{fmt(bossHp)} / {fmt(raid.boss.hp)}</span>
+      {bosses.map((b, k) => (
+        <div key={b.id} className={`raid-boss-bar${bossHp[k] <= 0 ? ' fallen' : ''}${empowered.has(k) ? ' empowered' : ''}`}>
+          <div className="duelist-name">
+            {raid.duo && <EnemyArt enemyId={empowered.has(k) ? empoweredArtId(b.id) : b.id} className="raid-bar-sprite" />}
+            <Icon name="skull" className="boss" />{bossName(k)}
+            {absorbing?.boss === k && <span className="tag c-bad">Absorbing… {Math.ceil(absorbing.left)} s</span>}
+            {bossHp[k] <= 0 && bosses.length > 1 && <span className="tag">Fallen</span>}
+          </div>
+          <div className="hpbar enemy">
+            {floats?.boss[k].map(f => <FloatNumber key={f.key} f={f} />)}
+            <div className="hp-fill" style={{ width: `${(bossHp[k] / b.hp) * 100}%` }} />
+            <span className="hp-text">{fmt(bossHp[k])} / {fmt(b.hp)}</span>
+          </div>
         </div>
-      </div>
+      ))}
       <div className="raid-party-bars">
         {names.map((name, i) => (
           <div key={i} className={`duelist${hp[i] <= 0 ? ' lost' : ''}`}>
@@ -590,23 +743,39 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
                 </span>
               );
             })()}
-            <span className={`raid-breath-timer${breath ? ' now' : nextAoe - t < 3 ? ' soon' : ''}`} title={`${raid.aoe.name} hits the whole party every ${raid.aoe.every} s`}>
-              <Icon name={raid.aoe.icon} />
-              {breath ? `${raid.aoe.name}!` : `${raid.aoe.name} in ${Math.ceil(nextAoe - t)} s`}
-              <span className="raid-breath-charge"><span style={{ width: `${(breath ? 1 : charge) * 100}%` }} /></span>
-            </span>
+            {raid.aoe ? (
+              <span className={`raid-breath-timer${breath ? ' now' : nextAoe - t < 3 ? ' soon' : ''}`} title={`${raid.aoe.name} hits the whole party every ${raid.aoe.every} s`}>
+                <Icon name={raid.aoe.icon} />
+                {breath ? `${raid.aoe.name}!` : `${raid.aoe.name} in ${Math.ceil(nextAoe - t)} s`}
+                <span className="raid-breath-charge"><span style={{ width: `${(breath ? 1 : charge) * 100}%` }} /></span>
+              </span>
+            ) : bosses.map((b, k) => {
+              if (bossHp[k] <= 0) return null;
+              // Each brother's signature: the next one after his last (or his empowering), on its own timer.
+              const sg = specialOf(k, t)!;
+              const from = [...shown].reverse().find(e => e.boss === k && (e.kind === 'aoe' || e.kind === 'special' || e.kind === 'empower'))?.t ?? 0;
+              const left = Math.max(0, from + sg.every - t);
+              return (
+                <span key={b.id} className={`raid-breath-timer${left < 3 ? ' soon' : ''}`} title={`${short(b.name)}'s ${sg.name}: every ${sg.every} s, ${sg.aoe ? 'the whole party' : 'one fighter'}`}>
+                  <Icon name={sg.icon} />
+                  {sg.name} in {Math.ceil(left)} s
+                  <span className="raid-breath-charge"><span style={{ width: `${(1 - left / sg.every) * 100}%` }} /></span>
+                </span>
+              );
+            })}
           </div>
         ) : (
-          <RaidResult won={fight.won} text={fight.won ? `${raid.boss.name} falls at ${clock(result.end)}` : result.enraged ? `${raid.boss.name} enrages at ${clock(raid.enrageSeconds)}: the party wipes` : `The party wipes at ${clock(result.end)}`} />
+          <RaidResult won={fight.won} text={fight.won ? `${raid.duo ? bossTitle(raid) + ' fall' : raid.boss.name + ' falls'} at ${clock(result.end)}` : result.enraged ? `${raid.duo ? bossTitle(raid) + ' enrage' : raid.boss.name + ' enrages'} at ${clock(raid.enrageSeconds)}: the party wipes` : `The party wipes at ${clock(result.end)}`} />
         )}
       </div>
       {live && (
         <ul className="duel-log">
           {shown.slice(-6).reverse().map((e, i) => (
-            <li key={shown.length - i} className={`${e.by < 0 ? 'theirs' : 'mine'}${e.kind === 'crit' ? ' crit' : ''}${e.kind === 'aoe' || e.kind === 'phase' ? ' aoe' : ''}`}>
-              {e.kind === 'aoe' && <Icon name={raid.aoe.icon} />}
+            <li key={shown.length - i} className={`${e.by < 0 ? 'theirs' : 'mine'}${e.kind === 'crit' ? ' crit' : ''}${e.kind === 'aoe' || e.kind === 'phase' || e.kind === 'special' || e.kind === 'fall' || e.kind === 'empower' ? ' aoe' : ''}`}>
+              {(e.kind === 'aoe' || e.kind === 'special') && <Icon name={specialOf(e.boss ?? 0, e.t)?.icon ?? 'skull'} />}
               {e.kind === 'phase' && <Icon name={raid.phases?.list[e.phase ?? 0].damageType === 'Magic' ? 'sun' : 'moon'} />}
-              {eventLine(e, names, raid)}
+              {(e.kind === 'fall' || e.kind === 'empower') && <Icon name={e.kind === 'fall' ? 'skull' : 'zap'} />}
+              {eventLine(e, names, raid, bossName, specialOf)}
             </li>
           ))}
         </ul>
@@ -685,16 +854,25 @@ function RaidLoot({ log, loot }: { log: RaidLog; loot: Item[] }) {
   );
 }
 
-function eventLine(e: RaidEvent, names: string[], raid: RaidDef): string {
-  const boss = raid.boss.name.split(',')[0];
+function eventLine(e: RaidEvent, names: string[], raid: RaidDef, bossName: (b: number) => string, specialOf: (b: number, at: number) => RaidSignature | undefined): string {
+  const b = e.boss ?? 0;
+  const boss = short(bossName(b));
+  const saved = e.saved?.length ? ` (Second Wind: ${e.saved.map(i => names[i]).join(', ')})` : '';
   if (e.kind === 'phase') {
     const p = raid.phases?.list[e.phase ?? 0];
     return p ? `${boss} turns to the ${p.name}: ${p.defense.toLowerCase()}, now striking with ${p.damageType.toLowerCase()} damage` : `${boss} changes`;
   }
-  if (e.kind === 'aoe') return `${boss} unleashes ${raid.aoe.name} on the whole party!${e.saved?.length ? ` (Second Wind: ${e.saved.map(i => names[i]).join(', ')})` : ''}`;
+  if (e.kind === 'fall') return `${boss} falls! ${raid.duo ? `${short(bossName(1 - b))} begins to absorb him…` : ''}`;
+  if (e.kind === 'empower') {
+    const d = raid.duo?.bosses[b];
+    return d ? `${short(d.enemy.name)} absorbs his brother: ${d.empowered.name}! ${d.empowered.text}.` : `${boss} empowers`;
+  }
+  const sg = specialOf(b, e.t);
+  if (e.kind === 'aoe') return `${boss} unleashes ${sg?.name ?? 'his special'} on the whole party!${saved}`;
+  if (e.kind === 'special') return `${boss}'s ${sg?.name ?? 'special'} crushes ${names[e.target]} for ${fmt(e.damage)}${saved}`;
   if (e.by < 0) {
     if (e.kind === 'dodge') return `${names[e.target]} dodges ${boss}`;
-    return `${boss} hits ${names[e.target]} for ${fmt(e.damage)}${e.saved?.length ? ' (Second Wind!)' : ''}`;
+    return `${boss} hits ${names[e.target]} for ${fmt(e.damage)}${saved ? ' (Second Wind!)' : ''}`;
   }
-  return `${names[e.by]} ${e.kind === 'crit' ? 'crits' : 'hits'} for ${fmt(e.damage)}`;
+  return `${names[e.by]} ${e.kind === 'crit' ? 'crits' : 'hits'}${raid.duo ? ` ${boss}` : ''} for ${fmt(e.damage)}`;
 }

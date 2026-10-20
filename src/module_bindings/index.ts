@@ -87,6 +87,7 @@ import SetLootFilterReducer from "./set_loot_filter_reducer";
 import SetProfileReducer from "./set_profile_reducer";
 import SetRaidHiresReducer from "./set_raid_hires_reducer";
 import SetRaidPhialReducer from "./set_raid_phial_reducer";
+import SetRaidTargetReducer from "./set_raid_target_reducer";
 import SetTargetReducer from "./set_target_reducer";
 import SettleNowReducer from "./settle_now_reducer";
 import StartGatheringReducer from "./start_gathering_reducer";
@@ -488,6 +489,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_profile", SetProfileReducer),
   __reducerSchema("set_raid_hires", SetRaidHiresReducer),
   __reducerSchema("set_raid_phial", SetRaidPhialReducer),
+  __reducerSchema("set_raid_target", SetRaidTargetReducer),
   __reducerSchema("set_target", SetTargetReducer),
   __reducerSchema("settle_now", SettleNowReducer),
   __reducerSchema("start_gathering", StartGatheringReducer),

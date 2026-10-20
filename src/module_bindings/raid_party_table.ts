@@ -23,4 +23,5 @@ export default __t.row({
   get fight() {
     return __t.option(RaidFight);
   },
+  hiredTargets: __t.u8().name("hired_targets"),
 });

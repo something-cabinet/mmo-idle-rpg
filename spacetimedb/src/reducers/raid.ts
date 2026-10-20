@@ -46,8 +46,8 @@ export const createRaidParty = spacetimedb.reducer({ raidId: t.u16() }, (ctx, { 
   const raid = requireRaid(raidId);
   requireUnlocked(ctx, ch, raid);
   if (ctx.db.raidMember.characterId.find(ch.id)) throw new SenderError('Leave your raid party first');
-  const party = ctx.db.raidParty.insert({ id: 0n, raidId, leaderId: ch.id, hired: 0, createdAt: ctx.timestamp, fight: undefined });
-  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp, phialId: 0 });
+  const party = ctx.db.raidParty.insert({ id: 0n, raidId, leaderId: ch.id, hired: 0, createdAt: ctx.timestamp, fight: undefined, hiredTargets: 0 });
+  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp, phialId: 0, target: 0 });
 });
 
 /** Joins a party with a free seat (hired NPC seats count as taken). */
@@ -59,7 +59,7 @@ export const joinRaidParty = spacetimedb.reducer({ partyId: t.u64() }, (ctx, { p
   requireUnlocked(ctx, ch, requireRaid(party.raidId));
   if (raidFighting(party)) throw new SenderError('That party is fighting');
   if (raidMembers(ctx, party.id).length + party.hired >= RAID_PARTY_SIZE) throw new SenderError('That party is full');
-  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp, phialId: 0 });
+  ctx.db.raidMember.insert({ characterId: ch.id, partyId: party.id, name: ch.name, joinedAt: ctx.timestamp, phialId: 0, target: 0 });
 });
 
 /** Leaves the caller's party (not during a fight). The next member leads; an empty party disbands. */
@@ -92,6 +92,26 @@ export const setRaidPhial = spacetimedb.reducer({ phialId: t.u16() }, (ctx, { ph
   if (!m) throw new SenderError('You are not in a raid party');
   if (phialId !== 0 && !PHIALS_BY_ID.has(phialId)) throw new SenderError('No such Phial');
   ctx.db.raidMember.characterId.update({ ...m, phialId });
+});
+
+/**
+ * A duo raid (raids.md, "Raid 3"): the leader assigns seat `seat` (players in join order, then
+ * hired NPCs) to brother `target` (0 or 1).
+ */
+export const setRaidTarget = spacetimedb.reducer({ seat: t.u8(), target: t.u8() }, (ctx, { seat, target }) => {
+  const { ch } = requireActive(ctx);
+  const party = requireLeading(ctx, ch);
+  const raid = requireRaid(party.raidId);
+  if (!raid.duo) throw new SenderError('This raid has one boss');
+  if (target > 1) throw new SenderError('No such boss');
+  const members = raidMembers(ctx, party.id);
+  if (seat < members.length) {
+    ctx.db.raidMember.characterId.update({ ...members[seat], target });
+    return;
+  }
+  const npc = seat - members.length;
+  if (npc >= party.hired) throw new SenderError('No such seat');
+  ctx.db.raidParty.id.update({ ...party, hiredTargets: target ? party.hiredTargets | (1 << npc) : party.hiredTargets & ~(1 << npc) });
 });
 
 /** The leader sets how many empty seats NPCs fill; they are paid for at the start. */
@@ -132,10 +152,15 @@ export const startRaid = spacetimedb.reducer(ctx => {
     ctx.db.character.id.update(ch);
     const phialId = m.phialId !== 0 && PHIALS_BY_ID.has(m.phialId) && supplyCount(ctx, ch.id, m.phialId) > 0 ? m.phialId : 0;
     if (phialId) takeSupply(ctx, ch.id, phialId, 1);
-    players.push({ characterId: ch.id, name: ch.name, stats: combatStats(ch.level, gearOf(ctx, ch), phialBuffs(phialId)), ...(phialId && { phialId }) });
+    players.push({
+      characterId: ch.id, name: ch.name, stats: combatStats(ch.level, gearOf(ctx, ch), phialBuffs(phialId)), ...(phialId && { phialId }),
+      ...(raid.duo && { target: m.target }),
+    });
   }
   const npc = npcStats(raid);
-  const hired = Array.from({ length: party.hired }, (_, i): RaidFighter => ({ characterId: 0n, name: `Hireling ${i + 1}`, stats: npc }));
+  const hired = Array.from({ length: party.hired }, (_, i): RaidFighter => ({
+    characterId: 0n, name: `Hireling ${i + 1}`, stats: npc, ...(raid.duo && { target: (party.hiredTargets >> i) & 1 }),
+  }));
   const setup = { raidId: raid.id, fighters: [...players, ...hired] };
 
   const start = ctx.timestamp.microsSinceUnixEpoch;

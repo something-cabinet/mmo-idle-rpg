@@ -373,6 +373,46 @@ const VARIANTS: BaseDef[] = [
     implicits: [pct(Stat.PhysDamagePct, 15), pct(Stat.MagicDamagePct, 15)],
     raidId: 2,
   }),
+  // The Brothers' Forge (raid 3, T5): named Forgefire <type>, hammer and fire like Brokk and Sindri,
+  // each made for two bosses at once: both defenses, both penetrations, a healer's tome, a tank's ring.
+  // A heavier, slower hit and armor: hits like a mace, guards like a shield.
+  variant(1014, 3, {
+    name: () => 'Forgefire Mace',
+    weapon: { damageType: 'Physical', hit: 13.5, speed: 0.7, baseCrit: 5, twoHanded: false, ranged: false },
+    implicits: [pct(Stat.ArmorPenPct, 15), lin(Stat.Armor, 6)],
+    raidId: 3,
+  }),
+  // A little less hit, for resistance.
+  variant(1015, 5, {
+    name: () => 'Forgefire Wand',
+    weapon: { damageType: 'Magic', hit: 5.75, speed: 1.5, baseCrit: 6, twoHanded: false, ranged: true },
+    implicits: [pct(Stat.MagicPenPct, 15), lin(Stat.Resistance, 4)],
+    raidId: 3,
+  }),
+  // A quarter of the armor moved to resistance, and more threat: for a tank facing both brothers.
+  variant(1016, 20, {
+    name: () => 'Forgefire Shield',
+    implicits: [lin(Stat.Armor, 6), lin(Stat.Resistance, 6), { stat: Stat.MaxHp, value: 5, curve: 'life' }, pct(Stat.ThreatPct, 20)],
+    raidId: 3,
+  }),
+  // A healer's tome: heal instead of magic damage, a little less Mind.
+  variant(1017, 21, {
+    name: () => 'Forgefire Tome',
+    implicits: [pct(Stat.Mind, 20), pct(Stat.HealPct, 15)],
+    raidId: 3,
+  }),
+  // An Amber ring with max HP and threat instead of Vitality.
+  variant(1018, 53, {
+    name: () => 'Forgefire Ring',
+    implicits: [pct(Stat.MaxHpPct, 10), pct(Stat.ThreatPct, 10)],
+    raidId: 3,
+  }),
+  // A Ruby amulet with both penetrations instead of Might: one for each brother.
+  variant(1019, 54, {
+    name: () => 'Forgefire Amulet',
+    implicits: [pct(Stat.ArmorPenPct, 10), pct(Stat.MagicPenPct, 10)],
+    raidId: 3,
+  }),
 ];
 
 export const BASE_LIST: BaseDef[] = [...CORE.map(({ icon: _icon, group: _group, ...c }) => ({ ...c, typeId: c.id })), ...VARIANTS];

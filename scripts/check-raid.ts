@@ -2,11 +2,13 @@
 //   npm run test:raid
 import { SLOTS, ZONE_BASES, base } from '../spacetimedb/src/data/bases';
 import { combatStats, matchup, mitigation, type CombatStats } from '../spacetimedb/src/combat';
-import { autoEquip, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
+import { autoEquip, better, ranking, scoreGear, type OwnedItem, type Profile } from '../spacetimedb/src/equip';
+import { rerollAffix } from '../spacetimedb/src/craft';
 import { NPC_POWER, RAIDS, RAIDS_BY_ID, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, phaseAt, type RaidDef } from '../spacetimedb/src/data/raids';
 import { raidUniques } from '../spacetimedb/src/data/uniques';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
 import { Effect } from '../spacetimedb/src/data/legendary';
+import { Stat } from '../spacetimedb/src/data/stats';
 import { aggroShares, balancedTargets, clearsToday, decodeSetup, duoFallTimes, duoThreat, encodeSetup, lockoutEnd, lockoutStart, npcStats, raidOdds, raidRng, rollRaidItem, simulateRaid, threatWeight, type RaidFighter, type RaidSetup } from '../spacetimedb/src/raid';
 
 let failed = 0;
@@ -23,16 +25,31 @@ const LEVELS: Record<number, number> = { 1: 38, 2: 48, 3: 58 };
 const MAIN = SLOTS.indexOf('MainHand');
 
 /**
+ * The gear a character brings to each raid, by raid id: rarity odds of its bag, and rerolls
+ * per affix. Early on, random drops (Rare to Legendary). By T5 players come prepared: Epic
+ * at least, each affix rerolled toward their role.
+ */
+const GEAR: Record<number, { epic: number; legendary: number; rerolls: number }> = {
+  1: { epic: 0.3, legendary: 0.1, rerolls: 0 },
+  2: { epic: 0.3, legendary: 0.1, rerolls: 0 },
+  3: { epic: 0.7, legendary: 0.3, rerolls: 1 },
+};
+
+/**
  * A character who has just cleared the raid's tier: its level (LEVELS), the best of a bag
- * of 60 random items of the tier (Rare 60%, Epic 30%, Legendary 10%) for its role. A
- * healer must wield a Healing Staff; the others pick any weapon.
+ * of 60 random items of the tier (rarity by GEAR, the rest Rare) for its role, then each
+ * equipped item's regular affixes rerolled GEAR times, a roll kept when it ranks better
+ * (a tank also keeps threat).
+ * A healer must wield a Healing Staff; the others pick any weapon.
  */
 function character(seed: number, role: 'tank' | 'healer' | 'dps', r: RaidDef = raid): CombatStats {
   const level = LEVELS[r.id];
+  const g = GEAR[r.id];
   const rng = seededRng(BigInt(seed), 77n);
   const items: OwnedItem[] = Array.from({ length: 60 }, (_, i) => {
     const x = rng();
-    const rarity: RarityName = x < 0.6 ? 'Rare' : x < 0.9 ? 'Epic' : 'Legendary';
+    const rare = 1 - g.epic - g.legendary;
+    const rarity: RarityName = x < rare ? 'Rare' : x < rare + g.epic ? 'Epic' : 'Legendary';
     const b = ZONE_BASES[Math.floor(rng() * ZONE_BASES.length)];
     const baseId = role === 'healer' && b.weapon ? 10 : b.id;
     return { ...makeItem(rng, baseId, r.tier, rarity), id: BigInt(i + 1) };
@@ -42,6 +59,24 @@ function character(seed: number, role: 'tank' | 'healer' | 'dps', r: RaidDef = r
   const slots = autoEquip(level, items, SLOTS.map(() => 0n), profile);
   const gear = slots.map(id => items.find(i => i.id === id));
   if (role === 'healer' && gear[MAIN]?.baseId !== 10) throw new Error('healer without a staff');
+  const rank = () => ranking(profile, scoreGear(level, gear));
+  for (let slot = 0; slot < gear.length; slot++) {
+    const it = gear[slot];
+    if (!it) continue;
+    for (let a = 0; a < it.affixes.length; a++) {
+      for (let k = 0; k < g.rerolls; k++) {
+        const kept = gear[slot]!;
+        // Threat is the tank's own affix, though Survival doesn't rank it: kept, and a roll of it kept.
+        const threat = (x: OwnedItem) => role === 'tank' && x.affixes[a].stat === Stat.ThreatPct;
+        if (threat(kept)) break;
+        const next = rerollAffix(rng, kept, a);
+        if (typeof next === 'string') break;
+        const before = rank();
+        gear[slot] = next;
+        if (!threat(next) && !better(rank(), before, false)) gear[slot] = kept;
+      }
+    }
+  }
   return combatStats(level, gear);
 }
 
@@ -181,7 +216,8 @@ check("an NPC doesn't depend on the party", encodeSetup({ raidId: 1, fighters: [
 
 {
   const d = forge.duo!;
-  const fp = roles4(forge);
+  // The balance check's party 0 (seeds 100 on): a typical party, which usually brings a brother down.
+  const fp = roles4(forge, 100);
   const split = balancedTargets(forge, fp);
   const fights = Array.from({ length: 80 }, (_, i) => simulateRaid(party(fp, 0, forge), forge, raidRng(11n, BigInt(i))));
   check('both brothers attack', fights.every(r => r.events.some(e => e.by === -1 && e.boss === 0) && r.events.some(e => e.by === -1 && e.boss === 1)));
@@ -215,7 +251,7 @@ check("an NPC doesn't depend on the party", encodeSetup({ raidId: 1, fighters: [
     return emp ? r.events.filter(e => e.boss === 0 && (e.kind === 'aoe' || e.kind === 'special') && e.t > emp.t).map(e => ({ e, emp })) : [];
   });
   check('Molten Hammer: Brokk\'s slam hits everyone after he empowers, on its slower timer', molten.length > 0 &&
-    molten.every(({ e }) => e.kind === 'aoe') && molten.every(({ e, emp }) => Math.abs(((e.t - emp.t) / d.bosses[0].empowered.signature!.every!) % 1) < 1e-6));
+    molten.every(({ e }) => e.kind === 'aoe') && molten.every(({ e, emp }) => { const n = (e.t - emp.t) / d.bosses[0].empowered.signature!.every!; return Math.abs(n - Math.round(n)) < 1e-6; }));
   const slams = fights.flatMap(r => r.events.filter(e => e.boss === 0 && e.kind === 'special'));
   check('Anvil Slam hits one fighter before', slams.length > 0 && slams.every(e => e.target >= 0));
   // Anvil Hide: a physical dealer hits Sindri far softer once he's armored.

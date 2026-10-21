@@ -270,8 +270,8 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     let r = rng() * living.reduce((sum, i) => sum + w(i), 0);
     return living.find(i => (r -= w(i)) < 0) ?? living[living.length - 1];
   };
-  /** A duo: × the brothers' damage while both stand (`together`); alone, full strength. */
-  const bond = () => (duo && bosses.every(x => x.hp > 0) ? duo.together : 1);
+  /** A duo: × brother `b`'s damage while both stand (`together`); alone, full strength, more once empowered (`absorbed`). */
+  const bond = (b: number) => (!duo ? 1 : bosses.every(x => x.hp > 0) ? duo.together : empowered[b] ? duo.absorbed : 1);
   /** A duo brother's twist, once he has absorbed the other. */
   const empower = (b: number, t: number) => {
     const d = duo!.bosses[b];
@@ -312,7 +312,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       const x = bosses[b];
       const sp = x.special!;
       x.nextSpecial += sp.every;
-      const hit = sp.damage * (1 - chill) * bond();
+      const hit = sp.damage * (1 - chill) * bond(b);
       const saved: number[] = [];
       if (sp.aoe) {
         // A split AoE (Moonfall) is shared by the living: the fewer left, the harder each is hit.
@@ -341,7 +341,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
         if (counter > 0) x.hp = Math.max(0, x.hp - counter);
         push({ t, by: -1, kind: 'dodge', target: tgt, damage: 0, boss: b });
       } else {
-        const damage = (x.def.dps / x.def.speed) * (1 - chill) * bond() * (1 - x.defense[tgt].mitigation) * (0.9 + 0.2 * rng());
+        const damage = (x.def.dps / x.def.speed) * (1 - chill) * bond(b) * (1 - x.defense[tgt].mitigation) * (0.9 + 0.2 * rng());
         const saved = hurt(tgt, damage, x.def.damageType, b);
         push({ t, by: -1, kind: 'hit', target: tgt, damage, dealt, boss: b, ...(blocked ? { blocked: true } : {}), ...(saved && { saved: [tgt] }) });
       }

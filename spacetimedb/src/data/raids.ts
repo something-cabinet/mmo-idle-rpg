@@ -78,6 +78,8 @@ export interface DuoDef {
   focusThreat: number;
   /** × each brother's damage (attacks and signature) while the other still stands: alone, he hits at full strength. */
   together: number;
+  /** × the survivor's damage once he empowers: he has absorbed his brother's power. */
+  absorbed: number;
 }
 
 export interface RaidDef {
@@ -138,12 +140,12 @@ const raidDrops = (raidId: number) => [...ZONE_BASES, ...BASE_LIST.filter(b => b
 
 /** A duo raid's second brother has enemy ID 9200 + raid ID (the first is 9000 + raid ID, like every raid boss). */
 const BROKK: EnemyDef = {
-  id: 9003, name: 'Brokk, the Hammer', level: 60, damageType: 'Physical', defense: 'Armored', speed: 0.5,
-  hp: 34000, dps: 190, armor: 380, resistance: 70, xp: 300000, gold: 220000, drops: raidDrops(3), materials: [], boss: true,
+  id: 9003, name: 'Brokk, the Hammer', level: 60, damageType: 'Physical', defense: 'Armored', speed: 0.35,
+  hp: 44000, dps: 105, armor: 380, resistance: 70, xp: 300000, gold: 220000, drops: raidDrops(3), materials: [], boss: true,
 };
 const SINDRI: EnemyDef = {
-  id: 9203, name: 'Sindri, the Bellows', level: 60, damageType: 'Magic', defense: 'Warded', speed: 1.2,
-  hp: 30000, dps: 170, armor: 70, resistance: 380, xp: 0, gold: 0, drops: [], materials: [], boss: true,
+  id: 9203, name: 'Sindri, the Bellows', level: 60, damageType: 'Magic', defense: 'Warded', speed: 2,
+  hp: 20000, dps: 175, armor: 70, resistance: 380, xp: 0, gold: 0, drops: [], materials: [], boss: true,
 };
 
 export const RAIDS: RaidDef[] = [
@@ -215,24 +217,25 @@ export const RAIDS: RaidDef[] = [
       bosses: [
         {
           enemy: BROKK,
-          signature: { name: 'Anvil Slam', icon: 'hammer', every: 15, damage: 1000, damageType: 'Physical', aoe: false },
+          signature: { name: 'Anvil Slam', icon: 'hammer', every: 15, damage: 800, damageType: 'Physical', aoe: false },
           // A tank-buster becomes a raid-wide nuke, but slower.
           empowered: {
             name: 'Molten Hammer',
             text: 'Anvil Slam hits every living fighter, every 25 s instead of 15',
-            signature: { name: 'Molten Hammer', every: 25, aoe: true, icon: 'flame', damage: 700 },
+            signature: { name: 'Molten Hammer', every: 25, aoe: true, icon: 'flame', damage: 560 },
           },
         },
         {
           enemy: SINDRI,
-          signature: { name: 'Fire Bellows', icon: 'flame', every: 12, damage: 210, damageType: 'Magic', aoe: true },
+          signature: { name: 'Fire Bellows', icon: 'flame', every: 12, damage: 168, damageType: 'Magic', aoe: true },
           // No weak side left: a penetration and damage race.
           empowered: { name: 'Anvil Hide', text: 'He becomes Armored as well as Warded: high armor and high resistance', armor: 900, resistance: 900 },
         },
       ],
       absorbSeconds: 5,
       focusThreat: 0.2,
-      together: 0.5,
+      together: 0.75,
+      absorbed: 1.75,
     },
     enrageSeconds: 115,
     clearsPerDay: 3,
@@ -241,10 +244,11 @@ export const RAIDS: RaidDef[] = [
     tokens: 20,
     voidglass: 6,
     hireCost: 12000,
-    // The average of level-58 characters with random T5 gear (Rare to Legendary), tanks, healers and damage dealers (test:raid).
+    // The average of level-58 characters with T5 gear (Epic or better, each affix rerolled once toward their role),
+    // tanks, healers and damage dealers (test:raid).
     reference: {
-      level: 58, maxHp: 1100, regen: 4, armor: 95, resistance: 103, evasionRating: 40, threat: 0.34,
-      attacksPerSec: 1.1, physicalPerSec: 167, magicPerSec: 167, critChance: 0.1, critMult: 1.1, armorPen: 0.06, magicPen: 0.05,
+      level: 58, maxHp: 1020, regen: 9.5, armor: 83, resistance: 103, evasionRating: 40, threat: 0.33,
+      attacksPerSec: 1.32, physicalPerSec: 226, magicPerSec: 202, critChance: 0.11, critMult: 1.12, armorPen: 0.07, magicPen: 0.07,
     },
   },
 ];

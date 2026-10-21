@@ -97,17 +97,19 @@ the one left standing takes something from his fallen brother (`RaidDef.duo`).
 
 | | **Brokk, the Hammer** | **Sindri, the Bellows** |
 |---|---|---|
-| Level, HP | 60, 34,000 | 60, 30,000 |
-| Attack | 190 DPS, **physical**, 0.5 attacks/s (heavy, slow) | 170 DPS, **magic**, 1.2 attacks/s (quick) |
+| Level, HP | 60, 44,000 (tanky) | 60, 20,000 (fragile) |
+| Attack | 105 DPS, **physical**, 0.35 attacks/s (heavy, slow) | 175 DPS, **magic**, 2 attacks/s (quick) |
 | Defense | **Armored** (armor 380, resistance 70) | **Warded** (armor 70, resistance 380) |
-| Signature | **Anvil Slam:** every 15 s, 1,000 physical damage to one fighter, picked by threat | **Fire Bellows:** every 12 s, 210 magic damage to every living fighter |
+| Signature | **Anvil Slam:** every 15 s, 800 physical damage to one fighter, picked by threat | **Fire Bellows:** every 12 s, 168 magic damage to every living fighter |
 
 - **Two attack streams:** each brother attacks on its own timer, so the tank can face both
   damage types at once. Signatures can't be dodged.
-- **Brothers in arms:** while both stand, **each hits at half strength** (attacks and
-  signatures, `duo.together` 0.5). Alone, the survivor hits at full strength. Without this,
-  killing one brother fast always won (two brothers alive is double damage), whatever the
-  absorption cost; with it, balancing the party is the better plan (below).
+- **Brothers in arms:** while both stand, **each hits at 75% strength** (attacks and
+  signatures, `duo.together` 0.75), so together they hit 1.5× as hard as one. Alone, the
+  survivor hits at full strength, and at **175% once he empowers** (`duo.absorbed` 1.75):
+  he has absorbed his brother's power. Without the absorbed damage, killing one brother
+  fast always won (one brother alone is less damage than two), whatever the twist; with
+  it, balancing the party is the better plan (below).
 - **Threat, per brother:** each attack picks a living fighter by threat as today
   (`e^(5 × threat)`), but fighters attacking that brother count **+20 points of threat**
   with him (about 2.7× the weight). You hit him, he hits back: assignment decides who gets
@@ -128,7 +130,7 @@ the one left standing takes something from his fallen brother (`RaidDef.duo`).
 
 | Survivor | Empowered | What it tests |
 |---|---|---|
-| Brokk | **Molten Hammer:** his slam hits **every living fighter** for 700 instead of one for 1,000, every 25 s instead of 15 | The healer and everyone's HP |
+| Brokk | **Molten Hammer:** his slam hits **every living fighter** for 560 instead of one for 800, every 25 s instead of 15 | The healer and everyone's HP |
 | Sindri | **Anvil Hide:** armor and resistance both 900: no weak side, and far less damage gets through | Penetration and raw damage, against the enrage |
 
 - **What it asks for:** a plan made before the fight. Ideally both brothers fall within 5 s
@@ -136,17 +138,20 @@ the one left standing takes something from his fallen brother (`RaidDef.duo`).
   it would rather face.
 - **Enrage** at **1:55**: tight on purpose, so a long fight against Anvil Hide runs out of time.
 
-Tuned in `npm run test:raid` against random T5 characters at level 58 (T5 bags, same
-roles), averaged over 48 parties. A win takes about 1:10. Win odds:
+Tuned in `npm run test:raid` against prepared T5 characters at level 58, averaged over 48
+parties: by T5 nobody brings random drops. Same 60-item bags and roles, but Epic (70%) or
+Legendary (30%), and each equipped item's affixes rerolled once toward the role, a roll
+kept when it ranks better (a tank also keeps threat). Not min-maxed: a tank has tank gear
+and some tank affixes, a healer healing ones. A win takes about 0:52. Win odds:
 
 | Party | Odds |
 |---|---|
 | 4 players, balanced split (`balancedTargets`) | ~74% |
-| 4 players, all on Brokk (Sindri empowers) | ~47% |
-| 4 players, all on Sindri (Brokk empowers) | ~49% |
-| 3 players | ~20% |
-| 3 players + 1 NPC | ~40% |
-| 2 players (+ 2 NPCs) | ~0% |
+| 4 players, all on Brokk (Sindri empowers) | ~48% |
+| 4 players, all on Sindri (Brokk empowers) | ~55% |
+| 3 players | ~38% |
+| 3 players + 1 NPC | ~39% |
+| 2 players (+ 2 NPCs) | ~0% (~7%) |
 
 Rewards as the others', at T5: 20 tokens, 6 Voidglass, 220,000 gold, 300,000 XP; 12,000 gold
 per hired NPC. Its own bases are the six **Forgefire** variants (bases.md) and its own

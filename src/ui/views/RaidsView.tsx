@@ -368,7 +368,7 @@ function DuoBosses({ s, raid, beaten }: { s: Snapshot; raid: RaidDef; beaten: bo
           <div title="The party wipes when the timer runs out"><span>Enrage</span><strong className="c-bad">{clock(raid.enrageSeconds)}</strong></div>
         </div>
         <ul>
-          <li><strong>Brothers in arms:</strong> while both stand, each hits at {pct(duo.together)} strength. Alone, he hits at full strength.</li>
+          <li><strong>Brothers in arms:</strong> while both stand, each hits at {pct(duo.together)} strength. Alone, he hits at full strength, and at {pct(duo.absorbed)} once he empowers.</li>
           <li><strong>Absorption:</strong> when one falls, the other absorbs him for <strong>{duo.absorbSeconds} s</strong>. Kill him within that time and he never empowers.</li>
           <li><strong>Who attacks whom:</strong> the leader assigns each seat to a brother. Attacking a brother draws his attacks (+{pct(duo.focusThreat)} threat with him).</li>
         </ul>

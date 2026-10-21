@@ -2,7 +2,7 @@ import { memo, useState } from 'react';
 import type { Item } from '../../module_bindings/types';
 import { bagExpansionCost } from '../../../spacetimedb/src/craft';
 import { SLOTS, base } from '../../../spacetimedb/src/data/bases';
-import { MATERIALS, MATERIALS_BY_ID } from '../../../spacetimedb/src/data/materials';
+import { MATERIALS, MATERIALS_BY_ID, MATERIAL_KINDS, type MaterialDef } from '../../../spacetimedb/src/data/materials';
 import { fitsSlot, placeItem } from '../../../spacetimedb/src/equip';
 import { BAG_MAX } from '../../../spacetimedb/src/game';
 import { LISTED_RARITIES, rarityRank, salvageValue, salvageVoidglass } from '../../../spacetimedb/src/loot';
@@ -48,20 +48,38 @@ function sortedBag(s: Snapshot, sort: BagSort, f: ItemFilter): Item[] {
   return items.sort(by[sort]);
 }
 
-/** Materials held, highest tier first, untiered ones last. */
-const heldMaterials = (s: Snapshot) =>
-  MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n).sort((a, b) => (b.tier || -1) - (a.tier || -1));
+/** The Materials tab's groups, in order: one per tiered kind, then the untiered finds together. */
+const MATERIAL_GROUPS: { label: string; has: (m: MaterialDef) => boolean }[] = [
+  ...MATERIAL_KINDS.map(kind => ({ label: kind === 'Herb' ? 'Rare herb' : kind, has: (m: MaterialDef) => m.tier > 0 && m.kind === kind })),
+  { label: 'Rare find', has: m => m.tier === 0 },
+];
+/** Gems, rare herbs and the untiered finds are rare, so they stand out. */
+const isRareMaterial = (m: MaterialDef) => m.tier === 0 || m.kind === 'Gem' || m.kind === 'Herb';
+
+/** Materials held by type, highest tier first within a type. */
+const heldMaterials = (s: Snapshot) => {
+  const held = MATERIALS.filter(m => (s.materials.get(m.id) ?? 0n) > 0n);
+  return MATERIAL_GROUPS.map(g => ({ label: g.label, materials: held.filter(g.has).sort((a, b) => b.tier - a.tier) })).filter(g => g.materials.length);
+};
 
 function MaterialsTab({ s }: { s: Snapshot }) {
-  const held = heldMaterials(s);
+  const groups = heldMaterials(s);
   return (
     <div className="card">
-      {held.length ? (
-        <div className="chips">
-          {held.map(m => (
-            <span key={m.id} className="chip" title={m.tier ? `T${m.tier} ${m.kind}` : 'Untiered'}>
-              <Icon name={materialIconName(m.id)} className="c-material" />{m.name}<strong>{fmtBig(s.materials.get(m.id)!)}</strong>
-            </span>
+      {groups.length ? (
+        <div className="mat-groups">
+          {groups.map(g => (
+            <section key={g.label} className="mat-group">
+              <h3>{g.label}</h3>
+              {g.materials.map(m => (
+                <div key={m.id} className="stat-row">
+                  <span className={isRareMaterial(m) ? 'c-rare' : undefined}>
+                    <Icon name={materialIconName(m.id)} className={isRareMaterial(m) ? 'c-rare' : 'c-material'} /> {m.tier > 0 && <span className="muted">T{m.tier} </span>}{m.name}
+                  </span>
+                  <strong>{fmtBig(s.materials.get(m.id)!)}</strong>
+                </div>
+              ))}
+            </section>
           ))}
         </div>
       ) : (
@@ -344,12 +362,12 @@ function GearTab({ s }: { s: Snapshot }) {
           <span className="muted">Maximum size ({BAG_MAX})</span>
         ) : (
           <button
-            className="btn small ghost"
+            className="btn small accent-outline"
             disabled={s.gold < cost}
             title={s.gold < cost ? `Need ${fmtBig(cost - s.gold)} more gold` : undefined}
             onClick={() => call(r.expandBag({}), 'Bag expanded by 25 slots')}
           >
-            +25 slots · {fmtBig(cost)} gold
+            +25 slots · <Icon name="coins" className="c-gold" />{fmtBig(cost)}
           </button>
         )}
         <span className="spacer" />

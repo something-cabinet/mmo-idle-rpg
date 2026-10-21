@@ -1671,6 +1671,21 @@ button.version:hover {
   font-variant-numeric: tabular-nums;
 }
 
+/* Bag > Materials: one list per type. */
+.mat-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px 20px;
+}
+.mat-group h3 {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
 /* ------------------------------------------------------------------ items */
 .item-card {
   --rc: var(--r-common);

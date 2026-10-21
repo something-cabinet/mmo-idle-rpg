@@ -22,13 +22,16 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.2.1',
-    date: '2026-10-20',
-    commit: '33153e3',
+    date: '2026-10-21',
+    commit: 'f087cb3',
     title: "The Brothers' Forge",
     changes: [
-      { tag: 'new', text: "New raid, The Brothers' Forge (tier 5), opened by your first Durgrim kill: two dwarven smith brothers fought at once. The leader assigns each seat to a brother, and the one you attack comes after you. When one falls, the other absorbs his power after 5 seconds, unless you bring him down first. Its own Forgefire gear and three new raid Uniques." },
+      { tag: 'new', text: "New raid, The Brothers' Forge (tier 5), opened by your first Durgrim kill: two dwarven smith brothers fought at once. Brokk, the Hammer, is slow and hard to bring down; Sindri, the Bellows, is fragile but strikes fast. The leader assigns each seat to a brother, and the one you attack comes after you. While both stand, each holds back a little. When one falls, the other absorbs his power after 5 seconds and hits far harder, unless you bring him down first. Its own Forgefire gear and three new raid Uniques." },
       { tag: 'new', text: "Uniques can be tempered: their base stats (weapon damage, armor, implicits) grow like any item's. Their own stats and effects stay as they rolled. Corrupted Uniques still can't." },
       { tag: 'balance', text: 'Bulwark legendaries roll threat % as their stat bonus, instead of evasion rating: it is a tank effect. Bulwark items you already have keep their evasion rating.' },
+      { tag: 'balance', text: 'Each zone also needs a character level: 10 per tier past the first (tier 2 at level 10, tier 3 at 20, and so on). The lock note says what is missing, and life skill tiers follow their zone.' },
+      { tag: 'new', text: 'Bag > Materials lists your materials by type, highest tier first, with gems, rare herbs and rare finds highlighted.' },
+      { tag: 'fix', text: 'A special gathering node shows the same level requirement at every tier.' },
     ],
   },
   {

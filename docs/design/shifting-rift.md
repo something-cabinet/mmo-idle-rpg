@@ -22,8 +22,8 @@ from idling, without breaking the idle pillar: nothing in here is ever settled o
 
 **The Shifting Rift** ("the Rift" for short). Lore (story.md): the rift beneath Brightvein
 Hold (T5), opened when the Last Thane dies and his seal breaks. Inside, pieces of every
-zone collide and shift each week, with echoes of old enemies, and gear made of rift-stuff
-that falls apart when you leave. "Shifting" is also the rule: a new layout every week.
+zone collide and shift every time you enter, with echoes of old enemies, and gear made of rift-stuff
+that falls apart when you leave. "Shifting" is also the rule: a new layout every run.
 
 ## Rules at a glance
 
@@ -43,9 +43,10 @@ that falls apart when you leave. "Shifting" is also the rule: a new layout every
 - **Rewards are weekly.** Each floor cleared pays once per week (Monday 00:00 UTC).
   Later runs that week pay nothing new until they beat your best. After a full clear,
   runs are for fun.
-- **Same Rift for everyone each week:** maps, enemy line-ups and the weekly mutation come
-  from a weekly seed. What's offered to you (boons, shop stock, Ethereal drops) is seeded
-  per run.
+- **Only the mutation is weekly.** The weekly mutation is the same for everyone all week.
+  Everything else (maps, enemy line-ups, Elite affixes, events, boss options, offers, shop
+  stock, Ethereal drops) is rolled fresh **per run** from the run's seed, so every run is a
+  new dungeon.
 - **A run can be paused.** The state is stored, so you can stop after any node and come
   back hours later. The weekly reset ends any unfinished run, and you keep what its cleared
   floors paid.
@@ -63,7 +64,7 @@ come out.
 | Lives | Until salvaged, recycled or traded | **Until the run ends**, then it's deleted |
 | Used in | Loadouts 1–4 | The run's **Rift loadout** only |
 | Crafting, salvage, trade, gift, loot filter | Yes | **Never** |
-| Counts toward the bag | Yes | No (own small run stash) |
+| Counts toward the bag | Yes | No (worn or discarded, never stored) |
 
 - **Separate table, not a flag.** Equip, salvage, reroll, trade and gift reducers all take
   `item` IDs. An Ethereal item isn't in that table, so no current or future reducer can touch
@@ -82,19 +83,31 @@ come out.
 
 ## A run
 
+### Threshold
+
+Before node 1, at the rift's threshold, you pick **1 of 3 gifts** that shape the run from
+the first click. Rolled per run, e.g.:
+
+| Gift | What you start with |
+|-|-|
+| **Ember of Will** | An Epic boon of a random theme |
+| **Rift Purse** | 150 Motes |
+| **Shard of Rift-stuff** | An Ethereal item with one guaranteed headline (random slot), wear or discard as usual |
+| **Bargain in the Dark** | A keystone of a random theme, plus a random curse |
+| **Marked Path** | A theme mark of your choice, held like a headline (counts as 1 boon of that theme) |
+| **Thick Blood** | Max HP +15% for the run |
+
 ### The Rift loadout
 
-The run's own 9 slots. It starts as the locked copy of your loadout. Between nodes (never
-during a fight) you can put an Ethereal item in any slot, or move the locked item back. The
-locked items can't be lost or changed, only benched.
+The run's own 9 slots. It starts as the locked copy of your loadout. Kept simple:
 
-- **Run stash: 6 Ethereal items** on top of what's worn. When it's full, a new one replaces
-  one you pick, or is left behind. A small stash forces choices.
+- **Wear it or discard it.** When you find or buy an Ethereal item, you choose right away
+  (never during a fight): **wear** it in the slot that matches its base (a helm in the
+  helm slot), or **discard** it. There's no stash, and nothing is sold or salvaged.
+- **Wearing replaces for good.** The item it replaces, a locked copy or an earlier
+  Ethereal, is discarded for the rest of the run. Locked items can't be changed, only
+  replaced. (Your real items are never touched: the copies are what's discarded.)
 - **Boons** sit next to the loadout. They aren't gear and take no slot.
-- Before each fight, the client shows **Scout odds** for the next node, simulated in the
-  browser like duels and the Deep: 200 fights from your current HP. It costs the server
-  nothing, and the odds help you pick a path. Fight odds only. The whole run isn't
-  predicted.
 
 ### Floor map
 
@@ -113,7 +126,7 @@ locked items can't be lost or changed, only benched.
 ```
 
 F fight · F* fight with an Elite · S shop · E event. Nodes 1–5 each offer 2–4 nodes, and
-each links to 1–2 nodes in the next row. Node 6 is the boss, the same for every path. So a
+each links to 1–2 nodes in the next row. Node 6 is the boss, the same for every path (you pick which one, below). So a
 floor is 5 choices and at most 6 fights. Rules for the generator:
 
 - **Node 1 is always a fight**, never with an Elite, so a run starts by earning its first
@@ -125,10 +138,10 @@ floor is 5 choices and at most 6 fights. Rules for the generator:
 | Node | What happens |
 |-|-|
 | **Fight** | 1–3 enemies back to back, HP carrying between them (like a Deep depth). Win: **Motes**, then **pick 1 of 3 boons** |
-| **Fight with an Elite** | One of the enemies is an Elite echo with an Elite affix. Win: more Motes, **1 of 3 boons (Rare or better)**, and **an Ethereal item** |
+| **Fight with an Elite** | One of the enemies is an Elite echo with an Elite affix. Win: more Motes, **1 of 3 boons (Rare or better)**, and **an Ethereal item** with that Elite's affix as a Trophy |
 | **Shop** | Spend Motes (below) |
 | **Event** | A short text scene with 2–3 choices, often a risk for a reward (below) |
-| **Boss** | Node 6, the floor boss. Win: the floor is cleared (weekly reward), a **Radiant Ethereal** item, and you heal **50% of missing HP** before the next floor |
+| **Boss** | Node 6, the floor boss. On floors 1–4 you **pick 1 of 2** zone-boss echoes, each shown with its mechanic and the zone its Echo comes from; floor 5 is always the Rift Heart. Win: the floor is cleared (weekly reward), an **Ethereal item** with an Echo, and you heal **50% of missing HP** before the next floor |
 
 There are no rest nodes. Healing between fights comes from shops, events, boons and boss
 kills, so every heal costs a node, Motes or a pick.
@@ -144,7 +157,8 @@ Stock rolled when you enter, 6–8 offers:
 | Offer | Price (Motes) |
 |-|-|
 | Boon (Common / Rare / Epic) | 40 / 75 / 130 |
-| Ethereal item | 90 (Radiant: 180) |
+| Upgrade a boon you hold one rarity | 60 (to Rare) / 110 (to Epic) |
+| Ethereal item | 90 |
 | Heal 30% max HP | 50 |
 | Attune an Ethereal item (+1 affix tier on every affix) | 60 |
 | Remove a curse | 75 |
@@ -179,15 +193,37 @@ replayed by the client, like the Deep and raids. The server's outcome is final.
 
 ## Boons
 
-*Count, balance and theme weighting to be discussed.*
-
 Run-long buffs, picked 1 of 3 after fights, or bought. They're the roguelike heart of the
 mode: each run builds a different character on top of the same locked gear. They're online
 only, so no closed form is needed.
 
-**Five themes.** With **3 boons of one theme** you get its set bonus, and a stronger one at
-**5**. Offers lean toward themes you already have (weight × 2), so a run converges on a
-plan without forcing it.
+### How picks work
+
+- **Duplicates upgrade.** Picking a boon you already hold raises its rarity (Common →
+  Rare → Epic) instead of adding a copy. A run gives ~15–20 picks but holds only **~8–12
+  distinct boons**, so every pick is wide (a new boon) or deep (an upgrade).
+- **Each offer has three fixed slots** instead of theme weighting, so a run can commit to a
+  plan without every offer looking the same:
+  1. A boon of your **main theme** (the one you hold most of), or an upgrade of one.
+  2. A boon of **another theme you hold**.
+  3. A boon of **any theme**.
+
+  With nothing held yet, all three slots are any theme. The weekly mutation can tilt slot 3.
+- **Stat gating.** A boon that needs a stat (block chance, evasion, crit) is only offered
+  once you have that stat, from gear or from another boon. Each such theme has a boon that
+  grants the stat, so no boon is ever dead on arrival.
+- **Keystones** are Epic only, one per theme, offered from floor 3 on. Each one changes how
+  the build plays rather than adding numbers.
+- **Rarity odds** go up by floor: floor 1 70 / 25 / 5%, floor 5 35 / 45 / 20%.
+- **Boons are "more" multipliers** after gear, like elixirs, so they stay easy to read and
+  to tune one at a time.
+- **Names never reuse a legendary or unique effect's name**, so a tooltip is never
+  ambiguous.
+
+### Themes and set bonuses
+
+**Seven themes.** With **3 distinct boons of one theme** you get its set bonus, and a
+stronger one at **5**.
 
 | Theme | Leans on | Set bonus (3 / 5) |
 |-|-|-|
@@ -195,52 +231,161 @@ plan without forcing it.
 | **Bastion** | Mitigation, bulk | +10% max HP / every 10 s, a shield of 10% max HP |
 | **Blood** | Sustain, HP as a resource | Lifesteal cap +5% / kills heal 8% max HP |
 | **Storm** | Speed, crits | +15% attack speed / crits chain 30% of the hit to the next swing |
+| **Mist** | Evasion | Evade chance +6% / every evade makes your next attack crit (a Glimmerguard wearer, who already gets that, gets +50% crit damage on those attacks instead) |
+| **Aegis** | Block | Block chance +8% / each block reflects 50% of the hit |
 | **Fortune** | Motes, shops, events | Shops −20% / one free Rare boon per floor at its first shop |
 
-Examples, with rarity scaling the number (Common / Rare / Epic):
+### Roster (43)
 
-| Boon | Theme | Effect |
-|-|-|-|
-| Sharpened Will | Fury | Damage +8 / 14 / 22% |
-| Opening Salvo | Fury | First 5 s of each fight: damage +40 / 70 / 110% |
-| Iron Hide | Bastion | Armor and resistance +15 / 25 / 40% |
-| Stubborn | Bastion | Each fight starts with a shield of 8 / 14 / 22% max HP |
-| Leech | Blood | Lifesteal +1 / 2 / 3% (cap still applies) |
-| Red Tithe | Blood | Max HP −10%, damage +12 / 20 / 30% |
-| Afterglow | Blood | Win a fight node: heal 4 / 7 / 11% max HP |
-| Quickened | Storm | Attack speed +8 / 14 / 22% |
-| Keen | Storm | Crit chance +3 / 5 / 8% (flat, added after base crit) |
-| Lucky Coin | Fortune | Motes +20 / 35 / 55% |
-| Haggler | Fortune | One shop offer per shop is half price |
-| Wildcard | none | Counts as one boon of **every** theme for set bonuses (Epic only) |
+Values are Common / Rare / Epic. *Keystones* (in italics) are Epic only.
 
-- **Boons are "more" multipliers** after gear, like elixirs, so they stay easy to read and
-  to tune one at a time.
-- Boon **rarity odds** go up by floor: floor 1 70 / 25 / 5%, floor 5 35 / 45 / 20%.
+**Fury**
+
+| Boon | Effect |
+|-|-|
+| Sharpened Will | Damage +8 / 14 / 22% |
+| Opening Salvo | First 5 s of each fight: damage +40 / 70 / 110% |
+| Coup de Grâce | +20 / 35 / 55% damage against enemies below 30% HP |
+| Sunder | Ignore 10 / 18 / 28% of armor and resistance |
+| Bloodrush | +1.5 / 2.5 / 4% damage per fight won this floor (resets each floor) |
+| *Frenzy* | +1% damage for each 1% of HP you're missing |
+
+**Bastion**
+
+| Boon | Effect |
+|-|-|
+| Iron Hide | Armor and resistance +15 / 25 / 40% |
+| Thick Skin | Max HP +8 / 14 / 22% |
+| Stubborn | Each fight starts with a shield of 8 / 14 / 22% max HP |
+| Braced | 10 / 16 / 24% less damage taken from Elites and bosses |
+| Hold the Line | Once per floor, the first drop below 30% HP gives a shield of 20 / 30 / 45% max HP |
+| *Fortress* | 25% less damage taken; 15% less attack speed |
+
+**Blood**
+
+| Boon | Effect |
+|-|-|
+| Leech | Lifesteal +1 / 2 / 3% (cap still applies) |
+| Red Tithe | Max HP −10%, damage +12 / 20 / 30% |
+| Afterglow | Win a fight node: heal 4 / 7 / 11% max HP |
+| Transfusion | Each kill heals 3 / 5 / 8% max HP |
+| Clotting | Regen +50 / 90 / 140% while below 50% HP |
+| *Blood Price* | Lifesteal past full HP becomes a shield, up to 20% max HP |
+
+**Storm**
+
+| Boon | Effect |
+|-|-|
+| Quickened | Attack speed +8 / 14 / 22% |
+| Keen | Crit chance +3 / 5 / 8% (flat, added after base crit). Grants the stat |
+| Cruel | Crit damage +15 / 25 / 40% (needs crit chance) |
+| Static | Every 5th hit adds +100 / 170 / 260% as a shock that can't be dodged |
+| Tailwind | The first 3 attacks of each fight are 50 / 80 / 120% faster |
+| *Thunderhead* | Each crit gives +3% attack speed for the fight, up to +30% (needs crit chance) |
+
+**Mist**
+
+| Boon | Effect |
+|-|-|
+| Fleetfoot | Evade chance +4 / 7 / 11% (flat, added after rating). Grants the stat |
+| Smoke | First 5 s of each fight: evade chance +20 / 35 / 50% |
+| Counterstep | Each evade counters for 30 / 50 / 80% of your average hit |
+| Slip Away | Each evade heals 1 / 1.5 / 2.5% max HP |
+| Opening | After an evade, your next attack deals +15 / 25 / 40% |
+| *Phantom* | An enemy hit must pass your evade check twice; max HP −20% |
+
+**Aegis**
+
+| Boon | Effect |
+|-|-|
+| Raised Shield | Block chance +6 / 10 / 15% (a block stops half the hit; stacks with Bulwark). Grants the stat |
+| Bracing | The first 1 / 2 / 3 enemy hits of each fight are always blocked |
+| Shield Bash | Each block deals 40 / 70 / 100% of your average hit back |
+| Steady Guard | Each block heals 1 / 1.5 / 2.5% max HP |
+| Deep Guard | Blocks stop 60 / 70 / 80% of the hit instead of 50% |
+| *Shieldwall* | Blocks stop the whole hit; 20% less attack speed |
+
+**Fortune**
+
+| Boon | Effect |
+|-|-|
+| Lucky Coin | Motes +20 / 35 / 55% |
+| Haggler | One shop offer per shop is half price |
+| Interest | Entering a shop pays 5 / 8 / 12% of the Motes you hold |
+| Treasure Sense | Headline chances on the Ethereal items you find × 1.5 / 2 / 3 |
+| Second Look | Boon offers show 4 choices instead of 3 (Rare only) |
+| *Spendthrift* | Every 10 Motes spent heal 1% max HP |
+
+**No theme:** **Wildcard** counts as one boon of every theme for set bonuses (Epic only;
+not a keystone, so it can show from floor 1).
+
+- **Glimmerguard** (Parry and Thrust) turns your **final** crit chance into evasion rating
+  (4 per 1%, combat.ts). In the Rift the conversion runs **last, after boons**, so Keen and
+  any other crit chance help a Glimmerguard build, and Cruel helps too (parried crits use
+  your crit damage). For stat gating, its converted crit chance counts as having crit.
+- **Balance isn't a goal inside the Rift.** Nothing equippable comes out and the rewards
+  are capped weekly, so a broken run is a fun run. Boons, rift effects and their combos are
+  kept unless they're buggy or unintuitive, never cut for being too strong.
 - **Curses** are negative boons from events (e.g. *Frail*: max HP −15%; *Hexed*: heals −30%;
-  *Weighted*: attack speed −10%). They take no slot, can be removed at a shop, and some
-  events pay well for taking one.
+  *Weighted*: attack speed −10%). They don't count as boons for offers or sets, can be
+  removed at a shop, and some events pay well for taking one.
 
 ## Gear: Ethereal items
 
-The "unusual powerful gear". An Ethereal item is a normal-looking base of the **run's tier**
-with strong affixes and a **rift effect**, an effect that doesn't exist outside the Rift.
+The "unusual powerful gear", potentially overpowered on purpose. One grade only: an
+Ethereal item is a base of the **run's tier** with **3 regular affixes (tier ≥ T − 2)**,
+and on top of that it can carry any of five **headlines**, each rolled **independently**:
 
-| Grade | From | Affixes | Rift effects |
-|-|-|-|-|
-| **Ethereal** | Elites, shops, events | 3 regular, affix tier ≥ T − 2 | 1 |
-| **Radiant** | Floor bosses, rare events, shops | 4 regular, affix tier ≥ T − 1 | 1, plus a 30% chance of a second |
+| Headline | Chance | What it is |
+|-|-|-|
+| **Rift effect** | 30% | One effect from the rift effect table (below), found only in the Rift |
+| **Theme mark** | 20% | Counts as 1 boon of a random theme for set bonuses ("Storm-marked") |
+| **Growth** | 15% | Each floor boss you clear while wearing it raises its 3 affixes one tier, with no cap |
+| **Trophy** | 10% | One of the six Elite affixes, turned to your side (below) |
+| **Echo** | 6% | A real unique's effect, whatever the slot ("Echo of Glimmerguard") |
 
-- Stronger than most of what a player wears at the same tier, on purpose. Locked gear is
-  the floor, Ethereal gear is the climb, and a run should feel like it's breaking the
-  game's usual limits.
-- **Bases:** any zone base of the tier, plus a few **Ethereal-only bases** that bend the
-  normal slot rules. They never reach normal gear:
-  - **Prism Orb** (off-hand): each of your hits rolls physical or magic at random.
-  - **Hourglass** (amulet): no stats, and every node's time limit is +60 s.
+- **The source guarantees one headline:** an Elite's drop always has a **Trophy** (that
+  Elite's own affix); a floor boss's drop always has an **Echo** (a unique from that boss's
+  zone; the Rift Heart's from any zone). The other four still roll as in the table.
+- **Multi-headline items are meant to be a WOW.** All five on one item:
+
+  | Item | All 5 headlines |
+  |-|-|
+  | Shop or event (no guarantee) | 1 in ~18,500 |
+  | Elite drop (Trophy guaranteed) | 1 in ~1,850 |
+  | Boss drop (Echo guaranteed) | 1 in ~1,100 |
+
+  With ~13 Ethereal items seen in a full run (5 Elite, 5 boss, ~3 from shops and events),
+  the best item of the run has:
+
+  | Best item of a run | How often |
+  |-|-|
+  | 2+ headlines | Every run |
+  | 3+ headlines | ~4 runs in 5 |
+  | 4+ headlines | ~1 run in 6 |
+  | All 5 | ~1 run in 140 |
+
+  Locked gear is the floor, Ethereal gear is the climb, and a lucky run should feel like
+  it's breaking the game's usual limits.
+- **Bases:** any zone base of the run's tier. No Rift-only bases (yet).
+- **Trophies**, the Elite affixes on your side: **Vampiric** (you heal 50% of the damage
+  you deal, past the lifesteal cap), **Warded Shell** (you take the defense that resists the
+  enemy's damage type), **Swift** (50% faster, hits 25% weaker), **Thorned** (reflect 10%
+  of damage taken, 30% less max HP), **Unyielding** (regenerate 1.5% max HP per second),
+  **Ravenous** (your damage grows 5% every 5 s).
+- **Growth has no cap.** Affix tiers keep rising past T9 (T10, T20, T100…), with ranges
+  from each stat's curve formula past T9 (`affixRange` already extends, crafting.md). In
+  practice a run has 5 bosses, but nothing stops it.
+- **Echoes** can be any unique's effect, party-only ones (Drawing Fire, Twin Flame)
+  included, since the Rift may get a multiplayer mode later; solo they simply do nothing.
+  Two copies of the same Echo, or an Echo of a unique you're also wearing, don't stack,
+  like two of the same unique.
+- **Theme marks** count toward set bonuses and toward your "main theme" for boon offers,
+  but aren't boons: Unravel and the boon-removal offer don't touch them.
 - **Rift effects** get their own ID range (e.g. 200+), separate from the legendary and
-  unique effects (1–99), so they can never be rolled outside. Like unique effects they
-  don't stack and may carry a trade-off. Being online only, they can be wild.
+  unique effects (1–99), so they can never be rolled outside. Two copies of the same rift
+  effect don't stack; anything else does, including an effect that copies a unique.
+  Being online only, they can be wild.
 
 | Rift effect | Effect |
 |-|-|
@@ -248,7 +393,7 @@ with strong affixes and a **rift effect**, an effect that doesn't exist outside 
 | **Echo Strike** | Every 4th attack repeats at 100% |
 | **Overclock** | Attack speed × 1.6; each swing costs 1% max HP |
 | **Gambler's Edge** | Each hit deals 0–300% damage at random (average ×1.5) |
-| **Phoenix Plume** | Once per run, a killing blow leaves you at 40% HP instead. Then the item burns away |
+| **Phoenix Plume** | Once per run, a killing blow leaves you at 40% HP instead. Then the item burns away and the slot is empty |
 | **Bloodbound** | No lifesteal cap; your regen is 0 |
 | **Mirror Mail** | Reflects 60% of damage taken; you take 15% more |
 | **Hoarder's Band** | +1% damage per 10 unspent Motes (max +40%) |
@@ -257,7 +402,20 @@ with strong affixes and a **rift effect**, an effect that doesn't exist outside 
 | **Rift Conduit** | Each boon you hold gives +2% damage and +2% max HP |
 | **Wither Aura** | Enemies lose 1% max HP per second |
 | **Thief's Glove** | Fights pay +50% Motes |
-| **Rift Anchor** | Can't be unequipped this run; all stats on your other items +20% |
+| **Rift Anchor** | Can't be replaced this run (items for its slot can only be discarded); all stats on your other items +20% |
+
+### When effects meet
+
+Rift effects stack freely with legendary and unique effects, and with boons: Glass Heart
+and Glass Cannon together are ×4 damage at a quarter of the HP, and First Blood, Ambush and
+the Fury 5-set multiply on the first hit. Only a few cases need a rule:
+
+| Case | Rule |
+|-|-|
+| **Overrides.** Voidheart with Spellblade or Moonlight (all damage becomes magic, so the swap or conversion does nothing more; Moonlight keeps its double hit). Bloodbound with Frozen Blood (lifesteal still does nothing) or with Bloodthirst and the Blood 3-set (no cap left to raise) | Allowed. The wear-or-discard card **warns** first, e.g. "Overrides your Spellblade", since wearing is for the rest of the run |
+| **Same trigger.** Phoenix Plume and Second Wind both catch a killing blow | Second Wind goes first; the Plume only burns once Second Wind is spent for the floor |
+| **Order of damage changes** | Type changes apply in a fixed order: Spellblade, then Moonlight, then Voidheart (the last one wins) |
+| **Reflect past 100%.** Mirror Mail with Thornshell | Allowed: reflect adds up with no cap |
 
 ## Events
 
@@ -269,7 +427,7 @@ risk/reward choices live, and with no rest nodes, one of the ways to heal. Examp
 | **Blood Altar** | Lose 20% max HP (current), gain an Epic Blood boon / leave |
 | **Gambler** | Bet 50 Motes: 50% double, 50% lose / bet 100 / leave |
 | **Wandering Smith** | Attune an Ethereal item for 40 Motes / reroll one of its affixes for 20 / leave |
-| **Cursed Chest** | Open: a Radiant item and a random curse / leave |
+| **Cursed Chest** | Open: an Ethereal item with 3 random headlines, and a random curse / leave |
 | **Your Reflection** | Fight a copy of your current run build (reuses duels): win a free Epic boon; lose 30% HP and nothing else / leave |
 | **Healing Spring** | Heal 25% / take a Rare boon of a theme you don't have |
 | **Quiet Alcove** | Heal 35% / attune an Ethereal item for free |
@@ -278,8 +436,8 @@ risk/reward choices live, and with no rest nodes, one of the ways to heal. Examp
 | **Lost Satchel** | 60 Motes / an Ethereal item |
 | **Broken Mirror** | Swap a boon for a random boon one rarity higher; 25% chance it's a curse instead |
 
-Event odds don't depend on the player: the weekly seed sets which events are on the map.
-What each event rolls (which boon, which item) is seeded per run.
+Which events are on the map and what each one rolls (which boon, which item) come from
+the run's seed.
 
 ## Enemies
 
@@ -291,7 +449,7 @@ run can face an echo of a T1 Bog Wisp with T5 numbers.
 HP(f, slot)  = avgHP(T)  × floorMult(f) × kind.hp  × slot.hp  × RIFT_HP
 DPS(f, slot) = avgDPS(T) × floorMult(f) × kind.dps × slot.dps × RIFT_DPS
 level        = 10 × T + 2 × (f − 1)                  // T5 run: 50 → 58
-floorMult    = 0.75, 0.95, 1.2, 1.5, 1.85            // floors 1–5
+floorMult    = 1.25^(f − 1) = 1, 1.25, 1.56, 1.95, 2.44 // floors 1–5
 ```
 
 `avgHP(T)` and `avgDPS(T)` are the zone tier's average enemy (zones.md), the T5 step
@@ -299,17 +457,21 @@ included. `kind` is the original enemy's shape (its damage type, defense profile
 come along as they are). `RIFT_HP` and `RIFT_DPS` account for HP carrying over and are
 tuned in `test:rift`.
 
+**`floorMult` scales HP and damage only.** Armor, resistance, accuracy and evasion stay at
+the run tier's values. Floor 1 is the tier as it is; each floor after has 25% more HP and
+damage.
+
 | Slot | HP × | DPS × | Extra |
 |-|-|-|-|
 | Fight, 1 enemy | 1 | 1 | none |
 | Fight, 2 / 3 enemies | 0.6 / 0.45 each | 1 | none |
 | Elite (in a fight) | 2.5 | 1.3 | 1 Elite affix (the Deep's six: Vampiric, Warded Shell, Swift, Thorned, Unyielding, Ravenous) |
-| Floor boss (1–4) | 5 | 1.5 | An echo of a **zone boss**, with its own mechanic plus 1 Elite affix |
+| Floor boss (1–4) | 5 | 1.5 | An echo of a **zone boss** you picked from 2 (any tier's boss, rescaled), with its own mechanic plus 1 Elite affix |
 | Final boss (5) | 7 | 1.7 | **The Rift Heart**, its own boss (below) |
 
-- **Why floors ramp faster than zones:** the player gets stronger inside the run through
-  boons and Ethereal gear. Floor 1 is easy with locked gear alone; floor 5 needs the run's
-  build. A run you play well is meant to end far stronger than it started.
+- **Why floors ramp at all:** the player gets stronger inside the run through boons and
+  Ethereal gear, so each floor is × 1.25 HP and damage. Floor 1 is the run tier as it is; floor 5 wants the
+  run's build. A run you play well is meant to end far stronger than it started.
 - **Target:** a reference player for tier T (random Rare+ tier-T gear) with *random* picks
   clears floors 1–2, usually dies on 3–4, and clears 5 maybe 1 time in 10. With
   *sensible* picks, they clear 5 about half the time. `test:rift` plays two bots (random
@@ -333,12 +495,12 @@ what's good, so even a player who replays for fun meets a new puzzle every week.
 
 | Mutation | Effect |
 |-|-|
-| **Blood Moon** | All enemies have 20% lifesteal; Blood boons offered twice as often |
+| **Blood Moon** | All enemies have 20% lifesteal; offer slot 3 is always a Blood boon |
 | **Storm Front** | Everyone (you and enemies) has +30% attack speed |
 | **Iron Week** | Enemies are Armored; armor penetration counts double |
 | **Bargain Bin** | Shops −30%, fights pay −30% Motes |
-| **Echoes of the Deep** | Every Elite has 2 affixes; Elites drop Radiant items |
-| **Wild Magic** | Every boon offer has one Wildcard-style "any theme" boon |
+| **Echoes of the Deep** | Every Elite has 2 affixes, and its drop carries both as Trophies |
+| **Wild Magic** | Offer slot 3 is always Epic, keystones included from floor 1 |
 | **Glass World** | You and enemies deal double damage |
 
 ## Rewards
@@ -388,8 +550,8 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **~45–60 calls per run:** pick node, pick boon, buy, event choice, equip. Each fight
   node plays its fights in the call (well under 1 ms). No tick, no schedule.
 - **State:** one private `rift_run` row per character (floor, map position, HP, Motes,
-  boons, curses, locked-gear copy, seeds), plus ≤ 15 `rift_item` rows (9 worn, 6 in the
-  stash). Both are deleted at the end of the run, so storage stays flat however many runs
+  boons, curses, locked-gear copy, seeds), plus ≤ 10 `rift_item` rows (9 worn, 1 waiting
+  for wear-or-discard). Both are deleted at the end of the run, so storage stays flat however many runs
   are played.
 - **Weekly claims:** one `rift_week` row per character (week, highest tier paid per
   floor).
@@ -402,13 +564,13 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 
 | Piece | What |
 |-|-|
-| `data/rift.ts` | Boons (permanent IDs), themes and set bonuses, curses, rift effects (200+), Ethereal-only bases, events, mutations, floor multipliers, reward table |
-| `rift.ts` (pure, shared) | `weeklyRift(week)` (maps, line-ups, events, mutation), `nodeEnemies(...)`, `runStats(run)` (locked gear + Ethereal + boons + level), `simulateNode(...)` (a `simulateDepth`-style chain: starting HP, per-floor Second Wind, shared time limit), offer rolls |
+| `data/rift.ts` | Boons (permanent IDs), themes and set bonuses, curses, rift effects (200+), events, mutations, floor multipliers, reward table |
+| `rift.ts` (pure, shared) | `weeklyMutation(week)`, `runMap(seed)` (maps, line-ups, Elite affixes, events, boss options), `nodeEnemies(...)`, `runStats(run)` (locked gear + Ethereal + boons + level), `simulateNode(...)` (a `simulateDepth`-style chain: starting HP, per-floor Second Wind, shared time limit), offer rolls |
 | `fight.ts` | Already there: `FightMods.startHp`, `timeLimit`, `secondWind`, and the Elite-affix mods. Needed: hooks for boons and rift effects (shields, chained crits, Echo Strike, Gambler's Edge…), and Phial Renewal forced to 0 |
 | Schema | `Ethereal` rarity (already reserved), `rift_run`, `rift_item`, `rift_week`, `rift_log`, `rift_codex` (discovery) |
-| Reducers | `riftStart(loadoutIndex, tier)` (tier ≥ 5), `riftMove(node)`, `riftPick(option)` (boons, events), `riftBuy(offer)`, `riftEquip(slot, riftItemId \| locked)`, `riftAbandon()`; weekly reset handled lazily (a call in a new week ends the old run and pays its cleared floors) |
-| Client | A **Shifting Rift** page under Adventure: the floor map, Rift loadout + stash, boons with set progress, Scout odds, replays with speed controls, shop and event dialogs, run history, Codex |
-| Check | `npm run test:rift`: random and greedy bots per tier, clear rate per floor, each boon and rift effect's swing on clear rate (outliers get toned down), every weekly map is valid |
+| Reducers | `riftStart(loadoutIndex, tier)` (tier ≥ 5), `riftMove(node)`, `riftPick(option)` (boons, events), `riftBuy(offer)`, `riftTake(wear)` (wear or discard the found item; the run waits on it), `riftAbandon()`; weekly reset handled lazily (a call in a new week ends the old run and pays its cleared floors) |
+| Client | A **Shifting Rift** page under Adventure: the floor map, Rift loadout with a wear-or-discard compare, boons with set progress, replays with speed controls, shop and event dialogs, run history, Codex |
+| Check | `npm run test:rift`: random and greedy bots per tier, clear rate per floor, every generated map is valid; for floor difficulty only, never to tone down a boon or rift effect |
 
 ## Decided
 
@@ -417,12 +579,19 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
   is always the boss. No rest nodes, no separate Elite nodes.
 - **Tier:** T5 and above only.
 - **No consumables:** elixirs, meals and Phials stay out.
-- **No dual-wield testbed:** Twin Fang is cut.
+- **No Rift-only bases (yet):** Twin Fang, Prism Orb and Hourglass are cut.
+- **No Scout odds.**
+- **Per run, not weekly:** only the mutation is weekly; maps, line-ups, events and offers roll per run.
+- **Threshold:** pick 1 of 3 starting gifts before node 1.
+- **Floor scaling:** enemy HP and damage × 1.25 per floor, floor 1 at × 1; other stats don't scale.
+- **Boss choice:** floors 1–4 offer 2 zone-boss echoes; floor 5 is always the Rift Heart.
+- **Gear:** wear or discard on the spot, no stash, no selling; wearing discards what was in the slot.
+- **Ethereal items:** one grade (Radiant dropped); 3 affixes (tier ≥ T − 2) plus five independent headlines, rolled independently: rift effect 30%, theme mark 20%, growth 15% (uncapped), Trophy 10% (guaranteed on Elite drops), Echo 6% (guaranteed on boss drops; party-only effects allowed).
+- **Balance isn't a goal:** effects stay unless buggy or unintuitive; clashes warn, never block.
 - **No co-op.**
+- **Boons:** duplicates upgrade rarity; offers have three fixed slots (main theme, another held theme, any); stat-gated boons; a keystone per theme; seven themes (Mist and Aegis added for evasion and block), 43 boons. Glimmerguard converts crit to evasion after boons.
 
 ## Open questions
 
 - **Riftstone:** what it crafts. Later. Could share the answer with the raid token shop
   and Voidglass (abyss.md).
-- **Boons:** count at launch (~30?), balance, and whether theme weighting makes runs too
-  samey. To discuss.

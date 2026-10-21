@@ -3,7 +3,7 @@
 // fight when the leader starts it (that decides the outcome), and every client in the
 // party replays the very same fight from the stored setup and seed to animate it.
 
-import { critMultAgainst, defenseAgainst, effectDamageMult, matchup, mitigation, parrySource, type CombatStats } from './combat';
+import { critMultAgainst, defenseAgainst, matchup, mitigation, parrySource, type CombatStats } from './combat';
 import { DRAWING_FIRE, Effect, TWIN_FLAME, effectAmount } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, empoweredSignature, raidBosses, type RaidDef, type RaidSignature } from './data/raids';
 import { raidUniques } from './data/uniques';
@@ -227,7 +227,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     blocked = p.blocked;
     damage = p.absorb(dealt);
     const o = bosses[b].off[i];
-    const thorns = p.amount(Effect.Thornshell) * damage * effectDamageMult(fighters[i].effects) * (1 - (type === 'Physical' ? o.mitP : o.mitM));
+    const thorns = p.thorns(damage, 1 - (type === 'Physical' ? o.mitP : o.mitM));
     bosses[b].hp = Math.max(0, bosses[b].hp - thorns);
     return p.take(damage);
   };
@@ -330,7 +330,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       p.ambush = 1;
       const healed = o.heal * critX;
       // Zealot's Oath: heals also hit for a share of the heal (magic).
-      damage += p.amount(Effect.ZealotsOath) * healed * effectDamageMult(fighters[a].effects) * (1 - o.mitM);
+      damage += p.zealot(healed, o.mitM);
       x.hp = Math.max(0, x.hp - damage);
       if (healed > 0) {
         const living = party.map((_, i) => i).filter(alive);

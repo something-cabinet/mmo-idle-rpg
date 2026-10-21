@@ -74,7 +74,14 @@ const withProfile = (e: EnemyDef, defense: Defense): EnemyDef => ({
 function tidalMatchup(s: CombatStats, e: EnemyDef): Matchup {
   const p = matchup(s, { ...e, damageType: 'Physical' });
   const m = matchup(s, { ...e, damageType: 'Magic' });
-  return { ...p, enemyHit: (p.enemyHit + m.enemyHit) / 2, incoming: (p.incoming + m.incoming) / 2, dps: (p.dps + m.dps) / 2 };
+  return {
+    ...p,
+    enemyHit: (p.enemyHit + m.enemyHit) / 2,
+    foeHit: (p.foeHit + m.foeHit) / 2,
+    thornsThrough: (p.thornsThrough + m.thornsThrough) / 2,
+    incoming: (p.incoming + m.incoming) / 2,
+    dps: (p.dps + m.dps) / 2,
+  };
 }
 
 /** The three enemies of `lineup` as `s` fights them (abyss.md, "Enemies"). */

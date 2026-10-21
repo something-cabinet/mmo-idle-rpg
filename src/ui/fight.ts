@@ -103,6 +103,8 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
         // Bulwark: a blocked hit; Second Skin: a hit the shield took (HP unchanged shows as "Shield").
         else float('you', `${e.burst ? 'Moonfall ' : e.blocked ? 'Block ' : ''}-${fmt(e.damage)}`, e.blocked ? 'block' : e.shield !== undefined && e.youHp === prevHp(e) ? 'shielded' : 'taken');
         if ((e.reflected ?? 0) >= 0.5) float('you', `Thorns -${fmt(e.reflected!)}`, 'taken');
+        if ((e.countered ?? 0) >= 0.5) float('enemy', `Riposte ${fmt(e.countered!)}`, 'hit');
+        if ((e.thorns ?? 0) >= 0.5) float('enemy', `Thorns ${fmt(e.thorns!)}`, 'hit');
         if ((e.drained ?? 0) >= 0.5) float('enemy', `+${fmt(e.drained!)}`, 'heal');
         if (e.secondWind) float('you', 'Second Wind', 'heal');
         if (e.healed >= 0.5) float('you', `+${fmt(e.healed)}`, 'heal');

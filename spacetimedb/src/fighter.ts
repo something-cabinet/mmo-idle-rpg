@@ -4,7 +4,7 @@
 // swing timer is written once, here. The helpers draw from the generator exactly where the
 // sims always did, so fights replay as before.
 
-import type { CombatStats } from './combat';
+import { effectDamageMult, type CombatStats } from './combat';
 import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, STOKE, effectAmount, rallyMult, waxingMult } from './data/legendary';
 import type { Rng } from './loot';
 
@@ -50,6 +50,11 @@ export class Fighter {
   private readonly lastStand: number;
   private readonly afterimage: number;
   private readonly stoneskin: number;
+  private readonly riposteShare: number;
+  private readonly thornshell: number;
+  private readonly zealotShare: number;
+  /** × effect damage (Glass Cannon, Voidtouched), as on your hits. */
+  private readonly effectMult: number;
 
   constructor(s: CombatStats, start: FighterStart = {}) {
     const fx = s.effects;
@@ -73,6 +78,10 @@ export class Fighter {
     this.lastStand = amount(Effect.LastStand);
     this.afterimage = amount(Effect.Afterimage);
     this.stoneskin = amount(Effect.Stoneskin);
+    this.riposteShare = amount(Effect.Riposte);
+    this.thornshell = amount(Effect.Thornshell);
+    this.zealotShare = amount(Effect.ZealotsOath);
+    this.effectMult = effectDamageMult(fx);
   }
 
   amount(id: number): number {
@@ -136,7 +145,17 @@ export class Fighter {
 
   /** Riposte: what a dodge counters for, from your average hit (`hit`, with `crit` chance at × `critX`). */
   riposte(hit: number, crit: number, critX: number): number {
-    return this.amount(Effect.Riposte) * hit * (1 + crit * (critX - 1));
+    return this.riposteShare * hit * (1 + crit * (critX - 1));
+  }
+
+  /** Thornshell: what reflects back from `taken` (what reached you), `through` being the share the attacker's mitigation lets through. */
+  thorns(taken: number, through: number): number {
+    return this.thornshell * taken * this.effectMult * through;
+  }
+
+  /** Zealot's Oath: what a heal of `heal` also deals, against the target's magic mitigation `mitM`. */
+  zealot(heal: number, mitM: number): number {
+    return this.zealotShare * heal * this.effectMult * (1 - mitM);
   }
 
   // ------------------------------------------------------------ a hit taken
@@ -150,12 +169,12 @@ export class Fighter {
   }
 
   /**
-   * An incoming hit after your effects: a Phial of Warding and Stoneskin (`flat`; zone fights
-   * already have them in the matchup's enemy hit), Bulwark (rolls, see `blocked`), Last Stand
-   * below its HP share, and Afterimage right after a dodge. Before the shield (`take`).
+   * An enemy attack after your effects: a Phial of Warding, Stoneskin, Bulwark (rolls, see
+   * `blocked`), Last Stand below its HP share, and Afterimage right after a dodge. Before the
+   * shield (`absorb`).
    */
-  shrink(damage: number, rng: Rng, flat = true): number {
-    if (flat) damage = Math.max(0, damage * (this.stats.damageTaken ?? 1) - this.stoneskin * this.maxHp);
+  shrink(damage: number, rng: Rng): number {
+    damage = Math.max(0, damage * (this.stats.damageTaken ?? 1) - this.stoneskin * this.maxHp);
     this.blocked = this.bulwark > 0 && rng() < this.bulwark;
     if (this.blocked) damage /= 2;
     if (this.hp < LAST_STAND_BELOW * this.maxHp) damage *= 1 - this.lastStand;
@@ -188,6 +207,14 @@ export class Fighter {
     this.hp = this.secondWind * this.maxHp;
     this.secondWind = 0;
     return true;
+  }
+
+  /**
+   * Damage that isn't an enemy attack (a reflect, a counter): the shield takes it first,
+   * nothing shrinks it. Returns whether Second Wind saved you.
+   */
+  takeDirect(damage: number): boolean {
+    return this.take(this.absorb(damage));
   }
 
   /** Heals `amount`, up to max HP; the fallen stay down. */

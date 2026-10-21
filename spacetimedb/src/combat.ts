@@ -356,10 +356,16 @@ export interface Matchup {
   critMult: number;
   /** One enemy hit after your mitigation and Stoneskin, before evasion and Bulwark. */
   enemyHit: number;
+  /** One enemy hit as a live fight rolls it: after your mitigation and Frostbite's chill, before a Phial of Warding, Stoneskin, evasion and Bulwark (`Fighter.shrink`). */
+  foeHit: number;
+  /** Share of your Thornshell reflect the enemy takes: what its mitigation in its own damage type lets through. */
+  thornsThrough: number;
   /** Second Skin's shield at the start of each fight, HP. */
   shield: number;
   /** Your damage per second after the enemy's mitigation and evasion (before its regen). */
   dps: number;
+  /** The part of `dps` your attacks deal themselves; live fights add Riposte, Thornshell and Zealot's Oath per event. */
+  weaponDps: number;
   /** Waxing Moon's average damage multiplier over this fight (1 without it); already in `dps`. */
   waxing: number;
   /** Fading Rally's average attack speed multiplier over this fight (1 without it); already in `dps` and `hps`. */
@@ -432,12 +438,14 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     hps *= rally;
   }
 
+  const weaponDps = dps;
   // Stoneskin takes a share of max HP off each hit; Bulwark blocks half of a share of the hits.
   const stoneskin = amount(Effect.Stoneskin) * s.maxHp;
   const bulwark = amount(Effect.Bulwark);
   // A Phial of Warding shrinks what gets through mitigation.
   const taken = (1 - s.chill) * (s.damageTaken ?? 1);
   const enemyHit = Math.max(0, (e.dps / e.speed) * taken * (1 - playerMitigation) - stoneskin);
+  const foeHit = (e.dps / e.speed) * (1 - s.chill) * (1 - playerMitigation);
   let incoming = stoneskin > 0 ? enemyHit * e.speed * (1 - evasion) : e.dps * taken * (1 - playerMitigation) * (1 - evasion);
   if (bulwark > 0) incoming *= 1 - bulwark / 2;
   // Afterimage: a hit right after a dodge (chance = evasion) deals a share less.
@@ -499,8 +507,11 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
     enemyEvasion,
     critMult,
     enemyHit,
+    foeHit,
+    thornsThrough: 1 - enemyMitigation[e.damageType],
     shield,
     dps,
+    weaponDps,
     waxing,
     rally,
     parry,

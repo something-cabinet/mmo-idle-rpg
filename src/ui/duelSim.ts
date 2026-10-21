@@ -4,7 +4,7 @@
 // on its own timer with the matchup formulas of combat.ts applied player against player
 // (penetration, evasion, crits, heals, lifesteal, regen and the effects).
 
-import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, parrySource, type CombatStats } from '../../spacetimedb/src/combat';
+import { critMultAgainst, defenseAgainst, mitigation, parrySource, type CombatStats } from '../../spacetimedb/src/combat';
 import { Effect, effectAmount } from '../../spacetimedb/src/data/legendary';
 import { Fighter } from '../../spacetimedb/src/fighter';
 import { seededRng, type Rng } from '../../spacetimedb/src/loot';
@@ -87,11 +87,6 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
   const events: DuelEvent[] = [];
   let now = 0;
 
-  /** `i` takes `damage`; Second Wind may save them. Returns whether it did. */
-  const hurt = (i: number, damage: number) => {
-    const d = duelists[i];
-    return d.take(d.absorb(d.shrink(damage, rng)));
-  };
   const done = (end: number, winner: Duel['winner'], by: Duel['by']): Duel => ({ events, maxHp, end, winner, by });
 
   for (;;) {
@@ -114,7 +109,7 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
       foe.dodge();
       // Riposte: `b` counters for a share of an average hit.
       const counter = foe.riposte(off[b].hit, off[b].crit, off[b].critX);
-      const saved = counter > 0 && hurt(a, counter);
+      const saved = counter > 0 && you.takeDirect(counter);
       events.push({ t, by: a, kind: 'dodge', damage: 0, hp: hp(), ...(saved && { secondWind: true }) });
       if (you.hp <= 0) return done(t, b, 'ko');
       continue;
@@ -125,15 +120,14 @@ export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel 
     you.ambush = 1;
     const heal = o.heal * critX;
     // Zealot's Oath: heals also hit for a share of the heal (magic).
-    const zealot = you.amount(Effect.ZealotsOath) * heal * effectDamageMult(sides[a].effects) * (1 - o.mitM);
-    const damage = weapon + zealot;
-    const saved = hurt(b, damage);
+    const damage = weapon + you.zealot(heal, o.mitM);
+    const taken = foe.absorb(foe.shrink(damage, rng));
+    const saved = foe.take(taken);
     you.hp = Math.min(you.maxHp, you.hp + heal + sides[a].lifesteal * damage);
-    // Thornshell on the target reflects a share of what it took, each part in the type it was dealt in.
-    const physTaken = weapon * o.physShare;
-    const thorns = foe.amount(Effect.Thornshell) * effectDamageMult(sides[b].effects) *
-      (physTaken * (1 - off[b].mitP) + (damage - physTaken) * (1 - off[b].mitM));
-    const savedA = thorns > 0 && hurt(a, thorns);
+    // Thornshell on the target reflects a share of what reached it, each part in the type it was dealt in.
+    const phys = damage > 0 ? (weapon * o.physShare) / damage : 0;
+    const thorns = foe.thorns(taken * phys, 1 - off[b].mitP) + foe.thorns(taken * (1 - phys), 1 - off[b].mitM);
+    const savedA = thorns > 0 && you.takeDirect(thorns);
     events.push({ t, by: a, kind: isCrit ? 'crit' : 'hit', damage, hp: hp(), ...((saved || savedA) && { secondWind: true }) });
     if (foe.hp <= 0) return done(t, a, 'ko');
     if (you.hp <= 0) return done(t, b, 'ko');

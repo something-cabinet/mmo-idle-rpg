@@ -134,4 +134,4 @@ how to unlock them, and each slot shows how many of its cosmetics are unlocked.
 - Seasonal Deep rewards: the season's top 10 get a gold title and plate for the next
   season (abyss.md).
 - A shop for some plates (raid tokens, Voidglass).
-- Chaos Dungeon Rank 10 title (chaos-dungeon.md).
+- Shifting Rift Rank 10 title (shifting-rift.md).

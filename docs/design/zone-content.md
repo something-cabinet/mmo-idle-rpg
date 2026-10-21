@@ -318,7 +318,7 @@ bound himself to the shard to hold it. Levels 46–55. Boss at the full HP bonus
 
 **The T5 step:** HP and DPS × 1.34 over the reference curve, not × 1.22: the climb's
 usual × 1.05 plus a one-time × 1.1 (zones.md, "Difficulty climb"). The tier that opens
-the Chaos Dungeon is the first wall.
+the Shifting Rift is the first wall.
 
 | Enemy | Level | Damage | Defense | Speed | HP | DPS | Armor / Res | XP | Gold |
 |---|---|---|---|---|---|---|---|---|---|
@@ -340,8 +340,8 @@ the Chaos Dungeon is the first wall.
   combinations are now used: Grubnak (phys, balanced), Morgra (magic, warded), Hrimvald
   (phys, armored), Selvara (magic, armored), Durgrim (phys, warded).
 - Physical-leaning zone (4 of 6 physical) after T4's three casters, so armor matters again.
-- **First kill** unlocks the next tier and, once built, **the Chaos Dungeon**
-  (chaos-dungeon.md): the seal breaks and the rift opens.
+- **First kill** unlocks the next tier and, once built, **the Shifting Rift**
+  (shifting-rift.md): the seal breaks and the rift opens.
 - **Bases are dealt by theme** rather than shuffled: the Golem drops plate and shields,
   the Warder Runeweave and the tome, the Drake Drakehide, the Delver weapons.
 - No secret area yet. T5 uniques: Forgefather's Maul, Veinseeker, Shardbound Band
@@ -350,7 +350,7 @@ the Chaos Dungeon is the first wall.
   Farming gear (Magic 50%, Rare 40%, Epic 10%) at level 50: Warder 88%, Golem 49%, Delver
   22% won (Spellweaver 84%). Players at level 58 in Rare/Epic/Legendary gear beat Durgrim
   4% of the time, physical builds 7% and magic 0% (Selvara 25%). He's the gear check
-  before the Chaos Dungeon: tempering, rerolls and a planned physical build.
+  before the Shifting Rift: tempering, rerolls and a planned physical build.
 
 **Areas:**
 

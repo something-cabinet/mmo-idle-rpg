@@ -133,8 +133,8 @@ Four conditions for now, each as more damage or as less damage taken, so 8 affix
 
 | Condition | Applies to | More damage, T1 → T9 | Less damage taken, T1 → T9 |
 |---|---|---|---|
-| Bosses | Every boss: zone bosses, raid bosses and the Deep's depth bosses (Chaos Dungeon floor bosses later). Broadest condition, so lower values | 4% → 10% | 2% → 5% |
-| Elites | Elite enemies (the Moonwell Deep, the Chaos Dungeon later) | 6% → 15% | 3% → 8% |
+| Bosses | Every boss: zone bosses, raid bosses and the Deep's depth bosses (Shifting Rift floor bosses later). Broadest condition, so lower values | 4% → 10% | 2% → 5% |
+| Elites | Elite enemies (the Moonwell Deep, the Shifting Rift later) | 6% → 15% | 3% → 8% |
 | Raids | Raid bosses | 6% → 15% | 3% → 8% |
 | The Deep | Every Moonwell Deep fight | 6% → 15% | 3% → 8% |
 

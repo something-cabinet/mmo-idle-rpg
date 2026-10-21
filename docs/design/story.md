@@ -16,7 +16,7 @@ strange.
 - **The shards point the way.** A shard taken from a boss hums and tugs toward the
   next one. That's the excuse for every zone change: *the shard points that way.*
 - **At T5 the story turns.** The largest shard broke into the world and made a rift.
-  Killing the one holding the rift shut opens it: the Chaos Dungeon is partly your
+  Killing the one holding the rift shut opens it: the Shifting Rift is partly your
   fault, and something on the other side was waiting for the moon to break.
 - **T6–T9 follow it** down into shadow, through the dead and the void, then up the
   World Tree to the sky, where you put the shards back and relight the moon.
@@ -36,7 +36,7 @@ something buried in each one.
 | 2 | Thornwood | The forest beyond went wild overnight. | In Morgra's cauldron: her curse was brewed from it. | Both shards pull toward the mountains. |
 | 3 | Frostmaw Pass | The giants came down the pass chasing a falling star. | Hrimvald wears it. He blocks the pass. | Past the pass is a valley no map shows. |
 | 4 | Moonveil Vale | Where the moon broke. | Selvara is the cause, mad under the moon she broke. | Her death shows where the largest shard fell. |
-| 5 | **Brightvein Hold** | The largest shard fell through a mountain into a dwarven mine. | The Last Thane is fused to it, holding the rift shut. | His death opens the rift: **the Chaos Dungeon**. What came through went down. |
+| 5 | **Brightvein Hold** | The largest shard fell through a mountain into a dwarven mine. | The Last Thane is fused to it, holding the rift shut. | His death opens the rift: **the Shifting Rift**. What came through went down. |
 | 6 | *Shadow realm* | You follow it beneath the rift, into the moon's shadow. | | |
 | 7 | *Dead empire* | Ruins of a rune-mage empire that faced this before and lost. Their ghosts know how it ends. | | |
 | 8 | *Edge of the void* | A dragon graveyard where the dragons died holding it back. It eats light. | | |
@@ -61,8 +61,8 @@ has stood silent since.
   Fight: physical damage behind **Warded** defense, the one mix no boss had used
   (Grubnak phys/Balanced, Morgra magic/Warded, Hrimvald phys/Armored, Selvara
   magic/Armored).
-- **First kill** unlocks T6 as usual, and also **the Chaos Dungeon**
-  (chaos-dungeon.md): the seal breaks and the rift opens.
+- **First kill** unlocks T6 as usual, and also **the Shifting Rift**
+  (shifting-rift.md): the seal breaks and the rift opens.
 - **Walk-line motif:** the veins glow brighter the deeper you go.
 - Enemies, drops and materials: zone-content.md, "T5: Brightvein Hold". No secret area yet.
 

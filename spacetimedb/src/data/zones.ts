@@ -251,7 +251,7 @@ export const ZONES: ZoneDef[] = [
     links: [[41, 42], [41, 43], [42, 44], [43, 44], [41, 45]],
   },
   {
-    // The largest shard fell here (story.md). The boss's first kill will also open the Chaos Dungeon.
+    // The largest shard fell here (story.md). The boss's first kill will also open the Shifting Rift.
     id: 5,
     tier: 5,
     name: 'Brightvein Hold',
@@ -296,7 +296,7 @@ export const areaIndexOf = (zone: ZoneDef, enemyId: number) => zone.areas.findIn
  * Enemy HP and DPS multiplier at `tier`, compounding: enemies outgrow the weapon curve by
  * × CLIMB_FACTOR a tier, so every tier is harder than the last and gear building matters
  * more the higher you go (zones.md, "Difficulty climb"). From STEP_FROM_TIER on, a one-time
- * × TIER_STEP on top (the T5 step: the Chaos Dungeon's tier asks for a real build), carried
+ * × TIER_STEP on top (the T5 step: the Shifting Rift's tier asks for a real build), carried
  * into every tier above. Content numbers are precomputed; this documents the factors used.
  */
 export const CLIMB_FACTOR = 1.05;

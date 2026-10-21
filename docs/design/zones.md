@@ -213,7 +213,7 @@ climb(T) = 1.05^(T−1) × (T ≥ 5 ? 1.1 : 1)   // T2 1.05, T3 1.10, T4 1.16, T
 - The point: enemies grow a little faster than weapon base damage, so average gear picked
   up along the way falls further behind each tier. Rolled affixes, rerolls, tempering and
   a planned build have to make up the gap, more and more the higher the player climbs.
-- **The T5 step** (2026-10-20): T5 opens the Chaos Dungeon and is the first tier that should
+- **The T5 step** (2026-10-20): T5 opens the Shifting Rift and is the first tier that should
   feel like a wall. Simulated (random farming gear, Magic to Epic, at level 10T, auto-equipped):
   the zone's hardest regular enemy goes from 84% won at T4 to 22% at T5; players 8 levels
   over the zone in Rare to Legendary gear beat Selvara 25% of the time and Durgrim 4%.

@@ -172,5 +172,3 @@ On top of that, the Deep's first clears: ~450 over depths 1–100, in bursts whi
 - **Haste and Renewal in raids:** Renewal on a tank may be stronger than a healer's NPC
   hire. Check it against raid odds.
 - **Cost of 5 / 4 / 3 Voidglass:** check it against how many attempts a Deep push really takes.
-- **A Phial for the Chaos Dungeon** if it's ever built (chaos-dungeon.md keeps elixirs and
-  meals out; Phials could stay out too, so the run is self-contained).

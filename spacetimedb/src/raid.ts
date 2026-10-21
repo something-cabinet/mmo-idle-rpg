@@ -4,13 +4,14 @@
 // party replays the very same fight from the stored setup and seed to animate it.
 
 import { critMultAgainst, defenseAgainst, effectDamageMult, matchup, mitigation, parrySource, type CombatStats } from './combat';
-import { DRAWING_FIRE, Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, STOKE, TWIN_FLAME, effectAmount, rallyMult, waxingMult } from './data/legendary';
+import { DRAWING_FIRE, Effect, TWIN_FLAME, effectAmount } from './data/legendary';
 import { NPC_POWER, RAID_RARITY_ODDS, THREAT_FOCUS, bossPhases, empoweredSignature, raidBosses, type RaidDef, type RaidSignature } from './data/raids';
 import { raidUniques } from './data/uniques';
 import { base, type DamageType } from './data/bases';
 import type { EnemyDef } from './data/zones';
 import { accuracyAtLevel } from './data/stats';
 import { makeItem, makeUnique, seededRng, type NewItem, type Rng } from './loot';
+import { Fighter } from './fighter';
 
 const RAID_SALT = 0x72616964n; // "raid"
 const RAID_LOOT_SALT = 0x726c6f6f74n; // "rloot"
@@ -175,6 +176,7 @@ export function duoThreat(raid: RaidDef, s: CombatStats, target: number, b: numb
  */
 export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record = true): RaidResult {
   const fighters = setup.fighters.map(f => f.stats);
+  const party = fighters.map(s => new Fighter(s));
   const n = fighters.length;
   const duo = raid.duo;
   // Lunar Phases (one boss only): each fighter's offense and defense per phase.
@@ -183,7 +185,6 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const defenses = phases.map(p => fighters.map(s => defenseAgainst(s, p.damageType, p.level)));
   let phase = 0;
   const maxHp = fighters.map(s => s.maxHp);
-  const hp = [...maxHp];
   const chill = Math.max(0, ...fighters.map(s => s.chill));
   const specialMit = (special: Special | undefined, level: number) =>
     fighters.map(s => (special ? defenseAgainst(s, special.damageType, level).mitigation : 0));
@@ -201,19 +202,9 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const bossAlive = (b: number) => bosses[b].hp > 0;
   // Each fighter's boss: its assignment (one boss: 0).
   const target = setup.fighters.map(f => (duo ? Math.max(0, Math.min(bosses.length - 1, f.target ?? 0)) : 0));
-  const amount = (i: number, id: number) => effectAmount(fighters[i].effects, id);
-  const ambush = fighters.map(s => (s.effects.has(Effect.Ambush) ? 5 : 1));
-  const swings = fighters.map(() => 0);
-  const lastDodged = fighters.map(() => false);
-  // Parry and Thrust: dodged since their last swing.
-  const parried = fighters.map(() => false);
-  const rally = fighters.map(s => s.effects.has(Effect.FadingRally));
-  const secondWind = fighters.map((_, i) => amount(i, Effect.SecondWind));
-  const renewal = fighters.map(s => s.renewal ?? 0);
-  const shield = fighters.map((s, i) => amount(i, Effect.SecondSkin) * s.maxHp);
   // First swings land at a random point of their first period (half a period on average).
   const first = (period: number) => (Number.isFinite(period) ? rng() * period : Infinity);
-  const next = fighters.map((_, i) => first(bosses[target[i]].off[i].period / (rally[i] ? rallyMult(1) : 1)));
+  const next = party.map((p, i) => first(p.firstPeriod(bosses[target[i]].off[i].period)));
   for (const b of bosses) b.nextAttack = first(1 / b.def.speed);
   let nextPhase = raid.phases?.every ?? Infinity;
   /** A duo: the survivor absorbing his fallen brother, until when. */
@@ -221,51 +212,31 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
   const empowered = bosses.map(() => false);
   const events: RaidEvent[] = [];
   let now = 0;
-  const alive = (i: number) => hp[i] > 0;
+  const alive = (i: number) => party[i].hp > 0;
   const done = (end: number, won: boolean, enraged = false): RaidResult => ({ events, maxHp, end, won, enraged });
 
-  const shielded = shield.some(x => x > 0);
+  const shielded = party.some(p => p.shield > 0);
   /** What the last `hurt` dealt and whether Bulwark blocked it (for the event). */
   let dealt = 0;
   let blocked = false;
 
   /** `i` takes `damage` of `type` from boss `b`; Thornshell reflects some in that type. Returns whether Second Wind saved them. */
   const hurt = (i: number, damage: number, type: DamageType, b: number): boolean => {
-    // A Phial of Warding, Stoneskin, Bulwark and Last Stand shrink the hit; Second Skin's shield takes it first.
-    damage = Math.max(0, damage * (fighters[i].damageTaken ?? 1) - amount(i, Effect.Stoneskin) * maxHp[i]);
-    const bulwark = amount(i, Effect.Bulwark);
-    blocked = bulwark > 0 && rng() < bulwark;
-    if (blocked) damage /= 2;
-    if (hp[i] < LAST_STAND_BELOW * maxHp[i]) damage *= 1 - amount(i, Effect.LastStand);
-    // Afterimage: the hit right after a dodge deals a share less.
-    if (lastDodged[i]) damage *= 1 - amount(i, Effect.Afterimage);
-    lastDodged[i] = false;
-    dealt = damage;
-    const absorbed = Math.min(shield[i], damage);
-    shield[i] -= absorbed;
-    damage -= absorbed;
+    const p = party[i];
+    dealt = p.shrink(damage, rng);
+    blocked = p.blocked;
+    damage = p.absorb(dealt);
     const o = bosses[b].off[i];
-    const thorns = amount(i, Effect.Thornshell) * damage * effectDamageMult(fighters[i].effects) * (1 - (type === 'Physical' ? o.mitP : o.mitM));
+    const thorns = p.amount(Effect.Thornshell) * damage * effectDamageMult(fighters[i].effects) * (1 - (type === 'Physical' ? o.mitP : o.mitM));
     bosses[b].hp = Math.max(0, bosses[b].hp - thorns);
-    hp[i] = Math.max(0, hp[i] - damage);
-    if (hp[i] > 0 && renewal[i] > 0 && hp[i] < maxHp[i] / 2) {
-      hp[i] = Math.min(maxHp[i], hp[i] + renewal[i] * maxHp[i]);
-      renewal[i] = 0;
-    }
-    if (hp[i] > 0 || secondWind[i] <= 0) return false;
-    hp[i] = secondWind[i] * maxHp[i];
-    secondWind[i] = 0;
-    return true;
-  };
-  const heal = (i: number, amt: number) => {
-    if (alive(i)) hp[i] = Math.min(maxHp[i], hp[i] + amt);
+    return p.take(damage);
   };
   const push = (e: Omit<RaidEvent, 'hp' | 'bossHp'>) => {
-    if (record) events.push({ ...e, hp: [...hp], bossHp: bosses.map(x => x.hp), ...(shielded && { shield: [...shield] }) });
+    if (record) events.push({ ...e, hp: party.map(p => p.hp), bossHp: bosses.map(x => x.hp), ...(shielded && { shield: party.map(p => p.shield) }) });
   };
   /** A living fighter picked by boss `b`, weighted by threat. */
   const pickTarget = (b: number) => {
-    const living = hp.map((_, i) => i).filter(alive);
+    const living = party.map((_, i) => i).filter(alive);
     const w = (i: number) => threatWeight(duoThreat(raid, fighters[i], target[i], b));
     let r = rng() * living.reduce((sum, i) => sum + w(i), 0);
     return living.find(i => (r -= w(i)) < 0) ?? living[living.length - 1];
@@ -289,7 +260,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     const fighterAt = Math.min(...next);
     const t = Math.min(fighterAt, nextPhase, absorbing?.until ?? Infinity, ...bosses.map(b => Math.min(b.nextSpecial, b.nextAttack)));
     if (t > raid.enrageSeconds) return done(raid.enrageSeconds, false, true);
-    for (let i = 0; i < n; i++) heal(i, fighters[i].regen * (t - now));
+    for (let i = 0; i < n; i++) party[i].heal(fighters[i].regen * (t - now));
     now = t;
     const specialBoss = bosses.findIndex(b => b.nextSpecial === t);
     const attackBoss = bosses.findIndex(b => b.nextAttack === t);
@@ -316,7 +287,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       const saved: number[] = [];
       if (sp.aoe) {
         // A split AoE (Moonfall) is shared by the living: the fewer left, the harder each is hit.
-        const share = sp.split ? hit / hp.filter(h => h > 0).length : hit;
+        const share = sp.split ? hit / party.filter(p => p.hp > 0).length : hit;
         for (let i = 0; i < n; i++) if (alive(i) && hurt(i, share * (1 - x.specialMit[i]) * (0.9 + 0.2 * rng()), sp.damageType, b)) saved.push(i);
         push({ t, by: -1, kind: 'aoe', target: -1, damage: share, boss: b, ...(saved.length && { saved }) });
       } else {
@@ -333,11 +304,10 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       // The boss picks a living fighter, weighted by threat (`threatWeight`).
       const tgt = pickTarget(b);
       if (rng() < x.defense[tgt].evasion) {
-        lastDodged[tgt] = true;
-        parried[tgt] = true;
+        party[tgt].dodge();
         // Riposte: the dodge counters for a share of an average hit.
         const o = x.off[tgt];
-        const counter = amount(tgt, Effect.Riposte) * o.hit * (1 + o.crit * (o.critX - 1));
+        const counter = party[tgt].riposte(o.hit, o.crit, o.critX);
         if (counter > 0) x.hp = Math.max(0, x.hp - counter);
         push({ t, by: -1, kind: 'dodge', target: tgt, damage: 0, boss: b });
       } else {
@@ -347,41 +317,32 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
       }
     } else {
       const a = next.indexOf(fighterAt);
+      const p = party[a];
       const b = target[a];
       const x = bosses[b];
       const o = x.off[a];
-      // Fading Rally: swing k comes at rallyMult(k) × the fighter's speed.
-      swings[a] += 1;
-      next[a] += o.period / (rally[a] ? rallyMult(swings[a] + 1) : 1);
-      const fx = fighters[a].effects;
-      const isCrit = fx.has(Effect.ParryAndThrust) ? parried[a] : rng() < o.crit;
-      parried[a] = false;
+      next[a] += p.nextPeriod(o.period);
+      const isCrit = p.rollCrit(o.crit, rng);
       const critX = isCrit ? o.critX : 1;
-      const doubled = x.hp < amount(a, Effect.Executioner) * x.maxHp || x.hp > (1 - amount(a, Effect.Bully)) * x.maxHp ? 2 : 1;
-      // Berserker: more damage the more of your max HP is missing.
-      const rage = 1 + (10 * amount(a, Effect.Berserker) * (maxHp[a] - hp[a])) / maxHp[a];
-      // Moonlight: every 3rd swing hits twice. Waxing Moon: swing k × waxingMult(k).
-      const wave = fx.has(Effect.Moonlight) && swings[a] % MOONLIGHT_EVERY === 0 ? 2 : 1;
-      const wax = fx.has(Effect.WaxingMoon) ? waxingMult(swings[a]) : 1;
       // Stoke the Fire: more damage for every fallen fighter and boss.
-      const stoke = fx.has(Effect.StokeTheFire) ? 1 + STOKE * (hp.filter(h => h <= 0).length + bosses.filter(y => y.hp <= 0).length) : 1;
-      let damage = o.hit * critX * (0.9 + 0.2 * rng()) * doubled * ambush[a] * rage * wave * wax * stoke;
-      ambush[a] = 1;
+      const fallen = party.filter(q => q.hp <= 0).length + bosses.filter(y => y.hp <= 0).length;
+      let damage = p.swingDamage(o.hit * critX * (0.9 + 0.2 * rng()), x.hp, x.maxHp) * p.stokeMult(fallen);
+      p.ambush = 1;
       const healed = o.heal * critX;
       // Zealot's Oath: heals also hit for a share of the heal (magic).
-      damage += amount(a, Effect.ZealotsOath) * healed * effectDamageMult(fighters[a].effects) * (1 - o.mitM);
+      damage += p.amount(Effect.ZealotsOath) * healed * effectDamageMult(fighters[a].effects) * (1 - o.mitM);
       x.hp = Math.max(0, x.hp - damage);
       if (healed > 0) {
-        const living = hp.map((_, i) => i).filter(alive);
-        if (o.healAll) for (const i of living) heal(i, healed / living.length);
+        const living = party.map((_, i) => i).filter(alive);
+        if (o.healAll) for (const i of living) party[i].heal(healed / living.length);
         else {
-          const hurtFirst = [...living].sort((p, q) => hp[p] / maxHp[p] - hp[q] / maxHp[q]);
-          heal(hurtFirst[0], healed);
+          const hurtFirst = [...living].sort((i, j) => party[i].hp / maxHp[i] - party[j].hp / maxHp[j]);
+          party[hurtFirst[0]].heal(healed);
           // Twin Flame: the next most hurt ally gets a share too.
-          if (fx.has(Effect.TwinFlame) && hurtFirst[1] !== undefined) heal(hurtFirst[1], TWIN_FLAME * healed);
+          if (p.has(Effect.TwinFlame) && hurtFirst[1] !== undefined) party[hurtFirst[1]].heal(TWIN_FLAME * healed);
         }
       }
-      heal(a, fighters[a].lifesteal * damage);
+      p.heal(fighters[a].lifesteal * damage);
       push({ t, by: a, kind: isCrit ? 'crit' : 'hit', target: -1, damage, boss: b });
     }
 
@@ -398,7 +359,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
         if (target[i] !== b) continue;
         // Its fighters turn on the other brother, their next swing on his timer.
         target[i] = other;
-        if (Number.isFinite(next[i])) next[i] = t + bosses[other].off[i].period / (rally[i] ? rallyMult(swings[i] + 1) : 1);
+        if (Number.isFinite(next[i])) next[i] = t + party[i].periodNow(bosses[other].off[i].period);
       }
       if (duo && !empowered[other]) absorbing = { boss: other, until: t + duo.absorbSeconds };
       push({ t, by: -1, kind: 'fall', target: -1, damage: 0, boss: b });
@@ -406,7 +367,7 @@ export function simulateRaid(setup: RaidSetup, raid: RaidDef, rng: Rng, record =
     if (bosses.every(x => x.hp <= 0)) return done(t, true);
     // The dead stop swinging.
     for (let i = 0; i < n; i++) if (!alive(i)) next[i] = Infinity;
-    if (!hp.some(h => h > 0)) return done(t, false);
+    if (!party.some(p => p.hp > 0)) return done(t, false);
   }
 }
 

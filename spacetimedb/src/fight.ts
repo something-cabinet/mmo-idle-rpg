@@ -3,8 +3,9 @@
 // The back-to-back online settle (`simulate`) is in sim.ts.
 
 import { type CombatStats, type Matchup } from './combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, MOONLIGHT_MULT, effectAmount, rallyMult, waxingMult } from './data/legendary';
+import { Effect, MOONLIGHT_MULT } from './data/legendary';
 import type { EnemyDef } from './data/zones';
+import { Fighter } from './fighter';
 import { seededRng, type Rng } from './loot';
 
 /** A fight not over after this long is a stalemate: time passes with no effect. */
@@ -137,11 +138,7 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
   // Moonlight's wave, Waxing Moon's and Fading Rally's averages and the enemy's evasion are
   // in `m.dps`; take them out, then apply them per swing.
   const moonlight = s.effects.has(Effect.Moonlight);
-  const waxing = s.effects.has(Effect.WaxingMoon);
-  const rally = s.effects.has(Effect.FadingRally);
   const parry = s.effects.has(Effect.ParryAndThrust);
-  /** Parry and Thrust: you evaded since your last swing. */
-  let parried = false;
   const healMult = mods.healMult ?? 1;
   const regen = s.regen * healMult;
   const lifesteal = s.lifesteal * healMult;
@@ -161,22 +158,9 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     enemyHit = x.enemyHit;
   };
   face(m);
-  const amount = (id: number) => effectAmount(s.effects, id);
-  let ambush = s.effects.has(Effect.Ambush) ? 5 : 1;
-  const executeBelow = amount(Effect.Executioner) * enemy.hp;
-  const bullyAbove = (1 - amount(Effect.Bully)) * enemy.hp;
-  const berserk = 10 * amount(Effect.Berserker);
-  const bulwark = amount(Effect.Bulwark);
-  const lastStand = amount(Effect.LastStand);
-  const lowHp = LAST_STAND_BELOW * s.maxHp;
-  let secondWind = mods.secondWind ?? amount(Effect.SecondWind);
-  let renewal = mods.renewal ?? s.renewal ?? 0;
-  let shield = m.shield;
-  const afterimage = amount(Effect.Afterimage);
-  let lastDodged = false;
+  const you = new Fighter(s, { hp: mods.startHp, secondWind: mods.secondWind, renewal: mods.renewal });
   /** Enemy regen since its last swing, shown on its next one. */
   let foeRegained = 0;
-  let swings = 0;
   const limit = mods.timeLimit ?? MAX_FIGHT_SECONDS;
   const drain = mods.drain ?? 0;
   const reflect = mods.reflect ?? 0;
@@ -186,47 +170,30 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
     into(t) < (mods.immuneUntil ?? 0) || (!!mods.eclipse && into(t) >= mods.eclipse.every && into(t) % mods.eclipse.every < mods.eclipse.length);
   const ramp = (t: number) => (mods.ramp ? 1 + mods.ramp.step * Math.floor(into(t) / mods.ramp.every) : 1);
 
-  const startHp = Math.min(s.maxHp, mods.startHp ?? s.maxHp);
-  let youHp = startHp;
+  const startHp = you.hp;
   let foeHp = enemy.hp;
   let now = walk;
-  let nextYou = walk + yourPeriod / 2 / (rally ? rallyMult(1) : 1);
+  let nextYou = walk + you.firstPeriod(yourPeriod / 2);
   let nextFoe = walk + foePeriod / 2;
   let nextBurst = mods.burst ? walk + mods.burst.every : Infinity;
   const events: FightEvent[] = [];
   const done = (end: number, outcome: Fight['outcome']): Fight =>
-    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, startHp, hpLeft: youHp, secondWindLeft: secondWind, renewalLeft: renewal });
-  const shieldNote = () => (m.shield > 0 ? { shield } : {});
-  /** HP the last `take` got back from Renewal (0 if it didn't trigger). */
-  let renewed = 0;
-  /** You take `damage` (after the shield); Second Wind may save you. Returns whether it did. Renewal heals once below half HP. */
-  const take = (damage: number): boolean => {
-    youHp = Math.max(0, youHp - damage);
-    renewed = 0;
-    if (youHp > 0 && renewal > 0 && youHp < s.maxHp / 2) {
-      renewed = Math.min(s.maxHp - youHp, renewal * s.maxHp);
-      youHp += renewed;
-      renewal = 0;
-    }
-    if (youHp > 0 || secondWind <= 0) return false;
-    youHp = secondWind * s.maxHp;
-    secondWind = 0;
-    return true;
-  };
+    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, startHp, hpLeft: you.hp, secondWindLeft: you.secondWind, renewalLeft: you.renewal });
+  const shieldNote = () => (m.shield > 0 ? { shield: you.shield } : {});
 
   // Follow-through: half an average hit of overkill, a share of it carried in.
-  const carried = immune(walk) ? 0 : (amount(Effect.FollowThrough) / 2) * hit * m.critMult;
+  const carried = immune(walk) ? 0 : (you.amount(Effect.FollowThrough) / 2) * hit * m.critMult;
   if (carried > 0) {
     foeHp = Math.max(0, foeHp - carried);
-    events.push({ t: walk, by: 'you', kind: 'hit', damage: carried, healed: 0, youHp, foeHp, carried: true, ...shieldNote() });
+    events.push({ t: walk, by: 'you', kind: 'hit', damage: carried, healed: 0, youHp: you.hp, foeHp, carried: true, ...shieldNote() });
     if (foeHp <= 0) return done(walk, 'kill');
   }
 
   for (;;) {
     const t = Math.min(nextYou, nextFoe, nextBurst);
     if (t > walk + limit) return done(walk + limit, 'stalemate');
-    const before = youHp;
-    youHp = Math.min(s.maxHp, youHp + regen * (t - now));
+    const before = you.hp;
+    you.hp = Math.min(s.maxHp, you.hp + regen * (t - now));
     const foeBefore = foeHp;
     foeHp = Math.min(enemy.hp, foeHp + foeRegen * (t - now));
     foeRegained += foeHp - foeBefore;
@@ -235,58 +202,49 @@ export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: 
       nextBurst += mods.burst!.every;
       // Can't be dodged or blocked; the shield still takes it first.
       const damage = mods.burst!.mult * enemyHit * ramp(t) * (0.9 + 0.2 * rng());
-      const healed = youHp - before;
-      const absorbed = Math.min(shield, damage);
-      shield -= absorbed;
-      const saved = take(damage - absorbed);
-      events.push({ t, by: 'enemy', kind: 'hit', damage, healed, youHp, foeHp, burst: true, ...(saved && { secondWind: true }), ...(renewed > 0 && { renewed }), ...shieldNote() });
-      if (youHp <= 0) return done(t, 'defeat');
+      const healed = you.hp - before;
+      const saved = you.take(you.absorb(damage));
+      events.push({ t, by: 'enemy', kind: 'hit', damage, healed, youHp: you.hp, foeHp, burst: true, ...(saved && { secondWind: true }), ...(you.renewed > 0 && { renewed: you.renewed }), ...shieldNote() });
+      if (you.hp <= 0) return done(t, 'defeat');
     } else if (nextYou <= nextFoe) {
-      swings += 1;
-      nextYou += yourPeriod / (rally ? rallyMult(swings + 1) : 1);
+      nextYou += you.nextPeriod(yourPeriod);
       // Rolled only against an evasive enemy, so other fights replay as before.
       const missed = evade > 0 && rng() < evade;
-      const isCrit = parry ? !missed && parried : !missed && rng() < crit;
-      parried = false;
-      const doubled = foeHp < executeBelow || foeHp > bullyAbove ? 2 : 1;
-      const rage = berserk > 0 ? 1 + (berserk * (s.maxHp - youHp)) / s.maxHp : 1;
-      const wave = moonlight && swings % MOONLIGHT_EVERY === 0;
+      const isCrit = you.rollCrit(crit, rng, missed);
+      const wave = you.isWave();
       const shielded = !missed && immune(t);
-      const damage = missed || shielded ? 0 : hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()) * doubled * ambush * rage * (wave ? 2 : 1) * (waxing ? waxingMult(swings) : 1) * (mods.damageMult ?? 1);
+      const damage = missed || shielded ? 0 : you.swingDamage(hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()), foeHp, enemy.hp) * (mods.damageMult ?? 1);
       // Ambush is spent on the first swing that can land.
-      if (!shielded) ambush = 1;
+      if (!shielded) you.ambush = 1;
       foeHp = Math.max(0, foeHp - damage);
-      youHp = Math.min(s.maxHp, youHp + healPerSwing + lifesteal * damage);
+      you.hp = Math.min(s.maxHp, you.hp + healPerSwing + lifesteal * damage);
       const reflected = reflect * damage;
-      const saved = reflected > 0 && take(reflected);
-      events.push({ t, by: 'you', kind: missed || shielded ? 'miss' : isCrit ? 'crit' : 'hit', damage, healed: youHp - before, youHp, foeHp,
+      const saved = reflected > 0 && you.take(reflected);
+      events.push({ t, by: 'you', kind: missed || shielded ? 'miss' : isCrit ? 'crit' : 'hit', damage, healed: you.hp - before, youHp: you.hp, foeHp,
         ...(wave && !missed && !shielded && { wave: true }), ...(shielded && { immune: true }), ...(reflected > 0 && { reflected }),
-        ...(saved && { secondWind: true }), ...(reflected > 0 && renewed > 0 && { renewed }), ...shieldNote() });
+        ...(saved && { secondWind: true }), ...(reflected > 0 && you.renewed > 0 && { renewed: you.renewed }), ...shieldNote() });
       if (foeHp <= 0) return done(t, 'kill');
-      if (youHp <= 0) return done(t, 'defeat');
+      if (you.hp <= 0) return done(t, 'defeat');
     } else {
       nextFoe += foePeriod;
       const dodged = rng() < cur.evasion;
-      if (dodged) parried = true;
-      let damage = dodged ? 0 : enemyHit * (0.9 + 0.2 * rng()) * ramp(t);
-      const blocked = !dodged && bulwark > 0 && rng() < bulwark;
-      if (blocked) damage /= 2;
-      if (lastStand > 0 && youHp < lowHp) damage *= 1 - lastStand;
-      if (lastDodged) damage *= 1 - afterimage;
-      lastDodged = dodged;
-      const healed = youHp - before;
-      const absorbed = Math.min(shield, damage);
-      shield -= absorbed;
-      const hpBefore = youHp;
-      const saved = take(damage - absorbed);
+      // Stoneskin and a Phial of Warding are already in the matchup's enemy hit.
+      let damage = 0;
+      if (dodged) you.dodge();
+      else damage = you.shrink(enemyHit * (0.9 + 0.2 * rng()) * ramp(t), rng, false);
+      const blocked = !dodged && you.blocked;
+      const healed = you.hp - before;
+      const hpBefore = you.hp;
+      const hpDamage = you.absorb(damage);
+      const saved = you.take(hpDamage);
       // Drain: the enemy heals a share of what reached your HP.
-      const drained = drain > 0 ? Math.min(enemy.hp - foeHp, drain * Math.min(hpBefore, damage - absorbed)) : 0;
+      const drained = drain > 0 ? Math.min(enemy.hp - foeHp, drain * Math.min(hpBefore, hpDamage)) : 0;
       foeHp += drained;
-      events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp, foeHp,
+      events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp: you.hp, foeHp,
         ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...(foeRegen > 0 && { foeHealed: foeRegained }),
-        ...(drained > 0 && { drained }), ...(renewed > 0 && { renewed }), ...shieldNote() });
+        ...(drained > 0 && { drained }), ...(you.renewed > 0 && { renewed: you.renewed }), ...shieldNote() });
       foeRegained = 0;
-      if (youHp <= 0) return done(t, 'defeat');
+      if (you.hp <= 0) return done(t, 'defeat');
     }
   }
 }

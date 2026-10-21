@@ -5,7 +5,8 @@
 // (penetration, evasion, crits, heals, lifesteal, regen and the effects).
 
 import { critMultAgainst, defenseAgainst, effectDamageMult, mitigation, parrySource, type CombatStats } from '../../spacetimedb/src/combat';
-import { Effect, LAST_STAND_BELOW, MOONLIGHT_EVERY, effectAmount, rallyMult, waxingMult } from '../../spacetimedb/src/data/legendary';
+import { Effect, effectAmount } from '../../spacetimedb/src/data/legendary';
+import { Fighter } from '../../spacetimedb/src/fighter';
 import { seededRng, type Rng } from '../../spacetimedb/src/loot';
 
 /** A duel still going after this long is decided on points (share of HP left). */
@@ -77,95 +78,65 @@ function offense(a: CombatStats, b: CombatStats) {
 export function simulateDuel(sides: [CombatStats, CombatStats], rng: Rng): Duel {
   const off = [offense(sides[0], sides[1]), offense(sides[1], sides[0])] as const;
   const maxHp: [number, number] = [sides[0].maxHp, sides[1].maxHp];
-  const hp: [number, number] = [...maxHp];
-  const amount = (i: number, id: number) => effectAmount(sides[i].effects, id);
-  const ambush = [sides[0].effects.has(Effect.Ambush) ? 5 : 1, sides[1].effects.has(Effect.Ambush) ? 5 : 1];
-  const secondWind = [amount(0, Effect.SecondWind), amount(1, Effect.SecondWind)];
-  const shield = [amount(0, Effect.SecondSkin) * maxHp[0], amount(1, Effect.SecondSkin) * maxHp[1]];
-  const swings = [0, 0];
-  const lastDodged = [false, false];
-  // Parry and Thrust: dodged since their last swing. Fading Rally: swing k at rallyMult(k) × speed.
-  const parried = [false, false];
-  const rally = [sides[0].effects.has(Effect.FadingRally), sides[1].effects.has(Effect.FadingRally)];
-  const rallied = (i: number, k: number) => (rally[i] ? rallyMult(k) : 1);
+  const duelists = [new Fighter(sides[0]), new Fighter(sides[1])] as const;
+  const hp = (): [number, number] => [duelists[0].hp, duelists[1].hp];
   // Each side's first swing lands at a random point of its first period (half a period on
   // average, like `simulateFight`), so neither seat always strikes first.
   const first = (period: number) => (Number.isFinite(period) ? rng() * period : Infinity);
-  const next = [first(off[0].period / rallied(0, 1)), first(off[1].period / rallied(1, 1))];
+  const next = [first(duelists[0].firstPeriod(off[0].period)), first(duelists[1].firstPeriod(off[1].period))];
   const events: DuelEvent[] = [];
   let now = 0;
 
   /** `i` takes `damage`; Second Wind may save them. Returns whether it did. */
   const hurt = (i: number, damage: number) => {
-    // Stoneskin, Bulwark and Last Stand shrink the hit; Second Skin's shield takes it first.
-    damage = Math.max(0, damage - amount(i, Effect.Stoneskin) * maxHp[i]);
-    const bulwark = amount(i, Effect.Bulwark);
-    if (bulwark > 0 && rng() < bulwark) damage /= 2;
-    if (hp[i] < LAST_STAND_BELOW * maxHp[i]) damage *= 1 - amount(i, Effect.LastStand);
-    // Afterimage: the hit right after a dodge deals a share less.
-    if (lastDodged[i]) damage *= 1 - amount(i, Effect.Afterimage);
-    lastDodged[i] = false;
-    const absorbed = Math.min(shield[i], damage);
-    shield[i] -= absorbed;
-    hp[i] = Math.max(0, hp[i] - (damage - absorbed));
-    if (hp[i] > 0 || secondWind[i] <= 0) return false;
-    hp[i] = secondWind[i] * maxHp[i];
-    secondWind[i] = 0;
-    return true;
+    const d = duelists[i];
+    return d.take(d.absorb(d.shrink(damage, rng)));
   };
   const done = (end: number, winner: Duel['winner'], by: Duel['by']): Duel => ({ events, maxHp, end, winner, by });
 
   for (;;) {
     const t = Math.min(next[0], next[1]);
     if (t > DUEL_SECONDS) {
-      const share = [hp[0] / maxHp[0], hp[1] / maxHp[1]];
+      const share = [duelists[0].hp / maxHp[0], duelists[1].hp / maxHp[1]];
       return done(DUEL_SECONDS, Math.abs(share[0] - share[1]) < 0.001 ? -1 : share[0] > share[1] ? 0 : 1, 'points');
     }
-    for (const i of [0, 1]) hp[i] = Math.min(maxHp[i], hp[i] + sides[i].regen * (t - now));
+    for (const d of duelists) d.hp = Math.min(d.maxHp, d.hp + d.stats.regen * (t - now));
     now = t;
     const a = (next[0] <= next[1] ? 0 : 1) as 0 | 1;
     const b = (1 - a) as 0 | 1;
     const o = off[a];
-    swings[a] += 1;
-    next[a] += o.period / rallied(a, swings[a] + 1);
-    const parriedNow = parried[a];
-    parried[a] = false;
+    const you = duelists[a];
+    const foe = duelists[b];
+    next[a] += you.nextPeriod(o.period);
     if (rng() < o.evasion) {
-      ambush[a] = 1;
-      lastDodged[b] = true;
-      parried[b] = true;
+      you.rollCrit(o.crit, rng, true);
+      you.ambush = 1;
+      foe.dodge();
       // Riposte: `b` counters for a share of an average hit.
-      const counter = amount(b, Effect.Riposte) * off[b].hit * (1 + off[b].crit * (off[b].critX - 1));
+      const counter = foe.riposte(off[b].hit, off[b].crit, off[b].critX);
       const saved = counter > 0 && hurt(a, counter);
-      events.push({ t, by: a, kind: 'dodge', damage: 0, hp: [...hp], ...(saved && { secondWind: true }) });
-      if (hp[a] <= 0) return done(t, b, 'ko');
+      events.push({ t, by: a, kind: 'dodge', damage: 0, hp: hp(), ...(saved && { secondWind: true }) });
+      if (you.hp <= 0) return done(t, b, 'ko');
       continue;
     }
-    const isCrit = sides[a].effects.has(Effect.ParryAndThrust) ? parriedNow : rng() < o.crit;
+    const isCrit = you.rollCrit(o.crit, rng);
     const critX = isCrit ? o.critX : 1;
-    // Executioner and Bully: double damage below / above their thresholds. Berserker: more the more HP `a` is missing.
-    const execute = hp[b] < amount(a, Effect.Executioner) * maxHp[b] || hp[b] > (1 - amount(a, Effect.Bully)) * maxHp[b] ? 2 : 1;
-    const rage = 1 + (10 * amount(a, Effect.Berserker) * (maxHp[a] - hp[a])) / maxHp[a];
-    // Moonlight: every 3rd swing hits twice. Waxing Moon: swing k × waxingMult(k).
-    const fx = sides[a].effects;
-    const wave = fx.has(Effect.Moonlight) && swings[a] % MOONLIGHT_EVERY === 0 ? 2 : 1;
-    const wax = fx.has(Effect.WaxingMoon) ? waxingMult(swings[a]) : 1;
-    const weapon = o.hit * critX * (0.9 + 0.2 * rng()) * execute * ambush[a] * rage * wave * wax;
-    ambush[a] = 1;
+    const weapon = you.swingDamage(o.hit * critX * (0.9 + 0.2 * rng()), foe.hp, foe.maxHp);
+    you.ambush = 1;
     const heal = o.heal * critX;
     // Zealot's Oath: heals also hit for a share of the heal (magic).
-    const zealot = amount(a, Effect.ZealotsOath) * heal * effectDamageMult(sides[a].effects) * (1 - o.mitM);
+    const zealot = you.amount(Effect.ZealotsOath) * heal * effectDamageMult(sides[a].effects) * (1 - o.mitM);
     const damage = weapon + zealot;
     const saved = hurt(b, damage);
-    hp[a] = Math.min(maxHp[a], hp[a] + heal + sides[a].lifesteal * damage);
+    you.hp = Math.min(you.maxHp, you.hp + heal + sides[a].lifesteal * damage);
     // Thornshell on the target reflects a share of what it took, each part in the type it was dealt in.
     const physTaken = weapon * o.physShare;
-    const thorns = amount(b, Effect.Thornshell) * effectDamageMult(sides[b].effects) *
+    const thorns = foe.amount(Effect.Thornshell) * effectDamageMult(sides[b].effects) *
       (physTaken * (1 - off[b].mitP) + (damage - physTaken) * (1 - off[b].mitM));
     const savedA = thorns > 0 && hurt(a, thorns);
-    events.push({ t, by: a, kind: isCrit ? 'crit' : 'hit', damage, hp: [...hp], ...((saved || savedA) && { secondWind: true }) });
-    if (hp[b] <= 0) return done(t, a, 'ko');
-    if (hp[a] <= 0) return done(t, b, 'ko');
+    events.push({ t, by: a, kind: isCrit ? 'crit' : 'hit', damage, hp: hp(), ...((saved || savedA) && { secondWind: true }) });
+    if (foe.hp <= 0) return done(t, a, 'ko');
+    if (you.hp <= 0) return done(t, b, 'ko');
   }
 }
 

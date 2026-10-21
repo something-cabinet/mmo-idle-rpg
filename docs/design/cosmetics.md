@@ -70,6 +70,7 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 | 12 | Voidborn | Clear depth 75 |
 | 13 | Moonfallen | Clear depth 100 |
 | 14 | Centurion | Reach level 100 |
+| 15 | Oathbreaker | Win The Brothers' Forge |
 | 20–24 | Master Miner, Master Woodcutter, Master Forager, Master Smith, Master Alchemist | That life skill at 99 (life-skills.md) |
 
 ### Name effects
@@ -82,6 +83,7 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 | 1004 | Eclipse | Black with a pulsing gold corona | Clear depth 100 |
 | 1005 | Ember | Orange, a warm flickering glow | Reach level 100 |
 | 1006 | Gilded | Gold, a slow shimmer | Any life skill at 99 |
+| 1007 | Molten | Forge red, white heat flowing through | Win The Brothers' Forge |
 
 ### Nameplates
 
@@ -91,6 +93,7 @@ Seasonal and top-10 rewards come when seasons are turned on (abyss.md).
 | 2002 | Night Sky | Black, stars gathered on the right | Clear depth 75 |
 | 2003 | Moon Garden | Sage green, pale leaves | Defeat the Moonlit Champion |
 | 2004 | Veteran | Dark leather, gold trim and bar | Reach level 100 |
+| 2005 | Forgefire | Black iron, embers and a glowing seam | Win The Brothers' Forge |
 
 IDs are permanent (stored in unlock and look rows): never reuse or renumber. Titles
 1–999, name effects 1001–1999, plates 2001–2999.

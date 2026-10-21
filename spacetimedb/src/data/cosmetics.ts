@@ -34,6 +34,8 @@ export interface CosmeticDef {
 
 const WYRM = 9001;
 const UMBRIEL = 9002;
+/** The Brothers' Forge: a win records a kill of Brokk, its `boss`. */
+const BROKK = 9003;
 const BELLRINGER = 107;
 const MOONLIT_CHAMPION = 407;
 
@@ -59,6 +61,7 @@ export const COSMETICS: readonly CosmeticDef[] = [
   title(12, 'Voidborn', 'Clear Moonwell depth 75', { kind: 'depth', depth: 75 }),
   title(13, 'Moonfallen', 'Clear Moonwell depth 100', { kind: 'depth', depth: 100 }),
   title(14, 'Centurion', 'Reach level 100', { kind: 'level', level: 100 }),
+  title(15, 'Oathbreaker', "Win The Brothers' Forge", { kind: 'kill', enemyId: BROKK }),
   title(20, 'Master Miner', 'Mining at 99', { kind: 'skill', skillId: SkillId.Mining, level: 99 }),
   title(21, 'Master Woodcutter', 'Woodcutting at 99', { kind: 'skill', skillId: SkillId.Woodcutting, level: 99 }),
   title(22, 'Master Forager', 'Foraging at 99', { kind: 'skill', skillId: SkillId.Foraging, level: 99 }),
@@ -71,11 +74,13 @@ export const COSMETICS: readonly CosmeticDef[] = [
   { id: 1004, slot: 'visual', name: 'Eclipse', css: 'eclipse', text: 'Black with a pulsing gold corona', how: 'Clear Moonwell depth 100', unlock: { kind: 'depth', depth: 100 } },
   { id: 1005, slot: 'visual', name: 'Ember', css: 'ember', text: 'Orange, a warm flickering glow', how: 'Reach level 100', unlock: { kind: 'level', level: 100 } },
   { id: 1006, slot: 'visual', name: 'Gilded', css: 'gilded', text: 'Gold, a slow shimmer', how: 'Any life skill at 99', unlock: { kind: 'skill', level: 99 } },
+  { id: 1007, slot: 'visual', name: 'Molten', css: 'molten', text: 'Forge red, white heat flowing through', how: "Win The Brothers' Forge", unlock: { kind: 'kill', enemyId: BROKK } },
 
   { id: 2001, slot: 'plate', name: 'Moonwell', css: 'moonwell', text: 'Deep blue, a silver crescent', how: 'Clear Moonwell depth 25', unlock: { kind: 'depth', depth: 25 } },
   { id: 2002, slot: 'plate', name: 'Night Sky', css: 'nightsky', text: 'Black, stars gathered on the right', how: 'Clear Moonwell depth 75', unlock: { kind: 'depth', depth: 75 } },
   { id: 2003, slot: 'plate', name: 'Moon Garden', css: 'moongarden', text: 'Sage green, pale leaves', how: 'Defeat the Moonlit Champion (secret)', unlock: { kind: 'kill', enemyId: MOONLIT_CHAMPION } },
   { id: 2004, slot: 'plate', name: 'Veteran', css: 'veteran', text: 'Dark leather, gold trim and bar', how: 'Reach level 100', unlock: { kind: 'level', level: 100 } },
+  { id: 2005, slot: 'plate', name: 'Forgefire', css: 'forgefire', text: 'Black iron, embers and a glowing seam', how: "Win The Brothers' Forge", unlock: { kind: 'kill', enemyId: BROKK } },
 ];
 
 export const COSMETICS_BY_ID = new Map(COSMETICS.map(c => [c.id, c]));

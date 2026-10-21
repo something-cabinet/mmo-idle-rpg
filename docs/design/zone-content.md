@@ -28,6 +28,8 @@ are almost free wins. Rewards keep `1.12^o`. Other zones follow zones.md unchang
   retry any time.
 - **First kill** unlocks the next zone and gives a reward: one guaranteed **Rare** item of
   the zone's tier (random base from the zone) and 20× the boss's gold.
+- A zone of tier T also needs character level `10·(T−1)` (T2: 10, T3: 20, ...); until then
+  it stays locked even with the previous boss dead. Life skills' tiers follow the zone.
 - After the first kill the boss is also a **farmable target** like any other enemy,
   dropping from all of the zone's bases.
 - The boss is meant to need **better than average gear or a few extra levels**: an

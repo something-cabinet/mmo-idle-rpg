@@ -161,6 +161,8 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('spot ID round-trips', gatherSpot(gatherSpotId(3, 2)).tier === 3 && gatherSpot(gatherSpotId(3, 2)).node === 2 && gatherSpotId(2, 0) === 2);
   check('node blocked below its unlock level', gatherBlocker({ level: 29, tier: 1, zoneOpen: true, node: 1 }) === 'Needs level 30');
   check('node open at its unlock level', gatherBlocker({ level: 30, tier: 1, zoneOpen: true, node: 1 }) === undefined);
+  check('a node names the same level at every tier it outranks', gatherBlocker({ level: 5, tier: 2, zoneOpen: true, node: 2 }) === 'Needs level 60');
+  check('a node names the tier level when that is higher', gatherBlocker({ level: 30, tier: 5, zoneOpen: true, node: 1 }) === 'Needs level 41');
   check('rare finds double at 99', findLevelMult(MAX_SKILL_LEVEL) === 2);
   const relic = findChances(SkillId.Mining, 2, 0, 0).find(f => f.materialId === undefined)!;
   const ruins = findChances(SkillId.Mining, 2, 2, 0).find(f => f.materialId === undefined)!;

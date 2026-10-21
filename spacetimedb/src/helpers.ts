@@ -7,7 +7,7 @@ import { DEFAULT_LOADOUT_NAMES, LOADOUT_COUNT, addXp, offlineCapMicros, project,
 import { EncounterKind, eliteOf, rollEncounters } from './encounters';
 import { SLOTS, SLOT_COUNT, STARTER_ARMOR, base } from './data/bases';
 import { materialAt, untieredMaterial } from './data/materials';
-import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, type EnemyDef, type ZoneDef } from './data/zones';
+import { ENEMIES_BY_ID, ZONES, previousZone, rewardScale, secretState, zoneLevel, type EnemyDef, type ZoneDef } from './data/zones';
 import { GATHERING_SKILLS, SKILLS, SKILLS_BY_ID, gatherSpot, type ProductionSkillDef } from './data/skills';
 import { recipeOf, scrapMaterialId, type MaterialCost, type ScrapRarity } from './data/recipes';
 import { SUPPLIES_BY_ID, elixirBuffs, infuseHerbIds } from './data/supplies';
@@ -579,9 +579,9 @@ export function toolTier(ctx: Ctx, characterId: bigint, skillId: number): number
   return [...ctx.db.tool.characterId.filter(characterId)].find(r => r.skillId === skillId)?.tier ?? 1;
 }
 
-/** Whether a zone of tier `tier` is unlocked: life skills can't run ahead of combat. */
-export function tierUnlocked(ctx: Ctx, characterId: bigint, tier: number): boolean {
-  return ZONES.some(z => z.tier === tier && zoneUnlocked(ctx, characterId, z));
+/** Whether a zone of tier `tier` is unlocked for `ch` (settled): life skills can't run ahead of combat. */
+export function tierUnlocked(ctx: Ctx, ch: Pick<Character, 'id' | 'level'>, tier: number): boolean {
+  return ZONES.some(z => z.tier === tier && zoneUnlocked(ctx, ch, z));
 }
 
 /** Logs a settle of `ch`, by default against its target and with no gains. */
@@ -650,10 +650,10 @@ export function areaFound(ctx: Ctx, characterId: bigint, zone: ZoneDef, enemyId:
   return secretState(area, id => kills.get(id) ?? 0) === 'found';
 }
 
-/** A zone is open once the previous zone's boss is dead (the first zone always is). */
-export function zoneUnlocked(ctx: Ctx, characterId: bigint, zone: ZoneDef): boolean {
+/** A zone is open once the previous zone's boss is dead and `ch` (settled) has its level (the first zone always is). */
+export function zoneUnlocked(ctx: Ctx, ch: Pick<Character, 'id' | 'level'>, zone: ZoneDef): boolean {
   const prev = previousZone(zone);
-  return !prev || hasKilledBoss(ctx, characterId, prev.id);
+  return !prev || (ch.level >= zoneLevel(zone) && hasKilledBoss(ctx, ch.id, prev.id));
 }
 
 /**

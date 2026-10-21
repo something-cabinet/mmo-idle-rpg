@@ -44,8 +44,9 @@ export const devRevealAll = spacetimedb.reducer(ctx => {
 });
 
 /**
- * Opens every zone, every raid and the Moonwell Deep by recording each zone boss as killed
- * (without the first-kill reward), and records a kill of every raid boss.
+ * Opens every raid and the Moonwell Deep, and every zone the level allows (devSetLevel for the
+ * rest), by recording each zone boss as killed (without the first-kill reward), and records a
+ * kill of every raid boss.
  */
 export const devUnlockZones = spacetimedb.reducer(ctx => {
   const { ch } = requireCheats(ctx);

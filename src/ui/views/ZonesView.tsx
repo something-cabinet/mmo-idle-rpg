@@ -1,6 +1,6 @@
 import { memo, useRef, useState, type RefObject } from 'react';
 import { matchup } from '../../../spacetimedb/src/combat';
-import { ENEMIES_BY_ID, ZONES, ZONES_BY_ID, areaIndexOf, bossOf, previousZone, type AreaDef, type EnemyDef, type ZoneDef } from '../../../spacetimedb/src/data/zones';
+import { ENEMIES_BY_ID, ZONES, ZONES_BY_ID, areaIndexOf, bossOf, previousZone, zoneLevel, type AreaDef, type EnemyDef, type ZoneDef } from '../../../spacetimedb/src/data/zones';
 import { call, useSticky } from '../../store';
 import { fmt } from '../format';
 import { Icon } from '../Icon';
@@ -78,7 +78,13 @@ export const ZonesView = memo(function ZonesView({ s }: { s: Snapshot }) {
             {s.killedZones.has(z.id) && <p className="muted"><em>{z.bossLine}</em></p>}
           </div>
           {!unlocked && (
-            <div className="lock-note"><Icon name="lock" />Defeat {prevBoss?.name ?? 'the previous boss'} to unlock</div>
+            <div className="lock-note">
+              <Icon name="lock" />
+              {[
+                ...(prev && !s.killedZones.has(prev.id) ? [`Defeat ${prevBoss?.name ?? 'the previous boss'}`] : []),
+                ...(s.level < zoneLevel(z) ? [`reach level ${zoneLevel(z)}`] : []),
+              ].join(' and ').replace(/^./, c => c.toUpperCase())} to unlock
+            </div>
           )}
         </div>
         {unlocked && (

@@ -348,6 +348,9 @@ export const bossHpFactor = (tier: number) =>
 export const STARTING_ZONE = 1;
 export const STARTING_TARGET = 101;
 
+/** Character level a zone needs on top of the previous boss: 10 per tier past the first (T2: 10, T3: 20, ...). */
+export const zoneLevel = (zone: ZoneDef) => 10 * (zone.tier - 1);
+
 /** The zone whose boss must be beaten to unlock `zone`, or undefined for the first zone. */
 export function previousZone(zone: ZoneDef): ZoneDef | undefined {
   return ZONES.find(z => z.tier === zone.tier - 1);

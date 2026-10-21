@@ -77,9 +77,9 @@ export const setTarget = spacetimedb.reducer({ enemyId: t.u16() }, (ctx, { enemy
   const found = ENEMIES_BY_ID.get(enemyId);
   if (!found) throw new SenderError('No such enemy');
   const { zone, enemy } = found;
-  if (!zoneUnlocked(ctx, ch.id, zone)) throw new SenderError('Zone is locked');
-  // Settle first, so kills up to now count toward finding a secret area.
+  // Settle first, so the level and kills up to now count toward the zone and a secret area.
   const settled = settle(ctx, ch);
+  if (!zoneUnlocked(ctx, settled, zone)) throw new SenderError('Zone is locked');
   if (!areaFound(ctx, ch.id, zone, enemy.id)) throw new SenderError('No such enemy');
   ctx.db.character.id.update({ ...settled, zoneId: zone.id, targetEnemyId: enemy.id, ...NO_SKILL });
 });

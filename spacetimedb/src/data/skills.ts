@@ -196,9 +196,10 @@ export function findChances(skillId: number, tier: number, node: number, level: 
 /** Why gathering tier `tier` (at special node `node`, 0 for the normal one) isn't allowed, or undefined if it is. */
 export function gatherBlocker(g: { level: number; tier: number; zoneOpen: boolean; node?: number }): string | undefined {
   if (!g.zoneOpen) return `Unlock the tier ${g.tier} zone first`;
-  if (g.level < tierRequirement(g.tier)) return `Needs level ${tierRequirement(g.tier)}`;
+  // A node needs both its unlock and the tier's level; name the higher so every tier of a node agrees.
   const n = g.node ? GATHER_NODES_BY_ID.get(g.node) : undefined;
-  if (n && g.level < n.unlock) return `Needs level ${n.unlock}`;
+  const need = Math.max(tierRequirement(g.tier), n?.unlock ?? 0);
+  if (g.level < need) return `Needs level ${need}`;
   return undefined;
 }
 

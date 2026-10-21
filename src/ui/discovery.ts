@@ -7,7 +7,7 @@
 import type { Matchup } from '../../spacetimedb/src/combat';
 import { base } from '../../spacetimedb/src/data/bases';
 import { UNIQUES_BY_ID } from '../../spacetimedb/src/data/uniques';
-import { ZONES, previousZone, secretState, type AreaDef, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
+import { ZONES, previousZone, secretState, zoneLevel, type AreaDef, type EnemyDef, type ZoneDef } from '../../spacetimedb/src/data/zones';
 import type { Snapshot } from './snapshot';
 
 export const UNKNOWN = '???';
@@ -50,10 +50,10 @@ export function zoneDiscovery(s: Snapshot, z: ZoneDef) {
 /** A secret area's state for the player (zones.ts `secretState`); other areas are 'found'. */
 export const areaSecret = (s: Snapshot, a: AreaDef) => secretState(a, id => s.kills.get(id) ?? 0);
 
-/** The previous zone's boss is dead (the first zone is always open). */
+/** The previous zone's boss is dead and the character has the zone's level (the first zone is always open). */
 export function zoneUnlocked(s: Snapshot, z: ZoneDef) {
   const prev = previousZone(z);
-  return !prev || s.killedZones.has(prev.id);
+  return !prev || (s.level >= zoneLevel(z) && s.killedZones.has(prev.id));
 }
 
 /**

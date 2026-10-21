@@ -39,7 +39,7 @@ export const startGathering = spacetimedb.reducer({ skillId: t.u8(), tier: t.u8(
   if (!def || def.kind !== 'Gathering') throw new SenderError('No such skill');
   if (node !== 0 && GATHER_NODES_BY_ID.get(node)?.skillId !== def.id) throw new SenderError('No such node');
   const settled = settle(ctx, ch);
-  const blocker = gatherBlocker({ level: skillRow(ctx, ch.id, def.id).level, tier, zoneOpen: tierUnlocked(ctx, ch.id, tier), node });
+  const blocker = gatherBlocker({ level: skillRow(ctx, ch.id, def.id).level, tier, zoneOpen: tierUnlocked(ctx, settled, tier), node });
   if (blocker) throw new SenderError(blocker);
   ctx.db.character.id.update({ ...settled, ...NO_SKILL, activitySkill: def.id, activityRecipe: gatherSpotId(tier, node) });
 });
@@ -60,7 +60,7 @@ export const startProduction = spacetimedb.reducer({ skillId: t.u8(), recipe: t.
   if (count < 1 || count > r.max) throw new SenderError(r.max === 1 ? 'Make one at a time' : `Queue 1 to ${r.max}`);
   const settled = settle(ctx, ch);
   const blocker = productionBlocker({
-    level: skillRow(ctx, ch.id, def.id).level, tier: r.tier, zoneOpen: tierUnlocked(ctx, ch.id, r.tier),
+    level: skillRow(ctx, ch.id, def.id).level, tier: r.tier, zoneOpen: tierUnlocked(ctx, settled, r.tier),
     needsDeep: r.needsDeep, deepOpen: !!r.needsDeep && hasKilledBoss(ctx, ch.id, ABYSS_UNLOCK_ZONE),
   });
   if (blocker) throw new SenderError(blocker);
@@ -83,7 +83,7 @@ export const temperItem = spacetimedb.reducer({ itemId: t.u64() }, (ctx, { itemI
   const it = requireItem(ctx, ch, itemId);
   const settled = settle(ctx, ch);
   const row = skillRow(ctx, ch.id, SkillId.Smithing);
-  const blocker = temperBlocker(it, row.level, tierUnlocked(ctx, ch.id, it.tier));
+  const blocker = temperBlocker(it, row.level, tierUnlocked(ctx, settled, it.tier));
   if (blocker) throw new SenderError(blocker);
   const cost = temperCost(it)!; // temperBlocker refuses tiers without materials
   if ((materialCounts(ctx, ch.id).get(cost.material.materialId) ?? 0) < cost.material.count) throw new SenderError('Not enough materials');
@@ -109,7 +109,7 @@ export const upgradeTool = spacetimedb.reducer({ skillId: t.u8() }, (ctx, { skil
   if (!r) throw new SenderError('Already the highest tier');
   const settled = settle(ctx, ch);
   const row = skillRow(ctx, ch.id, SkillId.Smithing);
-  const blocker = productionBlocker({ level: row.level, tier: r.tier, zoneOpen: tierUnlocked(ctx, ch.id, r.tier) });
+  const blocker = productionBlocker({ level: row.level, tier: r.tier, zoneOpen: tierUnlocked(ctx, settled, r.tier) });
   if (blocker) throw new SenderError(blocker);
   const held = materialCounts(ctx, ch.id);
   if (affordable(r, { have: id => held.get(id) ?? 0 }) < 1) throw new SenderError('Not enough materials');

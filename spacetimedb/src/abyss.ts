@@ -1,18 +1,18 @@
 // Moonwell Deep fights (docs/design/abyss.md): a basic enemy, an Elite and the Deep Warden,
 // fought back to back on one HP bar. Pure and deterministic, like raid.ts: the server plays
 // the whole depth when the player starts it (that decides the outcome), and the client
-// replays the very same depth from the stored stats and seed to animate it. Each enemy is a
-// solo fight (fight.ts `simulateFight`) with `FightMods` for the HP carried in and the affixes.
+// replays the very same depth from the stored stats and seed to animate it. A depth is one
+// battle (battle.ts) whose three foes enter in turn, their affixes as `FightMods`.
 
 import { defenseAgainst, matchup, type CombatStats, type Matchup } from './combat';
 import {
   ABYSS_KINDS_BY_ID, ABYSS_SEASON, BossAffix, DEEP_WARDEN, DEPTH_TIME_LIMIT, EliteAffix, PROFILE, bossName, depthEnemy, depthLineup,
   eliteName, evasiveRating, type DepthLineup, type DepthSlot,
 } from './data/abyss';
-import { Effect, STOKE, effectAmount } from './data/legendary';
 import type { Defense, EnemyDef } from './data/zones';
 import { seededRng, type Rng } from './loot';
-import { simulateFight, type Fight, type FightMods } from './fight';
+import { simulateBattle } from './battle';
+import { fightEvents, fightFoe, type Fight, type FightMods } from './fight';
 
 const ABYSS_SALT = 0x64656570n; // "deep"
 /** Depths behind the Scout odds. */
@@ -37,22 +37,6 @@ export interface DepthFoe {
 export function mainDamageType(s: CombatStats): 'Physical' | 'Magic' {
   const src = s.sources[0];
   return src && src.hit.Magic > src.hit.Physical ? 'Magic' : 'Physical';
-}
-
-/**
- * Thorned's reflect (abyss.md, "Elite affixes"): `share` of each hit comes back in the
- * damage types it was dealt in, each cut by your own defense against that type. The split is
- * your damage against `m`'s enemy, after its mitigation.
- */
-function thornedReflect(s: CombatStats, m: Matchup, level: number, share: number): number {
-  let phys = 0;
-  let magic = 0;
-  for (const src of s.sources) {
-    phys += src.hit.Physical * (1 - m.enemyMitigation.Physical) * src.attacksPerSec;
-    magic += src.hit.Magic * (1 - m.enemyMitigation.Magic) * src.attacksPerSec;
-  }
-  const physShare = phys + magic > 0 ? phys / (phys + magic) : 1;
-  return share * (physShare * (1 - defenseAgainst(s, 'Physical', level).mitigation) + (1 - physShare) * (1 - defenseAgainst(s, 'Magic', level).mitigation));
 }
 
 /** The defense profile that resists `s`'s main damage type: Armored against physical, Warded against magic. */
@@ -113,9 +97,8 @@ export function depthFoes(s: CombatStats, lineup: DepthLineup): DepthFoe[] {
     if (a === EliteAffix.Unyielding) enemy = { ...enemy, regen: (enemy.regen ?? 0) + 0.015 * enemy.hp };
     if (a === EliteAffix.Ravenous) mods.ramp = { every: 5, step: 0.05 };
     if (a === EliteAffix.Thorned) enemy = { ...enemy, hp: enemy.hp * 0.7 };
-    const m = matchup(s, enemy);
-    if (a === EliteAffix.Thorned) mods.reflect = thornedReflect(s, m, enemy.level, 0.1);
-    foes.push({ slot: 'elite', kindId: kind.id, affixes: [a], enemy, matchup: m, mods });
+    if (a === EliteAffix.Thorned) mods.thorned = 0.1;
+    foes.push({ slot: 'elite', kindId: kind.id, affixes: [a], enemy, matchup: matchup(s, enemy), mods });
   }
 
   // Boss: the Deep Warden with its Boss affixes.
@@ -130,6 +113,7 @@ export function depthFoes(s: CombatStats, lineup: DepthLineup): DepthFoe[] {
     if (has(BossAffix.Starless)) mods.healMult = 0.5;
     if (has(BossAffix.Veiled)) enemy = { ...enemy, evasionRating: evasiveRating(enemy.level) };
     if (has(BossAffix.Eclipse)) mods.eclipse = { every: 20, length: 4 };
+    if (has(BossAffix.Tidal)) mods.mixed = true;
     const m = has(BossAffix.Tidal) ? tidalMatchup(s, enemy) : matchup(s, enemy);
     foes.push({ slot: 'boss', kindId: DEEP_WARDEN.id, affixes: [...affixes], enemy, matchup: m, mods });
   }
@@ -150,34 +134,43 @@ export interface DepthResult {
 }
 
 /**
- * One depth: its three enemies back to back, starting at full HP. Each fight starts at the
- * HP the last one left, with no walk; Second Wind and a Phial of Renewal trigger once per depth; the depth is lost
- * at DEPTH_TIME_LIMIT.
+ * One depth: its three enemies back to back, starting at full HP, as one battle: each enters
+ * as the last falls, with no walk, and you keep the HP it left. Second Wind and a Phial of
+ * Renewal trigger once per depth; Stoke the Fire counts the enemies already fallen; the depth
+ * is lost at DEPTH_TIME_LIMIT. Each enemy's part comes back as a fight of its own.
  */
 export function simulateDepth(s: CombatStats, depth: number, rng: Rng, season = ABYSS_SEASON): DepthResult {
   const foes = depthFoes(s, depthLineup(depth, season));
-  const fights: Fight[] = [];
-  const starts: number[] = [];
-  let hp = s.maxHp;
-  let secondWind = effectAmount(s.effects, Effect.SecondWind);
-  let renewal = s.renewal ?? 0;
-  let elapsed = 0;
-  // Stoke the Fire: more damage for each enemy already fallen this depth.
-  const stoke = s.effects.has(Effect.StokeTheFire);
-  for (const foe of foes) {
-    const f = simulateFight(s, foe.matchup, foe.enemy, rng, {
-      ...foe.mods, walk: 0, startHp: hp, secondWind, renewal, timeLimit: DEPTH_TIME_LIMIT - elapsed,
-      ...(stoke && fights.length > 0 && { damageMult: 1 + STOKE * fights.length }),
-    });
-    fights.push(f);
-    starts.push(elapsed);
-    elapsed += f.end;
-    hp = f.hpLeft;
-    secondWind = f.secondWindLeft;
-    renewal = f.renewalLeft;
-    if (f.outcome !== 'kill') return { foes, fights, starts, won: false, timedOut: f.outcome === 'stalemate', end: elapsed };
+  const r = simulateBattle({
+    sides: [[{ kind: 'player', stats: s }], foes.map(f => fightFoe(f.enemy, f.mods))],
+    chain: true,
+    firstSwing: 'half',
+    timeLimit: DEPTH_TIME_LIMIT,
+    onTimeout: 'draw',
+    followThrough: true,
+  }, rng);
+  // Split the events at each enemy's entrance.
+  const parts: (typeof r.events)[] = r.segments.map(() => []);
+  let k = 0;
+  for (const e of r.events) {
+    if (e.kind === 'enter') k++;
+    parts[Math.min(k, parts.length - 1)].push(e);
   }
-  return { foes, fights, starts, won: true, timedOut: false, end: elapsed };
+  const last = r.segments.length - 1;
+  const fights: Fight[] = r.segments.map((seg, i) => {
+    const foe = foes[seg.foe - 1];
+    return {
+      stats: s, matchup: foe.matchup, enemy: foe.enemy, walk: 0,
+      events: fightEvents(parts[i], 0, seg.foe, seg.start, foe.matchup.shield > 0, (foe.enemy.regen ?? 0) > 0),
+      end: seg.end - seg.start,
+      outcome: i < last || r.winner === 0 ? 'kill' : r.winner === 1 ? 'defeat' : 'stalemate',
+      startHp: i === 0 ? s.maxHp : r.segments[i - 1].hp[0],
+      hpLeft: seg.hp[0],
+      secondWindLeft: seg.secondWind,
+      renewalLeft: seg.renewal,
+    };
+  });
+  return { foes, fights, starts: r.segments.map(seg => seg.start), won: r.winner === 0, timedOut: r.timedOut, end: r.end };
 }
 
 /** Share of DEPTH_ODDS_SAMPLES depths `s` wins at `depth` (the Scout odds), with fixed seeds. */

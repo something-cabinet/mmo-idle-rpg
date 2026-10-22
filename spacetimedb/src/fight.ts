@@ -3,9 +3,8 @@
 // The back-to-back online settle (`simulate`) is in sim.ts.
 
 import { type CombatStats, type Matchup } from './combat';
-import { Effect, MOONLIGHT_MULT } from './data/legendary';
 import type { EnemyDef } from './data/zones';
-import { Fighter } from './fighter';
+import { simulateBattle, type BattleEvent, type FoeSpec } from './battle';
 import { seededRng, type Rng } from './loot';
 
 /** A fight not over after this long is a stalemate: time passes with no effect. */
@@ -58,8 +57,8 @@ export interface FightEvent {
 }
 
 /**
- * Optional changes to a fight, for Moonwell Deep fights (abyss.ts, abyss.md). None of them
- * exist in zone fights, so without mods a fight replays exactly as before.
+ * Optional changes to a fight, for Moonwell Deep fights (abyss.ts, abyss.md): where it
+ * starts, and the enemy's affixes. None of them exist in zone fights.
  */
 export interface FightMods {
   /** Seconds of walking before the first swing (default: the character's walk time). */
@@ -84,10 +83,10 @@ export interface FightMods {
   burst?: { every: number; mult: number };
   /** × your heals, regen and lifesteal. */
   healMult?: number;
-  /** Share of each of your hits that comes back to you as damage (after your mitigation). */
-  reflect?: number;
-  /** × your hits (Stoke the Fire in the Moonwell Deep: more for each enemy already fallen this depth). */
-  damageMult?: number;
+  /** Thorned: this share of each of your hits comes back at you, in the types dealt, cut by your own defense (battle.ts `thornedShare`). */
+  thorned?: number;
+  /** Tidal: the enemy's hits are half physical, half magic. */
+  mixed?: boolean;
 }
 
 export interface Fight {
@@ -110,171 +109,99 @@ export interface Fight {
   renewalLeft: number;
 }
 
-/**
- * One fight: a walk, then both sides swing on their own timers until one drops.
- * Per swing, the averages are `matchup`'s: your hit is its DPS split over your
- * attacks and crits, heals its HPS per attack, the enemy's hit its DPS after your
- * mitigation and Frostbite's chill, dodged at your evasion, then shrunk by a Phial of Warding,
- * Stoneskin, Bulwark, Last Stand and Afterimage like any sim's (`Fighter.shrink`); regen (yours and the enemy's) ticks between
- * events, and an evasive enemy dodges your swings (heals still land). Swing timers start
- * half a period in, so on average a fight lasts what the formulas say. Unlike the
- * formulas, HP can't go above max (overhealing is lost) and damage varies ±10%.
- * Executioner doubles your hits once the enemy is below its threshold; Second Wind
- * turns the first killing blow into a drop to its share of max HP; Ambush makes your
- * first swing 5×; Frostbite's chill shrinks the enemy's hits. Bully doubles your hits
- * while the enemy is above its threshold; Berserker scales them with your missing HP;
- * Follow-through lands the average overkill as the fight starts (so each fight stays
- * on its own). Second Skin's shield takes hits first; Bulwark halves some hits; Last
- * Stand shrinks hits while you are below its threshold. Moonlight doubles every 3rd
- * swing; Waxing Moon scales swing k by `waxingMult(k)`; Fading Rally times swing k at
- * `rallyMult(k)` × your speed; Parry and Thrust crits the swing after a dodge (and only
- * then). Riposte counters each dodge, Thornshell reflects each hit that reaches you, and
- * Zealot's Oath hits with each heal, as events of their own. A Phial of Renewal heals once
- * when a hit leaves you below half HP. New effects draw from the
- * generator only when worn, so fights without them replay as before. `mods` (Moonwell Deep
- * fights only) change the start, the time limit and the enemy; see FightMods.
- */
-export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng, mods: FightMods = {}): Fight {
-  const src = s.sources[0];
-  const walk = mods.walk ?? s.walkTime;
-  const yourPeriod = src && m.dps > 0 ? 1 / src.attacksPerSec : Infinity;
-  const foePeriod = 1 / enemy.speed;
-  const crit = Math.min(1, src?.critChance ?? 0);
-  const foeRegen = enemy.regen ?? 0;
-  // Your average hit without a crit, and a crit's multiplier, so hit × speed × critMult = your
-  // weapon's DPS. Moonlight's wave, Waxing Moon's and Fading Rally's averages and the enemy's
-  // evasion are in `m.weaponDps`; take them out, then apply them per swing.
-  const moonlight = s.effects.has(Effect.Moonlight);
-  const parry = s.effects.has(Effect.ParryAndThrust);
-  const healMult = mods.healMult ?? 1;
-  const regen = s.regen * healMult;
-  const lifesteal = s.lifesteal * healMult;
-  let cur = m;
-  let evade = 0;
-  let hit = 0;
-  let critX = 1;
-  let healPerSwing = 0;
-  let zealot = 0;
-  let counter = 0;
-  let enemyHit = 0;
-  const you = new Fighter(s, { hp: mods.startHp, secondWind: mods.secondWind, renewal: mods.renewal });
-  const face = (x: Matchup) => {
-    cur = x;
-    evade = x.enemyEvasion;
-    hit = src && x.weaponDps > 0 ? x.weaponDps / (1 - evade) / src.attacksPerSec / x.critMult / x.waxing / x.rally / (moonlight ? MOONLIGHT_MULT : 1) : 0;
-    const c = parry ? x.parry : crit;
-    critX = c > 0 && src ? 1 + (x.critMult - 1) / c : 1;
-    const heal = src && x.hps > 0 ? x.hps / src.attacksPerSec / x.rally : 0;
-    healPerSwing = heal * healMult;
-    zealot = you.zealot(heal, x.enemyMitigation.Magic);
-    counter = you.riposte(hit, c, critX);
-    enemyHit = x.foeHit;
+/** The enemy of a fight as a battle foe, with its `mods` affixes. */
+export function fightFoe(enemy: EnemyDef, mods: FightMods = {}): FoeSpec {
+  return {
+    kind: 'foe',
+    def: enemy,
+    ...(mods.drain && { drain: mods.drain }),
+    ...(mods.immuneUntil && { immuneUntil: mods.immuneUntil }),
+    ...(mods.eclipse && { eclipse: mods.eclipse }),
+    ...(mods.ramp && { ramp: mods.ramp }),
+    ...(mods.burst && { special: { every: mods.burst.every, mult: mods.burst.mult, aoe: false } }),
+    ...(mods.healMult !== undefined && { healMult: mods.healMult }),
+    ...(mods.thorned && { thorned: mods.thorned }),
+    ...(mods.mixed && { mixed: true }),
   };
-  face(m);
-  /** Enemy regen since its last swing, shown on its next one. */
-  let foeRegained = 0;
-  const limit = mods.timeLimit ?? MAX_FIGHT_SECONDS;
-  const drain = mods.drain ?? 0;
-  const reflect = mods.reflect ?? 0;
-  /** Seconds into the fight (after the walk) at `t`. */
-  const into = (t: number) => t - walk;
-  const immune = (t: number) =>
-    into(t) < (mods.immuneUntil ?? 0) || (!!mods.eclipse && into(t) >= mods.eclipse.every && into(t) % mods.eclipse.every < mods.eclipse.length);
-  const ramp = (t: number) => (mods.ramp ? 1 + mods.ramp.step * Math.floor(into(t) / mods.ramp.every) : 1);
+}
 
-  const startHp = you.hp;
-  let foeHp = enemy.hp;
-  let now = walk;
-  let nextYou = walk + you.firstPeriod(yourPeriod / 2);
-  let nextFoe = walk + foePeriod / 2;
-  let nextBurst = mods.burst ? walk + mods.burst.every : Infinity;
-  const events: FightEvent[] = [];
-  const done = (end: number, outcome: Fight['outcome']): Fight =>
-    ({ stats: s, matchup: m, enemy, walk, events, end, outcome, startHp, hpLeft: you.hp, secondWindLeft: you.secondWind, renewalLeft: you.renewal });
-  const shieldNote = () => (m.shield > 0 ? { shield: you.shield } : {});
-
-  // Follow-through: half an average hit of overkill, a share of it carried in.
-  const carried = immune(walk) ? 0 : (you.amount(Effect.FollowThrough) / 2) * hit * m.critMult;
-  if (carried > 0) {
-    foeHp = Math.max(0, foeHp - carried);
-    events.push({ t: walk, by: 'you', kind: 'hit', damage: carried, healed: 0, youHp: you.hp, foeHp, carried: true, ...shieldNote() });
-    if (foeHp <= 0) return done(walk, 'kill');
-  }
-
-  for (;;) {
-    const t = Math.min(nextYou, nextFoe, nextBurst);
-    if (t > walk + limit) return done(walk + limit, 'stalemate');
-    const before = you.hp;
-    you.hp = Math.min(s.maxHp, you.hp + regen * (t - now));
-    const foeBefore = foeHp;
-    foeHp = Math.min(enemy.hp, foeHp + foeRegen * (t - now));
-    foeRegained += foeHp - foeBefore;
-    now = t;
-    if (t === nextBurst) {
-      nextBurst += mods.burst!.every;
-      // Can't be dodged; your other defenses and Thornshell work as on any hit.
-      const damage = you.shrink(mods.burst!.mult * enemyHit * ramp(t) * (0.9 + 0.2 * rng()), rng);
-      const blocked = you.blocked;
-      const healed = you.hp - before;
-      const hpDamage = you.absorb(damage);
-      const thorns = immune(t) ? 0 : you.thorns(hpDamage, cur.thornsThrough);
-      foeHp = Math.max(0, foeHp - thorns);
-      const saved = you.take(hpDamage);
-      events.push({ t, by: 'enemy', kind: 'hit', damage, healed, youHp: you.hp, foeHp, burst: true, ...(blocked && { blocked: true }), ...(thorns > 0 && { thorns }),
-        ...(saved && { secondWind: true }), ...(you.renewed > 0 && { renewed: you.renewed }), ...shieldNote() });
-      if (foeHp <= 0) return done(t, 'kill');
-      if (you.hp <= 0) return done(t, 'defeat');
-    } else if (nextYou <= nextFoe) {
-      nextYou += you.nextPeriod(yourPeriod);
-      // Rolled only against an evasive enemy, so other fights replay as before.
-      const missed = evade > 0 && rng() < evade;
-      const isCrit = you.rollCrit(crit, rng, missed);
-      const wave = you.isWave();
-      const shielded = !missed && immune(t);
-      const weapon = missed || shielded ? 0 : you.swingDamage(hit * (isCrit ? critX : 1) * (0.9 + 0.2 * rng()), foeHp, enemy.hp) * (mods.damageMult ?? 1);
-      // Zealot's Oath: the heal lands even on a miss, and hits with it.
-      const damage = weapon + (shielded ? 0 : zealot);
-      // Ambush is spent on the first swing that can land.
-      if (!shielded) you.ambush = 1;
-      foeHp = Math.max(0, foeHp - damage);
-      you.hp = Math.min(s.maxHp, you.hp + healPerSwing + lifesteal * damage);
-      const reflected = reflect * damage;
-      const saved = reflected > 0 && you.takeDirect(reflected);
-      events.push({ t, by: 'you', kind: missed || shielded ? 'miss' : isCrit ? 'crit' : 'hit', damage, healed: you.hp - before, youHp: you.hp, foeHp,
-        ...(wave && !missed && !shielded && { wave: true }), ...(shielded && { immune: true }), ...(reflected > 0 && { reflected }),
-        ...(saved && { secondWind: true }), ...(reflected > 0 && you.renewed > 0 && { renewed: you.renewed }), ...shieldNote() });
-      if (foeHp <= 0) return done(t, 'kill');
-      if (you.hp <= 0) return done(t, 'defeat');
+/**
+ * A battle's events as one fight's, between player `you` and foe `foe` (battle.ts actor
+ * indexes), with times from `start`. Events that are neither's swing (another foe entering,
+ * a fall) pass their regen and heals on to the next one shown.
+ */
+export function fightEvents(events: readonly BattleEvent[], you: number, foe: number, start: number, showShield: boolean, foeRegen: boolean): FightEvent[] {
+  const out: FightEvent[] = [];
+  let healed = 0;
+  let foeHealed = 0;
+  for (const e of events) {
+    healed += e.healed[you];
+    foeHealed += e.healed[foe];
+    if (e.by !== you && e.by !== foe) continue;
+    const mine = e.by === you;
+    const f: FightEvent = {
+      t: e.t - start,
+      by: mine ? 'you' : 'enemy',
+      kind: mine ? (e.kind === 'miss' ? 'miss' : e.kind === 'crit' ? 'crit' : 'hit') : e.kind === 'miss' ? 'dodge' : 'hit',
+      damage: mine ? e.damage : e.dealt ?? 0,
+      healed,
+      youHp: e.hp[you],
+      foeHp: e.hp[foe],
+    };
+    healed = 0;
+    if (showShield && e.shield) f.shield = e.shield[you];
+    if (e.saved?.includes(you)) f.secondWind = true;
+    if (e.renewed) f.renewed = e.renewed;
+    if (mine) {
+      if (e.kind === 'carry') f.carried = true;
+      if (e.wave) f.wave = true;
+      if (e.immune) f.immune = true;
+      if (e.reflected) f.reflected = e.reflected;
     } else {
-      nextFoe += foePeriod;
-      const dodged = rng() < cur.evasion;
-      let damage = 0;
-      // Riposte: a dodge counters for a share of your average hit.
-      let countered = 0;
-      if (dodged) {
-        you.dodge();
-        countered = immune(t) ? 0 : counter;
-      } else damage = you.shrink(enemyHit * (0.9 + 0.2 * rng()) * ramp(t), rng);
-      const blocked = !dodged && you.blocked;
-      const healed = you.hp - before;
-      const hpBefore = you.hp;
-      const hpDamage = you.absorb(damage);
-      // Thornshell: what reached you reflects back, through the enemy's mitigation.
-      const thorns = immune(t) ? 0 : you.thorns(hpDamage, cur.thornsThrough);
-      foeHp = Math.max(0, foeHp - countered - thorns);
-      const saved = you.take(hpDamage);
-      // Drain: the enemy heals a share of what reached your HP.
-      const drained = drain > 0 && foeHp > 0 ? Math.min(enemy.hp - foeHp, drain * Math.min(hpBefore, hpDamage)) : 0;
-      foeHp += drained;
-      events.push({ t, by: 'enemy', kind: dodged ? 'dodge' : 'hit', damage, healed, youHp: you.hp, foeHp,
-        ...(saved && { secondWind: true }), ...(blocked && { blocked: true }), ...(foeRegen > 0 && { foeHealed: foeRegained }),
-        ...(countered > 0 && { countered }), ...(thorns > 0 && { thorns }),
-        ...(drained > 0 && { drained }), ...(you.renewed > 0 && { renewed: you.renewed }), ...shieldNote() });
-      foeRegained = 0;
-      if (foeHp <= 0) return done(t, 'kill');
-      if (you.hp <= 0) return done(t, 'defeat');
+      if (e.kind === 'special') f.burst = true;
+      if (e.blocked) f.blocked = true;
+      if (foeRegen) f.foeHealed = foeHealed;
+      if (e.countered) f.countered = e.countered;
+      if (e.reflected) f.thorns = e.reflected;
+      if (e.drained) f.drained = e.drained;
+      foeHealed = 0;
     }
+    out.push(f);
   }
+  return out;
+}
+
+/**
+ * One fight (battle.ts): a walk, then you and the enemy swing on your own timers until one
+ * drops, every effect played per hit by `Fighter`. Swing timers start half a period in, so
+ * on average a fight lasts what the formulas (`matchup`) say. Unlike the formulas, HP can't
+ * go above max (overhealing is lost) and damage varies ±10%. Follow-through lands the average
+ * overkill as the fight starts (so each fight stays on its own). `mods` (Moonwell Deep fights
+ * only) change the start, the time limit and the enemy; see FightMods. `record: false` skips
+ * the events (kill-rate estimates).
+ */
+export function simulateFight(s: CombatStats, m: Matchup, enemy: EnemyDef, rng: Rng, mods: FightMods = {}, record = true): Fight {
+  const walk = mods.walk ?? s.walkTime;
+  const r = simulateBattle({
+    sides: [[{ kind: 'player', stats: s, start: { hp: mods.startHp, secondWind: mods.secondWind, renewal: mods.renewal } }], [fightFoe(enemy, mods)]],
+    walk,
+    firstSwing: 'half',
+    timeLimit: mods.timeLimit ?? MAX_FIGHT_SECONDS,
+    onTimeout: 'draw',
+    followThrough: true,
+    record,
+  }, rng);
+  const you = r.fighters[0]!;
+  return {
+    stats: s, matchup: m, enemy, walk,
+    events: record ? fightEvents(r.events, 0, 1, 0, m.shield > 0, (enemy.regen ?? 0) > 0) : [],
+    end: r.end,
+    outcome: r.winner === 0 ? 'kill' : r.winner === 1 ? 'defeat' : 'stalemate',
+    startHp: Math.min(s.maxHp, mods.startHp ?? s.maxHp),
+    hpLeft: you.hp,
+    secondWindLeft: you.secondWind,
+    renewalLeft: you.renewal,
+  };
 }
 
 /**
@@ -307,7 +234,7 @@ export function liveKillRate(stats: CombatStats, m: Matchup, enemy: EnemyDef): {
   let wins = 0;
   let lostSpan = 0;
   for (let i = 0; i < ODDS_SAMPLES; i++) {
-    const f = simulateFight(stats, m, enemy, seededRng(ODDS_SALT, BigInt(i)));
+    const f = simulateFight(stats, m, enemy, seededRng(ODDS_SALT, BigInt(i)), {}, false);
     if (f.outcome === 'kill') wins++;
     else lostSpan += fightSpan(f);
   }

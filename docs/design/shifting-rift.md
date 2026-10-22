@@ -173,11 +173,11 @@ A floor's fights pay ~150–250 Motes in all, so a shop stop is 2–3 purchases.
 Each fight node is one seeded sequence of 1–3 fights, played in full by the server and
 replayed by the client, like the Deep and raids. The server's outcome is final.
 
-- **It reuses the Deep's fight chain.** `simulateFight` (fight.ts) already takes a starting
-  HP, a time limit and the Second Wind and Renewal left (`FightMods`), and the Deep's
-  `simulateDepth` (abyss.ts) chains enemies with HP carrying over. A Rift node is the same
-  loop over the node's enemies, with the run's stats: locked gear + Ethereal gear + boons +
-  level. Most Elite affixes are already `FightMods` (drain, ramp, reflect, heal ×).
+- **It's a battle, like every fight.** The engine (battle.ts) already plays a chain of
+  foes with HP carried over (a Deep depth), a starting HP, Second Wind and Renewal left per
+  player, a time limit, and N players against M foes. A Rift node is a chained battle of
+  the node's enemies, with the run's stats: locked gear + Ethereal gear + boons + level.
+  The Elite affixes are already foe traits (drain, ramp, Thorned, heal ×).
 - **HP carries over** between fights and nodes. Regen and lifesteal only work inside
   fights, as usual. So sustain is a real build axis here, and so is plain bulk.
 - **Second Wind** triggers **once per floor**, not once per fight (the Deep carries it
@@ -558,8 +558,8 @@ queued.**
 - **Personal:** boons, curses, Motes, shops, Ethereal items, event choices, Threshold.
   Each member's offers come from run seed + character, so nobody copies another's luck.
   Unanswered choices queue; you fight with what you have until you pick.
-- **Fights:** every member fights every node together in `simulateRaid`; threat spreads
-  the hits. Enemy **HP** × party size factor (1 / 1.8 / 2.5 / 3.2 for 1–4 players); damage
+- **Fights:** every member fights every node together in one battle; threat spreads the
+  hits. Enemy **HP** × party size factor (1 / 1.8 / 2.5 / 3.2 for 1–4 players); damage
   unchanged.
 - **Rewards:** each member is paid from their own `rift_week`, as solo.
 - **Disconnect and reconnect:**
@@ -603,7 +603,7 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 |-|-|
 | `data/rift.ts` | Boons (permanent IDs), themes and set bonuses, curses, rift effects (200+), events, mutations, floor multipliers, reward table |
 | `rift.ts` (pure, shared) | `weeklyMutation(week)`, `runMap(seed)` (maps, line-ups, Elite affixes, events, boss options), `nodeEnemies(..., partySize)`, `memberStats(member)` (locked gear + Ethereal + boons + level), `simulateNode(...)` (a chain of the node's enemies against **every member**: starting HP per member, per-floor Second Wind, shared time limit), offer rolls seeded by run + character |
-| Sim | **Built on `simulateRaid` (raid.ts) from day one**, a solo run being one fighter, so co-op needs no sim rewrite. The raid sim already has several fighters, threat, several bosses and party effects (Drawing Fire, Twin Flame). Needed there: a starting HP per fighter, a time limit, Second Wind left per fighter, the Elite-affix mods `fight.ts` has (`FightMods`), hooks for boons and rift effects (shields, chained crits, Echo Strike, Gambler's Edge…), and Phial Renewal forced to 0 |
+| Sim | **The battle engine (battle.ts)**, a solo run being a party of one, so co-op needs no sim rewrite. It already has N players against M foes, a chain of foes, threat, starting HP, Second Wind and Renewal per player, a time limit, the Elite affixes as foe traits and party effects (Drawing Fire, Twin Flame). Needed: hooks for boons and rift effects (shields, chained crits, Echo Strike, Gambler's Edge…), and Phial Renewal forced to 0 |
 | Schema | `Ethereal` rarity (already reserved), `rift_run` (per run), `rift_member` (per player in a run), `rift_item` (with an owner), `rift_week`, `rift_log`, `rift_codex` (discovery). No per-character run state outside `rift_member` |
 | Reducers | Split by who may call them from the start. **Leader:** `riftStart(loadoutIndex, tier)` (tier ≥ 5), `riftMove(node)`, `riftBoss(option)`. **Each member, for themselves:** `riftPick(option)` (Threshold, boons, events), `riftBuy(offer)`, `riftTake(wear)`, `riftLeave()`. Personal choices queue on the member and never block `riftMove` (solo, the client simply asks before moving). Weekly reset handled lazily (a call in a new week ends the old run and pays each member's cleared floors) |
 | Client | A **Shifting Rift** page under Adventure: the floor map, Rift loadout with a wear-or-discard compare, boons with set progress, replays with speed controls, shop and event dialogs, run history, Codex |

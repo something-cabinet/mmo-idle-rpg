@@ -12,6 +12,7 @@ import { SUPPLIES_BY_ID } from '../spacetimedb/src/data/supplies';
 import { makeItem, seededRng, type RarityName } from '../spacetimedb/src/loot';
 import { decodeStats, depthFoes, depthOdds, depthRng, encodeStats, mainDamageType, simulateDepth, weakerDefense } from '../spacetimedb/src/abyss';
 import { simulateFight } from '../spacetimedb/src/fight';
+import { thornedShare } from '../spacetimedb/src/battle';
 import { Effect } from '../spacetimedb/src/data/legendary';
 
 let failed = 0;
@@ -115,7 +116,10 @@ const fightFoe = (s: CombatStats, l: DepthLineup, slot: number, seed = 1n) => {
   check('Thorned: 30% less max HP', Math.abs(depthFoes(hero, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].enemy.hp -
     0.7 * depthFoes(hero, lineup(5, EliteAffix.Ravenous, [BossAffix.Hungering]))[1].enemy.hp) < 1e-6);
   check('Thorned: your hits come back at you', thorned.events.some(e => e.by === 'you' && (e.reflected ?? 0) > 0));
-  const thornedMods = (c: CombatStats) => depthFoes(c, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].mods.reflect ?? 0;
+  const thornedMods = (c: CombatStats) => {
+    const f = depthFoes(c, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1];
+    return thornedShare(c, f.enemy, f.mods.thorned ?? 0);
+  };
   const lvl = depthFoes(hero, lineup(5, EliteAffix.Thorned, [BossAffix.Hungering]))[1].enemy.level;
   check('Thorned: physical damage comes back physical, magic comes back magic',
     Math.abs(thornedMods(hero) - 0.1 * (1 - defenseAgainst(hero, 'Physical', lvl).mitigation)) < 1e-9 &&

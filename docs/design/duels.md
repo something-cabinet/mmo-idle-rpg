@@ -13,8 +13,8 @@ and costs the server nothing.
 
 ## The fight
 
-Like `simulateFight` (combat.md), but both sides are players, each swinging on its own
-timer:
+A battle like any fight (battle.ts, combat.md), but both sides are players, each swinging
+on its own timer:
 
 - Per swing, the attacker's weapon hit after the defender's mitigation by type, with the
   attacker's penetration, Rending and Spellbreaker (Voidtouched ignores it), and the

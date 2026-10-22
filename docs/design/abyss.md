@@ -42,9 +42,10 @@ the stored setup, like a raid (raids.md, "The fight"). The server's outcome is f
 closed form is needed, since it's never settled offline. That leaves room for mechanics
 the zones can't have.
 
-- **Order:** basic, Elite, boss. Each is a normal solo fight (`simulateFight` in fight.ts),
-  except that it **starts at the HP you had when the last one died**. Swing timers restart
-  for each enemy.
+- **Order:** basic, Elite, boss. A depth is one battle (battle.ts) whose enemies enter in
+  turn: each is a fight of its own, except that it **starts at the HP you had when the last
+  one died**. Swing timers and what lasts one fight (Ambush, Waxing Moon, Fading Rally,
+  Second Skin's shield) restart for each enemy.
 - **Between enemies:** nothing. Regen, lifesteal and heals work only inside fights, as
   usual. A build with no sustain gets worn down; that's the test.
 - **Effects** (legendary.md) **per enemy:** Ambush (first swing), Executioner, Zealot's Oath
@@ -288,8 +289,8 @@ title and plate for the next season.
 | Piece | What |
 |---|---|
 | `data/abyss.ts` | Pool enemies and the boss (permanent IDs, 9100+), Elite and Boss affixes, `GAUNTLET`, slot multipliers, growth factors, reward table |
-| `abyss.ts` (pure, shared) | `depthLineup(season, depth)` (basic, Elite + affix, Boss affixes), `depthStats(depth, kind, slot)`, `simulateDepth(stats, lineup, seed)`: `simulateFight` with a starting HP, per-depth Second Wind and the affix hooks |
-| `fight.ts` | `simulateFight` takes a starting HP (default: max) and returns the HP left |
+| `abyss.ts` (pure, shared) | `depthLineup(season, depth)` (basic, Elite + affix, Boss affixes), `depthStats(depth, kind, slot)`, `simulateDepth(stats, lineup, seed)`: one chained battle, the affixes as foe traits (`FightMods`), per-depth Second Wind |
+| `battle.ts` | The engine: a chain of foes, HP carried from one to the next, each foe's part returned as a fight |
 | Tables | `abyss_record` (public, one row per character: deepest depth this season, clearedAt, level, build snapshot as JSON; it is both the progress and the leaderboard), `abyss_log` (private, view `my_abyss_log`: the latest attempt only, with the stats fought with, for the replay, and the reward). The unlock reads `boss_kill` (zone 4), like the raid unlock |
 | Reducer | `descend(loadout)`: unlocked, settle, simulate, pay on a win. The dev cheat "Unlock all zones" also opens the Deep |
 | Client | A **Moonwell Deep** page under Adventure next to Raids: the next depth's line-up and affixes, loadout picker, replay, leaderboard |

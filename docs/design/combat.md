@@ -7,7 +7,9 @@
 - **One enemy at a time.** Each fight starts at full HP; recovering between fights is
   part of the walk time.
 - **One model, two evaluations:**
-  - **Online: live fights** (`sim.ts`, one fight in `fight.ts`). Fights are played hit by hit: swings on each
+  - **Online: live fights** (`sim.ts`, one fight in `fight.ts`). Every fight in the game (zone fights, Moonwell
+    Deep depths, raids, duels) is a battle of the one engine, `battle.ts`: N against M, each
+    combatant's effects in `fighter.ts`, a foe's mechanics as traits. Fights are played hit by hit: swings on each
     side's timer, crits, dodges, heals, regen, lifesteal, ±10% damage. Each fight's rolls
     come from a generator seeded by (character, fight start), so a fight is fully
     determined by when it starts. The server settles online time by playing the fights
@@ -55,7 +57,8 @@ walk time, rewards, offline cap). Legendary effects stack up to a cap
 ### Rule for new mechanics
 
 Every mechanic needs a closed-form expected value for offline settling, and a per-hit
-version in `fight.ts` for live fights whose average matches it. Avoid chained procs,
+version in the battle engine (`fighter.ts` for a combatant's effects, `battle.ts` for the
+loop and foe traits) for live fights whose average matches it. Avoid chained procs,
 on-kill stacking buffs and conditional triggers unless they have an averaged formula.
 
 ## Stat aggregation

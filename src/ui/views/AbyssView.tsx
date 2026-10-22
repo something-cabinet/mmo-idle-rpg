@@ -231,7 +231,7 @@ function DeepLoot({ log }: { log: AbyssLog }) {
   return (
     <div className="deep-loot">
       <div className="raid-loot-head">Your reward</div>
-      <div className="deep-loot-line">
+      <div className="loot-line">
         {gains.map((g, i) => (
           <span key={g.key} className={`${g.cls}${g.special ? ' special' : ''}`} title={g.title} style={{ '--delay': `${0.25 + i * 0.07}s` } as CSSProperties}>
             <Icon name={g.icon} />

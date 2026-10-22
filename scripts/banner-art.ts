@@ -27,9 +27,15 @@ const STYLE =
   `drawn on a 400 by ${400 / ASPECT} pixel grid, every pixel a large clean square block, no anti-aliasing, no blur, no smooth gradients ` +
   '(ordered dithering is fine), a limited palette of about 48 colors, flat cel shading, depth shown by layers of color that fade ' +
   'toward the back, a 1-pixel dark outline on the boss so it stands out from the lair, no purple or violet unless the region asks for it';
+/** Where the boss (or a duo's two bosses) stands: in the middle band, as the banner is shown as a thinner strip. */
+const place = (two: boolean) =>
+  (two
+    ? 'The two bosses large and side by side in the center-right, close together like a pair guarding their hall, both in three-quarter ' +
+      'view facing left, the first boss nearer the viewer, both whole and clearly separate, their heads and bodies inside the middle band of the image, away from every edge'
+    : 'The boss large in the center-right, three-quarter view facing left, its head and body inside the middle band of the image, away from every edge') +
+  ' (the banner is shown as a thinner strip, so the top and bottom get cropped).';
 const RULES =
-  'A wide panoramic banner. The boss large in the center-right, three-quarter view facing left, its head and body inside the ' +
-  'middle band of the image, away from every edge (the banner is shown as a thinner strip, so the top and bottom get cropped); its lair around and behind it; the left side more open and darker, ' +
+  'A wide panoramic banner. The lair around and behind the boss; the left side more open and darker, ' +
   'like the way in where the party arrives. The scene fills the whole image edge to edge. ' +
   'No text, title, logo, labels, numbers, health bars or UI, no border or frame, no heroes or other characters.';
 
@@ -51,9 +57,9 @@ function arts(): { arts: Art[]; missing: string[] } {
       subject: bosses.length > 1
         ? `One raid banner: the raid ${r.name}, its two bosses side by side in their lair.\nStory: ${r.blurb}\n` +
           bosses.map((b, i) => `Boss ${i + 1}: ${looks[i]}.`).join('\n') +
-          `\nLair: ${region.setting}.\nPalette: ${region.palette}.\nMotif: ${region.motif}.\nMood: ${region.menace}.`
-        : `One raid banner: the raid ${r.name}, its boss ${r.boss.name} waiting in its lair.\nStory: ${r.blurb}\n` +
-          `Boss: ${looks[0]}.\nLair: ${region.setting}.\nPalette: ${region.palette}.\nMotif: ${region.motif}.\nMood: ${region.menace}.`,
+          `\nLair: ${region.setting}.\nPalette: ${region.palette}.\nMotif: ${region.motif}.\nMood: ${region.menace}.\nComposition: ${place(true)}`
+        :`One raid banner: the raid ${r.name}, its boss ${r.boss.name} waiting in its lair.\nStory: ${r.blurb}\n` +
+          `Boss: ${looks[0]}.\nLair: ${region.setting}.\nPalette: ${region.palette}.\nMotif: ${region.motif}.\nMood: ${region.menace}.\nComposition: ${place(false)}`,
     });
   }
   return { arts: out, missing };

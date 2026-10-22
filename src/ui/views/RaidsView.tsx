@@ -168,6 +168,10 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
   const left = raid.clearsPerDay - clears;
   // Its full stats show once you've beaten it (a win counts as a kill; older wins are in the raid log).
   const beaten = (s.kills.get(boss.id) ?? 0) > 0 || [...conn.db.myRaidLog.iter()].some(l => l.raidId === raid.id && l.won);
+  // Fight mode: while your party's fight runs, and its result until you close it (one you
+  // weren't in doesn't show), the raid shows only the fight; the rest comes back after.
+  const [closed, setClosed] = useState(closedFights);
+  const fightMode = !!party?.fight && (fightingNow(party) || (!closed.includes(fightKey(party)) && decodeSetup(party.fight.setup).fighters.some(f => f.characterId === s.row.id)));
 
   return (
     <li className={`raid-entry${open ? ' open' : ''}${unlocked ? '' : ' locked'}${raid.phases ? ' raid-moon' : ''}${raid.duo ? ' raid-forge' : ''}`}>
@@ -191,7 +195,21 @@ function Raid({ s, raid, open, toggle }: { s: Snapshot; raid: RaidDef; open: boo
         </div>
         <Icon name="chevron" className="caret" />
       </button>
-      {open && (
+      {open && fightMode && (
+        <div className="raid-body">
+          <RaidFight
+            key={String(party!.fight!.startedAt.microsSinceUnixEpoch)}
+            s={s}
+            raid={raid}
+            party={party!}
+            onClose={() => {
+              closeFight(fightKey(party!));
+              setClosed(closedFights());
+            }}
+          />
+        </div>
+      )}
+      {open && !fightMode && (
         <div className="raid-body">
           <p className="muted">{raid.blurb} {RAID_PARTY_SIZE} players, online only.</p>
           {!unlocked && <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} to unlock</div>}
@@ -441,9 +459,6 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
   const clearsLeft = Math.max(0, raid.clearsPerDay - clearsToday(conn.db.myRaidLog.iter(), raid.id, nowMicros()));
   const [confirming, setConfirming] = useState(false);
   const again = !!party.fight?.finished;
-  const [closed, setClosed] = useState(closedFights);
-  // A finished fight stays on screen until you close it; one you weren't in doesn't show.
-  const showFight = !!party.fight && (fighting || (!closed.includes(fightKey(party)) && decodeSetup(party.fight.setup).fighters.some(f => f.characterId === me)));
 
   const seat = (stats: CombatStats | undefined, i: number) => {
     if (!stats) return undefined;
@@ -556,19 +571,6 @@ function PartyPanel({ s, raid, party, members }: { s: Snapshot; raid: RaidDef; p
         ))}
       </div>
 
-      {showFight && (
-        <RaidFight
-          key={String(party.fight!.startedAt.microsSinceUnixEpoch)}
-          s={s}
-          raid={raid}
-          party={party}
-          onClose={() => {
-            closeFight(fightKey(party));
-            setClosed(closedFights());
-          }}
-        />
-      )}
-
       {!fighting && (
         <div className={`raid-launch${leading ? ' leading' : ''}`}>
           <div className="raid-launch-text">
@@ -654,6 +656,8 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
   const bosses = raidBosses(raid);
   const bossHp = last?.bossHp ?? bosses.map(b => b.hp);
   const names = setup.fighters.map(f => f.name);
+  // The log: only the boss's big moments (specials, phase changes, falls, empowering), not every swing and heal.
+  const moments = shown.flatMap((e, n) => (e.kind === 'aoe' || e.kind === 'special' || e.kind === 'phase' || e.kind === 'fall' || e.kind === 'empower' ? [{ e, n }] : []));
   const floats = live ? raidFloats(shown, t, result.maxHp, bosses.length) : undefined;
   // Each fighter's and boss's latest hit taken, to flash their sprite: the boss's hits (its
   // special on its target, its AoE on everyone) and the party's hits on each boss.
@@ -694,6 +698,18 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
   const charge = 1 - (nextAoe - t) / aoeEvery;
   const log = [...s.conn.db.myRaidLog.iter()].find(l => l.partyId === party.id && l.startedAt.microsSinceUnixEpoch === start);
   const loot = (log?.itemIds ?? []).flatMap(id => s.items.get(id) ?? []);
+  // A duo: the brother each fighter is on now (their latest swing's; before it, as assigned).
+  const attacking = setup.fighters.map(f => f.target ?? 0);
+  if (raid.duo) {
+    const seen = new Set<number>();
+    for (let n = shown.length - 1; n >= 0 && seen.size < attacking.length; n--) {
+      const e = shown[n];
+      if (e.by >= 0 && !seen.has(e.by)) {
+        seen.add(e.by);
+        attacking[e.by] = e.boss ?? 0;
+      }
+    }
+  }
 
   return (
     <div className={`raid-fight${breath ? ' breath' : ''}`}>
@@ -711,15 +727,24 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
                 <div className="hp-fill" style={{ width: `${(bossHp[k] / b.hp) * 100}%` }} />
                 <span className="hp-text">{fmt(bossHp[k])} / {fmt(b.hp)}</span>
               </div>
+              {raid.duo && live && (
+                <div className="raid-attackers" title={`Attacking ${short(bossName(k))}`}>
+                  {names.map((name, i) => attacking[i] === k && hp[i] > 0 && (
+                    <span key={i} style={{ '--who': `var(--party-${i % RAID_PARTY_SIZE})` } as CSSProperties}><i className="raid-who" />{name}</span>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
+          {live && (
+            <div className="raid-clock">
+              <strong>{clock(t)}</strong>
+              <span className={raid.enrageSeconds - t < 30 ? 'c-bad' : 'muted'}>enrage {clock(Math.max(0, raid.enrageSeconds - t))}</span>
+            </div>
+          )}
         </div>
         {live && (
           <div className="raid-status">
-            <span className="raid-clock">
-              <strong>{clock(t)}</strong>
-              <span className={raid.enrageSeconds - t < 30 ? 'c-bad' : 'muted'}>enrage in {clock(Math.max(0, raid.enrageSeconds - t))}</span>
-            </span>
             {raid.phases && (() => {
               // Lunar Phases: the boss's current face, and how long until it turns.
               const every = raid.phases.every;
@@ -813,10 +838,10 @@ function RaidFight({ s, raid, party, onClose }: { s: Snapshot; raid: RaidDef; pa
           <RaidResult won={fight.won} text={fight.won ? `${raid.duo ? bossTitle(raid) + ' fall' : raid.boss.name + ' falls'} at ${clock(result.end)}` : result.enraged ? `${raid.duo ? bossTitle(raid) + ' enrage' : raid.boss.name + ' enrages'} at ${clock(raid.enrageSeconds)}: the party wipes` : `The party wipes at ${clock(result.end)}`} />
         </div>
       )}
-      {live && (
-        <ul className="duel-log">
-          {shown.slice(-6).reverse().map((e, i) => (
-            <li key={shown.length - i} className={`${e.by < 0 ? 'theirs' : 'mine'}${e.kind === 'crit' ? ' crit' : ''}${e.kind === 'aoe' || e.kind === 'phase' || e.kind === 'special' || e.kind === 'fall' || e.kind === 'empower' ? ' aoe' : ''}`}>
+      {live && moments.length > 0 && (
+        <ul className="duel-log raid-log">
+          {moments.slice(-3).reverse().map(({ e, n }) => (
+            <li key={n} className="theirs aoe">
               {(e.kind === 'aoe' || e.kind === 'special') && <Icon name={specialOf(e.boss ?? 0, e.t)?.icon ?? 'skull'} />}
               {e.kind === 'phase' && <Icon name={raid.phases?.list[e.phase ?? 0].damageType === 'Magic' ? 'sun' : 'moon'} />}
               {(e.kind === 'fall' || e.kind === 'empower') && <Icon name={e.kind === 'fall' ? 'skull' : 'zap'} />}
@@ -874,15 +899,15 @@ function RaidLoot({ log, loot }: { log: RaidLog; loot: Item[] }) {
   return (
     <div className="raid-loot">
       <div className="raid-loot-head">Your loot</div>
-      <div className="raid-gains">
-        <span style={{ '--delay': '0.2s' } as CSSProperties}><Icon name="crown" className="c-gold" />+{fmt(Number(log.tokens))} tokens</span>
-        <span style={{ '--delay': '0.35s' } as CSSProperties}><Icon name="coins" className="c-gold" />+{fmtBig(log.gold)} gold</span>
+      <div className="loot-line">
+        <span className="c-gold" style={{ '--delay': '0.2s' } as CSSProperties}><Icon name="crown" />+{fmt(Number(log.tokens))} tokens</span>
+        <span className="c-gold" style={{ '--delay': '0.27s' } as CSSProperties}><Icon name="coins" />+{fmtBig(log.gold)} gold</span>
+        {log.xp > 0n && <span className="c-ok" style={{ '--delay': '0.34s' } as CSSProperties}><Icon name="star" />+{fmtBig(log.xp)} XP</span>}
         {log.voidglass > 0 && (
-          <span style={{ '--delay': '0.42s' } as CSSProperties}>
-            <Icon name={materialIconName(untieredMaterial('Voidglass').id)} className="c-voidglass" />+{log.voidglass} Voidglass
+          <span className="c-voidglass special" style={{ '--delay': '0.41s' } as CSSProperties}>
+            <Icon name={materialIconName(untieredMaterial('Voidglass').id)} />+{log.voidglass} Voidglass
           </span>
         )}
-        {log.xp > 0n && <span style={{ '--delay': '0.5s' } as CSSProperties}><Icon name="star" className="c-ok" />+{fmtBig(log.xp)} XP</span>}
       </div>
       <div className="raid-loot-items">
         {sorted.map((it, i) => {

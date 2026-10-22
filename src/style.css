@@ -3259,6 +3259,37 @@ fieldset.affix-pick legend {
   grid-template-columns: repeat(var(--bosses, 1), minmax(0, 1fr));
   gap: 6px 14px;
 }
+/* The fight clock and enrage at the end of the boss bars' row. */
+.raid-boss-bars:has(> .raid-clock) {
+  grid-template-columns: repeat(var(--bosses, 1), minmax(0, 1fr)) auto;
+}
+.raid-boss-bars > .raid-clock {
+  display: grid;
+  justify-items: end;
+  align-self: start;
+  gap: 0;
+  font-size: 12px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+/* A duo: who is on each brother, under his bar. */
+.raid-attackers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.raid-attackers > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .raid-top .raid-status {
   justify-content: flex-end;
 }
@@ -3742,7 +3773,7 @@ fieldset.affix-pick legend {
 }
 .raid-fight .duel-log {
   font-size: 14px;
-  min-height: 140px;
+  min-height: 0;
 }
 .raid-loot {
   font-size: 14px;
@@ -3753,10 +3784,20 @@ fieldset.affix-pick legend {
   }
 }
 
+/* Centered, each drop a fixed share of the row, shrinking on narrow screens. */
 .raid-loot-items {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 8px;
+}
+.raid-loot-items > .loot-drop {
+  flex: 0 1 250px;
+  min-width: 0;
+}
+/* The card stays inside its frame: long names truncate, the type line wraps. */
+.loot-drop > .item-card {
+  min-width: 0;
 }
 /* HP numbers in theme text with a halo, readable on a full or an empty bar. */
 .raid-fight .hp-text {
@@ -3932,23 +3973,6 @@ fieldset.affix-pick legend {
   color: var(--muted);
   text-align: center;
 }
-.raid-gains {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-.raid-gains > span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 800;
-  background: var(--surface-3);
-  animation: pop-in 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) var(--delay) both;
-}
 @keyframes pop-in {
   from { opacity: 0; transform: scale(0.4); }
   to { opacity: 1; transform: scale(1); }
@@ -4051,7 +4075,7 @@ fieldset.affix-pick legend {
   .raid-confirm-list li { grid-template-columns: 1fr; gap: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .raid-result, .raid-result-title, .raid-sparks span, .raid-gains > span, .loot-drop, .loot-drop::before, .loot-drop.big::after,
+  .raid-result, .raid-result-title, .raid-sparks span, .loot-drop, .loot-drop::before, .loot-drop.big::after,
   .raid-launch-wait .dots i, .raid-loot-pending > span .ico {
     animation: none !important;
     opacity: 1;
@@ -4550,7 +4574,7 @@ fieldset.affix-pick legend {
   width: 100%;
   margin: 12px auto 0;
 }
-.deep-loot-line {
+.loot-line {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -4559,14 +4583,14 @@ fieldset.affix-pick legend {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.deep-loot-line > span {
+.loot-line > span {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
   animation: pop-in 0.4s cubic-bezier(0.2, 1.6, 0.4, 1) var(--delay) both;
 }
-.deep-loot-line > span.special {
+.loot-line > span.special {
   font-weight: 800;
   text-shadow: 0 0 10px color-mix(in srgb, var(--moon) 45%, transparent);
 }
@@ -4574,7 +4598,7 @@ fieldset.affix-pick legend {
   .deep-result .raid-result-title {
     font-size: 21px;
   }
-  .deep-loot-line {
+  .loot-line {
     font-size: 13px;
     gap: 5px 10px;
   }

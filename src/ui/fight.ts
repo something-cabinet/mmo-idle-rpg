@@ -7,6 +7,7 @@ import { fightSpan, respawns } from '../../spacetimedb/src/fight';
 import type { Simulated } from '../../spacetimedb/src/sim';
 import { nowMicros } from './clock';
 import { fmt } from './format';
+import { flash, healFx } from './fightFx';
 
 export type CurrentFight = NonNullable<Simulated['current']>;
 
@@ -96,6 +97,7 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     // New events since the last frame; after a pause, only the latest few.
     if (lastT >= 0 && t > lastT) {
       for (const e of fight.events.slice(0, i).filter(e => e.t > lastT).slice(-4)) {
+        if (e.by === 'you' ? !e.immune && e.kind !== 'miss' : e.kind !== 'dodge') flash(el(e.by === 'you' ? 'enemy' : 'you', '.portrait'));
         if (e.immune) float('enemy', 'Immune', 'dodge');
         else if (e.kind === 'miss') float('enemy', 'Miss', 'dodge');
         else if (e.by === 'you') float('enemy', e.kind === 'crit' ? `${fmt(e.damage)}!` : fmt(e.damage), e.carried ? 'hit carry' : e.kind);
@@ -109,6 +111,11 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
         if (e.secondWind) float('you', 'Second Wind', 'heal');
         if (e.healed >= 0.5) float('you', `+${fmt(e.healed)}`, 'heal');
         if ((e.foeHealed ?? 0) >= 0.5) float('enemy', `+${fmt(e.foeHealed!)}`, 'heal');
+        // Heals: a glow on the portrait and a shimmer over the HP given back (Second Wind: all of it).
+        const youTo = e.youHp / fight.stats.maxHp;
+        if (e.secondWind || e.healed >= 0.5) healFx(el('you', '.portrait'), el('you', '.hpbar'), e.secondWind ? 0 : youTo - e.healed / fight.stats.maxHp, youTo);
+        const foeGain = (e.foeHealed ?? 0) + (e.drained ?? 0);
+        if (foeGain >= 0.5) healFx(el('enemy', '.portrait'), el('enemy', '.hpbar'), (e.foeHp - foeGain) / fight.enemy.hp, e.foeHp / fight.enemy.hp);
       }
       if (over && fight.outcome === 'defeat') float('you', 'Defeated', 'taken');
     }

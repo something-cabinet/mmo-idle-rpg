@@ -118,25 +118,24 @@ the one left standing takes something from his fallen brother (`RaidDef.duo`).
   Brokk's; the damage dealers on Brokk take the rest.
 - **The leader assigns each seat** (players and hired NPCs) to Brokk or Sindri before the
   start (`setRaidTarget`; `raid_member.target`, `raid_party.hiredTargets`). A fighter whose
-  brother falls switches to the other one. The Raids page shows, for the current
-  assignment, about when each brother falls from DPS alone (`duoFallTimes`; planning
-  information, not win odds), and **Auto-assign** splits the party so both fall as close
-  together as possible (`balancedTargets`, every split tried).
-- **Absorption:** when one brother dies, the survivor spends **5 seconds** absorbing him,
-  still attacking and taking damage as normal. **Kill him within those 5 s and he never
+  brother falls switches to the other one. The split is the party's to work out: the
+  Raids page shows each seat's DPS and aggro, but no fall-time estimate and no
+  auto-assign (`duoFallTimes` and `balancedTargets` stay for the balance tests).
+- **Absorption:** when one brother dies, the survivor spends **10 seconds** absorbing him,
+  still attacking and taking damage as normal. **Kill him within those 10 s and he never
   empowers:** the reward for balancing the party's damage across both brothers.
-- **Empowered**, if absorption finishes: one twist, different for each survivor. The
-  fight swaps his sprite.
+- **Empowered**, if absorption finishes: he is **back to full health** (`empowered.heal`),
+  plus one twist, different for each survivor. The fight swaps his sprite.
 
 | Survivor | Empowered | What it tests |
 |---|---|---|
-| Brokk | **Molten Hammer:** his slam hits **every living fighter** for 560 instead of one for 800, every 25 s instead of 15 | The healer and everyone's HP |
+| Brokk | **Molten Hammer:** his slam hits **every living fighter** for 560 instead of one for 800, every 20 s instead of 15 | The healer and everyone's HP |
 | Sindri | **Anvil Hide:** armor and resistance both 900: no weak side, and far less damage gets through | Penetration and raw damage, against the enrage |
 
-- **What it asks for:** a plan made before the fight. Ideally both brothers fall within 5 s
+- **What it asks for:** a plan made before the fight. Ideally both brothers fall within 10 s
   of each other. If the party can't balance that, the leader picks which empowered brother
   it would rather face.
-- **Enrage** at **1:55**: tight on purpose, so a long fight against Anvil Hide runs out of time.
+- **Enrage** at **4:00**: a long fight against Anvil Hide can still run out of time.
 
 Tuned in `npm run test:raid` against prepared T5 characters at level 58, averaged over 48
 parties: by T5 nobody brings random drops. Same 60-item bags and roles, but Epic (70%) or

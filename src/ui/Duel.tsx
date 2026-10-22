@@ -6,6 +6,7 @@ import type { CombatStats } from '../../spacetimedb/src/combat';
 import { DUEL_SAMPLES, DUEL_SECONDS, duelRng, simulateDuel, winRate } from './duelSim';
 import { useSticky } from '../store';
 import { fmt, pct } from './format';
+import { HIT_FLASH, HealGlow, HealShimmer, hitClass, lastHeals, type LastHit } from './fightFx';
 import { Icon } from './Icon';
 import { PlayerName } from './PlayerName';
 import type { DbConnection } from '../module_bindings';
@@ -58,6 +59,13 @@ export function DuelPanel({ conn, me, foe }: { conn: DbConnection; me: Duelist; 
   const hp = last?.hp ?? duel.maxHp;
   const over = started && t >= duel.end;
   const names = [me.name, foe.name];
+  // Each side's latest hit taken (no sprites in a duel: the HP bar flashes).
+  const lastHit: (LastHit | undefined)[] = [undefined, undefined];
+  for (let n = shown.length - 1; n >= 0 && t - shown[n].t < HIT_FLASH; n--) {
+    const e = shown[n];
+    if (e.kind !== 'dodge') lastHit[1 - e.by] ??= { n, at: e.t };
+  }
+  const heals = lastHeals(shown, duel.maxHp, t);
   const line = (e: (typeof duel.events)[number]) => {
     const [a, b] = e.by === 0 ? ['You', foe.name] : [foe.name, 'you'];
     if (e.kind === 'dodge') return `${b === 'you' ? 'You dodge' : `${b} dodges`} ${e.by === 0 ? 'your' : `${a}'s`} attack`;
@@ -72,8 +80,10 @@ export function DuelPanel({ conn, me, foe }: { conn: DbConnection; me: Duelist; 
             <div className="duelist-name">
               <PlayerName conn={conn} id={i === 0 ? me.id : foe.id} name={names[i]} row /> <span className="muted">Lv {i === 0 ? me.level : foe.level}</span>
             </div>
-            <div className={`hpbar${i === 1 ? ' enemy' : ''}`}>
+            <div className={`hpbar${i === 1 ? ' enemy' : ''}${hitClass(lastHit[i], t)}`}>
               <div className="hp-fill" style={{ width: `${(hp[i] / duel.maxHp[i]) * 100}%` }} />
+              <HealShimmer heal={heals[i]} t={t} />
+              <HealGlow heal={heals[i]} t={t} />
               <span className="hp-text">{fmt(hp[i])} / {fmt(duel.maxHp[i])}</span>
             </div>
           </div>

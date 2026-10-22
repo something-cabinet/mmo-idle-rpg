@@ -22,8 +22,8 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.2.1',
-    date: '2026-10-21',
-    commit: '94f094b',
+    date: '2026-10-22',
+    commit: 'ba53d24',
     title: "The Brothers' Forge",
     changes: [
       { tag: 'new', text: "New raid, The Brothers' Forge (tier 5), opened by your first Durgrim kill: two dwarven smith brothers fought at once. Brokk, the Hammer, is slow and hard to bring down; Sindri, the Bellows, is fragile but strikes fast. The leader assigns each seat to a brother, and the one you attack comes after you. While both stand, each holds back a little. When one falls, the other absorbs his power after 5 seconds and hits far harder, unless you bring him down first. Its own Forgefire gear and three new raid Uniques, and for your first win the Oathbreaker title, the Molten name effect and the Forgefire nameplate." },
@@ -36,6 +36,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'balance', text: 'Damage reflected by Thorned enemies in the Moonwell Deep now hits your Second Skin shield first.' },
       { tag: 'balance', text: 'In duels, your heal lands even when your opponent dodges the swing, as it already did in every other fight.' },
       { tag: 'balance', text: "A Moonwell Deep depth is now one fight from its first enemy to its last: Ambush strikes only once, Waxing Moon and Fading Rally keep going, and your Second Skin shield isn't refilled when the next enemy steps in." },
+      { tag: 'balance', text: "HP regen now ticks once a second, for you and for regenerating enemies, instead of trickling in with every swing. It heals the same amount per second, and each tick shows its own number." },
       { tag: 'fix', text: 'A special gathering node shows the same level requirement at every tier.' },
       { tag: 'fix', text: "In raids and duels, a crit heal counted Deadeye's armor-ignoring bonus, so Deadeye healers healed far too much on a crit. Crit heals now use your crit damage only, as in zone fights." },
     ],

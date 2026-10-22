@@ -35,6 +35,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'balance', text: "Moonfall in the Moonwell Deep still can't be dodged, but Bulwark can now block it, and Last Stand, Afterimage and Thornshell work against it." },
       { tag: 'balance', text: 'Damage reflected by Thorned enemies in the Moonwell Deep now hits your Second Skin shield first.' },
       { tag: 'balance', text: 'In duels, your heal lands even when your opponent dodges the swing, as it already did in every other fight.' },
+      { tag: 'balance', text: "A Moonwell Deep depth is now one fight from its first enemy to its last: Ambush strikes only once, Waxing Moon and Fading Rally keep going, and your Second Skin shield isn't refilled when the next enemy steps in." },
       { tag: 'fix', text: 'A special gathering node shows the same level requirement at every tier.' },
       { tag: 'fix', text: "In raids and duels, a crit heal counted Deadeye's armor-ignoring bonus, so Deadeye healers healed far too much on a crit. Crit heals now use your crit damage only, as in zone fights." },
     ],

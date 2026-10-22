@@ -217,19 +217,6 @@ export class Fighter {
     return this.take(this.absorb(damage));
   }
 
-  /**
-   * A new fight against a new enemy (a Deep depth's next one): what lasts one fight starts
-   * over. Ambush, Waxing Moon, Fading Rally and Moonlight count from the first swing again,
-   * Second Skin's shield is whole, dodges are forgotten. HP, Second Wind and Renewal carry on.
-   */
-  newFight(): void {
-    this.swings = 0;
-    this.ambush = this.has(Effect.Ambush) ? 5 : 1;
-    this.shield = this.amount(Effect.SecondSkin) * this.maxHp;
-    this.lastDodged = false;
-    this.parried = false;
-  }
-
   /** Heals `amount`, up to max HP; the fallen stay down. */
   heal(amount: number): void {
     if (this.hp > 0) this.hp = Math.min(this.maxHp, this.hp + amount);

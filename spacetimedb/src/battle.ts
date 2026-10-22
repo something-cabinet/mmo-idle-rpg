@@ -69,7 +69,7 @@ export type Combatant = PlayerSpec | FoeSpec;
 export interface BattleSetup {
   /** Side 0 and side 1. Players may be on either side (a duel); foes only fight players. */
   sides: [Combatant[], Combatant[]];
-  /** Side 1 fights one at a time, the next entering as one falls (a Deep depth, a Rift node): a new fight for the players (`Fighter.newFight`). */
+  /** Side 1 fights one at a time, the next entering as one falls (a Deep depth, a Rift node), all one fight for the players: what lasts one fight (Ambush, Waxing Moon, the shield…) carries on. */
   chain?: boolean;
   /** Seconds before anyone swings (a zone fight's walk). */
   walk?: number;
@@ -568,8 +568,7 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
           const y = actors[p];
           if (y.kind !== 'player' || y.side === x.side || y.f.hp <= 0) continue;
           y.target = nextFoe;
-          y.f.newFight();
-          y.next = t + first(y.f.firstPeriod(off(p, nextFoe).period));
+          y.next = t + y.f.periodNow(off(p, nextFoe).period);
         }
         carry(nextFoe, t);
         continue;

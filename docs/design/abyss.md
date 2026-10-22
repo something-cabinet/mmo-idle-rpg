@@ -43,15 +43,15 @@ closed form is needed, since it's never settled offline. That leaves room for me
 the zones can't have.
 
 - **Order:** basic, Elite, boss. A depth is one battle (battle.ts) whose enemies enter in
-  turn: each is a fight of its own, except that it **starts at the HP you had when the last
-  one died**. Swing timers and what lasts one fight (Ambush, Waxing Moon, Fading Rally,
-  Second Skin's shield) restart for each enemy.
+  turn, and it's **all one fight**: your HP isn't reset between them, so the next enemy
+  meets the HP the last one left, and what lasts one fight (Ambush, Waxing Moon, Fading
+  Rally, Second Skin's shield) carries on instead of starting over.
 - **Between enemies:** nothing. Regen, lifesteal and heals work only inside fights, as
   usual. A build with no sustain gets worn down; that's the test.
-- **Effects** (legendary.md) **per enemy:** Ambush (first swing), Executioner, Zealot's Oath
-  and Thornshell work against each enemy as usual.
-  **Per depth:** Second Wind triggers once per depth, not once per enemy, otherwise it would
-  be a free heal between fights.
+- **Effects** (legendary.md) **per enemy:** Executioner, Zealot's Oath and Thornshell work
+  against each enemy as usual.
+  **Per depth:** Ambush hits only the depth's first swing, and Second Wind triggers once
+  per depth, not once per enemy, otherwise it would be a free heal between enemies.
 - **Buffs:** none. Elixirs and meals are for farming only (life-skills.md, "Buff rules"):
   the active ones neither apply nor use charges in the Deep, so a depth checks gear alone.
 - **Time limit: 4:00 per depth**, then the depth is lost. Without one, a healer or regen

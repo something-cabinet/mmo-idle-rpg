@@ -95,6 +95,31 @@ const dummy = combatStats(LEVEL, []);
   check('one HP bar for the depth is harder than a fresh start per enemy', odds(d) <= fresh(d), `${odds(d).toFixed(2)} vs ${fresh(d).toFixed(2)}`);
 }
 
+{
+  // A depth is one fight (abyss.md): Ambush strikes once, Second Skin's shield isn't refilled for the next enemy.
+  const fx = new Map(hero.effects);
+  fx.set(Effect.Ambush, 1);
+  fx.set(Effect.SecondSkin, 1);
+  const ambusher: CombatStats = { ...hero, effects: fx };
+  const runs = Array.from({ length: 100 }, (_, i) => simulateDepth(ambusher, 1 + (i % 10), depthRng(11n, BigInt(i))));
+  /** Your first swing's damage over the median of your later ones (crits left out; a first swing that misses spends Ambush). */
+  const firstRatio = (f: (typeof runs)[number]['fights'][number]) => {
+    const hits = f.events.filter(e => e.by === 'you' && e.kind === 'hit' && !e.reflected).map(e => e.damage);
+    const first = f.events.find(e => e.by === 'you' && !e.reflected);
+    if (first?.kind !== 'hit' || hits.length < 4) return undefined;
+    const rest = hits.slice(1).sort((x, y) => x - y);
+    return first.damage / rest[rest.length >> 1];
+  };
+  const opening = runs.map(r => firstRatio(r.fights[0])).filter(x => x !== undefined);
+  const later = runs.flatMap(r => r.fights.slice(1).map(firstRatio)).filter(x => x !== undefined);
+  check('one fight per depth: Ambush hits the first enemy 5×, the next ones as usual',
+    opening.length > 20 && later.length > 20 && opening.every(x => x > 3) && later.every(x => x < 2),
+    `first ${Math.min(...opening).toFixed(2)}+, later ${Math.max(...later).toFixed(2)} at most`);
+  const shields = runs.map(r => r.fights.flatMap(f => f.events.flatMap(e => (e.shield !== undefined ? [e.shield] : []))));
+  check("one fight per depth: Second Skin's shield is never refilled",
+    shields.filter(xs => xs.length > 0).length > 50 && shields.every(xs => xs.every((x, i) => i === 0 || x <= xs[i - 1] + 1e-9)));
+}
+
 /** A line-up with the given affixes, the rest fixed. */
 const lineup = (depth: number, eliteAffix: number, bossAffixes: number[], basic = ABYSS_KINDS[1].id, elite = ABYSS_KINDS[4].id): DepthLineup =>
   ({ depth, basic, elite, eliteAffix, bossAffixes });

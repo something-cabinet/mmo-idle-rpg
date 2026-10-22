@@ -170,8 +170,8 @@ A floor's fights pay ~150–250 Motes in all, so a shop stop is 2–3 purchases.
 
 ### Fights
 
-Each fight node is one seeded sequence of 1–3 fights, played in full by the server and
-replayed by the client, like the Deep and raids. The server's outcome is final.
+Each fight node is one fight against 1–3 enemies, one seeded battle played in full by the
+server and replayed by the client, like the Deep and raids. The server's outcome is final.
 
 - **It's a battle, like every fight.** The engine (battle.ts) already plays a chain of
   foes with HP carried over (a Deep depth), a starting HP, Second Wind and Renewal left per
@@ -180,6 +180,20 @@ replayed by the client, like the Deep and raids. The server's outcome is final.
   The Elite affixes are already foe traits (drain, ramp, Thorned, heal ×).
 - **HP carries over** between fights and nodes. Regen and lifesteal only work inside
   fights, as usual. So sustain is a real build axis here, and so is plain bulk.
+- **A node is one fight.** A fight goes on until your HP is reset to full. A node's
+  enemies come in back to back with your HP carried over, so they're all the same fight.
+  Everything "per fight" happens once per node and keeps going across its enemies: no
+  second Ambush on the next enemy, Waxing Moon and Fading Rally keep their bonus, Opening
+  Salvo, Smoke, Tailwind, Bracing and Stubborn are spent on the first enemy, Thunderhead
+  keeps its stacks, and Bloodrush counts nodes won. Only effects that say "each enemy"
+  (the Fury 5-set) start over per enemy.
+- **One shield.** Every shield (Stubborn, Hold the Line, Blood Price, the Bastion 5-set,
+  Second Skin) adds to the same pool, which damage hits before HP. Sources stack: the
+  Bastion 5-set adds 10% max HP every 10 s on top of whatever is left. Each source's own
+  cap still holds (Blood Price's 20%). The pool doesn't carry over to the next node; a fight
+  starts it at Second Skin's amount (plus Stubborn's).
+  The Deep works the same way (a depth is one fight); the Rift's exception is that HP
+  also carries over from one fight to the next.
 - **Second Wind** triggers **once per floor**, not once per fight (the Deep carries it
   once per depth the same way).
 - **Elixirs, meals and Phials don't apply.** The run is self-contained: a snapshot of gear
@@ -343,7 +357,7 @@ and on top of that it can carry any of five **headlines**, each rolled **indepen
 | **Theme mark** | 20% | Counts as 1 boon of a random theme for set bonuses ("Storm-marked") |
 | **Growth** | 15% | Each floor boss you clear while wearing it raises its 3 affixes one tier, with no cap |
 | **Trophy** | 10% | One of the six Elite affixes, turned to your side (below) |
-| **Echo** | 6% | A real unique's effect, whatever the slot ("Echo of Glimmerguard") |
+| **Echo** | 6% | All of a real unique's effects, whatever the slot ("Echo of Glimmerguard") |
 
 - **The source guarantees one headline:** an Elite's drop always has a **Trophy** (that
   Elite's own affix); a floor boss's drop always has an **Echo** (a unique from that boss's
@@ -377,8 +391,11 @@ and on top of that it can carry any of five **headlines**, each rolled **indepen
 - **Growth has no cap.** Affix tiers keep rising past T9 (T10, T20, T100…), with ranges
   from each stat's curve formula past T9 (`affixRange` already extends, crafting.md). In
   practice a run has 5 bosses, but nothing stops it.
-- **Echoes** can be any unique's effect, party-only ones (Drawing Fire, Twin Flame)
-  included, since the Rift may get a multiplayer mode later; solo they simply do nothing.
+- **Echoes** copy every legendary and unique effect of that unique, so an Echo of a
+  two-effect unique brings both. Any unique can be echoed, party-only effects (Drawing
+  Fire, Twin Flame) included, since the Rift may get a multiplayer mode later; solo they
+  simply do nothing, but both sit on uniques with a second effect (Twinstep Sabatons:
+  Bulwark; Sindri's Bellows: Zealot's Oath), so no Echo is ever a dud.
   Two copies of the same Echo, or an Echo of a unique you're also wearing, don't stack,
   like two of the same unique.
 - **Theme marks** count toward set bonuses and toward your "main theme" for boon offers,
@@ -394,7 +411,7 @@ and on top of that it can carry any of five **headlines**, each rolled **indepen
 | **Echo Strike** | Every 4th attack repeats at 100% |
 | **Overclock** | Attack speed × 1.6; each swing costs 1% max HP |
 | **Gambler's Edge** | Each hit deals 0–300% damage at random (average ×1.5) |
-| **Phoenix Plume** | Once per run, a killing blow leaves you at 40% HP instead. Then the item burns away and the slot is empty |
+| **Phoenix Plume** | Once per run, a killing blow leaves you at 40% HP instead (like Second Wind). The item burns away when the node ends, with all its headlines, and the slot is empty; its stats last until then |
 | **Bloodbound** | No lifesteal cap; your regen is 0 |
 | **Mirror Mail** | Reflects 60% of damage taken; you take 15% more |
 | **Hoarder's Band** | +1% damage per 10 unspent Motes (max +40%) |
@@ -485,8 +502,9 @@ The shifting core of the rift. HP × 7, DPS × 1.7, plus:
 - **Shift:** every 15 s it takes a new damage type and defense profile at random
   (phys/magic × Armored/Warded/Balanced). That tests a rounded build, and it's a
   harder-to-read version of Lunar Phases.
-- **Unravel:** at 50% HP, it **turns off one of your boons** at random for the rest of the
-  fight. A one-trick build gets punished, and the fight is different every run.
+- **Unravel:** it **turns off one of your boons** at random for the whole fight, shown
+  before the fight starts (the boon doesn't count toward set bonuses either). A one-trick
+  build gets punished, and the fight is different every run.
 - The **weekly mutation** (below) applies to it twice as strongly.
 
 ## Weekly mutation

@@ -141,16 +141,20 @@ Tuned in `npm run test:raid` against prepared T5 characters at level 58, average
 parties: by T5 nobody brings random drops. Same 60-item bags and roles, but Epic (70%) or
 Legendary (30%), and each equipped item's affixes rerolled once toward the role, a roll
 kept when it ranks better (a tank also keeps threat). Not min-maxed: a tank has tank gear
-and some tank affixes, a healer healing ones. A win takes about 0:52. Win odds:
+and some tank affixes, a healer healing ones. A win takes about 0:53. Win odds:
 
 | Party | Odds |
 |---|---|
-| 4 players, balanced split (`balancedTargets`) | ~74% |
-| 4 players, all on Brokk (Sindri empowers) | ~48% |
-| 4 players, all on Sindri (Brokk empowers) | ~55% |
-| 3 players | ~38% |
-| 3 players + 1 NPC | ~39% |
-| 2 players (+ 2 NPCs) | ~0% (~7%) |
+| 4 players, balanced split (`balancedTargets`) | ~68% |
+| 4 players, all on Brokk (Sindri empowers) | ~32% |
+| 4 players, all on Sindri (Brokk empowers) | ~22% |
+| 3 players | ~18% |
+| 3 players + 1 NPC | ~30% |
+| 2 players (+ 2 NPCs) | ~11% (~6%) |
+
+Letting a brother empower costs far more than before (2026-10-22: back to full health,
+Molten Hammer every 20 s), so the split matters. The 4:00 enrage lets a strong pair grind
+both down now and then (~11%).
 
 Rewards as the others', at T5: 20 tokens, 6 Voidglass, 220,000 gold, 300,000 XP; 12,000 gold
 per hired NPC. Its own bases are the six **Forgefire** variants (bases.md) and its own

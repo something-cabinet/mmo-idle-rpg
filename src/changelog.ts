@@ -21,9 +21,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.2.2',
+    date: '2026-10-22',
+    commit: '9879e11',
+    title: '',
+    changes: [],
+  },
+  {
     version: '0.2.1',
     date: '2026-10-22',
-    commit: '9fb12d5',
     title: "The Brothers' Forge",
     changes: [
       { tag: 'new', text: "New raid, The Brothers' Forge (tier 5), opened by your first Durgrim kill: two dwarven smith brothers fought at once. Brokk, the Hammer, is slow and hard to bring down; Sindri, the Bellows, is fragile but strikes fast. The leader assigns each seat to a brother, and the one you attack comes after you. While both stand, each holds back a little. When one falls, the other absorbs his power after 10 seconds, back to full health and hitting far harder, unless you bring him down first. Its own Forgefire gear and three new raid Uniques, and for your first win the Oathbreaker title, the Molten name effect and the Forgefire nameplate." },

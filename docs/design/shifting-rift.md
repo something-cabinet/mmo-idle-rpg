@@ -108,6 +108,10 @@ The run's own 9 slots. It starts as the locked copy of your loadout. Kept simple
 - **Wearing replaces for good.** The item it replaces, a locked copy or an earlier
   Ethereal, is discarded for the rest of the run. Locked items can't be changed, only
   replaced. (Your real items are never touched: the copies are what's discarded.)
+- **Two-handed weapons** fill the weapon and off-hand slots. Wearing one discards your
+  off-hand too, and an off-hand item can be worn only while a one-handed weapon is in the
+  weapon slot (otherwise it can only be discarded). The wear-or-discard card warns first,
+  e.g. "Also discards your Kite Shield".
 - **Boons** sit next to the loadout. They aren't gear and take no slot.
 
 ### Floor map
@@ -215,7 +219,9 @@ only, so no closed form is needed.
 ### How picks work
 
 - **Duplicates upgrade.** Picking a boon you already hold raises its rarity (Common →
-  Rare → Epic) instead of adding a copy. A run gives ~15–20 picks but holds only **~8–12
+  Rare → Epic) instead of adding a copy. A boon at its top isn't offered again, as a pick
+  or a shop upgrade: an Epic, and the boons that come in one version only (Second Look,
+  the keystones, Wildcard) once held. A run gives ~15–20 picks but holds only **~8–12
   distinct boons**, so every pick is wide (a new boon) or deep (an upgrade).
 - **Each offer has three fixed slots** instead of theme weighting, so a run can commit to a
   plan without every offer looking the same:
@@ -223,15 +229,27 @@ only, so no closed form is needed.
   2. A boon of **another theme you hold**.
   3. A boon of **any theme**.
 
-  With nothing held yet, all three slots are any theme. The weekly mutation can tilt slot 3.
+  With nothing held yet, all three slots are any theme. A slot with nothing left to offer
+  (every boon of the theme held at its top) falls back to any theme. The weekly mutation can tilt slot 3.
 - **Stat gating.** A boon that needs a stat (block chance, evasion, crit) is only offered
   once you have that stat, from gear or from another boon. Each such theme has a boon that
   grants the stat, so no boon is ever dead on arrival.
 - **Keystones** are Epic only, one per theme, offered from floor 3 on. Each one changes how
   the build plays rather than adding numbers.
 - **Rarity odds** go up by floor: floor 1 70 / 25 / 5%, floor 5 35 / 45 / 20%.
-- **Boons are "more" multipliers** after gear, like elixirs, so they stay easy to read and
-  to tune one at a time.
+- **Where a boon works** depends on what it changes:
+  - **Stat boons** go into the stat build (`combatStats`): Keen, Fleetfoot and Raised Shield
+    add flat chances; Sunder and Iron Hide change armor and resistance before mitigation;
+    the plain percentage ones (Sharpened Will, Thick Skin, Quickened…) are "more"
+    multipliers after gear, like elixirs. Glimmerguard's crit-to-evasion conversion runs
+    after all of them.
+  - **Combat boons and rift effects** go into `Fighter`, like any effect, so every mode and
+    co-op get them for free: shields, timed ones (Opening Salvo, Smoke, Tailwind), per-swing
+    ones (Static, Echo Strike, Gambler's Edge, Overclock, Thunderhead), per-dodge and
+    per-block ones. They're read from `CombatStats.effects`: rift effects under their own
+    IDs (200+), boons under theirs.
+  - **Foe-side rules** go into `FoeSpec` traits: Wither Aura, the weekly mutations, the
+    Elite affixes, the Rift Heart's Shift.
 - **Names never reuse a legendary or unique effect's name**, so a tooltip is never
   ambiguous.
 
@@ -247,7 +265,7 @@ stronger one at **5**.
 | **Blood** | Sustain, HP as a resource | Lifesteal cap +5% / kills heal 8% max HP |
 | **Storm** | Speed, crits | +15% attack speed / crits chain 30% of the hit to the next swing |
 | **Mist** | Evasion | Evade chance +6% / every evade makes your next attack crit (a Glimmerguard wearer, who already gets that, gets +50% crit damage on those attacks instead) |
-| **Aegis** | Block | Block chance +8% / each block reflects 50% of the hit |
+| **Aegis** | Block | Block chance +8% / each block reflects 50% of what it stopped |
 | **Fortune** | Motes, shops, events | Shops −20% / one free Rare boon per floor at its first shop |
 
 ### Roster (43)
@@ -280,7 +298,7 @@ Values are Common / Rare / Epic. *Keystones* (in italics) are Epic only.
 
 | Boon | Effect |
 |-|-|
-| Leech | Lifesteal +1 / 2 / 3% (cap still applies) |
+| Leech | Lifesteal +1 / 2 / 3%, and the lifesteal cap by as much |
 | Red Tithe | Max HP −10%, damage +12 / 20 / 30% |
 | Afterglow | Win a fight node: heal 4 / 7 / 11% max HP |
 | Transfusion | Each kill heals 3 / 5 / 8% max HP |
@@ -294,7 +312,7 @@ Values are Common / Rare / Epic. *Keystones* (in italics) are Epic only.
 | Quickened | Attack speed +8 / 14 / 22% |
 | Keen | Crit chance +3 / 5 / 8% (flat, added after base crit). Grants the stat |
 | Cruel | Crit damage +15 / 25 / 40% (needs crit chance) |
-| Static | Every 5th hit adds +100 / 170 / 260% as a shock that can't be dodged |
+| Static | Every 5th swing adds +100 / 170 / 260% as a shock that can't be dodged: it lands even when the swing misses |
 | Tailwind | The first 3 attacks of each fight are 50 / 80 / 120% faster |
 | *Thunderhead* | Each crit gives +3% attack speed for the fight, up to +30% (needs crit chance) |
 
@@ -332,7 +350,8 @@ Values are Common / Rare / Epic. *Keystones* (in italics) are Epic only.
 | *Spendthrift* | Every 10 Motes spent heal 1% max HP |
 
 **No theme:** **Wildcard** counts as one boon of every theme for set bonuses (Epic only;
-not a keystone, so it can show from floor 1).
+not a keystone, so it can show from floor 1). It doesn't count toward your main theme for
+offers, or every theme would tie.
 
 - **Glimmerguard** (Parry and Thrust) turns your **final** crit chance into evasion rating
   (4 per 1%, combat.ts). In the Rift the conversion runs **last, after boons**, so Keen and
@@ -361,7 +380,7 @@ and on top of that it can carry any of five **headlines**, each rolled **indepen
 
 - **The source guarantees one headline:** an Elite's drop always has a **Trophy** (that
   Elite's own affix); a floor boss's drop always has an **Echo** (a unique from that boss's
-  zone; the Rift Heart's from any zone). The other four still roll as in the table.
+  zone; the Rift Heart's from any unique, raid ones included). The other four still roll as in the table.
 - **Multi-headline items are meant to be a WOW.** All five on one item:
 
   | Item | All 5 headlines |
@@ -384,15 +403,17 @@ and on top of that it can carry any of five **headlines**, each rolled **indepen
   it's breaking the game's usual limits.
 - **Bases:** any zone base of the run's tier. No Rift-only bases (yet).
 - **Trophies**, the Elite affixes on your side: **Vampiric** (you heal 50% of the damage
-  you deal, past the lifesteal cap), **Warded Shell** (you take the defense that resists the
-  enemy's damage type), **Swift** (50% faster, hits 25% weaker), **Thorned** (reflect 10%
+  you deal, past the lifesteal cap), **Warded Shell** (against each enemy's damage type you
+  defend with the higher of your armor and resistance, like Juggernaut and Spellward),
+  **Swift** (50% faster, hits 25% weaker), **Thorned** (reflect 10%
   of damage taken, 30% less max HP), **Unyielding** (regenerate 1.5% max HP per second),
   **Ravenous** (your damage grows 5% every 5 s).
 - **Growth has no cap.** Affix tiers keep rising past T9 (T10, T20, T100…), with ranges
   from each stat's curve formula past T9 (`affixRange` already extends, crafting.md). In
   practice a run has 5 bosses, but nothing stops it.
 - **Echoes** copy every legendary and unique effect of that unique, so an Echo of a
-  two-effect unique brings both. Any unique can be echoed, party-only effects (Drawing
+  two-effect unique brings both. A rolled Echo (not a boss's) picks from every unique, zone
+  and raid alike. Any unique can be echoed, party-only effects (Drawing
   Fire, Twin Flame) included, since the Rift may get a multiplayer mode later; solo they
   simply do nothing, but both sit on uniques with a second effect (Twinstep Sabatons:
   Bulwark; Sindri's Bellows: Zealot's Oath), so no Echo is ever a dud.
@@ -413,14 +434,14 @@ and on top of that it can carry any of five **headlines**, each rolled **indepen
 | **Gambler's Edge** | Each hit deals 0–300% damage at random (average ×1.5) |
 | **Phoenix Plume** | Once per run, a killing blow leaves you at 40% HP instead (like Second Wind). The item burns away when the node ends, with all its headlines, and the slot is empty; its stats last until then |
 | **Bloodbound** | No lifesteal cap; your regen is 0 |
-| **Mirror Mail** | Reflects 60% of damage taken; you take 15% more |
+| **Mirror Mail** | Reflects 60% of damage taken, like Thornshell; you take 15% more |
 | **Hoarder's Band** | +1% damage per 10 unspent Motes (max +40%) |
 | **First Blood** | The first hit on each enemy deals 5× damage |
 | **Voidheart** | All your damage becomes magic, +25% |
 | **Rift Conduit** | Each boon you hold gives +2% damage and +2% max HP |
 | **Wither Aura** | Enemies lose 1% max HP per second |
 | **Thief's Glove** | Fights pay +50% Motes |
-| **Rift Anchor** | Can't be replaced this run (items for its slot can only be discarded); all stats on your other items +20% |
+| **Rift Anchor** | Can't be replaced this run (items for its slot can only be discarded); the affixes on your other items +20% (not base damage, armor or effect amounts) |
 
 ### When effects meet
 
@@ -433,12 +454,12 @@ the Fury 5-set multiply on the first hit. Only a few cases need a rule:
 | **Overrides.** Voidheart with Spellblade or Moonlight (all damage becomes magic, so the swap or conversion does nothing more; Moonlight keeps its double hit). Bloodbound with Frozen Blood (lifesteal still does nothing) or with Bloodthirst and the Blood 3-set (no cap left to raise) | Allowed. The wear-or-discard card **warns** first, e.g. "Overrides your Spellblade", since wearing is for the rest of the run |
 | **Same trigger.** Phoenix Plume and Second Wind both catch a killing blow | Second Wind goes first; the Plume only burns once Second Wind is spent for the floor |
 | **Order of damage changes** | Type changes apply in a fixed order: Spellblade, then Moonlight, then Voidheart (the last one wins) |
-| **Reflect past 100%.** Mirror Mail with Thornshell | Allowed: reflect adds up with no cap |
+| **Reflects.** Mirror Mail, Thornshell, the Aegis 5-set | One rule (battle.ts): a reflect is a share of what reached your HP (after your defenses and the shield), dealt through the attacker's mitigation; the Aegis 5-set reflects only what the block stopped. Reflect adds up with no cap |
 
 ## Events
 
-Short text scenes, 2–3 choices, rolled from a pool (~20 at launch). They're where the
-risk/reward choices live, and with no rest nodes, one of the ways to heal. Examples:
+Short text scenes, 2–3 choices, rolled from a pool of 20 at launch. They're where the
+risk/reward choices live, and with no rest nodes, one of the ways to heal:
 
 | Event | Choices |
 |-|-|
@@ -450,12 +471,24 @@ risk/reward choices live, and with no rest nodes, one of the ways to heal. Examp
 | **Healing Spring** | Heal 25% / take a Rare boon of a theme you don't have |
 | **Quiet Alcove** | Heal 35% / attune an Ethereal item for free |
 | **Goblin in the Rift** | Chase it: a 20 s fight against a fleeing goblin that pays Motes per hit (callback to the Treasure Goblin) |
-| **Shrine of Change** | Reroll all your boons into random ones of the same rarity / leave |
+| **Shrine of Change** | Reroll all your boons into random ones of the same rarity (the offer rules hold: no keystone before floor 3, one per theme) / leave |
 | **Lost Satchel** | 60 Motes / an Ethereal item |
-| **Broken Mirror** | Swap a boon for a random boon one rarity higher; 25% chance it's a curse instead |
+| **Broken Mirror** | Swap a boon below Epic for a random boon one rarity higher; 25% chance it's a curse instead |
+| **Thane's Vault** | Open it: pick 1 of 3 Ethereal items (shown first), and a dart trap takes 15% of your current HP / leave |
+| **Lurking Echo** | Fight it: a lone Elite echo; a win pays like an Elite in a fight (1 of 3 boons, Rare or better, and an Ethereal item with its Trophy) but no Motes / sneak past |
+| **Moon Shard** | Touch it: a boon below Epic goes up one rarity, and a random curse / pry it loose: 80 Motes / leave |
+| **Blood Merchant** | Pay in blood, 15% of your current HP each, any of: an Ethereal item / a Rare boon of your main theme / attune an Ethereal item; leave when done |
+| **Forgotten Forge** | Reforge an Ethereal item: its headlines roll again (the source's guaranteed one stays) / attune it for 30 Motes / leave |
+| **Weeping Statue** | Pray: heal to full, but your next fight node gives no boon pick / leave |
+| **Ashen Brazier** | Burn a boon: heal 40% max HP and gain 60 Motes / burn a curse away / leave |
+| **Rift Tear** | Reach in: a random slot (never a Rift Anchor's) gets an Ethereal item with at least 2 headlines, worn at once, no wear-or-discard / leave |
+| **Runecarver** | Carve: one of your Ethereal items gets your main theme's mark (replacing any mark it has) / pay 40 Motes: a theme of your choice / leave |
 
 Which events are on the map and what each one rolls (which boon, which item) come from
-the run's seed.
+the run's seed. A choice that can't apply (no Ethereal item to reforge, no boon to burn, no
+curse to remove) is shown greyed out, so every event keeps a way to leave. HP costs take a
+share of current HP, so an event never kills you. The Lurking Echo's fight is optional, so
+it doesn't count against "a path that avoids every Elite".
 
 ## Enemies
 
@@ -545,7 +578,8 @@ everything else (× 2.9 per tier):
   That's on the order of a full night's offline session. It's a strong reason to play
   weekly, but small next to a week of farming (~1/20), so it never replaces the core loop.
 - **Riftstone** is a new Rift-only **permanent** material (normal storage, unlike
-  everything else from the run). What it crafts is decided later.
+  everything else from the run). What it crafts is decided later; it's paid from launch
+  anyway, so players bank it until then.
 - **No items come out.** Only resources. It keeps the separation rule absolute, and it
   keeps the Rift from competing with zone drops and raid loot.
 - The run tier is picked at the start, from T5 up, among tiers whose zone boss you've
@@ -621,7 +655,7 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 |-|-|
 | `data/rift.ts` | Boons (permanent IDs), themes and set bonuses, curses, rift effects (200+), events, mutations, floor multipliers, reward table |
 | `rift.ts` (pure, shared) | `weeklyMutation(week)`, `runMap(seed)` (maps, line-ups, Elite affixes, events, boss options), `nodeEnemies(..., partySize)`, `memberStats(member)` (locked gear + Ethereal + boons + level), `simulateNode(...)` (a chain of the node's enemies against **every member**: starting HP per member, per-floor Second Wind, shared time limit), offer rolls seeded by run + character |
-| Sim | **The battle engine (battle.ts)**, a solo run being a party of one, so co-op needs no sim rewrite. It already has N players against M foes, a chain of foes, threat, starting HP, Second Wind and Renewal per player, a time limit, the Elite affixes as foe traits and party effects (Drawing Fire, Twin Flame). Needed: hooks for boons and rift effects (shields, chained crits, Echo Strike, Gambler's Edge…), and Phial Renewal forced to 0 |
+| Sim | **The battle engine (battle.ts)**, a solo run being a party of one, so co-op needs no sim rewrite. It already has N players against M foes, a chain of foes, threat, starting HP, Second Wind and Renewal per player, a time limit, the Elite affixes as foe traits, party effects (Drawing Fire, Twin Flame) and player against player (duels, for Your Reflection). Needed: boons and rift effects where "Where a boon works" puts them (stat build, `Fighter`, `FoeSpec`), and Phial Renewal forced to 0 |
 | Schema | `Ethereal` rarity (already reserved), `rift_run` (per run), `rift_member` (per player in a run), `rift_item` (with an owner), `rift_week`, `rift_log`, `rift_codex` (discovery). No per-character run state outside `rift_member` |
 | Reducers | Split by who may call them from the start. **Leader:** `riftStart(loadoutIndex, tier)` (tier ≥ 5), `riftMove(node)`, `riftBoss(option)`. **Each member, for themselves:** `riftPick(option)` (Threshold, boons, events), `riftBuy(offer)`, `riftTake(wear)`, `riftLeave()`. Personal choices queue on the member and never block `riftMove` (solo, the client simply asks before moving). Weekly reset handled lazily (a call in a new week ends the old run and pays each member's cleared floors) |
 | Client | A **Shifting Rift** page under Adventure: the floor map, Rift loadout with a wear-or-discard compare, boons with set progress, replays with speed controls, shop and event dialogs, run history, Codex |
@@ -644,6 +678,7 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **Ethereal items:** one grade (Radiant dropped); 3 affixes (tier ≥ T − 2) plus five independent headlines, rolled independently: rift effect 30%, theme mark 20%, growth 15% (uncapped), Trophy 10% (guaranteed on Elite drops), Echo 6% (guaranteed on boss drops; party-only effects allowed).
 - **Balance isn't a goal:** effects stay unless buggy or unintuitive; clashes warn, never block.
 - **Co-op later, never blocked:** solo at launch, but the schema, sim and reducers are built for parties ("Later: co-op").
+- **Rulings (review, 2026-10-22):** Leech raises the cap; Warded Shell Trophy uses the higher of armor and resistance; Wildcard doesn't count toward the main theme; Static's shock lands on a miss; one reflect rule, the Aegis 5-set reflecting what the block stopped; Rift Anchor boosts affixes only; Thief's Glove stays a Motes effect; the tier picker stays though T5 is the only tier at launch; Riftstone is paid before it has a use; one-version boons (Second Look, keystones, Wildcard) and Epics aren't offered again once held; First Blood stays (a stronger Ambush: per enemy, no attack speed cost); the 20 launch events are written; two-handed weapons take the off-hand slot; raid uniques can be Echoes (rolled ones, and the Rift Heart's).
 - **Boons:** duplicates upgrade rarity; offers have three fixed slots (main theme, another held theme, any); stat-gated boons; a keystone per theme; seven themes (Mist and Aegis added for evasion and block), 43 boons. Glimmerguard converts crit to evasion after boons.
 
 ## Open questions

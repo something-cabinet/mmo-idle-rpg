@@ -22,14 +22,17 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.2.1',
-    date: '2026-10-21',
-    commit: '94f094b',
+    date: '2026-10-22',
+    commit: '9fb12d5',
     title: "The Brothers' Forge",
     changes: [
       { tag: 'new', text: "New raid, The Brothers' Forge (tier 5), opened by your first Durgrim kill: two dwarven smith brothers fought at once. Brokk, the Hammer, is slow and hard to bring down; Sindri, the Bellows, is fragile but strikes fast. The leader assigns each seat to a brother, and the one you attack comes after you. While both stand, each holds back a little. When one falls, the other absorbs his power after 10 seconds, back to full health and hitting far harder, unless you bring him down first. Its own Forgefire gear and three new raid Uniques, and for your first win the Oathbreaker title, the Molten name effect and the Forgefire nameplate." },
       { tag: 'new', text: "Uniques can be tempered: their base stats (weapon damage, armor, implicits) grow like any item's. Their own stats and effects stay as they rolled. Corrupted Uniques still can't." },
       { tag: 'new', text: 'Bag > Materials lists your materials by type, highest tier first, with gems, rare herbs and rare finds highlighted.' },
       { tag: 'new', text: 'Riposte and Thornshell show their own numbers in zone and Moonwell Deep fights: each dodge counters and each hit you take reflects as it happens, like in raids and duels.' },
+      { tag: 'new', text: "Raid fights are a battle scene: the boss's health and special-attack timers along the top, your party with their health and attack bars on the left, the boss on the right. Damage you deal pops up over the boss you hit, in your party color; damage you take and heals you get pop up over you. In The Brothers' Forge, each brother's bar shows who is attacking him." },
+      { tag: 'new', text: "While your party fights, the raid shows only the fight, and its log only the boss's big moments: special attacks, phase changes, a brother falling or empowering. The rest comes back when you close the result." },
+      { tag: 'new', text: 'Hits and heals land with a flash: whoever takes a hit flashes and jolts, and whoever is healed glows green while their health bar shimmers over what came back. In zone fights, the Moonwell Deep, raids and duels.' },
       { tag: 'balance', text: 'Chisels drop half as often: Chaos and Corruption about 1 in 5,000 kills, the others 1 in 10,000, and about 1 in 2,800 gathering actions.' },
       { tag: 'balance', text: 'Elites drop rare loot (Chisels, Chronoshards, Voidglass) 1.5× as often as regular enemies, was 2×, and bosses 2×, was 4×.' },
       { tag: 'balance', text: 'Bulwark legendaries roll threat % as their stat bonus, instead of evasion rating: it is a tank effect. Bulwark items you already have keep their evasion rating.' },

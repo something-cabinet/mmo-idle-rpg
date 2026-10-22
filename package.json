@@ -28,6 +28,7 @@
     "test:duel": "tsx scripts/check-duel.ts",
     "test:raid": "tsx scripts/check-raid.ts",
     "test:abyss": "tsx scripts/check-abyss.ts",
+    "test:rift": "tsx scripts/check-rift.ts",
     "test:skills": "tsx scripts/check-skills.ts",
     "art:list": "tsx scripts/item-art.ts list",
     "art:cut": "tsx scripts/item-art.ts cut",

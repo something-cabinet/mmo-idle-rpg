@@ -491,30 +491,30 @@ check('a T1 tool gathers any tier', gatherBlocker({ level: 11, tier: 2, zoneOpen
   check('… and come in pairs', got > 0 && got % 2 === 0, `${got}`);
 
   // Chisels from gathering: every gathering skill, any tier, Chaos and Corruption twice as often.
-  check('every gathering skill finds chisels, 0.07% an action', GATHERING_SKILLS.every(s =>
-    findChances(s.id, 1, 0, 0).some(f => f.find.what.kind === 'chisel' && near(f.chance, 0.0007))));
+  check('every gathering skill finds chisels, 0.035% an action', GATHERING_SKILLS.every(s =>
+    findChances(s.id, 1, 0, 0).some(f => f.find.what.kind === 'chisel' && near(f.chance, 0.00035))));
   const chiselCount = (y: { supplies: { supplyId: number; count: number }[] }, k?: ChiselKind) =>
     y.supplies.filter(x => k === undefined || x.supplyId === chiselSupplyId(k)).reduce((sum, x) => sum + x.count, 0);
   const lots = rollGathering(seededRng(6n), SKILLS_BY_ID.get(SkillId.Woodcutting)! as never, 2, { actions: 1_000_000, doubleMean: 0, runs: [{ start: 0n, step: 1n, n: 1_000_000, level: 0 }] });
-  check('1M actions: ~700 chisels, ~2/7 of them Chaos', Math.abs(chiselCount(lots) - 700) < 90 && Math.abs(chiselCount(lots, ChiselKind.Chaos) / chiselCount(lots) - 2 / 7) < 0.06,
+  check('1M actions: ~350 chisels, ~2/7 of them Chaos', Math.abs(chiselCount(lots) - 350) < 65 && Math.abs(chiselCount(lots, ChiselKind.Chaos) / chiselCount(lots) - 2 / 7) < 0.06,
     `${chiselCount(lots)}, Chaos ${chiselCount(lots, ChiselKind.Chaos)}`);
   const steps = rollGatheringActions(9n, SKILLS_BY_ID.get(SkillId.Foraging)! as never, 1, { runs: [{ start: 0n, step: 1n, n: 200_000, level: 99 }] });
-  check('online, action by action: ~280 chisels in 200k actions at level 99', Math.abs(chiselCount(steps) - 280) < 60, `${chiselCount(steps)}`);
+  check('online, action by action: ~140 chisels in 200k actions at level 99', Math.abs(chiselCount(steps) - 140) < 40, `${chiselCount(steps)}`);
   const poolMean = (id: number, drop: number) => {
     const { zone, enemy } = ENEMIES_BY_ID.get(id)!;
     return poolMeans(enemy, zone.tier).find(m => (m.drop.kind === 'material' ? m.drop.materialId : m.drop.supplyId) === drop)?.mean ?? 0;
   };
   check('Voidglass moved to the rare pool: no enemy lists it as a material', ZONES.every(z => z.enemies.every(e => materialMeans(e, z.tier, 1).every(m => m.materialId !== glass))));
-  check('pool Voidglass from T4: Selvara ~1 in 510 kills, a T4 Basic ~1 in 2,100, none below T4',
-    near(poolMean(406, glass), 0.00196) && Math.round(1 / poolMean(403, glass)) === 2083 && poolMean(306, glass) === 0);
-  check('pool rate × rank: Boss 4, Elite 2, Basic 1; an Elite encounter is Elite',
-    near(poolMult({ ...ENEMIES_BY_ID.get(406)!.enemy, level: 0 }), 4) && near(poolMult({ ...eliteOf(ENEMIES_BY_ID.get(101)!.enemy), level: 0 }), 2) && near(poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1));
+  check('pool Voidglass from T4: Selvara ~1 in 1,020 kills, a T4 Basic ~1 in 2,100, none below T4',
+    near(poolMean(406, glass), 0.00098) && Math.round(1 / poolMean(403, glass)) === 2083 && poolMean(306, glass) === 0);
+  check('pool rate × rank: Boss 2, Elite 1.5, Basic 1; an Elite encounter is Elite',
+    near(poolMult({ ...ENEMIES_BY_ID.get(406)!.enemy, level: 0 }), 2) && near(poolMult({ ...eliteOf(ENEMIES_BY_ID.get(101)!.enemy), level: 0 }), 1.5) && near(poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1));
   check('pool rate rises very slightly with level (+0.5% a level)', near(poolMult(ENEMIES_BY_ID.get(101)!.enemy) / poolMult({ ...ENEMIES_BY_ID.get(101)!.enemy, level: 0 }), 1.005));
   check('Chronoshards far rarer than Voidglass, and rarer by grade', [1, 2, 3].map(g => poolMean(404, chronoshardSupplyId(g))).every((m, i, ms) => m > 0 && m * 8 <= poolMean(404, glass) && (i === 0 || m < ms[i - 1])));
   check('Chronoshards drop from T1 too', poolMean(101, chronoshardSupplyId(1)) > 0);
   const pool = rollPool(seededRng(3n), ENEMIES_BY_ID.get(406)!.enemy, 4, 100_000);
   const pooled = (n: number) => pool.materials.find(m => m.materialId === glass)?.count ?? 0;
-  check('rollPool: 100k Selvara kills ~196 Voidglass, some Chronoshards', pooled(0) > 150 && pooled(0) < 250 && pool.supplies.some(x => x.supplyId === chronoshardSupplyId(1)));
+  check('rollPool: 100k Selvara kills ~98 Voidglass, some Chronoshards', pooled(0) > 65 && pooled(0) < 135 && pool.supplies.some(x => x.supplyId === chronoshardSupplyId(1)));
   check('Uniques salvage into 2 Voidglass, Legendaries none', salvageVoidglass('Unique') === 2 && salvageVoidglass('Legendary') === 0);
   check('raid clears pay Voidglass (2, 4, then 6)', RAIDS.map(r => r.voidglass).join() === '2,4,6');
 }

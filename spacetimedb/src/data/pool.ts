@@ -18,7 +18,7 @@ export interface PoolEntry {
 }
 
 /** × the pool's chances by enemy rank. An Elite encounter counts as Elite. */
-export const POOL_RANK_MULT: Record<EnemyRank, number> = { Basic: 1, Elite: 2, Boss: 4 };
+export const POOL_RANK_MULT: Record<EnemyRank, number> = { Basic: 1, Elite: 1.5, Boss: 2 };
 
 /** + this share of the chances per enemy level (level 45: × 1.225). */
 export const POOL_LEVEL_STEP = 0.005;
@@ -27,18 +27,18 @@ export const POOL_LEVEL_STEP = 0.005;
 export const poolMult = (enemy: EnemyDef) => POOL_RANK_MULT[enemy.rank ?? 'Basic'] * (1 + POOL_LEVEL_STEP * enemy.level);
 
 export const RARE_POOL: PoolEntry[] = [
-  // Voidglass (phials.md): from where the Deep opens. Selvara (Boss, level 45) ~1 in 510 kills, a T4 Basic ~1 in 2,100.
+  // Voidglass (phials.md): from where the Deep opens. Selvara (Boss, level 45) ~1 in 1,020 kills, a T4 Basic ~1 in 2,100.
   { drop: { kind: 'material', materialId: untieredMaterial('Voidglass').id }, chance: 0.0004, minTier: VOIDGLASS_FROM_TIER },
   // Chronoshards: a bonus, not progress, so far rarer than Voidglass. Any tier.
   { drop: { kind: 'supply', supplyId: chronoshardSupplyId(1) }, chance: 1 / 20_000 },
   { drop: { kind: 'supply', supplyId: chronoshardSupplyId(2) }, chance: 1 / 60_000 },
   { drop: { kind: 'supply', supplyId: chronoshardSupplyId(3) }, chance: 1 / 200_000 },
-  // Chisels (chisel.ts): any tier, between Voidglass and Chronoshards. A T4 Basic: a Chaos ~1 in 2,100 kills.
-  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Chaos) }, chance: 1 / 2_500 },
-  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Binding) }, chance: 1 / 5_000 },
-  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Recalibration) }, chance: 1 / 5_000 },
-  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Improvement) }, chance: 1 / 5_000 },
-  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Corruption) }, chance: 1 / 2_500 },
+  // Chisels (chisel.ts): any tier, between Voidglass and Chronoshards. A T4 Basic: a Chaos ~1 in 4,200 kills.
+  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Chaos) }, chance: 1 / 5_000 },
+  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Binding) }, chance: 1 / 10_000 },
+  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Recalibration) }, chance: 1 / 10_000 },
+  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Improvement) }, chance: 1 / 10_000 },
+  { drop: { kind: 'supply', supplyId: chiselSupplyId(ChiselKind.Corruption) }, chance: 1 / 5_000 },
 ];
 
 /** Mean drops per kill of `enemy` in a zone of `tier`, per pool entry it can give. */

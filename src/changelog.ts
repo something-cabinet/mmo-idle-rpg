@@ -30,6 +30,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       { tag: 'new', text: "Uniques can be tempered: their base stats (weapon damage, armor, implicits) grow like any item's. Their own stats and effects stay as they rolled. Corrupted Uniques still can't." },
       { tag: 'new', text: 'Bag > Materials lists your materials by type, highest tier first, with gems, rare herbs and rare finds highlighted.' },
       { tag: 'new', text: 'Riposte and Thornshell show their own numbers in zone and Moonwell Deep fights: each dodge counters and each hit you take reflects as it happens, like in raids and duels.' },
+      { tag: 'balance', text: 'Chisels drop half as often: Chaos and Corruption about 1 in 5,000 kills, the others 1 in 10,000, and about 1 in 2,800 gathering actions.' },
+      { tag: 'balance', text: 'Elites drop rare loot (Chisels, Chronoshards, Voidglass) 1.5× as often as regular enemies, was 2×, and bosses 2×, was 4×.' },
       { tag: 'balance', text: 'Bulwark legendaries roll threat % as their stat bonus, instead of evasion rating: it is a tank effect. Bulwark items you already have keep their evasion rating.' },
       { tag: 'balance', text: 'Each zone also needs a character level: 10 per tier past the first (tier 2 at level 10, tier 3 at 20, and so on). The lock note says what is missing, and life skill tiers follow their zone.' },
       { tag: 'balance', text: "Moonfall in the Moonwell Deep still can't be dodged, but Bulwark can now block it, and Last Stand, Afterimage and Thornshell work against it." },

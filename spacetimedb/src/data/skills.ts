@@ -121,12 +121,12 @@ export const RARE_FINDS: RareFindDef[] = [
     chance: tier => (tier >= VOIDGLASS_FROM_TIER ? 0.001 * (tier - VOIDGLASS_FROM_TIER + 1) : 0),
   },
   // A chisel (chisel.ts), any tier, every gathering skill: which one by CHISEL_WEIGHT, so Chaos
-  // ~1 in 5,000 actions like its base chance per kill. After the others, so older rolls replay as before.
+  // ~1 in 10,000 actions. After the others, so older rolls replay as before.
   ...GATHERING_SKILLS.map(s => ({ skillId: s.id, what: { kind: 'chisel' as const }, chance: () => GATHER_CHISEL_CHANCE })),
 ];
 
 /** Chance per gathering action of a chisel, any of them (before the level multiplier). */
-export const GATHER_CHISEL_CHANCE = 0.0007;
+export const GATHER_CHISEL_CHANCE = 0.00035;
 
 /** Rare finds come `1 + level / 99` times as often: double at 99. */
 export const findLevelMult = (level: number) => 1 + level / MAX_SKILL_LEVEL;

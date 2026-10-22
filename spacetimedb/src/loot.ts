@@ -65,13 +65,49 @@ function mix64(z: bigint): bigint {
   return z ^ (z >> 31n);
 }
 
-/** SplitMix64 seeded from `parts` (e.g. character ID and settle time). */
+/**
+ * SplitMix64 seeded from `parts` (e.g. character ID and settle time). The seed is mixed in
+ * BigInt; each draw runs on two 32-bit halves instead, the very same numbers many times
+ * faster (fights draw a lot of them).
+ */
 export function seededRng(...parts: bigint[]): Rng {
-  let state = parts.reduce((h, p) => mix64((h ^ (p & M64)) + 0x9e3779b97f4a7c15n) & M64, 0n);
+  const seed = parts.reduce((h, p) => mix64((h ^ (p & M64)) + 0x9e3779b97f4a7c15n) & M64, 0n);
+  let hi = Number(seed >> 32n);
+  let lo = Number(seed & 0xffffffffn);
   return () => {
-    state = (state + 0x9e3779b97f4a7c15n) & M64;
-    return Number(mix64(state) >> 11n) / 2 ** 53;
+    // state += 0x9e3779b97f4a7c15
+    const sum = lo + 0x7f4a7c15;
+    lo = sum >>> 0;
+    hi = (hi + 0x9e3779b9 + (sum > 0xffffffff ? 1 : 0)) >>> 0;
+    // z = mix64(state)
+    let zh = hi;
+    let zl = lo;
+    zl = (zl ^ ((zl >>> 30) | (zh << 2))) >>> 0;
+    zh = (zh ^ (zh >>> 30)) >>> 0;
+    [zh, zl] = mul64(zh, zl, 0xbf58476d, 0x1ce4e5b9);
+    zl = (zl ^ ((zl >>> 27) | (zh << 5))) >>> 0;
+    zh = (zh ^ (zh >>> 27)) >>> 0;
+    [zh, zl] = mul64(zh, zl, 0x94d049bb, 0x133111eb);
+    zl = (zl ^ ((zl >>> 31) | (zh << 1))) >>> 0;
+    zh = (zh ^ (zh >>> 31)) >>> 0;
+    // (z >> 11) / 2^53
+    return (zh * 2097152 + (zl >>> 11)) / 9007199254740992;
   };
+}
+
+/** The low 64 bits of a 64-bit product, each number as [high, low] 32-bit halves. */
+function mul64(ah: number, al: number, bh: number, bl: number): [number, number] {
+  const a0 = al & 0xffff;
+  const a1 = al >>> 16;
+  const b0 = bl & 0xffff;
+  const b1 = bl >>> 16;
+  const p00 = a0 * b0;
+  const p01 = a0 * b1;
+  const p10 = a1 * b0;
+  const mid = (p00 >>> 16) + (p01 & 0xffff) + (p10 & 0xffff);
+  const lo = (((mid & 0xffff) << 16) | (p00 & 0xffff)) >>> 0;
+  const hi = (a1 * b1 + (p01 >>> 16) + (p10 >>> 16) + (mid >>> 16) + Math.imul(ah, bl) + Math.imul(al, bh)) >>> 0;
+  return [hi, lo];
 }
 
 /** A Poisson-distributed count with the given mean (drop counts per rarity). */

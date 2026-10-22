@@ -18,17 +18,17 @@ export const fightRng = (characterId: bigint, startMicros: bigint): Rng => seede
 export interface FightEvent {
   /** Seconds since the fight started (walk included). */
   t: number;
-  /** Who acted: your swing hits the enemy (and heals you); the enemy's hits you. */
-  by: 'you' | 'enemy';
-  /** `miss`: an evasive enemy dodged your swing; `dodge`: you dodged the enemy's. */
-  kind: 'hit' | 'crit' | 'miss' | 'dodge';
-  /** Damage dealt (0 for a miss or a dodge). */
+  /** Who acted: your swing hits the enemy (and heals you); the enemy's hits you; 'none' for a regen tick. */
+  by: 'you' | 'enemy' | 'none';
+  /** `miss`: an evasive enemy dodged your swing; `dodge`: you dodged the enemy's; `regen`: the once-a-second regen tick. */
+  kind: 'hit' | 'crit' | 'miss' | 'dodge' | 'regen';
+  /** Damage dealt (0 for a miss, a dodge or a regen tick). */
   damage: number;
-  /** HP you got back with this event: heal, lifesteal and regen since the previous event. */
+  /** HP you got back with this event: a swing's heal and lifesteal, or a tick's regen. */
   healed: number;
   youHp: number;
   foeHp: number;
-  /** HP the enemy regenerated since its previous swing, on its swings (a regenerating enemy only). */
+  /** HP the enemy regenerated, on regen ticks (a regenerating enemy only). */
   foeHealed?: number;
   /** Second Wind saved you from this hit. */
   secondWind?: boolean;
@@ -137,6 +137,12 @@ export function fightEvents(events: readonly BattleEvent[], you: number, foe: nu
   for (const e of events) {
     healed += e.healed[you];
     foeHealed += e.healed[foe];
+    if (e.kind === 'regen' && (healed > 0 || foeHealed > 0)) {
+      out.push({ t: e.t - start, by: 'none', kind: 'regen', damage: 0, healed, youHp: e.hp[you], foeHp: e.hp[foe], ...(foeRegen && { foeHealed }) });
+      healed = 0;
+      foeHealed = 0;
+      continue;
+    }
     if (e.by !== you && e.by !== foe) continue;
     const mine = e.by === you;
     const f: FightEvent = {

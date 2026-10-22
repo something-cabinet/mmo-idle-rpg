@@ -89,15 +89,16 @@ export interface BattleSetup {
 
 export interface BattleEvent {
   t: number;
-  /** Who acted (index in the battle's actors: side 0, then side 1), or -1 for a timed mechanic (a phase change, empowering). */
+  /** Who acted (index in the battle's actors: side 0, then side 1), or -1 for a timed mechanic (a phase change, empowering, regen). */
   by: number;
   /** Who was hit or entered; -1 for every opponent (an AoE) or none. */
   target: number;
   /**
    * 'miss': the swing or attack didn't land (the target dodged it). 'special': a timed attack
    * on one target; 'aoe': on every opponent. 'carry': Follow-through landing as a foe enters.
+   * 'regen': the once-a-second regen tick.
    */
-  kind: 'hit' | 'crit' | 'miss' | 'special' | 'aoe' | 'carry' | 'phase' | 'fall' | 'empower' | 'enter';
+  kind: 'hit' | 'crit' | 'miss' | 'special' | 'aoe' | 'carry' | 'phase' | 'fall' | 'empower' | 'enter' | 'regen';
   /**
    * A player's swing: its damage, Zealot's Oath included. A foe's attack: the rolled hit after
    * the target's mitigation, before its other defenses (an AoE: the share before mitigation).
@@ -125,7 +126,7 @@ export interface BattleEvent {
   phase?: number;
   /** Every actor's HP after the event. */
   hp: number[];
-  /** HP every actor got back since the previous event: heals, lifesteal and regen. */
+  /** HP every actor got back since the previous event: heals and lifesteal on swings, regen on 'regen' ticks. */
   healed: number[];
   /** Every actor's Second Skin shield after the event, when a player started with one. */
   shield?: number[];
@@ -508,7 +509,9 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
     }
   };
 
-  let now = 0;
+  // Regen heals once a second, counted from the end of the walk.
+  const regenerates = actors.some(a => (a.kind === 'player' ? a.f.stats.regen > 0 : !!a.def.regen || !!a.spec.phases?.list.some(d => d.regen)));
+  let nextRegen = regenerates ? walk + 1 : Infinity;
   let absorbing: { foe: number; until: number } | undefined;
   let acted = 0 as 0 | 1;
 
@@ -604,7 +607,7 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
   // ---------------------------------------------------------------- the loop
   for (;;) {
     // The next thing to happen: timed mechanics first, then swings in actor order.
-    let t = absorbing?.until ?? Infinity;
+    let t = Math.min(absorbing?.until ?? Infinity, nextRegen);
     for (const a of actors) {
       if (a.kind === 'foe') {
         if (!a.active || a.hp <= 0) continue;
@@ -627,13 +630,17 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
       });
       return result(limitAt, Math.abs(share[0] - share[1]) < 0.001 ? -1 : share[0] > share[1] ? 0 : 1, true);
     }
-    for (let i = 0; i < n; i++) {
-      const a = actors[i];
-      if (a.kind === 'player') {
-        if (a.f.stats.regen > 0) heal(i, a.f.stats.regen * hm[i] * (t - now));
-      } else if (a.active && a.def.regen) heal(i, a.def.regen * (t - now));
+    if (t === nextRegen) {
+      nextRegen += 1;
+      for (let i = 0; i < n; i++) {
+        const a = actors[i];
+        if (a.kind === 'player') {
+          if (a.f.stats.regen > 0) heal(i, a.f.stats.regen * hm[i]);
+        } else if (a.active && a.def.regen) heal(i, a.def.regen);
+      }
+      if (record && gained.some(g => g > 0)) push({ t, by: -1, target: -1, kind: 'regen', damage: 0 });
+      continue;
     }
-    now = t;
 
     let phaseFoe = -1;
     let specialFoe = -1;

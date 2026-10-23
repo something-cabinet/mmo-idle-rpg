@@ -593,14 +593,6 @@ everything else (× 2.9 per tier):
 - **Leftover Motes and Ethereal items are lost** when the run ends. Nothing converts, so
   there's no reason to hoard.
 
-### Later: Rift Rank (for the fun runs)
-
-After a full clear on your highest tier, **Rift Ranks 1–10** unlock: each adds a modifier
-(enemies +10% HP, one fewer boon offer, shops cost more, the boss Unravels twice…). They're
-for players who replay for fun and want a harder puzzle. Rank gives **no extra rewards**,
-only a Codex mark, and a title at Rank 10 (cosmetics.md). Possibly a weekly board for the
-highest rank cleared, with the build snapshot like the Deep.
-
 ## Later: co-op
 
 Not at launch, but every piece above is built so it can come without a rewrite. The rule:
@@ -693,6 +685,7 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **Rulings (review, 2026-10-22):** Leech raises the cap; Warded Shell Trophy uses the higher of armor and resistance; Wildcard doesn't count toward the main theme; Static's shock lands on a miss; one reflect rule, the Aegis 5-set reflecting the whole hit; Rift Anchor boosts affixes only; Thief's Glove stays a Motes effect; the tier picker stays though T5 is the only tier at launch; Riftstone is paid before it has a use; one-version boons (Second Look, keystones, Wildcard) and Epics aren't offered again once held; First Blood stays (a stronger Ambush: per enemy, no attack speed cost); the 20 launch events are written; two-handed weapons take both hands (an off-hand needs a one-handed weapon); raid uniques can be Echoes (rolled ones, and the Rift Heart's).
 - **Boons:** duplicates upgrade rarity; offers have three fixed slots (main theme, another held theme, any); stat-gated boons; a keystone per theme; seven themes (Mist and Aegis added for evasion and block), 43 boons. Glimmerguard converts crit to evasion after boons.
 - **Rewards:** a floor pays when its boss falls.
+- **No Rift Ranks and no rank board** (cut, 2026-10-23).
 - **Co-op:** the party moves on once every online member is ready; event fights are personal; a downed member returns at 50% of max HP after the floor boss.
 - **Rulings (review, 2026-10-23):** the R2 and R3 readings in rift-plan.md stand, with one change: Frozen Blood stops the Vampiric Trophy too (no lifesteal at all). A node that runs out of time ends the run, like a death.
 

@@ -451,7 +451,8 @@ Nothing in the run logic changes here. It's the party around it:
 
 ## R7: after launch
 
-Rift Ranks 1–10, the rank board, what Riftstone crafts, more events.
+More events, if wanted (the 20 at launch are written). No Rift Ranks or rank board (cut,
+2026-10-23).
 
 ## Risks
 

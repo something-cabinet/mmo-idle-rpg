@@ -178,8 +178,8 @@ only; the zone mechanics stay out.
 - The client replays a stored battle with `replayFight(run.seed, fight)` (riftRun.ts).
 - rift.ts `rewardOwed`: what a clear owes (the whole reward if the floor isn't cleared this week).
 - Smoke test: start, the refusals, a gift, node 1 and its replay matching the server's HP, a
-  boon, a shop heal, leaving (rows gone, log kept). Not covered live: a floor boss's payout
-  (`rewardOwed` is checked offline in `test:rift`).
+  boon, a shop heal, leaving (rows gone, log kept). A floor boss's payout is covered live
+  since R6.
 
 **Decisions taken in R4** (reviewed by the user 2026-10-23: one `riftChoose` and paying downed members confirmed; the re-clear rule changed, below):
 
@@ -226,8 +226,7 @@ much character XP as skill XP").
 - Seen in a browser (desktop and 390 px) against the local server, 6 runs driven through the
   SDK with the page open: the start, the Threshold, the map, replays, boons, wear or discard,
   shops, 8 events, boss picks, a full clear, deaths, a timeout, the run's end, the build, the
-  history, the Codex. Not seen: Thane's Vault (event 12 never came up; its card shows 3 item cards
-  with a Take button each, the same item card as wear or discard). Driving it: a guest with the dev cheats (`devUnlockZones`, `devSetLevel`,
+  history, the Codex; Thane's Vault later (a driver that starts runs until floor 1 has it). Driving it: a guest with the dev cheats (`devUnlockZones`, `devSetLevel`,
   T5 gear), its token in localStorage, one tab only (a second tab takes over the character),
   the dev server with `VITE_SPACETIMEDB_HOST=ws://localhost:3001`.
 
@@ -251,8 +250,9 @@ much character XP as skill XP").
 - Checks: `test:rift` (nobody waits for a downed member); the smoke test plays a 2-player
   run (the lobby and its refusals, Ready, a node fought by both, Bob's choice keeping the
   replay, Bob leaving mid-floor, the last one out ending it).
-- Not covered live: leader handover and kicking a member offline 10+ minutes (no check
-  drives a second client offline yet).
+- Covered live too: the leader going offline (the next member online leads and moves),
+  a kick refused under 10 minutes and allowed after (`devRiftAway` backdates
+  `offlineSince`), then a floor boss paying floor 1 at T5.
 
 **Decisions taken in R6** (reviewed by the user 2026-10-23: all confirmed):
 

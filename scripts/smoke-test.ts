@@ -12,6 +12,8 @@ import { depthReward } from '../spacetimedb/src/data/abyss';
 import { untieredMaterial } from '../spacetimedb/src/data/materials';
 import { phialSupplyId } from '../spacetimedb/src/data/supplies';
 import { floorMap } from '../spacetimedb/src/rift';
+import { ROWS } from '../spacetimedb/src/data/rift';
+import { BASE_LIST, SLOTS } from '../spacetimedb/src/data/bases';
 import { decodeRift, replayFight, type Pending, type StoredFight } from '../spacetimedb/src/riftRun';
 
 const near = (x: number, y: number, tol: number) => Math.abs(x - y) <= tol * Math.max(1, Math.abs(y));
@@ -610,6 +612,98 @@ await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.
   if (run(a)) await a.conn.reducers.riftLeave({});
   await sleep(300);
   check('the last one out ends it', !run(a) && !a.conn.db.riftRun.id.find(lobby!.id));
+}
+
+// A party whose leader goes offline: the next member online leads, kicks the leader once
+// they've been away 10 minutes (devRiftAway stands in for the wait), then clears floor 1
+// alone and is paid for it. Two fresh players at level 60 in T5 Legendary gear.
+{
+  const gearUp = async (x: Client) => {
+    for (let slot = 0; slot < SLOTS.length; slot++) {
+      const b = slot === 0 ? BASE_LIST.find(b => b.id === 1)! : BASE_LIST.find(b => b.slots.includes(SLOTS[slot]) && !b.raid && b.kind !== 'weapon')!;
+      const had = new Set([...x.conn.db.myItems.iter()].map(i => i.id));
+      await x.conn.reducers.devGiveItem({ baseId: b.id, tier: 5, rarity: 'Legendary' });
+      await sleep(100);
+      const it = [...x.conn.db.myItems.iter()].find(i => !had.has(i.id));
+      if (it) await x.conn.reducers.equip({ loadout: 0, slot, itemId: it.id }).catch(() => undefined);
+    }
+  };
+  const c = await connect();
+  const d = await connect();
+  await c.conn.reducers.createCharacter({ name: `Cara_${suffix}`, starterWeapon: 1 });
+  await d.conn.reducers.createCharacter({ name: `Dan_${suffix}`, starterWeapon: 1 });
+  await sleep(300);
+  for (const x of [c, d]) {
+    await x.conn.reducers.devUnlockZones({});
+    await x.conn.reducers.devSetLevel({ level: 60 });
+    await gearUp(x);
+  }
+  const cId = charOf(c)!.id;
+  const dId = charOf(d)!.id;
+  const R = d.conn.reducers;
+  const member = (id: bigint) => d.conn.db.riftMember.characterId.find(id);
+  const run = () => (member(dId) ? d.conn.db.riftRun.id.find(member(dId)!.runId) : undefined);
+  const pending = (x: Client, id: bigint) => (x.conn.db.riftMember.characterId.find(id)?.pending ? decodeRift<Pending[]>(x.conn.db.riftMember.characterId.find(id)!.pending) : []);
+  const answer = async (x: Client, id: bigint) => {
+    for (let guard = 0; guard < 20 && pending(x, id).length; guard++) {
+      const p = pending(x, id)[0];
+      const tries = p.kind === 'shop' ? [-1] : p.kind === 'item' ? [0] : p.kind === 'event' ? [9, 8, 7, 6, 5, 4, 3, 2, 1, 0] : [0];
+      for (const choice of tries) {
+        try {
+          await x.conn.reducers.riftChoose({ choice, target: -1, theme: 1 });
+          break;
+        } catch {
+          // a choice that doesn't apply: try the next
+        }
+      }
+      await sleep(150);
+    }
+  };
+  await c.conn.reducers.riftCreateParty({ loadout: 0, tier: 5 });
+  await sleep(300);
+  await R.riftJoin({ runId: member(cId)!.runId, loadout: 0 });
+  await c.conn.reducers.riftSetOff({});
+  await sleep(300);
+  await answer(c, cId);
+  await answer(d, dId);
+  await c.conn.reducers.riftReady({});
+  await R.riftReady({});
+  await sleep(200);
+  await expectError('while the leader is online, only they move', R.riftMove({ node: 0 }), 'Only the party leader');
+  c.conn.disconnect();
+  await sleep(500);
+  check('the leader goes offline: still in the run, offline since now', (member(cId)?.offlineSince ?? 0n) > 0n);
+  await expectError('a member offline under 10 minutes stays', R.riftKick({ characterId: cId }), 'offline for 10+');
+  await R.riftMove({ node: 0 });
+  await sleep(300);
+  const r = run();
+  const fights = r?.fights ? decodeRift<StoredFight[]>(r.fights) : [];
+  check('the next member online leads while the leader is away', fights[0]?.fighters.length === 2, `${fights[0]?.fighters.length} fighters`);
+  if (r) {
+    await R.devRiftAway({ characterId: cId, minutes: 11 });
+    await R.riftKick({ characterId: cId });
+    await sleep(300);
+    check('… and kicks them once they have been away 10 minutes', !member(cId) && !!member(dId) && run()?.leaderId === dId);
+  }
+  // Floor 1 alone, then its boss: the floor's weekly reward.
+  const goldBefore = charOf(d)!.gold;
+  for (let guard = 0; guard < 12 && run() && run()!.floor === 1; guard++) {
+    await answer(d, dId);
+    const now = run()!;
+    if (now.row === ROWS - 1) await R.riftBoss({ option: 0 });
+    else {
+      const map = floorMap(now.seed, 1);
+      const next = now.row < 0 ? map.rows[0].map((_, j) => j) : map.rows[now.row][now.col].links;
+      await R.riftMove({ node: next.find(j => map.rows[now.row + 1][j].kind !== 'elite') ?? next[0] });
+    }
+    await sleep(300);
+  }
+  const week = [...d.conn.db.myRiftWeek.iter()][0];
+  check('a floor boss falling pays floor 1 at T5, once', week?.paid[0] === 5 && charOf(d)!.gold > goldBefore && (member(dId)?.paidGold ?? 1n) > 0n,
+    run() ? `on floor ${run()!.floor}` : 'the run ended on floor 1');
+  if (run()) await R.riftLeave({});
+  await sleep(200);
+  d.conn.disconnect();
 }
 
 await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.me, banned: true }), 'Admins only');

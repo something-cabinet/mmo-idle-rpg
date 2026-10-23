@@ -52,6 +52,7 @@ import DevGrantReducer from "./dev_grant_reducer";
 import DevGrantMaterialsReducer from "./dev_grant_materials_reducer";
 import DevGrantSuppliesReducer from "./dev_grant_supplies_reducer";
 import DevRevealAllReducer from "./dev_reveal_all_reducer";
+import DevRiftAwayReducer from "./dev_rift_away_reducer";
 import DevSetLevelReducer from "./dev_set_level_reducer";
 import DevSetSkillLevelReducer from "./dev_set_skill_level_reducer";
 import DevUnlockCosmeticsReducer from "./dev_unlock_cosmetics_reducer";
@@ -523,6 +524,7 @@ const reducersSchema = __reducers(
   __reducerSchema("dev_grant_materials", DevGrantMaterialsReducer),
   __reducerSchema("dev_grant_supplies", DevGrantSuppliesReducer),
   __reducerSchema("dev_reveal_all", DevRevealAllReducer),
+  __reducerSchema("dev_rift_away", DevRiftAwayReducer),
   __reducerSchema("dev_set_level", DevSetLevelReducer),
   __reducerSchema("dev_set_skill_level", DevSetSkillLevelReducer),
   __reducerSchema("dev_unlock_cosmetics", DevUnlockCosmeticsReducer),

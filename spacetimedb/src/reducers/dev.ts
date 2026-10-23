@@ -118,3 +118,11 @@ export const devGiveUnique = spacetimedb.reducer({ uniqueId: t.u16() }, (ctx, { 
   if (!u) throw new SenderError('No such unique');
   giveItem(ctx, ch, makeUnique(seededRng(ch.id, ctx.timestamp.microsSinceUnixEpoch), u));
 });
+
+/** Moves a Rift member's `offlineSince` back by `minutes` (an offline member, for testing the kick). */
+export const devRiftAway = spacetimedb.reducer({ characterId: t.u64(), minutes: t.u32() }, (ctx, { characterId, minutes }) => {
+  requireCheats(ctx);
+  const m = ctx.db.riftMember.characterId.find(characterId);
+  if (!m || m.offlineSince === 0n) throw new SenderError('Not an offline Rift member');
+  ctx.db.riftMember.characterId.update({ ...m, offlineSince: m.offlineSince - BigInt(minutes) * 60_000_000n });
+});

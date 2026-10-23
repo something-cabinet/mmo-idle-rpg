@@ -23,10 +23,11 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.2.2',
     date: '2026-10-23',
-    commit: 'b8c5f34',
-    title: 'Regen ticks',
+    commit: '3a54e3e',
+    title: 'Regen ticks, Forgefire remade',
     changes: [
       { tag: 'balance', text: "HP regen now ticks once a second, for you and for regenerating enemies, instead of trickling in with every swing. It heals the same amount per second, and each tick shows its own number." },
+      { tag: 'balance', text: "Forgefire gear from The Brothers' Forge is remade: every piece is now heavy like Brokk or fast like Sindri, nothing in between, with the same damage per second as its kind. Heavy: the Forgefire Maul (was the Forgefire Mace) swings 0.45 times a second (was 0.7) with +crit damage, and the new Greatsword (0.35) and Fire Staff (0.45) hit just as hard; the Shield gives 12 armor per tier (was 6, plus 6 resistance) for −20% attack speed; the Ring gives +20% weapon damage for −15% attack speed. Fast: the Wand swings 2.0 times a second (was 1.5), the new Dagger 2.5 and Scepter 1.3, each costing −20% armor and resistance; the Tome gives +15% attack speed (was +15% heal) and the Amulet +25% attack speed (was armor and magic pen), each for −10% armor and resistance. Forgefire items you own take the new stats." },
     ],
   },
   {

@@ -162,8 +162,8 @@ on floor 1; the greedy builder clears 45%. A full run is ~23 fights; a node sett
 - **Phases:** the run has only `map` and `ended`; the Threshold is the gift choice waiting.
   R4's `phase` column can derive `threshold` and `boss` from the state.
 
-**Open for later:** the zone bosses' own mechanics on their echoes (the design's "its own
-mechanic"); today a boss echo has its shape and an Elite affix only.
+**Floor bosses** (decided 2026-10-23): a zone boss echo has its shape and an Elite affix
+only; the zone mechanics stay out.
 
 **What R4 left in the code:**
 
@@ -254,7 +254,7 @@ much character XP as skill XP").
 - Not covered live: leader handover and kicking a member offline 10+ minutes (no check
   drives a second client offline yet).
 
-**Decisions taken in R6** (my reading where the plan was open; for the user to review):
+**Decisions taken in R6** (reviewed by the user 2026-10-23: all confirmed):
 
 - **Names:** `riftSetOff` sets off, not `riftStart` (which stays the solo start); each
   loadout is locked when its owner joins (`riftJoin`), so there is no `riftReady(loadout)`.

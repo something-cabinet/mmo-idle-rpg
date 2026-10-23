@@ -32,7 +32,7 @@ that falls apart when you leave. "Shifting" is also the rule: a new layout every
 - **Run tier: T5 or higher.** You pick a tier whose zone boss you've killed, from T5 up
   (default: the highest). T1–T4 are never offered: the Rift belongs to the late game, and
   a low tier would be a safe weekly payout for no challenge.
-- **Solo at launch, built for co-op** (see "Later: co-op"), and online only: never
+- **Solo or a party of 2–4** (see "Co-op"), and online only: never
   settled offline, never a farming target.
   **Farming continues** during a run, with the active loadout.
 - **A run is 5 floors of 6 nodes.** Nodes 1–5 are each a choice between 2–4 nodes
@@ -521,7 +521,7 @@ damage.
 | Fight, 1 enemy | 1 | 1 | none |
 | Fight, 2 / 3 enemies | 0.6 / 0.45 each | 1 | none |
 | Elite (in a fight) | 2.5 | 1.3 | 1 Elite affix (the Deep's six: Vampiric, Warded Shell, Swift, Thorned, Unyielding, Ravenous) |
-| Floor boss (1–4) | 5 | 1.5 | An echo of a **zone boss** you picked from 2 (any tier's boss, rescaled), with its own mechanic plus 1 Elite affix |
+| Floor boss (1–4) | 5 | 1.5 | An echo of a **zone boss** you picked from 2 (any tier's boss, rescaled), with 1 Elite affix (no mechanic of its own) |
 | Final boss (5) | 7 | 1.7 | **The Rift Heart**, its own boss (below) |
 
 - **Why floors ramp at all:** the player gets stronger inside the run through boons and
@@ -593,14 +593,15 @@ everything else (× 2.9 per tier):
 - **Leftover Motes and Ethereal items are lost** when the run ends. Nothing converts, so
   there's no reason to hoard.
 
-## Later: co-op
+## Co-op
 
-Not at launch, but every piece above is built so it can come without a rewrite. The rule:
+Built in R6 (rift-plan.md). The rule:
 **the path is shared, everything else is personal, and the party moves together.**
 
-- **Party:** 2–4 players, formed like a raid party (create, invite, the leader starts).
-  Everyone needs the T5 unlock; the run tier is capped by the lowest member's unlock. Each
-  member locks their own loadout and gets their own Threshold. A Rift party is its own
+- **Party:** 2–4 players, formed like a raid party: one forms it, others join from the
+  list of parties forming on the Rift page, the leader sets off. The creator picks the
+  tier; joining needs it open. Each member locks their own loadout as they join and gets
+  their own Threshold. Leaving the world leaves a party still forming. A Rift party is its own
   thing: you can be in one and in a raid party at the same time.
 - **Shared:** the map (from the run seed), the node, the boss choice, the fights. The
   leader picks the path and the boss.
@@ -681,11 +682,12 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **Gear:** wear or discard on the spot, no stash, no selling; wearing discards what was in the slot.
 - **Ethereal items:** one grade (Radiant dropped); 3 affixes (tier ≥ T − 2) plus five independent headlines, rolled independently: rift effect 30%, theme mark 20%, growth 15% (uncapped), Trophy 10% (guaranteed on Elite drops), Echo 6% (guaranteed on boss drops; party-only effects allowed).
 - **Balance isn't a goal:** effects stay unless buggy or unintuitive; clashes warn, never block.
-- **Co-op later, never blocked:** solo at launch, but the schema, sim and reducers are built for parties ("Later: co-op").
+- **Co-op:** solo or a party of 2–4 from launch ("Co-op").
 - **Rulings (review, 2026-10-22):** Leech raises the cap; Warded Shell Trophy uses the higher of armor and resistance; Wildcard doesn't count toward the main theme; Static's shock lands on a miss; one reflect rule, the Aegis 5-set reflecting the whole hit; Rift Anchor boosts affixes only; Thief's Glove stays a Motes effect; the tier picker stays though T5 is the only tier at launch; Riftstone is paid before it has a use; one-version boons (Second Look, keystones, Wildcard) and Epics aren't offered again once held; First Blood stays (a stronger Ambush: per enemy, no attack speed cost); the 20 launch events are written; two-handed weapons take both hands (an off-hand needs a one-handed weapon); raid uniques can be Echoes (rolled ones, and the Rift Heart's).
 - **Boons:** duplicates upgrade rarity; offers have three fixed slots (main theme, another held theme, any); stat-gated boons; a keystone per theme; seven themes (Mist and Aegis added for evasion and block), 43 boons. Glimmerguard converts crit to evasion after boons.
 - **Rewards:** a floor pays when its boss falls.
 - **No Rift Ranks and no rank board** (cut, 2026-10-23).
+- **Floor bosses:** a zone boss echo has its Elite affix only, not its zone mechanic (2026-10-23).
 - **Co-op:** the party moves on once every online member is ready; event fights are personal; a downed member returns at 50% of max HP after the floor boss.
 - **Rulings (review, 2026-10-23):** the R2 and R3 readings in rift-plan.md stand, with one change: Frozen Blood stops the Vampiric Trophy too (no lifesteal at all). A node that runs out of time ends the run, like a death.
 

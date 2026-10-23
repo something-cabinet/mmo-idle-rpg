@@ -7,7 +7,7 @@
 
 import { MATERIAL_KINDS, materialAt, untieredMaterial, type MaterialKind } from './materials';
 import { ELIXIRS, SUPPLY_TIERS, elixirSupplyId, gradeOf } from './supplies';
-import { ZONES, referenceAccuracy, type Defense, type EnemyDef } from './zones';
+import { ZONES, farmingReward, referenceAccuracy, type Defense, type EnemyDef } from './zones';
 import { seededRng } from '../loot';
 
 /** The current season (abyss.md, "Leaderboard"): always 1 until seasons are turned on. */
@@ -246,7 +246,6 @@ export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
   const tier = rewardTier(d);
   const past = d >= FORMULA_FROM;
   const g = past ? REWARD_GROWTH ** (d - FORMULA_FROM) : 1;
-  const scale = 2.9 ** (tier - 1) * g;
   const matTier = Math.min(tier, MAX_MATERIAL_TIER);
   const materials: [number, number][] = [];
   for (const kind of MATERIAL_KINDS) {
@@ -265,9 +264,7 @@ export function depthReward(d: number, season = ABYSS_SEASON): DepthReward {
     if (herb) materials.push([herb.id, 1]);
   }
   return {
-    gold: BigInt(Math.round(1200 * GOLD_HOURS * scale)),
-    xp: BigInt(Math.round(4800 * XP_HOURS * scale)),
-    dust: BigInt(Math.round(15 * DUST_HOURS * scale)),
+    ...farmingReward(tier, { gold: GOLD_HOURS, xp: XP_HOURS, dust: DUST_HOURS }, g),
     materials,
     ...(elixir !== undefined && { elixir }),
   };

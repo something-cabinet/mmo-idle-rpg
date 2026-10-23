@@ -97,6 +97,11 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
     // New events since the last frame; after a pause, only the latest few.
     if (lastT >= 0 && t > lastT) {
       for (const e of fight.events.slice(0, i).filter(e => e.t > lastT).slice(-4)) {
+        if (e.kind === 'regen') {
+          if (e.healed >= 0.5) float('you', `+${fmt(e.healed)}`, 'heal');
+          if ((e.foeHealed ?? 0) >= 0.5) float('enemy', `+${fmt(e.foeHealed!)}`, 'heal');
+          continue;
+        }
         if (e.by === 'you' ? !e.immune && e.kind !== 'miss' : e.kind !== 'dodge') flash(el(e.by === 'you' ? 'enemy' : 'you', '.portrait'));
         if (e.immune) float('enemy', 'Immune', 'dodge');
         else if (e.kind === 'miss') float('enemy', 'Miss', 'dodge');

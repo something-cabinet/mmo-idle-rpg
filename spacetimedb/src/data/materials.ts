@@ -6,9 +6,10 @@
 // venom, fangs: potions) and Gem (rough to flawless stones; rare). An enemy drops the
 // kinds it lists, always of its zone's tier. Ore only comes from Mining and is smelted
 // into Metal (life-skills.md); enemies never drop it, except for Prospector (legendary.md).
-// Rare herbs (Herb) come only from Foraging. Two finds are untiered (tier 0): Mining's
-// Ancient Meteor Fragment and Woodcutting's Dryad's Tear (life-skills.md, "Rare finds"),
-// and the Moonwell Deep's Voidglass (abyss.md, "Rewards").
+// Rare herbs (Herb) come only from Foraging. Untiered (tier 0): Mining's Ancient
+// Meteor Fragment and Woodcutting's Dryad's Tear (life-skills.md, "Rare finds"), the
+// Moonwell Deep's Voidglass (abyss.md, "Rewards") and the Shifting Rift's Riftstone
+// (shifting-rift.md, "Rewards").
 //
 // PERMANENT IDS: material IDs are stored in `material` rows and settle logs; never
 // reuse or renumber them. IDs are kind ID × 100 + tier (Copper Ingot 101, Rough Gem 701),
@@ -20,14 +21,14 @@
 export const MATERIAL_KINDS = ['Metal', 'Hide', 'Core', 'Cloth', 'Wood', 'Reagent', 'Gem', 'Ore', 'Herb'] as const;
 export type MaterialKind = (typeof MATERIAL_KINDS)[number];
 /** Kinds with a single, untiered material (tier 0). */
-export const UNTIERED_KINDS = ['Meteor', 'Tear', 'Voidglass'] as const;
+export const UNTIERED_KINDS = ['Meteor', 'Tear', 'Voidglass', 'Riftstone'] as const;
 export type UntieredKind = (typeof UNTIERED_KINDS)[number];
 /** The kinds enemies drop (all but the gathering-only Ore and Herb). */
 export const DROP_KINDS: readonly MaterialKind[] = MATERIAL_KINDS.filter(k => k !== 'Ore' && k !== 'Herb');
 
 /** Permanent kind IDs. Planned: Fish 8 (life-skills.md). */
 export const MATERIAL_KIND_IDS: Record<MaterialKind | UntieredKind, number> = {
-  Metal: 1, Hide: 2, Core: 3, Cloth: 4, Wood: 5, Reagent: 6, Gem: 7, Ore: 9, Herb: 10, Meteor: 11, Tear: 12, Voidglass: 13,
+  Metal: 1, Hide: 2, Core: 3, Cloth: 4, Wood: 5, Reagent: 6, Gem: 7, Ore: 9, Herb: 10, Meteor: 11, Tear: 12, Voidglass: 13, Riftstone: 14,
 };
 export const MATERIAL_KINDS_BY_ID: ReadonlyMap<number, MaterialKind | UntieredKind> = new Map(
   [...MATERIAL_KINDS, ...UNTIERED_KINDS].map(k => [MATERIAL_KIND_IDS[k], k])
@@ -59,7 +60,7 @@ const NAMES: Record<number, Record<MaterialKind, string>> = {
   5: { Metal: 'Brightsteel Ingot', Hide: 'Drake Scale', Core: 'Glowvein Core', Cloth: 'Runeweave Bolt', Wood: 'Ironwood Beam', Reagent: 'Glowcap', Gem: 'Radiant Gem', Ore: 'Brightsteel Ore', Herb: 'Lanternroot' },
 };
 
-const UNTIERED_NAMES: Record<UntieredKind, string> = { Meteor: 'Ancient Meteor Fragment', Tear: "Dryad's Tear", Voidglass: 'Voidglass' };
+const UNTIERED_NAMES: Record<UntieredKind, string> = { Meteor: 'Ancient Meteor Fragment', Tear: "Dryad's Tear", Voidglass: 'Voidglass', Riftstone: 'Riftstone' };
 
 export const MATERIALS: MaterialDef[] = [
   ...Object.entries(NAMES).flatMap(([tier, names]) =>

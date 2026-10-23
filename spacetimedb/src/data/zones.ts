@@ -319,6 +319,26 @@ export const BOSS_OFFSET = 7;
 export const offsetStats = (o: number) => 1.08 ** OFFSET_ANCHOR * OFFSET_STEP ** (o - OFFSET_ANCHOR);
 export const offsetRewards = (o: number) => 1.12 ** OFFSET_ANCHOR * OFFSET_REWARD_STEP ** (o - OFFSET_ANCHOR);
 
+/** The weapon damage curve (zones.md, "Player stats"): 2.1^(T−1) to T3, then 4.41 × 1.6^(T−3). */
+export const offenseCurve = (tier: number) => (tier <= 3 ? 2.1 ** (tier - 1) : 4.41 * 1.6 ** (tier - 3));
+/** The zone average enemy's HP at `tier` (o = 0, zones.md "Enemy stats"): 70 × offense × (1 + 0.15T) × climb. */
+export const averageEnemyHp = (tier: number) => 70 * offenseCurve(tier) * (1 + 0.15 * tier) * climb(tier);
+/** The zone average enemy's DPS at `tier`: 16 × 1.42^(T−1) × climb. */
+export const averageEnemyDps = (tier: number) => 16 * 1.42 ** (tier - 1) * climb(tier);
+
+/**
+ * What `hours` of farming at `tier` pay (crafting.md): 1,200 gold, 4,800 XP and 15 Dust an
+ * hour × 2.9^(T−1), all × `mult`.
+ */
+export function farmingReward(tier: number, hours: { gold: number; xp: number; dust: number }, mult = 1): { gold: bigint; xp: bigint; dust: bigint } {
+  const scale = 2.9 ** (tier - 1) * mult;
+  return {
+    gold: BigInt(Math.round(1200 * hours.gold * scale)),
+    xp: BigInt(Math.round(4800 * hours.xp * scale)),
+    dust: BigInt(Math.round(15 * hours.dust * scale)),
+  };
+}
+
 /** The reference player's time to kill (zones.md, "Design targets"), which prices the regen trait. */
 export const REFERENCE_KILL_SECONDS = 10;
 

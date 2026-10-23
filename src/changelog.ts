@@ -22,10 +22,12 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.2.2',
-    date: '2026-10-22',
-    commit: '9879e11',
-    title: '',
-    changes: [],
+    date: '2026-10-23',
+    commit: 'b8c5f34',
+    title: 'Regen ticks',
+    changes: [
+      { tag: 'balance', text: "HP regen now ticks once a second, for you and for regenerating enemies, instead of trickling in with every swing. It heals the same amount per second, and each tick shows its own number." },
+    ],
   },
   {
     version: '0.2.1',

@@ -538,7 +538,8 @@ The shifting core of the rift. HP × 7, DPS × 1.7, plus:
 - **Unravel:** it **turns off one of your boons** at random for the whole fight, shown
   before the fight starts (the boon doesn't count toward set bonuses either). A one-trick
   build gets punished, and the fight is different every run.
-- The **weekly mutation** (below) applies to it twice as strongly.
+- The **weekly mutation** (below) applies to it twice as strongly: its bonus doubles
+  (Storm Front +60% attack speed, Glass World × 4 damage).
 
 ## Weekly mutation
 
@@ -558,7 +559,7 @@ what's good, so even a player who replays for fun meets a new puzzle every week.
 ## Rewards
 
 **Weekly, per floor, best tier counts.** Each floor has a weekly reward. A floor's reward is
-paid the first time that week you clear it. If you later clear it on a **higher tier**, you
+paid the first time that week you clear it, right when its boss falls. If you later clear it on a **higher tier**, you
 get the difference. Nothing else pays, so replays are free fun and the weekly total is a
 hard cap.
 
@@ -598,18 +599,23 @@ highest rank cleared, with the build snapshot like the Deep.
 
 ## Later: co-op
 
-Not at launch, but every piece above is built so it can come without a rewrite. The rule
-that keeps a party moving: **only the path is shared; everything else is personal and
-queued.**
+Not at launch, but every piece above is built so it can come without a rewrite. The rule:
+**the path is shared, everything else is personal, and the party moves together.**
 
 - **Party:** 2–4 players, formed like a raid party (create, invite, the leader starts).
   Everyone needs the T5 unlock; the run tier is capped by the lowest member's unlock. Each
-  member locks their own loadout and gets their own Threshold.
+  member locks their own loadout and gets their own Threshold. A Rift party is its own
+  thing: you can be in one and in a raid party at the same time.
 - **Shared:** the map (from the run seed), the node, the boss choice, the fights. The
   leader picks the path and the boss.
 - **Personal:** boons, curses, Motes, shops, Ethereal items, event choices, Threshold.
   Each member's offers come from run seed + character, so nobody copies another's luck.
-  Unanswered choices queue; you fight with what you have until you pick.
+  An event that is a fight (Your Reflection, Goblin in the Rift) is your own fight, played
+  when you answer.
+- **Ready:** after each node, every member answers their own choices (boon pick, wear or
+  discard, shop, event), then presses **Ready**. The leader can only move on once every
+  online member is ready. Offline members count as ready: their choices wait for them, and
+  they fight with what they have.
 - **Fights:** every member fights every node together in one battle; threat spreads the
   hits. Enemy **HP** × party size factor (1 / 1.8 / 2.5 / 3.2 for 1–4 players); damage
   unchanged.
@@ -622,13 +628,14 @@ queued.**
   - A disconnected member **still fights** as their snapshot (locked gear, boons), like a
     hired NPC, so nobody wipes over someone's Wi-Fi and enemy scaling stays fair.
   - Leader offline: the next online member in join order can move the party; the leader
-    takes it back on return.
+    takes it back on return. "Online" is the world presence, as chat shows it.
   - Everyone offline: the run waits, as solo.
 - **Leave and kick:** a member can leave any time (floors already cleared stay paid; they
   stop fighting from the next node). The leader can kick a member offline for 10+ minutes.
   Enemy scaling follows the new party size from the next node.
-- **Death:** a downed member sits out until the floor boss falls, then returns at 50% HP
-  through the boss heal. The run ends when everyone is down.
+- **Death:** a downed member sits out until the floor boss falls, then returns at 50% of
+  max HP (everyone else gets the usual heal of 50% of missing HP). The run ends when
+  everyone is down.
 - **Weekly reset:** ends the run for everyone, as solo.
 
 ## Cost (SpacetimeDB)
@@ -656,8 +663,9 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 | `data/rift.ts` | Boons (permanent IDs), themes and set bonuses, curses, rift effects (200+), events, mutations, floor multipliers, reward table |
 | `rift.ts` (pure, shared) | `weeklyMutation(week)`, `runMap(seed)` (maps, line-ups, Elite affixes, events, boss options), `nodeEnemies(..., partySize)`, `memberStats(member)` (locked gear + Ethereal + boons + level), `simulateNode(...)` (a chain of the node's enemies against **every member**: starting HP per member, per-floor Second Wind, shared time limit), offer rolls seeded by run + character |
 | Sim | **The battle engine (battle.ts)**, a solo run being a party of one, so co-op needs no sim rewrite. It already has N players against M foes, a chain of foes, threat, starting HP, Second Wind and Renewal per player, a time limit, the Elite affixes as foe traits, party effects (Drawing Fire, Twin Flame) and player against player (duels, for Your Reflection). Needed: boons and rift effects where "Where a boon works" puts them (stat build, `Fighter`, `FoeSpec`), and Phial Renewal forced to 0 |
-| Schema | `Ethereal` rarity (already reserved), `rift_run` (per run), `rift_member` (per player in a run), `rift_item` (with an owner), `rift_week`, `rift_log`, `rift_codex` (discovery). No per-character run state outside `rift_member` |
-| Reducers | Split by who may call them from the start. **Leader:** `riftStart(loadoutIndex, tier)` (tier ≥ 5), `riftMove(node)`, `riftBoss(option)`. **Each member, for themselves:** `riftPick(option)` (Threshold, boons, events), `riftBuy(offer)`, `riftTake(wear)`, `riftLeave()`. Personal choices queue on the member and never block `riftMove` (solo, the client simply asks before moving). Weekly reset handled lazily (a call in a new week ends the old run and pays each member's cleared floors) |
+| Schema | `Ethereal` rarity (already reserved), `rift_run` (per run), `rift_member` (per player in a run), `rift_item` (the same columns as `item`, so the stat build reads it like gear, plus its run, owner, worn slot and headlines), `rift_week`, `rift_log`, `rift_codex` (discovery). No per-character run state outside `rift_member`. Riftstone is a new untiered material, like Voidglass |
+| Weeks | Week index from Monday 00:00 UTC: `floor((days since epoch + 3) / 7)` |
+| Reducers | Split by who may call them from the start. **Leader:** `riftStart(loadoutIndex, tier)` (tier ≥ 5), `riftMove(node)`, `riftBoss(option)`. **Each member, for themselves:** `riftPick(option)` (Threshold, boons, events), `riftBuy(offer)`, `riftTake(wear)`, `riftReady()`, `riftLeave()`. `riftMove` waits for every online member's `riftReady` (solo, moving is being ready). Weekly reset handled lazily (a call in a new week ends the old run and pays each member's cleared floors) |
 | Client | A **Shifting Rift** page under Adventure: the floor map, Rift loadout with a wear-or-discard compare, boons with set progress, replays with speed controls, shop and event dialogs, run history, Codex |
 | Check | `npm run test:rift`: random and greedy bots per tier, clear rate per floor, every generated map is valid; for floor difficulty only, never to tone down a boon or rift effect |
 
@@ -680,6 +688,8 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **Co-op later, never blocked:** solo at launch, but the schema, sim and reducers are built for parties ("Later: co-op").
 - **Rulings (review, 2026-10-22):** Leech raises the cap; Warded Shell Trophy uses the higher of armor and resistance; Wildcard doesn't count toward the main theme; Static's shock lands on a miss; one reflect rule, the Aegis 5-set reflecting what the block stopped; Rift Anchor boosts affixes only; Thief's Glove stays a Motes effect; the tier picker stays though T5 is the only tier at launch; Riftstone is paid before it has a use; one-version boons (Second Look, keystones, Wildcard) and Epics aren't offered again once held; First Blood stays (a stronger Ambush: per enemy, no attack speed cost); the 20 launch events are written; two-handed weapons take the off-hand slot; raid uniques can be Echoes (rolled ones, and the Rift Heart's).
 - **Boons:** duplicates upgrade rarity; offers have three fixed slots (main theme, another held theme, any); stat-gated boons; a keystone per theme; seven themes (Mist and Aegis added for evasion and block), 43 boons. Glimmerguard converts crit to evasion after boons.
+- **Rewards:** a floor pays when its boss falls.
+- **Co-op:** the party moves on once every online member is ready; event fights are personal; a downed member returns at 50% of max HP after the floor boss.
 
 ## Open questions
 

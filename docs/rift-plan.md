@@ -13,10 +13,10 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 | R0 | Decisions | **Done** |
 | R1 | Data and generation | **Done** (`npm run test:rift` passes, with every other check) |
 | R2 | Engine hooks | **Done** (`npm run test:combat` has a check per hook; old fights unchanged) |
-| R3 | A node, a run, the bots | **Done** (`npm run test:rift` plays bot runs; floor scaling × 1.6 to review) |
+| R3 | A node, a run, the bots | **Done** (`npm run test:rift` plays bot runs) |
 | R4 | Schema and solo reducers | **Done** (smoke test: a solo run on the local server) |
-| R5 | Client, solo | **In progress** (page built; see "R5: what's left") |
-| R6 | Co-op | — |
+| R5 | Client, solo | **Done** (seen in a browser, desktop and phone width) |
+| R6 | Co-op | **Next** |
 | R7 | After launch | — |
 
 **What R1 left in the code:**
@@ -72,7 +72,7 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 **Open questions:**
 
 - **What Riftstone crafts.** Not needed until after launch.
-- **Riftstone icon** (`m-riftstone`): needed by R5.
+- ~~**Riftstone icon**~~: done in R5 (`m-riftstone`, a cracked stone, like the other material glyphs).
 
 **What R2 left in the code** (every check passes; a snapshot of ~300 seeded zone, Deep, raid
 and duel fights replayed identically before and after):
@@ -96,7 +96,7 @@ and duel fights replayed identically before and after):
 Ethereal item's `effects` (the stat build reads them like a unique's); marks go in
 `RiftBuild.marks`; leave an Unravelled boon out of `boons`.
 
-**Decisions taken in R2** (my reading of the design where it was open; for the user to review):
+**Decisions taken in R2** (reviewed by the user 2026-10-23: all confirmed except Vampiric, which Frozen Blood now stops too):
 
 - **Percent boons** are "more" multipliers, except Cruel, which adds to crit damage like the
   stat. Sunder multiplies what penetration leaves, past the 75% cap.
@@ -104,7 +104,8 @@ Ethereal item's `effects` (the stat build reads them like a unique's); marks go 
   Step raises it; Juggernaut and Spellward stop it).
 - **Voidheart** makes armor penetration count as magic penetration, like Moonlight.
 - **Hexed** cuts heals, regen and lifesteal. Unyielding's regen is 0 under Frozen Blood or
-  Bloodbound. Vampiric adds 50% lifesteal past every cap, even under Frozen Blood.
+  Bloodbound. Vampiric adds 50% lifesteal past every cap, but not under Frozen Blood (changed in
+  review: Frozen Blood stops all lifesteal).
 - **Overclock's** HP cost never kills (it skips at 1% HP or less).
 - **Echo Strike** doubles every 4th swing that lands (no roll of its own). **Static's** shock
   is the value × your plain hit on that enemy. **The Storm 5-set's** chained damage waits for
@@ -137,7 +138,7 @@ At T5 (200 runs each): random picks clear floor 5 in 14% of runs, 71% end on flo
 on floor 1; the greedy builder clears 45%. A full run is ~23 fights; a node settles in
 ~0.4 ms. T6–T7 come out harder for the same reference player (greedy 34% / 26%).
 
-**Decisions taken in R3** (for the user to review):
+**Decisions taken in R3** (reviewed by the user 2026-10-23: all confirmed; party tuning stays for R6):
 
 - **Floor scaling × 1.6, not × 1.25** (a "Decided" number). With × 1.25 no `RIFT_HP` /
   `RIFT_DPS` hits the target: the build outgrows the floors, so runs die on floor 1 or clear
@@ -200,42 +201,37 @@ here runs on 3001 (`SPACETIMEDB_HOST=ws://localhost:3001 npm run test:smoke`). T
 has a failure from before R4: "a tool upgrade is not queued" (and, now and then, "… with as
 much character XP as skill XP").
 
-**What R5 has so far** (2026-10-23, not finished):
+**What R5 left in the code** (done 2026-10-23):
 
 - `src/ui/views/RiftView.tsx`, under Adventure as **Rift** (`#rift`): the start (tier, loadout,
   the week's mutation, each floor's reward and the floors paid), the Threshold, the floor map
-  with the reachable nodes and each fight node's line-up in its tooltip, the boss pick
-  (affix, echo's zone, the Rift Heart's Unravel), the last action's fights replayed on the
-  fight stage (1× / 2× / 4×, Skip, one after another), boon offers, wear or discard (ring
-  slot, what it replaces, override warnings, a stat compare), Thane's Vault, the shop
-  (targets for attune and removals, reroll price), events (choices that can't apply greyed
-  out with why, checked with `apply`), boons with set progress, curses, the Rift loadout with
-  headlines, the run history with each run's final build, the Codex.
+  with its links (measured from the node buttons; the current node's links lit) and each
+  fight node's line-up in its tooltip, the boss pick (affix, echo's zone, the Rift Heart's
+  Unravel), the last action's fights replayed on the fight stage (1× / 2× / 4×, Skip, one
+  after another; the bar shows the HP from before them until the replay ends), boon offers,
+  wear or discard (ring slot, what it replaces, override warnings, a stat compare), Thane's
+  Vault, the shop (targets for attune and removals, reroll price), events (choices that can't
+  apply greyed out with why, checked with `apply`), boons with set progress, curses, the Rift
+  loadout with headlines, the run's end (summary and build), the run history with each run's
+  final build, the Codex.
 - Shared: `riftRows.ts` (rows to `RunState`, for the reducers and the client),
   riftRun.ts `fightParts` (a node's battle split per enemy for the stage), `shopDiscount`,
   `rerollCost`, `RiftFight.fighters` (who fought, by seat, for R6).
 - `rift_log` keeps the final build and the locked level (no fight replay, by the user's
   call: the build is kept to show later, not the run's fights).
-- Ethereal colour (`--r-ethereal`, a shifting pale teal) and the page's styles; the client
+- Ethereal colour (`--r-ethereal`), the page's styles, the Riftstone icon; the client
   subscribes to the Rift tables (net.ts); the fight scene takes a `clock` (replay speed).
-- Seen working in a browser against the local server: the start, the Threshold, the map, a
-  fight replay and the boon offer after it.
+- Review (2026-10-23): Frozen Blood stops the Vampiric Trophy (combat.ts, a check in
+  `test:combat`); the other R2 and R3 readings confirmed.
+- Seen in a browser (desktop and 390 px) against the local server, 6 runs driven through the
+  SDK with the page open: the start, the Threshold, the map, replays, boons, wear or discard,
+  shops, 8 events, boss picks, a full clear, deaths, a timeout, the run's end, the build, the
+  history, the Codex. Not seen: Thane's Vault (event 12 never came up; its card shows 3 item cards
+  with a Take button each, the same item card as wear or discard). Driving it: a guest with the dev cheats (`devUnlockZones`, `devSetLevel`,
+  T5 gear), its token in localStorage, one tab only (a second tab takes over the character),
+  the dev server with `VITE_SPACETIMEDB_HOST=ws://localhost:3001`.
 
-**R5: what's left**
-
-- **Look at the rest in a browser:** shop, events, wear or discard, Thane's Vault, a floor
-  boss, the end of a run (summary and build), the history and Codex, a phone-width layout.
-  (Driving it: a guest made with the dev cheats, `devUnlockZones`, `devSetLevel`, T5 gear,
-  its token put in localStorage; the dev server with `VITE_SPACETIMEDB_HOST=ws://localhost:3001`.)
-- **Draw the links** between map nodes (today only the reachable ones light up).
-- **During a replay**, the top bar already shows the HP and Motes after the fight: show the
-  HP from before it until the replay ends.
-- **Changelog** (`src/changelog.ts`): a `new` entry for the Rift. Proposed: "New: the
-  Shifting Rift, opened by your first Last Thane kill. A weekly roguelike run of 5 floors:
-  pick your path through fights, shops and events, collect boons and Ethereal gear that only
-  exists inside, and beat each floor's boss. Each floor pays once a week, more on a higher
-  tier. Online only; farming carries on meanwhile."
-- Mark R5 done here, then R6 (co-op).
+**R6 next:** co-op (below).
 
 ## Shape
 

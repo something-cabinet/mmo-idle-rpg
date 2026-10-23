@@ -5,9 +5,10 @@
 // and Codex. The client builds the same run state as the server (riftRows.ts) and checks
 // each choice with the same rules (`apply`), so what can't apply is greyed out with why.
 
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { Item, RiftLog, RiftRun } from '../../module_bindings/types';
 import { combatStats, type CombatStats } from '../../../spacetimedb/src/combat';
+import type { PlayerSpec } from '../../../spacetimedb/src/battle';
 import { ELITE_AFFIXES_BY_ID } from '../../../spacetimedb/src/data/abyss';
 import { UNIQUES_BY_ID } from '../../../spacetimedb/src/data/uniques';
 import { ZONES, ZONES_BY_ID, ENEMIES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
@@ -18,7 +19,7 @@ import {
 } from '../../../spacetimedb/src/data/rift';
 import {
   ECHOES_BY_ID, bossOptions, floorMap, floorReward, headlineCount, lineupSlot, nodeLineup, riftWeek, themeCounts, weeklyMutation,
-  type BoonChoice, type EtherealItem, type Headlines,
+  type BoonChoice, type EtherealItem, type FloorMap, type Headlines,
 } from '../../../spacetimedb/src/rift';
 import {
   DISCARD, RiftError, SHOP_LEAVE, SHOP_REROLL, SKIP, WEAR, apply, decodeRift, fightParts, memberMarks, memberStats, reachable, replayFight,
@@ -240,9 +241,13 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
   const ctx: ChoiceCtx = { s, state, me, stats, choose, check };
   const p = me.pending[0];
 
+  // While the fights replay, the bar shows the HP from before them, not their outcome.
+  const before = watching ? fights.find(f => f.fighters.includes(me.characterId)) : undefined;
+  const hpBefore = (before?.setup.sides[0][before.fighters.indexOf(me.characterId)] as PlayerSpec | undefined)?.start?.hp;
+
   return (
     <>
-      <RunBar s={s} run={run} state={state} me={me} stats={stats} />
+      <RunBar s={s} run={run} state={state} me={me} stats={stats} hpBefore={hpBefore} />
       {watching && fights.length ? (
         <Replay s={s} run={run} fights={fights} onClose={() => {
           setWatched(key);
@@ -265,10 +270,10 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
 }
 
 /** The run's state at a glance: floor, tier, mutation, HP, Motes, and leaving. */
-function RunBar({ s, run, state, me, stats }: { s: Snapshot; run: RiftRun; state: RunState; me: MemberState; stats: CombatStats }) {
+function RunBar({ s, run, state, me, stats, hpBefore }: { s: Snapshot; run: RiftRun; state: RunState; me: MemberState; stats: CombatStats; hpBefore?: number }) {
   const mutation = MUTATIONS_BY_ID.get(run.mutation);
   const [leaving, setLeaving] = useState(false);
-  const hp = Math.max(0, Math.min(me.hp, stats.maxHp));
+  const hp = Math.max(0, Math.min(hpBefore ?? me.hp, stats.maxHp));
   return (
     <section className="card rift-bar">
       <div className="rift-bar-top">
@@ -307,11 +312,18 @@ function FloorMapCard({ s, state, me }: { s: Snapshot; state: RunState; me: Memb
   const map = useMemo(() => floorMap(state.seed, state.floor), [state.seed, state.floor]);
   const open = reachable(state);
   const atBoss = state.row === ROWS - 1;
+  const wrap = useRef<HTMLDivElement>(null);
+  const nodes = useRef(new Map<string, HTMLButtonElement>());
+  const links = useMapLinks(wrap, nodes, map, state);
   return (
     <section className="card rift-map-card">
       <CardHead title={`Floor ${state.floor}`}>
         <span className="muted">{atBoss ? 'Pick the floor boss' : state.row < 0 ? 'Pick where to start' : 'Pick the next node'}</span>
       </CardHead>
+      <div className="rift-map-wrap" ref={wrap}>
+      <svg className="rift-links" aria-hidden="true">
+        {links.map((l, i) => <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} className={l.cls} />)}
+      </svg>
       <ol className="rift-map">
         {map.rows.map((row, r) => (
           <li key={r} className="rift-row">
@@ -326,7 +338,8 @@ function FloorMapCard({ s, state, me }: { s: Snapshot; state: RunState; me: Memb
                 ...(node.event ? [EVENTS_BY_ID.get(node.event)?.name ?? ''] : []),
               ].join('\n');
               return (
-                <button key={c} className={`rift-node ${node.kind}${here ? ' here' : ''}${next ? ' next' : ''}${past ? ' past' : ''}`} title={title}
+                <button key={c} ref={el => { if (el) nodes.current.set(`${r}.${c}`, el); else nodes.current.delete(`${r}.${c}`); }}
+                  className={`rift-node ${node.kind}${here ? ' here' : ''}${next ? ' next' : ''}${past ? ' past' : ''}`} title={title}
                   disabled={!next} onClick={() => call(conn.reducers.riftMove({ node: c }))}>
                   <Icon name={KIND_ICON[node.kind]} />
                   <span>{node.kind === 'event' && next ? EVENTS_BY_ID.get(node.event!)?.name : KIND_LABEL[node.kind]}</span>
@@ -336,10 +349,39 @@ function FloorMapCard({ s, state, me }: { s: Snapshot; state: RunState; me: Memb
           </li>
         ))}
       </ol>
+      </div>
       <Bosses s={s} state={state} me={me} open={atBoss} />
       <p className="muted hint">Fights: 1–3 enemies back to back on one HP bar, {Math.round(NODE_TIME_LIMIT / 60)}:00 for the node. HP carries over; no rest nodes.</p>
     </section>
   );
+}
+
+interface MapLink { x1: number; y1: number; x2: number; y2: number; cls: string }
+
+/** The map's links, measured from the node buttons: from a node's bottom to the top of each node it leads to. */
+function useMapLinks(wrap: RefObject<HTMLDivElement | null>, nodes: RefObject<Map<string, HTMLButtonElement>>, map: FloorMap, state: RunState): MapLink[] {
+  const [links, setLinks] = useState<MapLink[]>([]);
+  useLayoutEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const measure = () => {
+      const box = el.getBoundingClientRect();
+      const out: MapLink[] = [];
+      map.rows.forEach((row, r) => row.forEach((node, c) => node.links.forEach(j => {
+        const a = nodes.current.get(`${r}.${c}`)?.getBoundingClientRect();
+        const b = nodes.current.get(`${r + 1}.${j}`)?.getBoundingClientRect();
+        if (!a || !b) return;
+        const cls = r === state.row && c === state.col ? 'open' : r < state.row ? 'past' : '';
+        out.push({ x1: a.left + a.width / 2 - box.left, y1: a.bottom - box.top, x2: b.left + b.width / 2 - box.left, y2: b.top - box.top, cls });
+      })));
+      setLinks(out);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [wrap, nodes, map, state.row, state.col]);
+  return links;
 }
 
 function Bosses({ s, state, me, open }: { s: Snapshot; state: RunState; me: MemberState; open: boolean }) {

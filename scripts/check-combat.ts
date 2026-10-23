@@ -574,6 +574,7 @@ function withEffect(it: GearItem, effect: number): GearItem {
     check('Bloodbound: no lifesteal cap, no regen', near(bb.lifesteal, 0.2, 1e-12) && bb.regen === 0);
     check('… with Frozen Blood, lifesteal still does nothing', rift([], {}, [RiftEffect.Bloodbound, Effect.FrozenBlood], ls).lifesteal === 0);
     check('Vampiric (Trophy): heals 50% past the cap', near(rift([], {}, [trophyId(EliteAffix.Vampiric)], ls).lifesteal, 0.6, 1e-12));
+    check('… but not with Frozen Blood', rift([], {}, [trophyId(EliteAffix.Vampiric), Effect.FrozenBlood], ls).lifesteal === 0);
     check('Hexed: heals −30%', near(rift([], { curses: [Curse.Hexed] }, [], ls).lifesteal, 0.07, 1e-12));
   }
   check('Glass Heart: damage × 2, max HP × 0.5', rel(hit(withFx(RiftEffect.GlassHeart)), hit(plain), 2) && rel(withFx(RiftEffect.GlassHeart).maxHp, plain.maxHp, 0.5));

@@ -407,7 +407,7 @@ and on top of that it can carry any of five **headlines**, each rolled **indepen
   it's breaking the game's usual limits.
 - **Bases:** any zone base of the run's tier. No Rift-only bases (yet).
 - **Trophies**, the Elite affixes on your side: **Vampiric** (you heal 50% of the damage
-  you deal, past the lifesteal cap), **Warded Shell** (against each enemy's damage type you
+  you deal, past the lifesteal cap; Frozen Blood still stops it), **Warded Shell** (against each enemy's damage type you
   defend with the higher of your armor and resistance, like Juggernaut and Spellward),
   **Swift** (50% faster, hits 25% weaker), **Thorned** (reflect 10%
   of damage taken, 30% less max HP), **Unyielding** (regenerate 1.5% max HP per second),
@@ -694,6 +694,7 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **Boons:** duplicates upgrade rarity; offers have three fixed slots (main theme, another held theme, any); stat-gated boons; a keystone per theme; seven themes (Mist and Aegis added for evasion and block), 43 boons. Glimmerguard converts crit to evasion after boons.
 - **Rewards:** a floor pays when its boss falls.
 - **Co-op:** the party moves on once every online member is ready; event fights are personal; a downed member returns at 50% of max HP after the floor boss.
+- **Rulings (review, 2026-10-23):** the R2 and R3 readings in rift-plan.md stand, with one change: Frozen Blood stops the Vampiric Trophy too (no lifesteal at all). A node that runs out of time ends the run, like a death.
 
 ## Open questions
 

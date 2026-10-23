@@ -343,7 +343,8 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs, rift?: Rif
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse) + (moonshadow ? armorTotal + resistanceTotal : 0) + parryRating,
     accuracy,
     // Bloodthirst, Leech and the Blood set raise the lifesteal cap; Bloodbound removes it. Vampiric (a Trophy) heals past it.
-    lifesteal: (frozenBlood ? 0 : Math.max(0, bloodbound ? lifesteal : Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst) + boon(Boon.Leech) + (set(Theme.Blood, 3) ? SET.blood3 : 0), lifesteal)) +
+    // Frozen Blood stops all of it, Vampiric included.
+    lifesteal: frozenBlood ? 0 : (Math.max(0, bloodbound ? lifesteal : Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst) + boon(Boon.Leech) + (set(Theme.Blood, 3) ? SET.blood3 : 0), lifesteal)) +
       (has(trophyId(EliteAffix.Vampiric)) ? TROPHY_NUM.vampiric : 0)) * hexed,
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
     // At worst −100%: nothing found, never negative gold or XP. A buff multiplies the total.

@@ -75,11 +75,9 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 - **What Riftstone crafts.** Not needed until after launch.
 - **The 9 new events** are written in the design (Thane's Vault … Runecarver, 20 in all),
   not yet in `data/rift.ts` `EVENTS`. Add them with R3's event outcomes.
-- **Two-handed weapons** (design, "The Rift loadout"): wearing one discards the off-hand; an
-  off-hand can be worn only with a one-handed weapon in the weapon slot. For R3's `take`.
-- **The Aegis 5-set:** R0 here says it reflects the whole hit (what `data/rift.ts` has); the
-  other review (2026-10-22, in the design) says only what the block stopped. To settle
-  before R2 builds it.
+- **Two-handed weapons** (design, "The Rift loadout"): a two-handed weapon discards the
+  weapon and the off-hand; a one-handed weapon discards a two-handed one; an off-hand can
+  be worn only with a one-handed weapon equipped. The card warns. For R3's `take`.
 - **Riftstone icon** (`m-riftstone`): needed by R5.
 
 **R2 next.** Start with the stat build (`combatStats(level, gear, buffs, rift?)`), then block

@@ -108,10 +108,14 @@ The run's own 9 slots. It starts as the locked copy of your loadout. Kept simple
 - **Wearing replaces for good.** The item it replaces, a locked copy or an earlier
   Ethereal, is discarded for the rest of the run. Locked items can't be changed, only
   replaced. (Your real items are never touched: the copies are what's discarded.)
-- **Two-handed weapons** fill the weapon and off-hand slots. Wearing one discards your
-  off-hand too, and an off-hand item can be worn only while a one-handed weapon is in the
-  weapon slot (otherwise it can only be discarded). The wear-or-discard card warns first,
-  e.g. "Also discards your Kite Shield".
+- **Two-handed weapons** take both hands:
+  - wearing a two-handed weapon discards your weapon and your off-hand;
+  - wearing a one-handed weapon discards a two-handed one;
+  - an off-hand can be worn only while a one-handed weapon is in the weapon slot
+    (otherwise it can only be discarded).
+
+  The wear-or-discard card warns first, e.g. "Also discards your Kite Shield", or "Needs a
+  one-handed weapon".
 - **Boons** sit next to the loadout. They aren't gear and take no slot.
 
 ### Floor map
@@ -265,7 +269,7 @@ stronger one at **5**.
 | **Blood** | Sustain, HP as a resource | Lifesteal cap +5% / kills heal 8% max HP |
 | **Storm** | Speed, crits | +15% attack speed / crits chain 30% of the hit to the next swing |
 | **Mist** | Evasion | Evade chance +6% / every evade makes your next attack crit (a Glimmerguard wearer, who already gets that, gets +50% crit damage on those attacks instead) |
-| **Aegis** | Block | Block chance +8% / each block reflects 50% of what it stopped |
+| **Aegis** | Block | Block chance +8% / each block reflects 50% of the whole hit (before the block shrinks it) |
 | **Fortune** | Motes, shops, events | Shops −20% / one free Rare boon per floor at its first shop |
 
 ### Roster (43)
@@ -454,7 +458,7 @@ the Fury 5-set multiply on the first hit. Only a few cases need a rule:
 | **Overrides.** Voidheart with Spellblade or Moonlight (all damage becomes magic, so the swap or conversion does nothing more; Moonlight keeps its double hit). Bloodbound with Frozen Blood (lifesteal still does nothing) or with Bloodthirst and the Blood 3-set (no cap left to raise) | Allowed. The wear-or-discard card **warns** first, e.g. "Overrides your Spellblade", since wearing is for the rest of the run |
 | **Same trigger.** Phoenix Plume and Second Wind both catch a killing blow | Second Wind goes first; the Plume only burns once Second Wind is spent for the floor |
 | **Order of damage changes** | Type changes apply in a fixed order: Spellblade, then Moonlight, then Voidheart (the last one wins) |
-| **Reflects.** Mirror Mail, Thornshell, the Aegis 5-set | One rule (battle.ts): a reflect is a share of what reached your HP (after your defenses and the shield), dealt through the attacker's mitigation; the Aegis 5-set reflects only what the block stopped. Reflect adds up with no cap |
+| **Reflects.** Mirror Mail, Thornshell, the Aegis 5-set | One rule (battle.ts): a reflect is a share of what reached your HP (after your defenses and the shield), dealt through the attacker's mitigation; the Aegis 5-set reflects 50% of the whole hit, before the block shrinks it. Reflect adds up with no cap |
 
 ## Events
 
@@ -686,7 +690,7 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **Ethereal items:** one grade (Radiant dropped); 3 affixes (tier ≥ T − 2) plus five independent headlines, rolled independently: rift effect 30%, theme mark 20%, growth 15% (uncapped), Trophy 10% (guaranteed on Elite drops), Echo 6% (guaranteed on boss drops; party-only effects allowed).
 - **Balance isn't a goal:** effects stay unless buggy or unintuitive; clashes warn, never block.
 - **Co-op later, never blocked:** solo at launch, but the schema, sim and reducers are built for parties ("Later: co-op").
-- **Rulings (review, 2026-10-22):** Leech raises the cap; Warded Shell Trophy uses the higher of armor and resistance; Wildcard doesn't count toward the main theme; Static's shock lands on a miss; one reflect rule, the Aegis 5-set reflecting what the block stopped; Rift Anchor boosts affixes only; Thief's Glove stays a Motes effect; the tier picker stays though T5 is the only tier at launch; Riftstone is paid before it has a use; one-version boons (Second Look, keystones, Wildcard) and Epics aren't offered again once held; First Blood stays (a stronger Ambush: per enemy, no attack speed cost); the 20 launch events are written; two-handed weapons take the off-hand slot; raid uniques can be Echoes (rolled ones, and the Rift Heart's).
+- **Rulings (review, 2026-10-22):** Leech raises the cap; Warded Shell Trophy uses the higher of armor and resistance; Wildcard doesn't count toward the main theme; Static's shock lands on a miss; one reflect rule, the Aegis 5-set reflecting the whole hit; Rift Anchor boosts affixes only; Thief's Glove stays a Motes effect; the tier picker stays though T5 is the only tier at launch; Riftstone is paid before it has a use; one-version boons (Second Look, keystones, Wildcard) and Epics aren't offered again once held; First Blood stays (a stronger Ambush: per enemy, no attack speed cost); the 20 launch events are written; two-handed weapons take both hands (an off-hand needs a one-handed weapon); raid uniques can be Echoes (rolled ones, and the Rift Heart's).
 - **Boons:** duplicates upgrade rarity; offers have three fixed slots (main theme, another held theme, any); stat-gated boons; a keystone per theme; seven themes (Mist and Aegis added for evasion and block), 43 boons. Glimmerguard converts crit to evasion after boons.
 - **Rewards:** a floor pays when its boss falls.
 - **Co-op:** the party moves on once every online member is ready; event fights are personal; a downed member returns at 50% of max HP after the floor boss.

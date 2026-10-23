@@ -41,8 +41,8 @@
   --r-legendary: #ff8c42;
   --r-unique: #ff5fb8;
   --r-anomaly: #f4f6ff;
-  /* Ethereal (the Shifting Rift): a pale teal, away from Rare, Legendary and Unique; its names shift. */
-  --r-ethereal: #7fe8d8;
+  /* Ethereal (the Shifting Rift): a pale spectral green, lighter than --ok; its cards drift with mist. */
+  --r-ethereal: #8dffb4;
   color-scheme: dark;
 }
 
@@ -85,7 +85,7 @@
   --r-legendary: #e0661a;
   --r-unique: #d02f88;
   --r-anomaly: #3d4357;
-  --r-ethereal: #138f80;
+  --r-ethereal: #0f9a52;
   color-scheme: light;
 }
 
@@ -5022,8 +5022,45 @@ textarea.mail-input {
   0%, 100% { filter: hue-rotate(0deg); }
   50% { filter: hue-rotate(-28deg); }
 }
+/* An Ethereal card: a breathing glow and a slow mist drifting across it. */
+.item-card.r-ethereal {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  animation: ethereal-breathe 5s ease-in-out infinite;
+}
+.item-card.r-ethereal::after {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(closest-side at 30% 40%, color-mix(in srgb, var(--r-ethereal) 30%, transparent), transparent),
+    radial-gradient(closest-side at 70% 65%, color-mix(in srgb, var(--r-ethereal) 22%, transparent), transparent),
+    radial-gradient(closest-side at 50% 20%, color-mix(in srgb, #ffffff 7%, transparent), transparent);
+  filter: blur(6px);
+  animation: ethereal-mist 11s ease-in-out infinite alternate;
+}
+@keyframes ethereal-mist {
+  0% { transform: translate(-8%, 4%) scale(1); opacity: 0.55; }
+  50% { opacity: 0.9; }
+  100% { transform: translate(8%, -5%) scale(1.12); opacity: 0.6; }
+}
+@keyframes ethereal-breathe {
+  0%, 100% { box-shadow: var(--shadow), 0 0 0 0 transparent; }
+  50% { box-shadow: var(--shadow), 0 0 14px -2px color-mix(in srgb, var(--r-ethereal) 45%, transparent); }
+}
+.item-legendary.ethereal {
+  border-color: color-mix(in srgb, var(--r-ethereal) 45%, transparent);
+  background: color-mix(in srgb, var(--r-ethereal) 10%, transparent);
+}
+.item-legendary.ethereal strong { color: var(--r-ethereal); }
+.item-legendary .ethereal-sub { padding-left: 8px; border-left: 2px solid color-mix(in srgb, var(--r-ethereal) 35%, transparent); }
+.item-legendary .ethereal-sub strong { display: inline; }
+.rift-shop-headlines { display: grid; gap: 4px; margin-top: 4px; }
 @media (prefers-reduced-motion: reduce) {
-  .r-ethereal .item-name { animation: none; }
+  .r-ethereal .item-name, .item-card.r-ethereal, .item-card.r-ethereal::after { animation: none; }
 }
 .rift-start, .rift-bar, .rift-map-card, .rift-choice, .rift-history, .rift-codex { margin-bottom: 14px; }
 .rift-mutation { color: var(--r-ethereal); border-color: color-mix(in srgb, var(--r-ethereal) 45%, var(--border)); }
@@ -5098,12 +5135,6 @@ button.rift-card:hover { border-color: var(--accent); }
 .rift-curses { margin-top: 8px; }
 .rift-themes { flex-wrap: wrap; }
 .rift-item { display: grid; gap: 6px; }
-.rift-headlines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
-.rift-headlines li { padding: 4px 6px; border-radius: 6px; background: color-mix(in srgb, var(--r-ethereal) 9%, var(--surface-3)); }
-.rift-headlines strong { color: var(--r-ethereal); margin-right: 4px; }
-.rift-echo-effects { list-style: none; margin: 4px 0 0; padding: 0 0 0 8px; display: grid; gap: 2px; border-left: 2px solid color-mix(in srgb, var(--r-ethereal) 35%, transparent); }
-.rift-headlines .rift-echo-effects li { padding: 0; background: none; box-shadow: none; }
-.rift-headlines.n3 li, .rift-headlines.n4 li, .rift-headlines.n5 li { box-shadow: 0 0 0 1px color-mix(in srgb, var(--r-ethereal) 40%, transparent) inset; }
 .rift-wear { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .rift-wear-side { display: grid; gap: 8px; align-content: start; }
 .rift-delta { font-size: 13px; border-collapse: collapse; }

@@ -1,5 +1,6 @@
 // Item text and cards from `item` rows (names, stat lines, legendary effects).
 
+import type { ReactNode } from 'react';
 import type { Item } from '../module_bindings/types';
 import { base, baseType } from '../../spacetimedb/src/data/bases';
 import { EFFECTS_BY_ID, LEGENDARIES_BY_ID } from '../../spacetimedb/src/data/legendary';
@@ -103,7 +104,14 @@ function weaponLines(it: Item, w: NonNullable<Item['weapon']>): string[] {
   ];
 }
 
-export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /** Extra line under the header, e.g. "In Farm". */ note?: string }) {
+export function ItemCard({ it, compact, note, extra }: {
+  it: Item;
+  compact?: boolean;
+  /** Extra line under the header, e.g. "In Farm". */
+  note?: string;
+  /** More effect blocks after the legendary and unique ones (an Ethereal item's headlines). */
+  extra?: ReactNode;
+}) {
   const r = rarityCls(it.rarity.tag);
   const leg = it.legendary && EFFECTS_BY_ID.get(it.legendary.effect);
   // Tempering raises the base part: the weapon's damage and heal, and the implicits.
@@ -175,6 +183,7 @@ export function ItemCard({ it, compact, note }: { it: Item; compact?: boolean; /
           </div>
         );
       })}
+      {extra}
       {it.affixes.length > 0 && (
         <div className="item-affixes">
           {it.affixes.map((a, i) => (

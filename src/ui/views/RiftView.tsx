@@ -782,41 +782,46 @@ function BoonOffer({ ctx, choices }: { ctx: ChoiceCtx; choices: BoonChoice[] }) 
 function RiftItemCard({ it }: { it: RiftItem }) {
   return (
     <div className="rift-item">
-      <ItemCard it={asItem(it)!} compact note={it.headlines ? 'Rift only' : 'Locked copy'} />
-      {it.headlines && <HeadlineList h={it.headlines} />}
+      <ItemCard it={asItem(it)!} compact note={it.headlines ? 'Rift only' : 'Locked copy'} extra={it.headlines && <HeadlineBlocks h={it.headlines} />} />
     </div>
   );
 }
 
-function HeadlineList({ h }: { h: Headlines }) {
-  const lines: [string, string, [string, string][]?][] = [];
+/** An Ethereal item's headlines, as effect blocks inside its card (like a legendary's). */
+function HeadlineBlocks({ h }: { h: Headlines }) {
+  const lines: { name: string; text: string; sub?: { name: string; text: string }[] }[] = [];
   if (h.riftEffect) {
     const e = RIFT_EFFECTS_BY_ID.get(h.riftEffect);
-    if (e) lines.push([e.name, e.text]);
+    if (e) lines.push({ name: e.name, text: e.text });
   }
-  if (h.mark) lines.push([`${themeName(h.mark)}-marked`, `Counts as a ${themeName(h.mark)} boon for set bonuses`]);
-  if (h.growth) lines.push(['Growth', 'Each floor boss cleared while worn raises its affixes one tier']);
+  if (h.mark) lines.push({ name: `${themeName(h.mark)}-marked`, text: `Counts as a ${themeName(h.mark)} boon for set bonuses` });
+  if (h.growth) lines.push({ name: 'Growth', text: 'Each floor boss cleared while worn raises its affixes one tier' });
   for (const t of h.trophies ?? []) {
     const def = TROPHIES_BY_ID.get(t);
-    if (def) lines.push([`${def.name} Trophy`, def.text]);
+    if (def) lines.push({ name: `${def.name} Trophy`, text: def.text });
   }
   if (h.echo) {
     const u = UNIQUES_BY_ID.get(h.echo);
-    if (u) lines.push([`Echo of ${u.name}`, 'Its effects, whatever the slot:', u.effects.flatMap(id => {
-      const e = EFFECTS_BY_ID.get(id);
-      return e ? [[e.name, e.text] as [string, string]] : [];
-    })]);
+    if (u) {
+      lines.push({
+        name: `Echo of ${u.name}`, text: 'Its effects, whatever the slot:',
+        sub: u.effects.flatMap(id => {
+          const e = EFFECTS_BY_ID.get(id);
+          return e ? [{ name: e.name, text: e.text }] : [];
+        }),
+      });
+    }
   }
-  if (!lines.length) return null;
   return (
-    <ul className={`rift-headlines n${headlineCount(h)}`}>
-      {lines.map(([name, text, sub]) => (
-        <li key={name}>
-          <strong>{name}</strong> {text}
-          {sub && sub.length > 0 && <ul className="rift-echo-effects">{sub.map(([n, t]) => <li key={n}><strong>{n}</strong> {t}</li>)}</ul>}
-        </li>
+    <>
+      {lines.map(l => (
+        <div key={l.name} className="item-legendary ethereal">
+          <strong><Icon name="sparkles" />{l.name}</strong>
+          <span>{l.text}</span>
+          {l.sub?.map(x => <span key={x.name} className="ethereal-sub"><strong>{x.name}</strong> {x.text}</span>)}
+        </div>
       ))}
-    </ul>
+    </>
   );
 }
 
@@ -970,7 +975,7 @@ function Shop({ ctx, p }: { ctx: ChoiceCtx; p: Extract<Pending, { kind: 'shop' }
         {p.stock.map((o, i) => (
           <li key={i} className={p.sold[i] ? 'sold' : ''}>
             <span className="rift-price">{p.sold[i] ? 'Sold' : o.price ? `${o.price}` : 'Free'}</span>
-            <span className="rift-offer">{offerText(o)}{o.kind === 'item' && <HeadlineList h={o.item.headlines} />}</span>
+            <span className="rift-offer">{offerText(o)}{o.kind === 'item' && <span className="rift-shop-headlines"><HeadlineBlocks h={o.item.headlines} /></span>}</span>
             {!p.sold[i] && <TargetedChoice ctx={ctx} choice={i} label="Buy" />}
           </li>
         ))}

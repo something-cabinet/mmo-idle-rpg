@@ -369,6 +369,8 @@ export interface OfferContext {
   /** Stats the build has from gear; boons that grant one count by themselves. */
   has?: Partial<Record<BoonGate, boolean>>;
   mutation?: number;
+  /** Every slot rolls at least this rarity (an Elite's offer: Rare or better). */
+  minRarity?: BoonRarity;
 }
 
 /** Boons (distinct, Wildcard aside) plus marks per theme. */
@@ -445,7 +447,7 @@ export function boonOffer(rng: Rng, ctx: OfferContext): BoonChoice[] {
   const taken = new Set<number>();
   const out: BoonChoice[] = [];
   slots.forEach((theme, k) => {
-    const rarity = ctx.mutation === Mutation.WildMagic && k === 2 ? 2 : rollRarity(rng, ctx.floor);
+    const rarity = ctx.mutation === Mutation.WildMagic && k === 2 ? 2 : (Math.max(ctx.minRarity ?? 0, rollRarity(rng, ctx.floor)) as BoonRarity);
     let choices = slotChoices(ctx, theme, rarity, taken);
     if (!choices.length && theme !== undefined) choices = slotChoices(ctx, undefined, rarity, taken);
     if (!choices.length) return;
@@ -455,6 +457,25 @@ export function boonOffer(rng: Rng, ctx: OfferContext): BoonChoice[] {
   });
   return out;
 }
+
+/**
+ * One boon at `rarity` outside an offer (a gift, an event's, a free one): a new one of `theme`
+ * if any fits, else an upgrade of a held one, then the same for any theme; undefined when
+ * nothing is left to give.
+ */
+export function rollBoon(rng: Rng, ctx: OfferContext, rarity: BoonRarity, theme?: ThemeId): BoonChoice | undefined {
+  for (const t of theme === undefined ? [undefined] : [theme, undefined]) {
+    const fresh = slotChoices(ctx, t, rarity, new Set(), false);
+    if (fresh.length) return pick(rng, fresh);
+    const up = slotChoices(ctx, t, rarity, new Set());
+    if (up.length) return pick(rng, up);
+  }
+  return undefined;
+}
+
+/** New boons (none held) that can be offered at `rarity`, leaving out `taken` (Shrine of Change, Broken Mirror). */
+export const freshBoons = (ctx: OfferContext, rarity: BoonRarity, taken: ReadonlySet<number> = new Set()): BoonChoice[] =>
+  slotChoices(ctx, undefined, rarity, taken, false);
 
 // ---------------------------------------------------------------- Ethereal items
 
@@ -471,7 +492,8 @@ export interface Headlines {
   echo?: number;
 }
 
-export type EtherealItem = NewItem & { headlines: Headlines };
+/** An Ethereal item; `guaranteed` is the headline its source guaranteed (a reforge keeps it). */
+export type EtherealItem = NewItem & { headlines: Headlines; guaranteed?: 'trophy' | 'echo' };
 
 export interface EtherealOptions {
   /** An Elite's drop: its affixes as Trophies (guaranteed). */
@@ -480,6 +502,8 @@ export interface EtherealOptions {
   echo?: number | 'any';
   /** A Shard of Rift-stuff: one headline at random is guaranteed. */
   oneHeadline?: boolean;
+  /** At least this many distinct headlines, at random (a Cursed Chest, a Rift Tear). */
+  atLeast?: number;
   /** × every headline's chance (Treasure Sense). */
   mult?: number;
   baseId?: number;
@@ -494,8 +518,8 @@ export const echoPool = (tier?: number) => {
 /** Each headline rolled on its own (HEADLINE_CHANCE), the source's one guaranteed. */
 export function rollHeadlines(rng: Rng, o: EtherealOptions = {}): Headlines {
   const mult = o.mult ?? 1;
-  const forced: HeadlineKind | undefined = o.oneHeadline ? pick(rng, HEADLINE_KINDS) : undefined;
-  const roll = (k: HeadlineKind) => forced === k || rng() < Math.min(1, HEADLINE_CHANCE[k] * mult);
+  const forced = new Set<HeadlineKind>(o.oneHeadline ? [pick(rng, HEADLINE_KINDS)] : o.atLeast ? shuffle(rng, [...HEADLINE_KINDS]).slice(0, o.atLeast) : []);
+  const roll = (k: HeadlineKind) => forced.has(k) || rng() < Math.min(1, HEADLINE_CHANCE[k] * mult);
   const h: Headlines = {};
   if (roll('riftEffect')) h.riftEffect = pick(rng, RIFT_EFFECTS).id;
   if (roll('mark')) h.mark = pick(rng, THEMES).id;
@@ -516,7 +540,8 @@ export function rollEthereal(rng: Rng, tier: number, o: EtherealOptions = {}): E
   const item = makeItem(rng, o.baseId ?? pick(rng, ZONE_BASES).id, tier, 'Ethereal');
   const lo = Math.max(1, tier - AFFIX_TIER_SPAN);
   item.affixes = Array.from({ length: ETHEREAL_AFFIXES }, () => rollAffix(rng, tier, lo + Math.floor(rng() * (tier - lo + 1))));
-  return { ...item, headlines: rollHeadlines(rng, o) };
+  const guaranteed = o.eliteAffixes?.length ? 'trophy' : o.echo !== undefined ? 'echo' : undefined;
+  return { ...item, headlines: rollHeadlines(rng, o), ...(guaranteed && { guaranteed }) };
 }
 
 // ---------------------------------------------------------------- shops

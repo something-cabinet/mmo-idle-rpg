@@ -13,8 +13,8 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 | R0 | Decisions | **Done** |
 | R1 | Data and generation | **Done** (`npm run test:rift` passes, with every other check) |
 | R2 | Engine hooks | **Done** (`npm run test:combat` has a check per hook; old fights unchanged) |
-| R3 | A node, a run, the bots | **Next** |
-| R4 | Schema and solo reducers | — |
+| R3 | A node, a run, the bots | **Done** (`npm run test:rift` plays bot runs; floor scaling × 1.6 to review) |
+| R4 | Schema and solo reducers | **Next** |
 | R5 | Client, solo | — |
 | R6 | Co-op | — |
 | R7 | After launch | — |
@@ -72,11 +72,6 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 **Open questions:**
 
 - **What Riftstone crafts.** Not needed until after launch.
-- **The 9 new events** are written in the design (Thane's Vault … Runecarver, 20 in all),
-  not yet in `data/rift.ts` `EVENTS`. Add them with R3's event outcomes.
-- **Two-handed weapons** (design, "The Rift loadout"): a two-handed weapon discards the
-  weapon and the off-hand; a one-handed weapon discards a two-handed one; an off-hand can
-  be worn only with a one-handed weapon equipped. The card warns. For R3's `take`.
 - **Riftstone icon** (`m-riftstone`): needed by R5.
 
 **What R2 left in the code** (every check passes; a snapshot of ~300 seeded zone, Deep, raid
@@ -124,7 +119,52 @@ Ethereal item's `effects` (the stat build reads them like a unique's); marks go 
 - **Blood Moon's** drain adds to Vampiric's. **Iron Week** applies before Elite affixes, so
   a Warded Shell Elite still picks its profile.
 
-**R3 next:** `memberStats`, `simulateNode`, `apply` and the bots (below).
+**What R3 left in the code:**
+
+- `spacetimedb/src/riftRun.ts` (the run, apart from rift.ts's generation): `RunState` /
+  `MemberState` / `Pending`, `startRun`, `apply(state, action, record?)` returning the new
+  state, the battles it played (`RiftFight`: setup + result, for the replay) and a cleared
+  floor. Actions: `move`, `boss` (leader), `choose` (a member's first pending choice: gift,
+  boon, wear or discard, Vault item, shop buy / reroll / leave, event choice; `target` is a
+  slot, boon or curse, `theme` a theme), `ready`, `leave`. Refusals throw `RiftError`.
+  Also `memberStats`, `nodeSetup`, `wearPlan`, `unravelled`, `reachable`, `raiseAffixes`.
+- All 20 events, with outcomes (data/rift.ts `EVENTS`, `EVENT_NUM`).
+- `scripts/rift-bots.ts`: the reference player, a random and a greedy bot; `test:rift`
+  checks the rules above and the bots' clear rates.
+- Tuned: `RIFT_HP` 0.85, `RIFT_DPS` 0.15, and `FLOOR_STEP` 1.6 (was 1.25; see below).
+
+At T5 (200 runs each): random picks clear floor 5 in 14% of runs, 71% end on floors 2–4, 4%
+on floor 1; the greedy builder clears 45%. A full run is ~23 fights; a node settles in
+~0.4 ms. T6–T7 come out harder for the same reference player (greedy 34% / 26%).
+
+**Decisions taken in R3** (for the user to review):
+
+- **Floor scaling × 1.6, not × 1.25** (a "Decided" number). With × 1.25 no `RIFT_HP` /
+  `RIFT_DPS` hits the target: the build outgrows the floors, so runs die on floor 1 or clear
+  everything (random 25%+ full clears and ~15–20% floor-1 deaths; greedy ~70%).
+- **A node that runs out of time ends the run** (`end: 'timeout'`), like a death. ~15% of
+  bot runs end this way, mostly low-damage builds against Unyielding Elites and bosses.
+- **Parties are much easier**: a greedy + random duo clears 76%, a party of 4 92%, with
+  PARTY_HP 1.8 / 2.5 / 3.2. Left for R6 to tune.
+- **Max HP gained comes with as much HP** (a Thick Skin pick heals its share); max HP lost
+  trims HP.
+- **Lucky Coin** raises every Mote earned (events too); Thief's Glove and Bargain Bin only
+  fights' (bosses included). Gambler's winnings aren't "earned".
+- **Kills and wins:** Bloodrush counts fight nodes won (Elites too). Afterglow heals after
+  every fight node won. Bosses pay Motes but no boon pick.
+- **Event specifics:** Your Reflection duels your build from your current HP, and a win costs
+  nothing. The Goblin pays 2 Motes a hit. The Wandering Smith rerolls a random affix. Shrine
+  of Change keeps a boon it can't replace. A Lurking Echo fight lost to time gives nothing.
+  Curses never repeat.
+- **Unravel** picks from your boons when the Rift Heart is fought (`unravelled`, also for
+  the client to show it first).
+- **Phases:** the run has only `map` and `ended`; the Threshold is the gift choice waiting.
+  R4's `phase` column can derive `threshold` and `boss` from the state.
+
+**Open for later:** the zone bosses' own mechanics on their echoes (the design's "its own
+mechanic"); today a boss echo has its shape and an Elite affix only.
+
+**R4 next:** schema and solo reducers (below), around `apply`.
 
 ## Shape
 
@@ -223,7 +263,7 @@ compare runs by seed, so they catch any drift.
 - **Checks** in `check-combat`: one targeted check per hook (like the existing Moonlight and
   Parry checks), and no change at all without rift effects.
 
-## R3: a node, a run, the bots
+## R3: a node, a run, the bots — done, 2026-10-23
 
 - `memberStats(member)`: locked copies + worn Ethereal items + boons (minus an Unravelled one)
   + curses + mutation, at the locked level, with no consumables (`renewal` 0).

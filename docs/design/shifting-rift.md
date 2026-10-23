@@ -504,7 +504,7 @@ run can face an echo of a T1 Bog Wisp with T5 numbers.
 HP(f, slot)  = avgHP(T)  × floorMult(f) × kind.hp  × slot.hp  × RIFT_HP
 DPS(f, slot) = avgDPS(T) × floorMult(f) × kind.dps × slot.dps × RIFT_DPS
 level        = 10 × T + 2 × (f − 1)                  // T5 run: 50 → 58
-floorMult    = 1.25^(f − 1) = 1, 1.25, 1.56, 1.95, 2.44 // floors 1–5
+floorMult    = 1.6^(f − 1) = 1, 1.6, 2.56, 4.1, 6.55    // floors 1–5 (tuned in test:rift)
 ```
 
 `avgHP(T)` and `avgDPS(T)` are the zone tier's average enemy (zones.md), the T5 step
@@ -513,7 +513,7 @@ come along as they are). `RIFT_HP` and `RIFT_DPS` account for HP carrying over a
 tuned in `test:rift`.
 
 **`floorMult` scales HP and damage only.** Armor, resistance, accuracy and evasion stay at
-the run tier's values. Floor 1 is the tier as it is; each floor after has 25% more HP and
+the run tier's values. Floor 1 is the tier as it is; each floor after has 60% more HP and
 damage.
 
 | Slot | HP × | DPS × | Extra |
@@ -525,7 +525,7 @@ damage.
 | Final boss (5) | 7 | 1.7 | **The Rift Heart**, its own boss (below) |
 
 - **Why floors ramp at all:** the player gets stronger inside the run through boons and
-  Ethereal gear, so each floor is × 1.25 HP and damage. Floor 1 is the run tier as it is; floor 5 wants the
+  Ethereal gear, so each floor is × 1.6 HP and damage (the bots found × 1.25 too flat: builds outgrew it). Floor 1 is the run tier as it is; floor 5 wants the
   run's build. A run you play well is meant to end far stronger than it started.
 - **Target:** a reference player for tier T (random Rare+ tier-T gear) with *random* picks
   clears floors 1–2, usually dies on 3–4, and clears 5 maybe 1 time in 10. With
@@ -685,7 +685,7 @@ A run is many small decisions, so unlike a raid it's many reducer calls, all che
 - **No Scout odds.**
 - **Per run, not weekly:** only the mutation is weekly; maps, line-ups, events and offers roll per run.
 - **Threshold:** pick 1 of 3 starting gifts before node 1.
-- **Floor scaling:** enemy HP and damage × 1.25 per floor, floor 1 at × 1; other stats don't scale.
+- **Floor scaling:** enemy HP and damage × 1.6 per floor (× 1.25 at first; the `test:rift` bots found it too flat, 2026-10-23), floor 1 at × 1; other stats don't scale.
 - **Boss choice:** floors 1–4 offer 2 zone-boss echoes; floor 5 is always the Rift Heart.
 - **Gear:** wear or discard on the spot, no stash, no selling; wearing discards what was in the slot.
 - **Ethereal items:** one grade (Radiant dropped); 3 affixes (tier ≥ T − 2) plus five independent headlines, rolled independently: rift effect 30%, theme mark 20%, growth 15% (uncapped), Trophy 10% (guaranteed on Elite drops), Echo 6% (guaranteed on boss drops; party-only effects allowed).

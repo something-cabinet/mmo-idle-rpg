@@ -14,7 +14,12 @@ import {
   memberRng, nodeLineup, riftEnemy, riftWeek, rollEthereal, rollHeadlines, runRng, runSeed, shopStock, thresholdGifts, weekStartMicros,
   weeklyMutation, type HeldBoon, type OfferContext,
 } from '../spacetimedb/src/rift';
-import { seededRng } from '../spacetimedb/src/loot';
+import { makeItem, seededRng } from '../spacetimedb/src/loot';
+import { ZONE_BASES } from '../spacetimedb/src/data/bases';
+import { Stat, toStored } from '../spacetimedb/src/data/stats';
+import { EVENTS, MOTES, RiftEffect } from '../spacetimedb/src/data/rift';
+import { DISCARD, RiftError, apply, memberStats, startRun, wearPlan, type MemberState, type RunState } from '../spacetimedb/src/riftRun';
+import { playRun, referencePlayer, type Bot, type BotRun } from './rift-bots';
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -77,7 +82,7 @@ const pct = (x: number) => `${(100 * x).toFixed(1)}%`;
   const id = RIFT_ECHOES[0].enemy.id;
   const f1 = riftEnemy(5, 1, id, 'fight1');
   const f5 = riftEnemy(5, 5, id, 'fight1');
-  check('floor 5 is × 1.25^4 HP and DPS', near(f5.hp / f1.hp, floorMult(5), 1e-9) && near(f5.dps / f1.dps, 2.44140625, 1e-9));
+  check('floor 5 is × 1.6^4 HP and DPS', near(f5.hp / f1.hp, floorMult(5), 1e-9) && near(f5.dps / f1.dps, 1.6 ** 4, 1e-9));
   check('levels: a T5 run is 50 → 58', f1.level === 50 && f5.level === 58);
   check('armor and resistance follow the level, not the floor', near(f5.armor / f1.armor, 58 / 50, 1e-9));
   check('party HP: × 1 / 1.8 / 2.5 / 3.2, damage unchanged',
@@ -256,6 +261,136 @@ function hasBloodLeft(ctx: OfferContext): boolean {
   // depthReward moved onto farmingReward: same numbers as the old formula.
   const old = (d: number, tier4: number, g: number) => BigInt(Math.round(1200 * 2.5 * (2.9 ** (tier4 - 1) * g)));
   check('the Deep pays as before', depthReward(1).gold === old(1, 4, 1) && depthReward(150).gold === old(150, 5, 1.03 ** 49));
+}
+
+// ---------------------------------------------------------------- a run (riftRun.ts)
+
+{
+  const show = (s: RunState) => JSON.stringify(s, (_, v) => (typeof v === 'bigint' ? `${v}n` : v));
+  const ref = referencePlayer(5, 3);
+  const solo = () => startRun(99n, 5, 0, [{ characterId: 1n, ...ref }]);
+  const s0 = solo();
+  const m0 = s0.members[0];
+  check('a run starts at full HP with 3 gifts to pick', near(m0.hp, memberStats(s0, m0).maxHp, 1e-12) && m0.pending[0]?.kind === 'gifts' &&
+    (m0.pending[0] as { gifts: unknown[] }).gifts.length === 3);
+  const refused = (f: () => unknown, msg: RegExp) => {
+    try {
+      f();
+      return false;
+    } catch (e) {
+      return e instanceof RiftError && msg.test(e.message);
+    }
+  };
+  check('… and nobody moves before picking', refused(() => apply(s0, { type: 'move', node: 0 }), /Waiting/));
+  const purse = (s0.members[0].pending[0] as { gifts: { gift: number }[] }).gifts.findIndex(g => g.gift !== Gift.MarkedPath);
+  const s1 = apply(s0, { type: 'choose', member: 1n, choice: purse, theme: Theme.Fury }).state;
+  check('apply leaves the state it was given alone', show(s0) === show(solo()));
+  const s1b = s1.members[0].pending.length ? apply(s1, { type: 'choose', member: 1n, choice: DISCARD }).state : s1;
+  const r = apply(s1b, { type: 'move', node: 0 });
+  check('node 1 is a fight, played in the move', r.fights.length === 1 && r.fights[0].kind === 'node');
+  const m1 = r.state.members[0];
+  check('… a win pays Motes and offers boons', r.state.phase === 'ended' || (m1.motes >= MOTES.fight && m1.pending.some(p => p.kind === 'boons')),
+    `${m1.motes} Motes`);
+  check('the same actions play the same run', show(apply(s1b, { type: 'move', node: 0 }).state) === show(r.state));
+  check("a node out of reach can't be moved to", refused(() => apply(s1b, { type: 'move', node: 9 }), /reach/));
+
+  // The loadout's hand rules.
+  const twoHand = ZONE_BASES.find(b => b.weapon?.twoHanded)!;
+  const oneHand = ZONE_BASES.find(b => b.weapon && !b.weapon.twoHanded)!;
+  const shield = ZONE_BASES.find(b => b.slots.includes('OffHand') && !b.weapon)!;
+  const eth = (baseId: number, headlines = {}) => ({ ...makeItem(seededRng(1n), baseId, 5, 'Ethereal'), headlines });
+  const MAIN = 0;
+  const OFF = 1;
+  const armed = { ...m0, gear: m0.gear.map((it, i) => (i === MAIN ? eth(oneHand.id) : i === OFF ? eth(shield.id) : it)) };
+  const plan2h = wearPlan(armed, eth(twoHand.id));
+  check('a two-handed weapon also discards the off-hand', typeof plan2h !== 'string' && plan2h.discards.includes(OFF) && plan2h.discards.includes(MAIN));
+  check('an off-hand needs a one-handed weapon', wearPlan({ ...armed, gear: armed.gear.map((it, i) => (i === MAIN ? eth(twoHand.id) : i === OFF ? undefined : it)) }, eth(shield.id)) === 'Needs a one-handed weapon');
+  check("a Rift Anchor's slot can't be replaced", /Anchor/.test(String(wearPlan({ ...armed, gear: armed.gear.map((it, i) => (i === OFF ? eth(shield.id, { riftEffect: RiftEffect.RiftAnchor }) : it)) }, eth(twoHand.id)))));
+
+  // A shop and events, answered from a waiting choice.
+  const with1 = (s: RunState, f: (m: MemberState) => void): RunState => {
+    const c = { ...s, members: s.members.map(m => ({ ...m, boons: [...m.boons], pending: [...m.pending] })) };
+    f(c.members[0]);
+    return c;
+  };
+  const max = memberStats(s1b, s1b.members[0]).maxHp;
+  const hurt = with1(s1b, m => {
+    m.hp = max / 2;
+    m.motes = 200;
+    m.pending = [{ kind: 'shop', stock: [{ kind: 'heal', price: PRICE.heal }], sold: [false], rerolls: 0 }];
+  });
+  const healed = apply(hurt, { type: 'choose', member: 1n, choice: 0 }).state.members[0];
+  check('a shop heal: 30% of max HP for 50 Motes', near(healed.hp, 0.8 * max, 1e-9) && healed.motes === 150 && healed.pending[0].kind === 'shop');
+  check('… sold once', refused(() => apply(with1(hurt, m => (m.pending = healed.pending)), { type: 'choose', member: 1n, choice: 0 }), /Sold/));
+  const event = (id: number, choice: number, extra = {}) => apply(with1(hurt, m => (m.pending = [{ kind: 'event', event: id, used: [] }])), { type: 'choose', member: 1n, choice, ...extra }).state.members[0];
+  check('Lost Satchel: 60 Motes', event(10, 0).motes === 260);
+  const statue = event(17, 0);
+  check('Weeping Statue: heals to full, and the next fight gives no pick', near(statue.hp, max, 1e-9) && statue.skipBoon);
+  const vault = event(12, 0);
+  check("Thane's Vault: 15% of current HP, then 1 of 3 items", near(vault.hp, 0.85 * max / 2, 1e-9) && vault.pending[0].kind === 'items');
+  check('an event never kills with its HP cost', event(1, 0).hp > 0);
+  check('a choice that can\'t apply is refused (attune with nothing Ethereal worn)', refused(() => event(7, 1, { target: 0 }), /Ethereal/));
+  check('every event can be left or answered', EVENTS.length === 20 && EVENTS.every(e => e.choices.length >= 2));
+
+  // A floor boss: an overwhelming build clears it.
+  const god = with1(s1b, m => {
+    m.gear = m.gear.map((it, i) => (i === MAIN ? { ...makeItem(seededRng(2n), oneHand.id, 5, 'Rare'), affixes: [{ stat: Stat.PhysDamage, tier: 5, value: toStored(1e6) }] } : it));
+    m.hp = max / 2;
+    m.won = 3;
+    m.secondWind = 0;
+  });
+  const atBoss = { ...god, row: ROWS - 1 };
+  const b = apply(atBoss, { type: 'boss', option: 0 });
+  const after = b.state.members[0];
+  const maxAfter = memberStats(b.state, after).maxHp;
+  check('a floor boss win clears the floor and opens the next', b.cleared === 1 && b.state.floor === 2 && b.state.row === -1 && after.won === 0);
+  check('… heals half of the missing HP', near(after.hp, b.fights[0].result.hp[0] + 0.5 * (maxAfter - b.fights[0].result.hp[0]), 1e-6));
+  check('… and drops an Ethereal item with an Echo', after.pending.some(p => p.kind === 'item' && p.item.headlines.echo !== undefined));
+
+  // A party.
+  const duo = startRun(5n, 5, 0, [{ characterId: 1n, ...ref }, { characterId: 2n, ...referencePlayer(5, 4) }]);
+  const picked = [1n, 2n].reduce((s, id) => {
+    let x = apply(s, { type: 'choose', member: id, choice: 1, theme: Theme.Fury }).state;
+    while (x.members.find(m => m.characterId === id)!.pending.length) x = apply(x, { type: 'choose', member: id, choice: DISCARD }).state;
+    return x;
+  }, duo);
+  check('a party waits for everyone to press Ready', refused(() => apply(picked, { type: 'move', node: 0 }), /Waiting/));
+  check('… except members offline', apply(apply(picked, { type: 'ready', member: 1n }).state, { type: 'move', node: 0, online: [1n] }).fights.length === 1);
+  const downed = with1({ ...picked, row: ROWS - 1 }, m => {
+    m.downed = true;
+    m.hp = 0;
+  });
+  const godDuo = { ...downed, members: [downed.members[0], { ...god.members[0], characterId: 2n }] };
+  const rb = apply(godDuo, { type: 'boss', option: 0, online: [] });
+  check('a downed member comes back at half HP when the boss falls', !rb.state.members[0].downed && near(rb.state.members[0].hp, 0.5 * memberStats(rb.state, rb.state.members[0]).maxHp, 1e-9));
+  check('leaving takes a member out; the last one out ends the run', apply(picked, { type: 'leave', member: 2n }).state.members.length === 1 &&
+    apply(apply(picked, { type: 'leave', member: 2n }).state, { type: 'leave', member: 1n }).state.end === 'left');
+}
+
+// ---------------------------------------------------------------- the bots (tuning RIFT_HP and RIFT_DPS)
+
+{
+  const N = 200;
+  const runs = (bots: Bot[], tier = 5) => Array.from({ length: N / (bots.length > 1 ? 4 : 1) }, (_, i) => playRun(i + 1, tier, bots));
+  const share = (rs: BotRun[], f: (r: BotRun) => boolean) => rs.filter(f).length / rs.length;
+  const random = runs(['random']);
+  const greedy = runs(['greedy']);
+  const full = (rs: BotRun[]) => share(rs, r => r.cleared === 5);
+  check('random picks at T5: a full clear about 1 run in 10 (5–25%)', full(random) >= 0.05 && full(random) <= 0.25, pct(full(random)));
+  check('… most runs end on floors 2–4', share(random, r => r.cleared >= 1 && r.cleared <= 3) >= 0.5, pct(share(random, r => r.cleared >= 1 && r.cleared <= 3)));
+  check('… and few on floor 1', share(random, r => r.cleared === 0) <= 0.1, pct(share(random, r => r.cleared === 0)));
+  check('a greedy theme builder at T5: a full clear about half the time (35–65%)', full(greedy) >= 0.35 && full(greedy) <= 0.65, pct(full(greedy)));
+  const fullRuns = greedy.filter(r => r.cleared === 5);
+  const fights = fullRuns.reduce((a, r) => a + r.fights, 0) / fullRuns.length;
+  check('a full run plays ~20–25 fights', fights >= 18 && fights <= 27, fights.toFixed(1));
+  const all = [...random, ...greedy];
+  const ms = all.reduce((a, r) => a + r.msPerFight * r.fights, 0) / all.reduce((a, r) => a + r.fights, 0);
+  check('a node fight takes well under 1 ms to settle', ms < 0.5, `${ms.toFixed(2)} ms on average`);
+  for (const size of [2, 3, 4]) {
+    const party = runs(Array.from({ length: size }, (_, i) => (i % 2 ? 'random' : 'greedy') as Bot));
+    check(`a party of ${size} (greedy and random) plays through, enemy HP × ${PARTY_HP[size - 1]}`, party.every(r => r.end !== undefined) && full(party) > 0,
+      `full clears ${pct(full(party))}`);
+  }
 }
 
 console.log(failed ? `\n${failed} failed` : '\nall passed');

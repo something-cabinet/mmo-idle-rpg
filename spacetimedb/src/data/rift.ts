@@ -29,13 +29,15 @@ export const BOSS_HEAL = 0.5;
 
 // ---------------------------------------------------------------- enemies
 
+/** × enemy HP and DPS per floor past the first (tuned by the `test:rift` bots with RIFT_HP and RIFT_DPS). */
+export const FLOOR_STEP = 1.6;
 /** × enemy HP and DPS on floor `f` (1–5): floor 1 is the run tier as it is. */
-export const floorMult = (f: number) => 1.25 ** (f - 1);
+export const floorMult = (f: number) => FLOOR_STEP ** (f - 1);
 /** Enemy level on floor `f` of a tier-`tier` run. */
 export const riftLevel = (tier: number, f: number) => 10 * tier + 2 * (f - 1);
-/** × every Rift enemy's HP and DPS, for HP carrying over between nodes. Placeholders until `test:rift` tunes them (rift-plan.md, R3). */
-export const RIFT_HP = 1;
-export const RIFT_DPS = 0.25;
+/** × every Rift enemy's HP and DPS, for HP carrying over between nodes: tuned by the `test:rift` bots (a random picker clears floor 5 about 1 run in 7 at T5, a greedy theme builder about half). */
+export const RIFT_HP = 0.85;
+export const RIFT_DPS = 0.15;
 
 export type RiftSlot = 'fight1' | 'fight2' | 'fight3' | 'elite' | 'boss' | 'heart';
 /** × HP and DPS by slot: a fight's 1–3 enemies share it out, an Elite or a boss is one of them. */
@@ -323,7 +325,7 @@ export interface EventDef {
   choices: string[];
 }
 
-/** The launch pool. The design aims for ~20; the others are still to write. */
+/** The launch pool of 20 (outcomes in riftRun.ts). */
 export const EVENTS: EventDef[] = [
   { id: 1, name: 'Blood Altar', choices: ['Lose 20% max HP (current), gain an Epic Blood boon', 'Leave'] },
   { id: 2, name: 'Gambler', choices: ['Bet 50 Motes: 50% double, 50% lose', 'Bet 100 Motes', 'Leave'] },
@@ -336,7 +338,23 @@ export const EVENTS: EventDef[] = [
   { id: 9, name: 'Shrine of Change', choices: ['Reroll all your boons into random ones of the same rarity (never a keystone before floor 3, never two of one theme)', 'Leave'] },
   { id: 10, name: 'Lost Satchel', choices: ['60 Motes', 'An Ethereal item'] },
   { id: 11, name: 'Broken Mirror', choices: ['Swap a boon below Epic for a random boon one rarity higher; 25% chance it is a curse instead', 'Leave'] },
+  { id: 12, name: "Thane's Vault", choices: ['Open it: pick 1 of 3 Ethereal items; a dart trap takes 15% of your current HP', 'Leave'] },
+  { id: 13, name: 'Lurking Echo', choices: ['Fight it: a lone Elite echo; a win pays 1 of 3 boons (Rare or better) and an Ethereal item with its Trophy, but no Motes', 'Sneak past'] },
+  { id: 14, name: 'Moon Shard', choices: ['Touch it: a boon below Epic goes up one rarity, and a random curse', 'Pry it loose: 80 Motes', 'Leave'] },
+  { id: 15, name: 'Blood Merchant', choices: ['An Ethereal item for 15% of your current HP', 'A Rare boon of your main theme for 15% of your current HP', 'Attune an Ethereal item for 15% of your current HP', 'Leave'] },
+  { id: 16, name: 'Forgotten Forge', choices: ["Reforge an Ethereal item: its headlines roll again (the source's guaranteed one stays)", 'Attune it for 30 Motes', 'Leave'] },
+  { id: 17, name: 'Weeping Statue', choices: ['Pray: heal to full, but your next fight node gives no boon pick', 'Leave'] },
+  { id: 18, name: 'Ashen Brazier', choices: ['Burn a boon: heal 40% max HP and gain 60 Motes', 'Burn a curse away', 'Leave'] },
+  { id: 19, name: 'Rift Tear', choices: ["Reach in: a random slot (never a Rift Anchor's) gets an Ethereal item with at least 2 headlines, worn at once", 'Leave'] },
+  { id: 20, name: 'Runecarver', choices: ["Carve: one of your Ethereal items gets your main theme's mark", 'Pay 40 Motes: a theme of your choice', 'Leave'] },
 ];
+
+/** Events' numbers (EVENTS' text). HP costs take a share of current HP, so an event never kills. */
+export const EVENT_NUM = {
+  altarHp: 0.2, gamble: [50, 100] as const, smithAttune: 40, smithReroll: 20, reflectionLoss: 0.3, reflectionSeconds: 90,
+  springHeal: 0.25, alcoveHeal: 0.35, goblinSeconds: 20, goblinMotesPerHit: 2, mirrorCurse: 0.25, satchel: 60, vaultItems: 3, vaultHp: 0.15,
+  shard: 80, merchantHp: 0.15, forgeAttune: 30, brazierHeal: 0.4, brazierMotes: 60, tearHeadlines: 2, runecarver: 40,
+} as const;
 export const EVENTS_BY_ID: ReadonlyMap<number, EventDef> = new Map(EVENTS.map(e => [e.id, e]));
 
 // ---------------------------------------------------------------- weekly mutations

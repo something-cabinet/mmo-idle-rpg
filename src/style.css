@@ -5101,6 +5101,8 @@ button.rift-card:hover { border-color: var(--accent); }
 .rift-headlines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 12px; }
 .rift-headlines li { padding: 4px 6px; border-radius: 6px; background: color-mix(in srgb, var(--r-ethereal) 9%, var(--surface-3)); }
 .rift-headlines strong { color: var(--r-ethereal); margin-right: 4px; }
+.rift-echo-effects { list-style: none; margin: 4px 0 0; padding: 0 0 0 8px; display: grid; gap: 2px; border-left: 2px solid color-mix(in srgb, var(--r-ethereal) 35%, transparent); }
+.rift-headlines .rift-echo-effects li { padding: 0; background: none; box-shadow: none; }
 .rift-headlines.n3 li, .rift-headlines.n4 li, .rift-headlines.n5 li { box-shadow: 0 0 0 1px color-mix(in srgb, var(--r-ethereal) 40%, transparent) inset; }
 .rift-wear { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
 .rift-wear-side { display: grid; gap: 8px; align-content: start; }

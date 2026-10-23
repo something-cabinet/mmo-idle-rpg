@@ -29,7 +29,7 @@ import {
 import { byJoin, stateFromRows } from '../../../spacetimedb/src/riftRows';
 import { decodeBuild } from '../../../spacetimedb/src/abyss';
 import { base } from '../../../spacetimedb/src/data/bases';
-import { Effect } from '../../../spacetimedb/src/data/legendary';
+import { EFFECTS_BY_ID, Effect } from '../../../spacetimedb/src/data/legendary';
 import { call, useSticky } from '../../store';
 import { startFight, stopFight } from '../fight';
 import { FightStage } from '../FightStage';
@@ -789,7 +789,7 @@ function RiftItemCard({ it }: { it: RiftItem }) {
 }
 
 function HeadlineList({ h }: { h: Headlines }) {
-  const lines: [string, string][] = [];
+  const lines: [string, string, [string, string][]?][] = [];
   if (h.riftEffect) {
     const e = RIFT_EFFECTS_BY_ID.get(h.riftEffect);
     if (e) lines.push([e.name, e.text]);
@@ -802,12 +802,20 @@ function HeadlineList({ h }: { h: Headlines }) {
   }
   if (h.echo) {
     const u = UNIQUES_BY_ID.get(h.echo);
-    if (u) lines.push([`Echo of ${u.name}`, 'All of its effects, whatever the slot']);
+    if (u) lines.push([`Echo of ${u.name}`, 'Its effects, whatever the slot:', u.effects.flatMap(id => {
+      const e = EFFECTS_BY_ID.get(id);
+      return e ? [[e.name, e.text] as [string, string]] : [];
+    })]);
   }
   if (!lines.length) return null;
   return (
     <ul className={`rift-headlines n${headlineCount(h)}`}>
-      {lines.map(([name, text]) => <li key={name}><strong>{name}</strong> {text}</li>)}
+      {lines.map(([name, text, sub]) => (
+        <li key={name}>
+          <strong>{name}</strong> {text}
+          {sub && sub.length > 0 && <ul className="rift-echo-effects">{sub.map(([n, t]) => <li key={n}><strong>{n}</strong> {t}</li>)}</ul>}
+        </li>
+      ))}
     </ul>
   );
 }

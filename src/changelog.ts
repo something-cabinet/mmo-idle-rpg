@@ -21,10 +21,10 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: '0.3.0',
+    version: '0.2.2',
     date: '2026-10-23',
     commit: 'ab515f1',
-    title: 'The Shifting Rift',
+    title: 'The Shifting Rift, Forgefire remade',
     changes: [
       { tag: 'new', text: "The Shifting Rift, opened by your first Last Thane kill. A weekly roguelike run of 5 floors: pick your path through fights, shops and events, collect boons and Ethereal gear that only exists inside, and beat each floor's boss. Each floor pays once a week, more on a higher tier. Online only; farming carries on meanwhile." },
       { tag: 'new', text: "Rift parties: form one or join one from the Rift page, 2 to 4 players. The leader picks the path and the bosses and everyone fights every node together, with more enemy HP for each member; boons, shops, events and Ethereal gear stay your own. Press Ready when you're done choosing. A member who goes offline keeps fighting as they are, and the next one online leads while the leader is away." },

@@ -157,8 +157,9 @@ Molten Hammer every 20 s), so the split matters. The 4:00 enrage lets a strong p
 both down now and then (~11%).
 
 Rewards as the others', at T5: 20 tokens, 6 Voidglass, 220,000 gold, 300,000 XP; 12,000 gold
-per hired NPC. Its own bases are the six **Forgefire** variants (bases.md) and its own
-uniques the three below.
+per hired NPC. Its own bases are the ten **Forgefire** variants (bases.md), each heavy like
+Brokk (Maul, Greatsword, Fire Staff, Shield, Ring) or fast like Sindri (Dagger, Wand,
+Scepter, Tome, Amulet), and its own uniques the three below.
 
 **Raid uniques** (uniques.md, effects 56–58 in legendary.md):
 

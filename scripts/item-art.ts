@@ -197,6 +197,33 @@ const TYPES: Record<string, string> = {
     'any smaller accent gems the same color as it',
 };
 
+/** A variant whose shape differs from its type's (by base ID), in place of its TYPES entry. Its name's
+ *  first word is still its tier (TIERS). */
+const VARIANT_TYPES: Record<number, string> = {
+  // The Brothers' Forge: heavy pieces (Brokk) massive and blunt, fast ones (Sindri) slim and light.
+  1014: 'a one-handed blacksmith\'s maul, diagonal with the handle at the bottom left and the head at the top right: ' +
+    'a huge blocky square hammer head like a small anvil, nearly as wide as the short thick haft is long; ' +
+    'deliberately chunky and overbuilt, a solid heavy silhouette with no thin parts',
+  1020: 'a huge two-handed greatsword, held point up, diagonal with the handle at the bottom left and the point at the top right: ' +
+    'a massive slab of a blade as thick as a forge bar, almost as wide as the icon allows, a blunt square tip, ' +
+    'a heavy block crossguard and a long two-hand grip; it looks too heavy to lift',
+  1021: 'a long two-handed mage staff, diagonal with the foot at the bottom left and the head at the top right: ' +
+    'a thick iron-shod shaft topped by a heavy anvil-shaped head clamping a big red-orange fire crystal',
+  1016: 'a heater shield facing the viewer, built like an anvil: very thick slab-like plates, a flat heavy top edge ' +
+    'like an anvil face, a heavy rim and a big riveted boss; it looks extremely heavy',
+  1018: 'a finger ring standing upright, seen from the front and slightly above: a very thick heavy band below shaped ' +
+    'like a tiny anvil, one large golden orange amber stone on top facing the viewer, not lying flat, not tilted sideways',
+  1022: 'a short slim stiletto dagger, held point down: diagonal at 45 degrees with the handle at the top left and the point at ' +
+    'the bottom right, a needle-thin blade, a tiny crossguard and a light grip; quick and light',
+  1015: 'a very thin light magic wand, diagonal with the handle at the bottom left and the tip at the top right: ' +
+    'a slender rod like a bellows nozzle, a small ember-red crystal at the tip',
+  1023: 'a light holy scepter standing straight up, vertical: a slim metal shaft topped by a small bronze bellows-shaped head ' +
+    'with a narrow nozzle and an ember crystal in its mouth; light and quick, much slimmer than a normal scepter',
+  1017: 'a slim closed spellbook, cover facing the viewer: thin and light, a few pages, a bellows-shaped bronze clasp',
+  1019: 'a pendant amulet hanging straight down, facing the viewer: a fine light chain in a V loop at the top, ' +
+    'a small slim pendant shaped like a bellows centered below it with one red ruby in its middle, not tilted or lying flat',
+};
+
 /** A unique's art, written on its own: what it is, its colors and its look. Nothing comes from its base or tier. */
 interface UniqueLook extends Look {
   /** What the item is and how it sits in the icon, like a TYPES entry. */
@@ -447,11 +474,11 @@ function arts(): { arts: Art[]; missing: string[] } {
   const prompt = (name: string, type: string, look: Look, detail: string) =>
     `One game item icon: ${name}.\nType: ${type}.\nPalette: ${look.colors} (main colors, most of the item first).\nMaterial: ${look.look}.\nDetail: ${detail}.`;
   /** `baseName` gives the type and the tier. */
-  const add = (key: string, name: string, group: string, tier: number, baseName: string) => {
-    const parts = splitName(baseName);
+  const add = (key: string, name: string, group: string, tier: number, baseName: string, typeLook?: string) => {
+    const parts = typeLook ? { tier: baseName.split(' ')[0], type: '' } : splitName(baseName);
     const look = parts && tierLook(parts.tier);
     if (!parts || !look) return void missing.push(`${key} ${name}: no ${!parts ? 'TYPES' : 'TIERS'} entry`);
-    out.push({ key, name, group, tier, subject: prompt(name, TYPES[parts.type], look, DETAIL[tier - 1]) });
+    out.push({ key, name, group, tier, subject: prompt(name, typeLook ?? TYPES[parts.type], look, DETAIL[tier - 1]) });
   };
   /** A unique: its own type, look and detail, nothing from its base or tier. */
   const addUnique = (u: (typeof UNIQUES)[number]) => {
@@ -464,7 +491,7 @@ function arts(): { arts: Art[]; missing: string[] } {
     else {
       const raid = b.raidId !== undefined ? RAIDS_BY_ID.get(b.raidId) : undefined;
       const t = raid?.tier ?? 1;
-      add(`b-${b.id}`, b.name(t), `variants-${slug(raid?.name ?? 'none')}`, t, b.name(t));
+      add(`b-${b.id}`, b.name(t), `variants-${slug(raid?.name ?? 'none')}`, t, b.name(t), VARIANT_TYPES[b.id]);
     }
   }
   for (const u of UNIQUES) addUnique(u);

@@ -271,6 +271,14 @@ function variant(id: number, typeId: number, v: Pick<BaseDef, 'name' | 'implicit
  * Variants: bases of an existing type with their own name and stats, never dropped in
  * zones, so each needs a source (`raidId`). IDs from 1000.
  */
+/** What a fast Forgefire weapon costs its wearer; LIGHT_COST, a fast off-hand or amulet. */
+const fastCost = (p: number): Implicit[] => [
+  { stat: Stat.ArmorPct, value: -p, curve: 'fixed' },
+  { stat: Stat.ResistancePct, value: -p, curve: 'fixed' },
+];
+const FAST_COST = fastCost(20);
+const LIGHT_COST = fastCost(10);
+
 const VARIANTS: BaseDef[] = [
   // Wyrm Hollow (raid 1, T3): a dagger from one of the Rime Wyrm's teeth. Its frost cuts as magic: quick, frost-hardened.
   // Raid variants are named Rime <type>, apart from the Wyrmscale leather track and the Wyrmscale Aegis.
@@ -373,44 +381,79 @@ const VARIANTS: BaseDef[] = [
     implicits: [pct(Stat.PhysDamagePct, 15), pct(Stat.MagicDamagePct, 15)],
     raidId: 2,
   }),
-  // The Brothers' Forge (raid 3, T5): named Forgefire <type>, hammer and fire like Brokk and Sindri,
-  // each made for two bosses at once: both defenses, both penetrations, a healer's tome, a tank's ring.
-  // A heavier, slower hit and armor: hits like a mace, guards like a shield.
+  // The Brothers' Forge (raid 3, T5): named Forgefire <type>, each heavy like Brokk or fast like Sindri,
+  // nothing in between. Heavy weapons: far slower than their type, the same DPS, crit damage to make each
+  // hit count. Fast weapons: 0.5 attacks/s faster at the same DPS, paid for with the wearer's armor and
+  // resistance (speed scales far better than a big hit). The rest push the wearer to one side.
+  // Heavy (Brokk).
   variant(1014, 3, {
-    name: () => 'Forgefire Mace',
-    weapon: { damageType: 'Physical', hit: 13.5, speed: 0.7, baseCrit: 5, twoHanded: false, ranged: false },
-    implicits: [pct(Stat.ArmorPenPct, 15), lin(Stat.Armor, 6)],
+    name: () => 'Forgefire Maul',
+    weapon: { damageType: 'Physical', hit: 21, speed: 0.45, baseCrit: 5, twoHanded: false, ranged: false },
+    implicits: [pct(Stat.CritDamage, 60)],
     raidId: 3,
   }),
-  // A little less hit, for resistance.
-  variant(1015, 5, {
-    name: () => 'Forgefire Wand',
-    weapon: { damageType: 'Magic', hit: 5.75, speed: 1.5, baseCrit: 6, twoHanded: false, ranged: true },
-    implicits: [pct(Stat.MagicPenPct, 15), lin(Stat.Resistance, 4)],
+  variant(1020, 7, {
+    name: () => 'Forgefire Greatsword',
+    weapon: { damageType: 'Physical', hit: 37, speed: 0.35, baseCrit: 5, twoHanded: true, ranged: false },
+    implicits: [pct(Stat.ArmorPenPct, 25), pct(Stat.CritDamage, 40)],
     raidId: 3,
   }),
-  // A quarter of the armor moved to resistance, and more threat: for a tank facing both brothers.
+  variant(1021, 9, {
+    name: () => 'Forgefire Fire Staff',
+    weapon: { damageType: 'Magic', hit: 34, speed: 0.45, baseCrit: 5, twoHanded: true, ranged: true },
+    implicits: [pct(Stat.CritDamage, 40)],
+    raidId: 3,
+  }),
+  // An anvil: more armor than a Greatshield, a bigger attack speed cost.
   variant(1016, 20, {
     name: () => 'Forgefire Shield',
-    implicits: [lin(Stat.Armor, 6), lin(Stat.Resistance, 6), { stat: Stat.MaxHp, value: 5, curve: 'life' }, pct(Stat.ThreatPct, 20)],
+    implicits: [
+      lin(Stat.Armor, 12),
+      { stat: Stat.MaxHp, value: 6, curve: 'life' },
+      pct(Stat.ThreatPct, 20),
+      { stat: Stat.AttackSpeedPct, value: -20, curve: 'fixed' },
+    ],
     raidId: 3,
   }),
-  // A healer's tome: heal instead of magic damage, a little less Mind.
-  variant(1017, 21, {
-    name: () => 'Forgefire Tome',
-    implicits: [pct(Stat.Mind, 20), pct(Stat.HealPct, 15)],
-    raidId: 3,
-  }),
-  // An Amber ring with max HP and threat instead of Vitality.
+  // An Amber ring with a heavier weapon hit and slower swings instead of Vitality.
   variant(1018, 53, {
     name: () => 'Forgefire Ring',
-    implicits: [pct(Stat.MaxHpPct, 10), pct(Stat.ThreatPct, 10)],
+    implicits: [
+      { stat: Stat.BaseDamagePct, value: 20, curve: 'fixed' },
+      { stat: Stat.AttackSpeedPct, value: -15, curve: 'fixed' },
+    ],
     raidId: 3,
   }),
-  // A Ruby amulet with both penetrations instead of Might: one for each brother.
+  // Fast (Sindri).
+  variant(1022, 2, {
+    name: () => 'Forgefire Dagger',
+    weapon: { damageType: 'Physical', hit: 3.8, speed: 2.5, baseCrit: 8, twoHanded: false, ranged: false },
+    implicits: [pct(Stat.CritChancePct, 30), ...FAST_COST],
+    raidId: 3,
+  }),
+  variant(1015, 5, {
+    name: () => 'Forgefire Wand',
+    weapon: { damageType: 'Magic', hit: 4.7, speed: 2.0, baseCrit: 6, twoHanded: false, ranged: true },
+    implicits: [pct(Stat.MagicPenPct, 15), ...FAST_COST],
+    raidId: 3,
+  }),
+  // Many small heals instead of a few big ones.
+  variant(1023, 4, {
+    name: () => 'Forgefire Scepter',
+    weapon: { damageType: 'Physical', hit: 4.6, speed: 1.3, baseCrit: 5, heal: 6.15, healTarget: 'Single', twoHanded: false, ranged: false },
+    implicits: [...FAST_COST],
+    raidId: 3,
+  }),
+  // The fast caster's off-hand: attack speed instead of magic damage, a little less Mind.
+  variant(1017, 21, {
+    name: () => 'Forgefire Tome',
+    implicits: [pct(Stat.Mind, 20), { stat: Stat.AttackSpeedPct, value: 15, curve: 'fixed' }, ...LIGHT_COST],
+    raidId: 3,
+  }),
+  // A Ruby amulet with attack speed instead of Might.
   variant(1019, 54, {
     name: () => 'Forgefire Amulet',
-    implicits: [pct(Stat.ArmorPenPct, 10), pct(Stat.MagicPenPct, 10)],
+    implicits: [{ stat: Stat.AttackSpeedPct, value: 25, curve: 'fixed' }, ...LIGHT_COST],
     raidId: 3,
   }),
 ];

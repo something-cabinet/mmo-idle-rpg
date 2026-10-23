@@ -132,8 +132,12 @@ from it at the raid's tier. Variant base IDs start at 1000.
 | Umbral Fire Staff | Fire Staff | The Drowned Moon (T4) | **Split** | 18.75 / 132 (T4) | 0.9 | 119 (T4) | 5% | +15T accuracy (T4: 60), +15 Mind (P; T4: 10) |
 | Umbral Scepter | Scepter | The Drowned Moon (T4) | **Split** | 9.1 / 64 (T4) | 0.9 | 58 (T4) | 5% | Heal 6.8 per hit (T4: 16), single target; +15T accuracy (T4: 60) |
 | Umbral Crossbow | Crossbow | The Drowned Moon (T4) | **Split** | 18 / 127 (T4) | 0.8 | 102 (T4) | 12% | +40% crit damage (P), +25T accuracy (T4: 100) |
-| Forgefire Mace | Mace | The Brothers' Forge (T5) | Physical | 13.5 | 0.7 | | 5% | +15% armor pen (P), +6T armor: a slower, heavier hit that guards |
-| Forgefire Wand | Wand | The Brothers' Forge (T5) | Magic | 5.75 | 1.5 | | 6% | +15% magic pen (P), +4T resistance: a little less hit |
+| Forgefire Maul | Mace | The Brothers' Forge (T5) | Physical | 21 | 0.45 | | 5% | +60% crit damage (P): heavy |
+| Forgefire Greatsword | Greatsword | The Brothers' Forge (T5) | Physical | 37 | 0.35 | | 5% | +25% armor pen (P), +40% crit damage (P): heavy |
+| Forgefire Fire Staff | Fire Staff | The Brothers' Forge (T5) | Magic | 34 | 0.45 | | 5% | +40% crit damage (P): heavy |
+| Forgefire Dagger | Dagger | The Brothers' Forge (T5) | Physical | 3.8 | 2.5 | | 8% | +30% crit chance (P); −20% armor, −20% resistance: fast |
+| Forgefire Wand | Wand | The Brothers' Forge (T5) | Magic | 4.7 | 2.0 | | 6% | +15% magic pen (P); −20% armor, −20% resistance: fast |
+| Forgefire Scepter | Scepter | The Brothers' Forge (T5) | Physical | 4.6 | 1.3 | | 5% | Heal 6.15 per hit, single target; −20% armor, −20% resistance: fast |
 
 | Variant | Type | Source | Implicits (T1 template; T3) |
 |---|---|---|---|
@@ -143,10 +147,10 @@ from it at the raid's tier. Variant base IDs start at 1000.
 | Umbral Greatshield | Greatshield | The Drowned Moon (T4) | 6T armor, 6T resistance, 7 max HP (life), +25% threat (P), −10% attack speed; T4: 24, 24, 29, 17% |
 | Umbral Ring | Ring · Amber | The Drowned Moon (T4) | +10% armor (P), +10% resistance (P); T4: 7%, 7% |
 | Umbral Amulet | Amulet · Ruby | The Drowned Moon (T4) | +15% physical damage (P), +15% magic damage (P); T4: 10%, 10% |
-| Forgefire Shield | Shield | The Brothers' Forge (T5) | 6T armor, 6T resistance, 5 max HP (life), +20% threat (P) |
-| Forgefire Tome | Tome | The Brothers' Forge (T5) | +20 Mind (P), +15% heal (P) |
-| Forgefire Ring | Ring · Amber | The Brothers' Forge (T5) | +10% max HP (P), +10% threat (P) |
-| Forgefire Amulet | Amulet · Ruby | The Brothers' Forge (T5) | +10% armor pen (P), +10% magic pen (P) |
+| Forgefire Shield | Shield | The Brothers' Forge (T5) | 12T armor, 6 max HP (life), +20% threat (P), −20% attack speed: heavy |
+| Forgefire Tome | Tome | The Brothers' Forge (T5) | +20 Mind (P), +15% attack speed, −10% armor, −10% resistance: fast |
+| Forgefire Ring | Ring · Amber | The Brothers' Forge (T5) | +20% base damage, −15% attack speed: heavy |
+| Forgefire Amulet | Amulet · Ruby | The Brothers' Forge (T5) | +25% attack speed, −10% armor, −10% resistance: fast |
 
 Each Rime variant trades something its type has for resistance against Frost Breath, so
 none is a straight upgrade. Named "Rime", apart from the Wyrmscale leather track and the
@@ -166,6 +170,15 @@ scale. Against Umbriel it deals about the same total as a one-type weapon (the p
 mirror images and damage is linear) but **steadily**: a plain T4 katana does 59 / 109
 DPS in the Full / New Moon, an Umbral one 83 / 83 at the same speed (89 / 89 at its 1.5). The other Umbral pieces carry both
 defenses (greatshield, ring) or both damage groups (amulet, made for a Split weapon).
+
+**Heavy or fast** (Forgefire, 2026-10-23): every piece is heavy like Brokk or fast like
+Sindri, nothing in between. Heavy weapons swing far slower than their type (0.35–0.45) at
+the same DPS, with crit damage so each hit counts; Ambush and Riposte love them. Fast
+weapons are their type +0.5 attacks/s at the same DPS, and cost the wearer **20% armor and
+20% resistance** (fixed): attack speed scales far better than a big hit (on-hit effects,
+Waxing Moon, attack speed affixes), so speed has a price. The off-hands and jewelry push the
+wearer further: the heavy Shield and Ring pay in attack speed, the fast Tome and Amulet in
+10% armor and resistance. The trade-offs are fixed values, not the percent curve.
 
 ## Off-hands (*illustrative*)
 

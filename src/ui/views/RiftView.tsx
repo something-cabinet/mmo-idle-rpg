@@ -29,7 +29,7 @@ import {
 import { byJoin, stateFromRows } from '../../../spacetimedb/src/riftRows';
 import { decodeBuild } from '../../../spacetimedb/src/abyss';
 import { base } from '../../../spacetimedb/src/data/bases';
-import { EFFECTS_BY_ID, Effect } from '../../../spacetimedb/src/data/legendary';
+import { EFFECTS_BY_ID, Effect, LEGENDARIES_BY_ID } from '../../../spacetimedb/src/data/legendary';
 import { call, useSticky } from '../../store';
 import { startFight, stopFight } from '../fight';
 import { FightStage } from '../FightStage';
@@ -789,7 +789,7 @@ function RiftItemCard({ it }: { it: RiftItem }) {
 
 /** An Ethereal item's headlines, as effect blocks inside its card (like a legendary's). */
 function HeadlineBlocks({ h }: { h: Headlines }) {
-  const lines: { name: string; text: string; sub?: { name: string; text: string }[] }[] = [];
+  const lines: { name: string; text?: string; sub?: { name: string; text: string; unique: boolean }[] }[] = [];
   if (h.riftEffect) {
     const e = RIFT_EFFECTS_BY_ID.get(h.riftEffect);
     if (e) lines.push({ name: e.name, text: e.text });
@@ -804,10 +804,11 @@ function HeadlineBlocks({ h }: { h: Headlines }) {
     const u = UNIQUES_BY_ID.get(h.echo);
     if (u) {
       lines.push({
-        name: `Echo of ${u.name}`, text: 'Its effects, whatever the slot:',
+        name: `Echo of ${u.name}`,
+        // Coloured as on any item: legendary effects (orange) and unique-only ones (magenta).
         sub: u.effects.flatMap(id => {
           const e = EFFECTS_BY_ID.get(id);
-          return e ? [{ name: e.name, text: e.text }] : [];
+          return e ? [{ name: e.name, text: e.text, unique: !LEGENDARIES_BY_ID.has(id) }] : [];
         }),
       });
     }
@@ -817,8 +818,8 @@ function HeadlineBlocks({ h }: { h: Headlines }) {
       {lines.map(l => (
         <div key={l.name} className="item-legendary ethereal">
           <strong><Icon name="sparkles" />{l.name}</strong>
-          <span>{l.text}</span>
-          {l.sub?.map(x => <span key={x.name} className="ethereal-sub"><strong>{x.name}</strong> {x.text}</span>)}
+          {l.text && <span>{l.text}</span>}
+          {l.sub?.map(x => <span key={x.name} className={`ethereal-sub${x.unique ? ' unique' : ''}`}><strong>{x.name}</strong> {x.text}</span>)}
         </div>
       ))}
     </>

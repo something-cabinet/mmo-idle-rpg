@@ -5057,7 +5057,8 @@ textarea.mail-input {
 }
 .item-legendary.ethereal strong { color: var(--r-ethereal); }
 .item-legendary .ethereal-sub { padding-left: 8px; border-left: 2px solid color-mix(in srgb, var(--r-ethereal) 35%, transparent); }
-.item-legendary .ethereal-sub strong { display: inline; }
+.item-legendary .ethereal-sub strong { display: inline; color: var(--r-legendary); }
+.item-legendary .ethereal-sub.unique strong { color: var(--r-unique); }
 .rift-shop-headlines { display: grid; gap: 4px; margin-top: 4px; }
 @media (prefers-reduced-motion: reduce) {
   .r-ethereal .item-name, .item-card.r-ethereal, .item-card.r-ethereal::after { animation: none; }

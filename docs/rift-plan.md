@@ -46,8 +46,10 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
   can coexist. A downed member returns at 50% of max HP.
 - A Rift item has the same columns as `item`, plus run, owner, worn slot and headlines.
 - The mutation doubles on the Rift Heart (Storm Front +60%, Glass World × 4).
+- Re-clearing a floor at a higher tier pays the gold, XP and Dust difference, plus the
+  higher tier's materials in full (2026-10-23).
 
-**Decisions taken in R1** (mine, not yet reviewed by the user; change freely):
+**Decisions taken in R1** (reviewed by the user 2026-10-23: Haggler Common-only, echoes at average strength and offers always showing an upgrade are confirmed; the rest are numbers for R3 to tune):
 
 - **IDs**: boons `300 + theme × 10 + n` (Wildcard 380), rift effects 201–214, Trophies
   `250 + Elite affix`, curses 401–403, Rift Heart enemy 9200. They share one space with the
@@ -69,9 +71,6 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 
 **Open questions:**
 
-- **Re-clearing at a higher tier** pays "the difference" (design), but materials and
-  elixirs are different items per tier. Suggested: the gold, XP and Dust difference, plus the
-  higher tier's materials in full. Needed by R4.
 - **What Riftstone crafts.** Not needed until after launch.
 - **The 9 new events** are written in the design (Thane's Vault … Runecarver, 20 in all),
   not yet in `data/rift.ts` `EVENTS`. Add them with R3's event outcomes.

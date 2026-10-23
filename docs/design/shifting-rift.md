@@ -564,7 +564,8 @@ what's good, so even a player who replays for fun meets a new puzzle every week.
 
 **Weekly, per floor, best tier counts.** Each floor has a weekly reward. A floor's reward is
 paid the first time that week you clear it, right when its boss falls. If you later clear it on a **higher tier**, you
-get the difference. Nothing else pays, so replays are free fun and the weekly total is a
+get the difference: the gold, XP and Dust above what you were paid, plus the higher tier's
+materials in full (they differ per tier, so there's no difference to take). Nothing else pays, so replays are free fun and the weekly total is a
 hard cap.
 
 Paid in **hours of farming at the run's tier** (T5 or higher), so it scales like

@@ -24,4 +24,5 @@ export default __t.row({
   startedAt: __t.timestamp().name("started_at"),
   fights: __t.string(),
   actedAt: __t.timestamp().name("acted_at"),
+  lobby: __t.bool(),
 });

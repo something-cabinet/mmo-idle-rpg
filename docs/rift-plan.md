@@ -16,8 +16,8 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 | R3 | A node, a run, the bots | **Done** (`npm run test:rift` plays bot runs) |
 | R4 | Schema and solo reducers | **Done** (smoke test: a solo run on the local server) |
 | R5 | Client, solo | **Done** (seen in a browser, desktop and phone width) |
-| R6 | Co-op | **Next** |
-| R7 | After launch | — |
+| R6 | Co-op | **Done** (smoke test: a 2-player run; seen in a browser with two players) |
+| R7 | After launch | **Next** |
 
 **What R1 left in the code:**
 
@@ -231,7 +231,46 @@ much character XP as skill XP").
   T5 gear), its token in localStorage, one tab only (a second tab takes over the character),
   the dev server with `VITE_SPACETIMEDB_HOST=ws://localhost:3001`.
 
-**R6 next:** co-op (below).
+**What R6 left in the code** (2026-10-23):
+
+- Schema: `rift_run.lobby` (a party still forming), `rift_member.maxHp` (for the party list:
+  other members' items are private) and `rift_member.offlineSince` (set when a member leaves
+  the world, for the kick).
+- Reducers (reducers/rift.ts): `riftCreateParty(loadout, tier)`, `riftJoin(runId, loadout)`,
+  `riftSetOff()` (the leader: seed, week and mutation are set now, every member to their
+  Threshold), `riftKick(characterId)`; `riftStart` is a party of one that sets off at once;
+  `riftLeave` also leaves a forming party. `actingLeader`: the leader, or while they're
+  offline the first online member in join order, for `riftMove`, `riftBoss` and kicks.
+  helpers.ts `leaveRiftLobby`, called from `leaveWorld` too.
+- riftRun.ts `isReady`: a downed member never holds the party up.
+- The page: "Enter alone" / "Form a party", the parties forming (Join with your selected
+  loadout), the lobby (members, kick, Set off, Leave), in a run the party card (HP, who
+  leads, Ready / Choosing / Down / Offline, your Ready, the kick once allowed), the map and
+  bosses for the acting leader only ("X picks the path", "Waiting for …"), and every
+  member's HP bar under the replay.
+- Checks: `test:rift` (nobody waits for a downed member); the smoke test plays a 2-player
+  run (the lobby and its refusals, Ready, a node fought by both, Bob's choice keeping the
+  replay, Bob leaving mid-floor, the last one out ending it).
+- Not covered live: leader handover and kicking a member offline 10+ minutes (no check
+  drives a second client offline yet).
+
+**Decisions taken in R6** (my reading where the plan was open; for the user to review):
+
+- **Names:** `riftSetOff` sets off, not `riftStart` (which stays the solo start); each
+  loadout is locked when its owner joins (`riftJoin`), so there is no `riftReady(loadout)`.
+- **Finding a party:** a list of the parties forming on the Rift page, like raid parties;
+  no invites through friends.
+- **Tier:** the creator picks it; joining needs that tier open (instead of capping it by the
+  lowest member). Only T5 exists so far.
+- **A forming party is online only**, like a raid party: leaving the world leaves it. The
+  leader can kick there at any time.
+- **Kicked from a run:** their history row says "Left the run".
+- **Replays in a party:** a member's own choice keeps the node fight stored (others may
+  still be watching); a move or a boss replaces it; another member's event fight isn't shown.
+- **Party scaling** stays at PARTY_HP 1.8 / 2.5 / 3.2 (a duo clears ~76%, 4 players ~92% in
+  the bots); tune after people play it.
+
+**R7 next:** after launch (below).
 
 ## Shape
 

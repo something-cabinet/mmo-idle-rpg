@@ -368,6 +368,7 @@ function hasBloodLeft(ctx: OfferContext): boolean {
     m.downed = true;
     m.hp = 0;
   });
+  check('… and nobody waits for a downed member', !refused(() => apply(apply(downed, { type: 'ready', member: 2n }).state, { type: 'boss', option: 0 }), /./));
   const godDuo = { ...downed, members: [downed.members[0], { ...god.members[0], characterId: 2n }] };
   const rb = apply(godDuo, { type: 'boss', option: 0, online: [] });
   check('a downed member comes back at half HP when the boss falls', !rb.state.members[0].downed && near(rb.state.members[0].hp, 0.5 * memberStats(rb.state, rb.state.members[0]).maxHp, 1e-9));

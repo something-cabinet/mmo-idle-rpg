@@ -51,6 +51,10 @@ export const RIFT_SLOT: Record<RiftSlot, { hp: number; dps: number }> = {
 };
 /** Enemy HP × this for a party of 1–4 (damage unchanged). */
 export const PARTY_HP = [1, 1.8, 2.5, 3.2];
+/** Players in a Rift party (co-op), at most. */
+export const RIFT_PARTY_SIZE = PARTY_HP.length;
+/** Minutes a member must be offline before the leader can kick them from a run. */
+export const RIFT_KICK_OFFLINE_MINUTES = 10;
 
 /** The final boss: its own enemy, not an echo. Shifts damage type and defense every SHIFT_EVERY seconds. */
 export const RIFT_HEART = { id: 9200, name: 'The Rift Heart', damageType: 'Magic', defense: 'Balanced', speed: 1 } as const;

@@ -44,4 +44,6 @@ export default __t.row({
   get paidMaterials() {
     return __t.array(MaterialCount).name("paid_materials");
   },
+  maxHp: __t.f64().name("max_hp"),
+  offlineSince: __t.u64().name("offline_since"),
 });

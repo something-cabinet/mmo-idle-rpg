@@ -5053,6 +5053,18 @@ textarea.mail-input {
 .rift-node.here { color: var(--text); border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .rift-node.next { color: var(--text); cursor: pointer; border-color: color-mix(in srgb, var(--r-ethereal) 60%, var(--border)); background: color-mix(in srgb, var(--r-ethereal) 9%, var(--surface-2)); }
 .rift-node.next:hover { background: color-mix(in srgb, var(--r-ethereal) 18%, var(--surface-2)); }
+.rift-node.next:disabled { cursor: default; }
+.rift-open { margin-top: 14px; }
+.rift-open h3 { margin: 0 0 6px; }
+.rift-lobby, .rift-party-card { margin-bottom: 14px; }
+.rift-party { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 6px; font-size: 13px; }
+.rift-party li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 6px 8px; border-radius: 6px; background: var(--surface-2); }
+.rift-party li.me { box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent) inset; }
+.rift-party li.downed { opacity: 0.6; }
+.rift-party li .btn { margin-left: auto; }
+.rift-party svg { width: 16px; height: 16px; }
+.rift-party-hp { position: relative; flex: 1 1 140px; max-width: 260px; }
+.rift-replay-party { margin-top: 10px; }
 .rift-bosses { margin-top: 14px; }
 .rift-bosses h3 { display: flex; gap: 6px; align-items: center; }
 .rift-boss-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }

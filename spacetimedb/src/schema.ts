@@ -798,6 +798,8 @@ export const riftRun = table(
     fights: t.string(),
     /** When the last action was taken (the replay starts then). */
     actedAt: t.timestamp(),
+    /** A party still forming (riftCreateParty): members join with their locked loadouts; the seed and week are set when the leader sets off. */
+    lobby: t.bool().default(false),
   }
 );
 
@@ -837,6 +839,10 @@ export const riftMember = table(
     paidXp: t.u64(),
     paidDust: t.u64(),
     paidMaterials: t.array(MaterialCount),
+    /** Max HP with the run's build (riftRun.ts `memberStats`), for the party list. */
+    maxHp: t.f64().default(0),
+    /** When the member last left the world (micros; 0: not since joining), for kicking members offline 10+ minutes. */
+    offlineSince: t.u64().default(0n),
   }
 );
 

@@ -642,6 +642,8 @@ export const RiftMember = __t.object("RiftMember", {
   get paidMaterials() {
     return __t.array(MaterialCount);
   },
+  maxHp: __t.f64(),
+  offlineSince: __t.u64(),
 });
 export type RiftMember = __Infer<typeof RiftMember>;
 
@@ -659,6 +661,7 @@ export const RiftRun = __t.object("RiftRun", {
   startedAt: __t.timestamp(),
   fights: __t.string(),
   actedAt: __t.timestamp(),
+  lobby: __t.bool(),
 });
 export type RiftRun = __Infer<typeof RiftRun>;
 

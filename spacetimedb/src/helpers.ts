@@ -835,6 +835,21 @@ export function leaveRaidParty(ctx: Ctx, characterId: bigint) {
   else if (party.leaderId === characterId) ctx.db.raidParty.id.update({ ...party, leaderId: rest[0].characterId });
 }
 
+/**
+ * Takes `characterId` out of a forming Rift party (reducers/rift.ts), with their locked items.
+ * The next member leads; an empty party is disbanded.
+ */
+export function leaveRiftLobby(ctx: Ctx, characterId: bigint) {
+  const m = ctx.db.riftMember.characterId.find(characterId);
+  const run = m && ctx.db.riftRun.id.find(m.runId);
+  if (!m || !run?.lobby) return;
+  for (const it of [...ctx.db.riftItem.characterId.filter(characterId)]) if (it.runId === run.id) ctx.db.riftItem.id.delete(it.id);
+  ctx.db.riftMember.characterId.delete(characterId);
+  const rest = [...ctx.db.riftMember.runId.filter(run.id)].sort((a, b) => (a.joinedAt.microsSinceUnixEpoch < b.joinedAt.microsSinceUnixEpoch ? -1 : 1));
+  if (!rest.length) ctx.db.riftRun.id.delete(run.id);
+  else if (run.leaderId === characterId) ctx.db.riftRun.id.update({ ...run, leaderId: rest[0].characterId });
+}
+
 /** A raid party's members in seat order (joining order). */
 export function raidMembers(ctx: Ctx, partyId: bigint) {
   return [...ctx.db.raidMember.partyId.filter(partyId)].sort((a, b) => (a.joinedAt.microsSinceUnixEpoch < b.joinedAt.microsSinceUnixEpoch ? -1 : 1));
@@ -919,6 +934,11 @@ export function leaveWorld(ctx: Ctx, who: Identity) {
   const m = ctx.db.raidMember.characterId.find(pres.characterId);
   const party = m && ctx.db.raidParty.id.find(m.partyId);
   if (m && !(party && raidFighting(party))) leaveRaidParty(ctx, pres.characterId);
+  // A forming Rift party is online only, like a raid party; a Rift run keeps the member (they
+  // fight as they are) and notes when they left, for a kick after 10 minutes.
+  const rift = ctx.db.riftMember.characterId.find(pres.characterId);
+  if (rift && ctx.db.riftRun.id.find(rift.runId)?.lobby) leaveRiftLobby(ctx, pres.characterId);
+  else if (rift) ctx.db.riftMember.characterId.update({ ...rift, offlineSince: ctx.timestamp.microsSinceUnixEpoch });
   ctx.db.presence.identity.delete(who);
   ctx.db.chatCooldown.identity.delete(who);
   ctx.db.inspect.viewer.delete(who);

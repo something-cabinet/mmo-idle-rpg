@@ -800,8 +800,8 @@ export function startRun(seed: bigint, tier: number, mutation: number, members: 
   return state;
 }
 
-/** Whether `m` lets the party move on: no choice waiting, and Ready pressed in a party. */
-export const isReady = (state: RunState, m: MemberState) => m.pending.length === 0 && (state.members.length === 1 || m.ready);
+/** Whether `m` lets the party move on: no choice waiting, and Ready pressed in a party (the downed have nothing to answer). */
+export const isReady = (state: RunState, m: MemberState) => m.downed || (m.pending.length === 0 && (state.members.length === 1 || m.ready));
 
 function checkReady(state: RunState, online?: readonly bigint[]) {
   const waiting = state.members.filter(m => (!online || online.includes(m.characterId)) && !isReady(state, m));

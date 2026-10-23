@@ -75,9 +75,13 @@ import RenameLoadoutReducer from "./rename_loadout_reducer";
 import RerollAffixReducer from "./reroll_affix_reducer";
 import RiftBossReducer from "./rift_boss_reducer";
 import RiftChooseReducer from "./rift_choose_reducer";
+import RiftCreatePartyReducer from "./rift_create_party_reducer";
+import RiftJoinReducer from "./rift_join_reducer";
+import RiftKickReducer from "./rift_kick_reducer";
 import RiftLeaveReducer from "./rift_leave_reducer";
 import RiftMoveReducer from "./rift_move_reducer";
 import RiftReadyReducer from "./rift_ready_reducer";
+import RiftSetOffReducer from "./rift_set_off_reducer";
 import RiftStartReducer from "./rift_start_reducer";
 import SalvageReducer from "./salvage_reducer";
 import ScrapItemsReducer from "./scrap_items_reducer";
@@ -542,9 +546,13 @@ const reducersSchema = __reducers(
   __reducerSchema("reroll_affix", RerollAffixReducer),
   __reducerSchema("rift_boss", RiftBossReducer),
   __reducerSchema("rift_choose", RiftChooseReducer),
+  __reducerSchema("rift_create_party", RiftCreatePartyReducer),
+  __reducerSchema("rift_join", RiftJoinReducer),
+  __reducerSchema("rift_kick", RiftKickReducer),
   __reducerSchema("rift_leave", RiftLeaveReducer),
   __reducerSchema("rift_move", RiftMoveReducer),
   __reducerSchema("rift_ready", RiftReadyReducer),
+  __reducerSchema("rift_set_off", RiftSetOffReducer),
   __reducerSchema("rift_start", RiftStartReducer),
   __reducerSchema("salvage", SalvageReducer),
   __reducerSchema("scrap_items", ScrapItemsReducer),

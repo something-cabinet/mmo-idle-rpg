@@ -550,6 +550,68 @@ await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.
     [...a.conn.db.myRiftLog.iter()].length === 1);
 }
 
+// A Rift party: Alice forms it, Bob joins, Alice sets off; both answer and press Ready, a node
+// is fought together, then Bob leaves mid-floor and the run goes on with Alice alone.
+{
+  const ids = new Map([[a, charOf(a)!.id], [b, charOf(b)!.id]]);
+  const member = (c: Client) => c.conn.db.riftMember.characterId.find(ids.get(c)!);
+  const run = (c: Client) => (member(c) ? c.conn.db.riftRun.id.find(member(c)!.runId) : undefined);
+  const pending = (c: Client) => (member(c)?.pending ? decodeRift<Pending[]>(member(c)!.pending) : []);
+  /** Answers whatever waits for `c` (the first choice; an item: discard; an event or a shop: leave, else what applies). */
+  const answer = async (c: Client) => {
+    for (let guard = 0; guard < 20 && pending(c).length; guard++) {
+      const p = pending(c)[0];
+      const tries = p.kind === 'item' || p.kind === 'shop' ? [p.kind === 'shop' ? -1 : 0] : p.kind === 'event' ? [9, 8, 7, 6, 5, 4, 3, 2, 1, 0] : [0];
+      for (const choice of tries) {
+        try {
+          await c.conn.reducers.riftChoose({ choice, target: -1, theme: 1 });
+          break;
+        } catch {
+          // a choice that doesn't apply: try the next
+        }
+      }
+      await sleep(150);
+    }
+  };
+  await a.conn.reducers.riftCreateParty({ loadout: 0, tier: 5 });
+  await sleep(300);
+  const lobby = run(a);
+  check('a Rift party forms as a lobby, visible to others', !!lobby?.lobby && !!b.conn.db.riftRun.id.find(lobby.id)?.lobby);
+  await expectError('a lobby has no map yet', a.conn.reducers.riftMove({ node: 0 }), "hasn't set off");
+  await b.conn.reducers.riftJoin({ runId: lobby!.id, loadout: 0 });
+  await sleep(300);
+  check('Bob joins with a locked loadout', member(b)?.runId === lobby!.id && b.conn.db.myRiftItems.count() > 0n);
+  await expectError('only the leader sets off', b.conn.reducers.riftSetOff({}), 'Only the party leader');
+  await expectError('one Rift party at a time', b.conn.reducers.riftStart({ loadout: 0, tier: 5 }), 'Leave your Rift party first');
+  await a.conn.reducers.riftSetOff({});
+  await sleep(300);
+  check('setting off puts both at their own Threshold', !run(a)?.lobby && pending(a)[0]?.kind === 'gifts' && pending(b)[0]?.kind === 'gifts');
+  await answer(a);
+  await expectError('the party waits for Bob', a.conn.reducers.riftMove({ node: 0 }), 'Waiting');
+  await answer(b);
+  await a.conn.reducers.riftReady({});
+  await b.conn.reducers.riftReady({});
+  await sleep(200);
+  await expectError('only the leader picks the path', b.conn.reducers.riftMove({ node: 0 }), 'Only the party leader');
+  await a.conn.reducers.riftMove({ node: 0 });
+  await sleep(300);
+  const r = run(a);
+  const fights = r?.fights ? decodeRift<StoredFight[]>(r.fights) : [];
+  check('node 1 is fought by both', fights[0]?.fighters.length === 2, `${fights[0]?.fighters.length} fighters`);
+  check('… and both see their max HP in the party list', (member(a)?.maxHp ?? 0) > 0 && (b.conn.db.riftMember.characterId.find(ids.get(a)!)?.maxHp ?? 0) > 0);
+  if (r) {
+    await answer(b);
+    check("Bob's choice keeps the node's replay", run(a)?.fights === r.fights);
+    await b.conn.reducers.riftLeave({});
+    await sleep(300);
+    check('Bob leaves mid-floor: his rows go, his log stays, the run goes on', !member(b) && !!run(a) &&
+      [...a.conn.db.riftMember.runId.filter(r.id)].length === 1 && [...b.conn.db.myRiftLog.iter()].length === 1);
+  }
+  if (run(a)) await a.conn.reducers.riftLeave({});
+  await sleep(300);
+  check('the last one out ends it', !run(a) && !a.conn.db.riftRun.id.find(lobby!.id));
+}
+
 await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.me, banned: true }), 'Admins only');
 await b.conn.reducers.offerLink({ target: a.me });
 await expectError('guest cannot accept a link', a.conn.reducers.acceptLink({ guest: b.me, discardGuestCharacter: false }), 'Log in first');

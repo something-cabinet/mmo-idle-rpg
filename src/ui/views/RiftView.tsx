@@ -2,11 +2,12 @@
 // mutation and floors paid), then the run: the Threshold's gifts, the floor map and its boss,
 // each node's fight replayed (riftRun.ts `replayFight`, the battle the server settled), boon
 // offers, wear or discard, shops and events, the Rift loadout and boons; and the history
-// and Codex. The client builds the same run state as the server (riftRows.ts) and checks
+// and Codex. A party forms first (create, join from the list, the leader sets off), then
+// shows its members, who is ready, and every member's HP in the replay. The client builds the same run state as the server (riftRows.ts) and checks
 // each choice with the same rules (`apply`), so what can't apply is greyed out with why.
 
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import type { Item, RiftLog, RiftRun } from '../../module_bindings/types';
+import type { Item, RiftLog, RiftMember, RiftRun } from '../../module_bindings/types';
 import { combatStats, type CombatStats } from '../../../spacetimedb/src/combat';
 import type { PlayerSpec } from '../../../spacetimedb/src/battle';
 import { ELITE_AFFIXES_BY_ID } from '../../../spacetimedb/src/data/abyss';
@@ -14,7 +15,7 @@ import { UNIQUES_BY_ID } from '../../../spacetimedb/src/data/uniques';
 import { ZONES, ZONES_BY_ID, ENEMIES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
 import {
   BOONS_BY_ID, BOON_RARITIES, CURSES_BY_ID, EVENTS_BY_ID, FLOORS, FLOOR_REWARDS, GIFTS_BY_ID, Gift, MUTATIONS_BY_ID, NODE_TIME_LIMIT, RIFT_EFFECTS,
-  RIFT_EFFECTS_BY_ID, RIFT_HEART, RiftEffect, RIFT_MIN_TIER, RIFT_UNLOCK_ZONE, ROWS, SET_AT, THEMES, THEMES_BY_ID, TROPHIES_BY_ID, boonText,
+  RIFT_EFFECTS_BY_ID, RIFT_HEART, RIFT_KICK_OFFLINE_MINUTES, RIFT_PARTY_SIZE, PARTY_HP, RiftEffect, RIFT_MIN_TIER, RIFT_UNLOCK_ZONE, ROWS, SET_AT, THEMES, THEMES_BY_ID, TROPHIES_BY_ID, boonText,
   type BoonDef,
 } from '../../../spacetimedb/src/data/rift';
 import {
@@ -22,10 +23,10 @@ import {
   type BoonChoice, type EtherealItem, type FloorMap, type Headlines,
 } from '../../../spacetimedb/src/rift';
 import {
-  DISCARD, RiftError, SHOP_LEAVE, SHOP_REROLL, SKIP, WEAR, apply, decodeRift, fightParts, memberMarks, memberStats, reachable, replayFight,
+  DISCARD, RiftError, SHOP_LEAVE, SHOP_REROLL, SKIP, WEAR, apply, decodeRift, fightParts, isReady, memberMarks, memberStats, reachable, replayFight,
   rerollCost, unravelled, wearPlan, type MemberState, type Pending, type RiftAction, type RiftItem, type RunState, type StoredFight,
 } from '../../../spacetimedb/src/riftRun';
-import { stateFromRows } from '../../../spacetimedb/src/riftRows';
+import { byJoin, stateFromRows } from '../../../spacetimedb/src/riftRows';
 import { decodeBuild } from '../../../spacetimedb/src/abyss';
 import { base } from '../../../spacetimedb/src/data/bases';
 import { Effect } from '../../../spacetimedb/src/data/legendary';
@@ -71,6 +72,14 @@ function refusal(state: RunState, action: RiftAction): string | undefined {
   }
 }
 
+const isOnline = (s: Snapshot, characterId: bigint) => [...s.conn.db.presence.iter()].some(p => p.characterId === characterId);
+
+/** Who leads now: the leader, or while they're offline the first online member (reducers/rift.ts `actingLeader`). */
+function actingLeader(s: Snapshot, run: RiftRun, members: readonly RiftMember[]): bigint {
+  if (isOnline(s, run.leaderId)) return run.leaderId;
+  return byJoin(members).find(m => isOnline(s, m.characterId))?.characterId ?? run.leaderId;
+}
+
 export const RiftView = memo(function RiftView({ s }: { s: Snapshot }) {
   const conn = s.conn;
   const zone = ZONES_BY_ID.get(RIFT_UNLOCK_ZONE)!;
@@ -88,6 +97,8 @@ export const RiftView = memo(function RiftView({ s }: { s: Snapshot }) {
       </p>
       {!unlocked ? (
         <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} in {zone.name} to open the Shifting Rift</div>
+      ) : run && member && run.lobby ? (
+        <Lobby s={s} run={run} />
       ) : run && member ? (
         <Run s={s} run={run} />
       ) : (
@@ -148,19 +159,99 @@ function Start({ s }: { s: Snapshot }) {
           <p className="muted hint">
             Your gear and level are copied in at the start; your real items stay free. Elixirs, meals and Phials don't come along.
           </p>
-          <button className="btn primary deep-go" disabled={busy || empty} onClick={() => {
-            setBusy(true);
-            const p = conn.reducers.riftStart({ loadout: lo?.index ?? 0, tier });
-            p.finally(() => setBusy(false));
-            call(p);
-          }}>
-            <Icon name="sparkles" />
-            {empty ? 'That loadout is empty' : busy ? 'Entering…' : `Enter at T${tier}`}
-          </button>
+          <div className="row">
+            <button className="btn primary deep-go" disabled={busy || empty} onClick={() => {
+              setBusy(true);
+              const p = conn.reducers.riftStart({ loadout: lo?.index ?? 0, tier });
+              p.finally(() => setBusy(false));
+              call(p);
+            }}>
+              <Icon name="sparkles" />
+              {empty ? 'That loadout is empty' : busy ? 'Entering…' : `Enter alone at T${tier}`}
+            </button>
+            <button className="btn" disabled={busy || empty} onClick={() => call(conn.reducers.riftCreateParty({ loadout: lo?.index ?? 0, tier }))}>
+              <Icon name="users" />Form a party
+            </button>
+          </div>
         </div>
+        <OpenParties s={s} loadout={lo?.index ?? 0} tiers={tiers} empty={empty} />
         <FloorRewards tier={tier} week={week} paid={paid} />
       </section>
     </>
+  );
+}
+
+/** Parties still forming, to join with loadout `loadout`. */
+function OpenParties({ s, loadout, tiers, empty }: { s: Snapshot; loadout: number; tiers: number[]; empty: boolean }) {
+  const conn = s.conn;
+  const lobbies = [...conn.db.riftRun.iter()].filter(r => r.lobby);
+  return (
+    <div className="rift-open">
+      <h3>Parties <span className="muted">2–{RIFT_PARTY_SIZE} players; the path is shared, everything else is your own</span></h3>
+      {lobbies.length ? (
+        <ul className="rift-party">
+          {lobbies.map(r => {
+            const members = byJoin([...conn.db.riftMember.runId.filter(r.id)]);
+            const leader = members.find(m => m.characterId === r.leaderId);
+            const full = members.length >= RIFT_PARTY_SIZE;
+            const open = tiers.includes(r.tier);
+            return (
+              <li key={String(r.id)}>
+                <span className="tag">T{r.tier}</span>
+                <strong>{leader?.name ?? '?'}</strong>
+                <span className="muted">{members.length} / {RIFT_PARTY_SIZE}{members.length > 1 ? ` · ${members.filter(m => m.characterId !== r.leaderId).map(m => m.name).join(', ')}` : ''}</span>
+                <button className="btn small" disabled={full || !open || empty} title={!open ? `T${r.tier} isn't open to you yet` : undefined}
+                  onClick={() => call(conn.reducers.riftJoin({ runId: r.id, loadout }))}>
+                  {full ? 'Full' : 'Join'}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <p className="muted hint">No party is forming. Form one, and others can join it from this page.</p>
+      )}
+    </div>
+  );
+}
+
+/** A party forming: its members, the leader's Set off and kicks, Leave. */
+function Lobby({ s, run }: { s: Snapshot; run: RiftRun }) {
+  const conn = s.conn;
+  const members = byJoin([...conn.db.riftMember.runId.filter(run.id)]);
+  const leads = run.leaderId === s.row.id;
+  const leader = members.find(m => m.characterId === run.leaderId);
+  return (
+    <section className="card rift-lobby">
+      <CardHead title="Rift party">
+        <span className="muted"><span className="tag">T{run.tier}</span> {members.length} / {RIFT_PARTY_SIZE}</span>
+      </CardHead>
+      <ul className="rift-party">
+        {members.map(m => (
+          <li key={String(m.characterId)} className={m.characterId === s.row.id ? 'me' : ''}>
+            {m.characterId === run.leaderId ? <Icon name="crown" className="c-gold" /> : <Icon name="user" />}
+            <strong>{m.name}</strong>
+            <span className="muted">Lv {m.level}</span>
+            {leads && m.characterId !== s.row.id && (
+              <button className="btn small ghost" onClick={() => call(conn.reducers.riftKick({ characterId: m.characterId }))}>Kick</button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p className="muted hint">
+        Each loadout was locked when its owner joined. The leader picks the path and the bosses, and everyone fights every node together; boons,
+        shops, events and Ethereal gear are your own. Enemy HP × {PARTY_HP[members.length - 1]} for {members.length === 1 ? 'one' : members.length}.
+        Leaving the world leaves the party until it sets off.
+      </p>
+      <div className="row">
+        {leads ? (
+          <button className="btn primary" onClick={() => call(conn.reducers.riftSetOff({}))}><Icon name="sparkles" />Set off</button>
+        ) : (
+          <span className="muted">Waiting for {leader?.name ?? 'the leader'} to set off</span>
+        )}
+        <button className="btn ghost" onClick={() => call(conn.reducers.riftLeave({}))}>Leave the party</button>
+      </div>
+    </section>
   );
 }
 
@@ -223,10 +314,11 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
   const conn = s.conn;
   const members = [...conn.db.riftMember.runId.filter(run.id)];
   const items = [...conn.db.myRiftItems.iter()].filter(i => i.runId === run.id);
-  const state = useMemo(() => stateFromRows(run, members, items), [run, members.map(m => m.pending + m.hp + m.motes).join(), items.length, items.map(i => String(i.id)).join()]); // eslint-disable-line react-hooks/exhaustive-deps
+  const state = useMemo(() => stateFromRows(run, members, items), [run, members.map(m => `${m.characterId}${m.pending}${m.hp}${m.motes}${m.ready}${m.downed}`).join(), items.length, items.map(i => String(i.id)).join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const me = state.members.find(m => m.characterId === s.row.id)!;
   const stats = useMemo(() => memberStats(state, me), [state, me]);
-  const fights = run.fights ? decodeRift<StoredFight[]>(run.fights) : [];
+  // Another member's event fight is theirs to watch.
+  const fights = (run.fights ? decodeRift<StoredFight[]>(run.fights) : []).filter(f => f.kind !== 'event' || f.characterId === s.row.id);
   const key = String(run.actedAt.microsSinceUnixEpoch);
   const [watched, setWatched] = useSticky<string>('riftWatched', '');
   const fresh = fights.length > 0 && watched !== key && nowMicros() - run.actedAt.microsSinceUnixEpoch < FRESH_MICROS;
@@ -240,6 +332,12 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
     refusal(state, { type: 'choose', member: me.characterId, choice, ...(target !== undefined && { target }), ...(theme !== undefined && { theme }) });
   const ctx: ChoiceCtx = { s, state, me, stats, choose, check };
   const p = me.pending[0];
+  const party = state.members.length > 1;
+  const leadId = actingLeader(s, run, members);
+  const waiting = state.members.filter(m => isOnline(s, m.characterId) && !isReady(state, m));
+  const nameOf = (id: bigint) => members.find(m => m.characterId === id)?.name ?? '?';
+  const moveNote = !party ? undefined : leadId !== s.row.id ? `${nameOf(leadId)} picks the path` :
+    waiting.length ? `Waiting for ${waiting.map(m => (m.characterId === s.row.id ? 'you' : nameOf(m.characterId))).join(', ')}` : undefined;
 
   // While the fights replay, the bar shows the HP from before them, not their outcome.
   const before = watching ? fights.find(f => f.fighters.includes(me.characterId)) : undefined;
@@ -248,6 +346,8 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
   return (
     <>
       <RunBar s={s} run={run} state={state} me={me} stats={stats} hpBefore={hpBefore} />
+      {/* During a replay the party's bars are in it; the list would show the outcome. */}
+      {party && !(watching && fights.length) && <PartyCard s={s} run={run} state={state} members={members} leadId={leadId} />}
       {watching && fights.length ? (
         <Replay s={s} run={run} fights={fights} onClose={() => {
           setWatched(key);
@@ -256,7 +356,7 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
       ) : p ? (
         <Choice ctx={ctx} p={p} />
       ) : (
-        <FloorMapCard s={s} state={state} me={me} />
+        <FloorMapCard s={s} state={state} me={me} canMove={leadId === s.row.id && !waiting.length} note={moveNote} />
       )}
       {!watching && fights.length > 0 && !p && (
         <div className="row rift-rewatch"><button className="btn small ghost" onClick={() => setWatching(true)}><Icon name="swords" />Watch the last fight again</button></div>
@@ -266,6 +366,45 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
         <LoadoutCard me={me} stats={stats} />
       </div>
     </>
+  );
+}
+
+/** A party's members: HP, who leads, who is ready, choosing, down or offline; your Ready; the leader's kicks. */
+function PartyCard({ s, run, state, members, leadId }: { s: Snapshot; run: RiftRun; state: RunState; members: readonly RiftMember[]; leadId: bigint }) {
+  const conn = s.conn;
+  const me = state.members.find(m => m.characterId === s.row.id)!;
+  const leads = leadId === s.row.id;
+  const now = nowMicros();
+  const away = BigInt(RIFT_KICK_OFFLINE_MINUTES) * 60_000_000n;
+  return (
+    <section className="card rift-party-card">
+      <CardHead title="Party">
+        {!me.downed && !me.pending.length && (me.ready ? (
+          <span className="tag c-ok">Ready</span>
+        ) : (
+          <button className="btn small primary" onClick={() => call(conn.reducers.riftReady({}))}>Ready</button>
+        ))}
+      </CardHead>
+      <ul className="rift-party">
+        {byJoin(members).map(row => {
+          const m = state.members.find(x => x.characterId === row.characterId);
+          if (!m) return null;
+          const online = isOnline(s, row.characterId);
+          const max = Math.max(1, row.maxHp);
+          const status = m.downed ? 'Down' : !online ? 'Offline' : isReady(state, m) ? 'Ready' : m.pending.length ? 'Choosing' : 'Not ready';
+          const kickable = leads && row.characterId !== s.row.id && !online && row.offlineSince > 0n && now - row.offlineSince >= away;
+          return (
+            <li key={String(row.characterId)} className={`${row.characterId === s.row.id ? 'me' : ''}${m.downed ? ' downed' : ''}`}>
+              {row.characterId === leadId ? <Icon name="crown" className="c-gold" /> : <Icon name="user" />}
+              <strong title={row.characterId === run.leaderId ? 'Leader' : row.characterId === leadId ? 'Leading while the leader is away' : undefined}>{row.name}</strong>
+              <div className="hpbar rift-party-hp"><div className="hp-fill" style={{ width: `${Math.max(0, Math.min(1, m.hp / max)) * 100}%` }} /><span className="hp-text">{fmt(Math.max(0, m.hp))} / {fmt(max)}</span></div>
+              <span className={`tag${status === 'Ready' ? ' c-ok' : status === 'Down' ? ' c-bad' : ''}`}>{status}</span>
+              {kickable && <button className="btn small ghost" onClick={() => call(conn.reducers.riftKick({ characterId: row.characterId }))}>Kick</button>}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -307,7 +446,7 @@ function RunBar({ s, run, state, me, stats, hpBefore }: { s: Snapshot; run: Rift
 
 // ---------------------------------------------------------------- the map
 
-function FloorMapCard({ s, state, me }: { s: Snapshot; state: RunState; me: MemberState }) {
+function FloorMapCard({ s, state, me, canMove = true, note }: { s: Snapshot; state: RunState; me: MemberState; canMove?: boolean; note?: string }) {
   const conn = s.conn;
   const map = useMemo(() => floorMap(state.seed, state.floor), [state.seed, state.floor]);
   const open = reachable(state);
@@ -318,7 +457,7 @@ function FloorMapCard({ s, state, me }: { s: Snapshot; state: RunState; me: Memb
   return (
     <section className="card rift-map-card">
       <CardHead title={`Floor ${state.floor}`}>
-        <span className="muted">{atBoss ? 'Pick the floor boss' : state.row < 0 ? 'Pick where to start' : 'Pick the next node'}</span>
+        <span className="muted">{note ?? (atBoss ? 'Pick the floor boss' : state.row < 0 ? 'Pick where to start' : 'Pick the next node')}</span>
       </CardHead>
       <div className="rift-map-wrap" ref={wrap}>
       <svg className="rift-links" aria-hidden="true">
@@ -340,7 +479,7 @@ function FloorMapCard({ s, state, me }: { s: Snapshot; state: RunState; me: Memb
               return (
                 <button key={c} ref={el => { if (el) nodes.current.set(`${r}.${c}`, el); else nodes.current.delete(`${r}.${c}`); }}
                   className={`rift-node ${node.kind}${here ? ' here' : ''}${next ? ' next' : ''}${past ? ' past' : ''}`} title={title}
-                  disabled={!next} onClick={() => call(conn.reducers.riftMove({ node: c }))}>
+                  disabled={!next || !canMove} onClick={() => call(conn.reducers.riftMove({ node: c }))}>
                   <Icon name={KIND_ICON[node.kind]} />
                   <span>{node.kind === 'event' && next ? EVENTS_BY_ID.get(node.event!)?.name : KIND_LABEL[node.kind]}</span>
                 </button>
@@ -350,7 +489,7 @@ function FloorMapCard({ s, state, me }: { s: Snapshot; state: RunState; me: Memb
         ))}
       </ol>
       </div>
-      <Bosses s={s} state={state} me={me} open={atBoss} />
+      <Bosses s={s} state={state} me={me} open={atBoss && canMove} />
       <p className="muted hint">Fights: 1–3 enemies back to back on one HP bar, {Math.round(NODE_TIME_LIMIT / 60)}:00 for the node. HP carries over; no rest nodes.</p>
     </section>
   );
@@ -476,6 +615,7 @@ function Replay({ s, run, fights, onClose }: { s: Snapshot; run: RiftRun; fights
         </ol>
       )}
       {parts && !skipped && <ReplayScene key={`${index}-${k}`} s={s} parts={parts} k={k} clock={clock.current} />}
+      {f.fighters.length > 1 && <ReplayParty s={s} f={f} result={result} t={live ? t : Infinity} />}
       {live ? (
         <div className="row deep-replay-actions">
           <div className="seg">
@@ -504,6 +644,29 @@ function Replay({ s, run, fights, onClose }: { s: Snapshot; run: RiftRun; fights
         </>
       )}
     </section>
+  );
+}
+
+/** Every member's HP at replay time `t` (Infinity: the end), from the battle's events. */
+function ReplayParty({ s, f, result, t }: { s: Snapshot; f: StoredFight; result: ReturnType<typeof replayFight>; t: number }) {
+  let hp = f.setup.sides[0].map(c => (c as PlayerSpec).start?.hp ?? (c as PlayerSpec).stats.maxHp);
+  if (t === Infinity) hp = result.hp.slice(0, hp.length);
+  else for (const e of result.events) {
+    if (e.t > t) break;
+    hp = e.hp.slice(0, hp.length);
+  }
+  return (
+    <ul className="rift-party rift-replay-party">
+      {f.fighters.map((id, i) => {
+        const max = result.maxHp[i] || 1;
+        return (
+          <li key={String(id)} className={id === s.row.id ? 'me' : ''}>
+            <strong>{s.conn.db.riftMember.characterId.find(id)?.name ?? '?'}</strong>
+            <div className="hpbar rift-party-hp"><div className="hp-fill" style={{ width: `${Math.max(0, Math.min(1, hp[i] / max)) * 100}%` }} /><span className="hp-text">{fmt(Math.max(0, hp[i]))} / {fmt(max)}</span></div>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

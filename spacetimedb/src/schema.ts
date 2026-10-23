@@ -757,6 +757,168 @@ export const abyssLog = table(
   }
 );
 
+/** A boon held in the Shifting Rift (data/rift.ts `BOONS`), at rarity 0–2. */
+export const RiftBoon = t.object('RiftBoon', {
+  id: t.u16(),
+  rarity: t.u8(),
+});
+
+/** An Ethereal item's headlines (rift.ts `Headlines`); 0, false or empty = none. */
+export const RiftHeadlines = t.object('RiftHeadlines', {
+  riftEffect: t.u16(),
+  mark: t.u8(),
+  growth: t.bool(),
+  trophies: t.array(t.u16()),
+  echo: t.u16(),
+});
+
+/**
+ * A Shifting Rift run (shifting-rift.md; riftRun.ts `RunState`): a solo run is a party of
+ * one. Public, so a party sees it. Deleted when the run ends (its members get a `rift_log`).
+ */
+export const riftRun = table(
+  { name: 'rift_run', public: true },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    /** rift.ts `runSeed`: every roll of the run comes from it. */
+    seed: t.u64(),
+    /** The Rift week it started in (rift.ts `riftWeek`); a call in a later week ends it. */
+    week: t.u32(),
+    tier: t.u8(),
+    mutation: t.u8(),
+    floor: t.u8(),
+    /** The row of the node the party stands on, −1 before a floor's first. */
+    row: t.i8(),
+    col: t.u8(),
+    leaderId: t.u64(),
+    /** Floors whose boss fell this run. */
+    cleared: t.u8(),
+    startedAt: t.timestamp(),
+    /** The battles of the last action (riftRun.ts `encodeFights`), for the client to replay; '' for none. */
+    fights: t.string(),
+    /** When the last action was taken (the replay starts then). */
+    actedAt: t.timestamp(),
+  }
+);
+
+/** A member of a Rift run (riftRun.ts `MemberState`). Public, with the run. */
+export const riftMember = table(
+  { name: 'rift_member', public: true },
+  {
+    characterId: t.u64().primaryKey(),
+    runId: t.u64().index('btree'),
+    /** Snapshot, so the party list needs no character rows. */
+    name: t.string(),
+    joinedAt: t.timestamp(),
+    /** Locked at the start. */
+    level: t.u8(),
+    hp: t.f64(),
+    motes: t.u32(),
+    boons: t.array(RiftBoon),
+    curses: t.array(t.u16()),
+    /** Marked Path's theme marks (worn items carry their own). */
+    marks: t.array(t.u8()),
+    thickBlood: t.bool(),
+    /** Second Wind left this floor, a share of max HP. */
+    secondWind: t.f64(),
+    holdTheLine: t.bool(),
+    /** Fight nodes won this floor (Bloodrush). */
+    won: t.u8(),
+    downed: t.bool(),
+    ready: t.bool(),
+    /** Choices waiting, in order (riftRun.ts `Pending`, `encodeRift`). */
+    pending: t.string(),
+    skipBoon: t.bool(),
+    freeRare: t.bool(),
+    /** Motes spent not yet turned into Spendthrift's healing. */
+    spent: t.u16(),
+    /** What this run's floor clears paid this member, for its log. */
+    paidGold: t.u64(),
+    paidXp: t.u64(),
+    paidDust: t.u64(),
+    paidMaterials: t.array(MaterialCount),
+  }
+);
+
+/**
+ * An item in a member's Rift loadout, worn in `slot`: a locked copy of a real item, or an
+ * Ethereal one (with headlines). The same columns as `item`, so the stat build reads it
+ * the same way; its own table, so no item reducer can ever touch it. Private; a run's
+ * members read theirs via `my_rift_items`.
+ */
+export const riftItem = table(
+  { name: 'rift_item' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    runId: t.u64().index('btree'),
+    characterId: t.u64().index('btree'),
+    slot: t.u8(),
+    baseId: t.u16(),
+    tier: t.u8(),
+    rarity: Rarity,
+    implicits: t.array(StatValue),
+    affixes: t.array(Affix),
+    legendary: LegendaryAffix.optional(),
+    uniqueId: t.u16().optional(),
+    weapon: WeaponStats.optional(),
+    effects: t.array(t.u16()),
+    temper: t.u8(),
+    boundAffix: t.u8(),
+    corruption: t.u8(),
+    /** Set on Ethereal items. */
+    headlines: RiftHeadlines.optional(),
+    /** The headline its source guaranteed: 0 none, 1 a Trophy, 2 an Echo. */
+    guaranteed: t.u8(),
+  }
+);
+
+/** The tier each floor's weekly reward was paid at (0: not yet), for one character's current week. Private; `my_rift_week`. */
+export const riftWeek = table(
+  { name: 'rift_week' },
+  {
+    characterId: t.u64().primaryKey(),
+    week: t.u32(),
+    /** Index = floor − 1. */
+    paid: t.array(t.u8()),
+  }
+);
+
+/** One finished Rift run, for the run history (the last 10 kept). Private; `my_rift_log`. */
+export const riftLog = table(
+  { name: 'rift_log' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    startedAt: t.timestamp(),
+    endedAt: t.timestamp(),
+    tier: t.u8(),
+    mutation: t.u8(),
+    /** The floor it ended on, and floors cleared. */
+    floor: t.u8(),
+    cleared: t.u8(),
+    /** riftRun.ts `RunState.end`. */
+    end: t.string(),
+    boons: t.array(RiftBoon),
+    /** The final Rift loadout (abyss.ts `encodeBuild`). */
+    build: t.string(),
+    gold: t.u64(),
+    xp: t.u64(),
+    dust: t.u64(),
+    materials: t.array(MaterialCount),
+  }
+);
+
+/** What a character has seen in the Rift (the Rift Codex): kind 1 a boon, 2 an Ethereal base, 3 a rift effect. Private; `my_rift_codex`. */
+export const riftCodex = table(
+  { name: 'rift_codex' },
+  {
+    id: t.u64().primaryKey().autoInc(),
+    characterId: t.u64().index('btree'),
+    kind: t.u8(),
+    entryId: t.u16(),
+  }
+);
+
 /** A cosmetic a character has unlocked (data/cosmetics.ts). Private; owners read theirs via `my_cosmetics`. */
 export const cosmeticUnlock = table(
   { name: 'cosmetic_unlock' },
@@ -808,6 +970,12 @@ export const spacetimedb = schema({
   raidTimer,
   abyssRecord,
   abyssLog,
+  riftRun,
+  riftMember,
+  riftItem,
+  riftWeek,
+  riftLog,
+  riftCodex,
   cosmeticUnlock,
   look,
   skill,

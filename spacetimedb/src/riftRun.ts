@@ -86,8 +86,8 @@ export interface RunState {
   row: number;
   col: number;
   phase: 'map' | 'ended';
-  /** How it ended: the boss of floor 5 fell, everyone fell, a node ran out of time, or everyone left. */
-  end?: 'cleared' | 'dead' | 'timeout' | 'left';
+  /** How it ended: the boss of floor 5 fell, everyone fell, a node ran out of time, everyone left, or the week ended. */
+  end?: 'cleared' | 'dead' | 'timeout' | 'left' | 'week';
   /** Floors whose boss fell this run. */
   cleared: number;
   members: MemberState[];
@@ -103,12 +103,23 @@ export type RiftAction =
   | { type: 'ready'; member: bigint }
   | { type: 'leave'; member: bigint };
 
-/** A battle `apply` played: its inputs, so a client can replay it, and its result. */
+/** Where a fight's generator comes from: the run's (`member` 0) or a member's, for `purpose` and `parts` (rift.ts `runRng`, `memberRng`). */
+export interface RiftRng {
+  member: bigint;
+  purpose: number;
+  parts: number[];
+}
+
+/** The generator `r` names in the run of seed `seed`. */
+export const riftRng = (seed: bigint, r: RiftRng): Rng => (r.member === 0n ? runRng(seed, r.purpose, ...r.parts) : memberRng(seed, r.member, r.purpose, ...r.parts));
+
+/** A battle `apply` played: its inputs (setup and generator), so a client can replay it, and its result. */
 export interface RiftFight {
   kind: 'node' | 'boss' | 'event';
   /** Whose fight an event's was. */
   characterId?: bigint;
   setup: BattleSetup;
+  rng: RiftRng;
   result: BattleResult;
 }
 
@@ -367,8 +378,9 @@ function playNode(state: RunState, kind: 'fight' | 'elite', record: boolean, out
   const fighters = living(state);
   const foes = lineupFoes(state, kind);
   const setup = nodeSetup(state, fighters, foes);
-  const result = fight(fighters, setup, runRng(state.seed, Purpose.Fight, state.floor, state.row, state.col), record);
-  out.push({ kind: 'node', setup, result });
+  const rng: RiftRng = { member: 0n, purpose: Purpose.Fight, parts: [state.floor, state.row, state.col] };
+  const result = fight(fighters, setup, riftRng(state.seed, rng), record);
+  out.push({ kind: 'node', setup, rng, result });
   if (!finishFight(state, result)) return;
   const elite = foes.find(f => f.affixes.length);
   for (const m of living(state)) {
@@ -403,8 +415,9 @@ function playBoss(state: RunState, option: number, record: boolean, out: RiftFig
   const fighters = living(state);
   const heart = opt.enemyId === RIFT_HEART.id;
   const setup = nodeSetup(state, fighters, [{ enemyId: opt.enemyId, slot: heart ? 'heart' : 'boss', affixes: opt.affixes }]);
-  const result = fight(fighters, setup, runRng(state.seed, Purpose.Fight, state.floor, ROWS, 0), record);
-  out.push({ kind: 'boss', setup, result });
+  const rng: RiftRng = { member: 0n, purpose: Purpose.Fight, parts: [state.floor, ROWS, 0] };
+  const result = fight(fighters, setup, riftRng(state.seed, rng), record);
+  out.push({ kind: 'boss', setup, rng, result });
   if (!finishFight(state, result)) return undefined;
   const floor = state.floor;
   const echo = heart ? ('any' as const) : (ENEMIES_BY_ID.get(opt.enemyId)?.zone.tier ?? 'any');
@@ -528,10 +541,11 @@ function chooseShop(state: RunState, m: MemberState, p: Extract<Pending, { kind:
 
 // ---------------------------------------------------------------- events
 
-/** A fight of the event's own, for `m` alone: their HP carried in, the outcome carried back. */
-function eventFight(state: RunState, m: MemberState, setup: BattleSetup, rng: Rng, record: boolean, out: RiftFight[]): BattleResult {
-  const result = simulateBattle({ ...setup, record }, rng);
-  out.push({ kind: 'event', characterId: m.characterId, setup, result });
+/** A fight of the event's own, for `m` alone, on a generator of its own (so it replays from its setup). */
+function eventFight(state: RunState, m: MemberState, p: Extract<Pending, { kind: 'event' }>, setup: BattleSetup, record: boolean, out: RiftFight[]): BattleResult {
+  const rng: RiftRng = { member: m.characterId, purpose: Purpose.Fight, parts: [state.floor, state.row, state.col, p.event, p.used.length] };
+  const result = simulateBattle({ ...setup, record }, riftRng(state.seed, rng));
+  out.push({ kind: 'event', characterId: m.characterId, setup, rng, result });
   return result;
 }
 
@@ -580,7 +594,7 @@ function chooseEvent(state: RunState, m: MemberState, p: Extract<Pending, { kind
     case 5: { // Your Reflection: a duel against your own build, from your HP
       const s = memberStats(state, m);
       const me: PlayerSpec = { kind: 'player', stats: s, start: { hp: m.hp, secondWind: 0, renewal: 0 } };
-      const r = eventFight(state, m, { sides: [[me], [{ ...me }]], firstSwing: 'half', timeLimit: E.reflectionSeconds, onTimeout: 'points' }, rng, record, out);
+      const r = eventFight(state, m, p, { sides: [[me], [{ ...me }]], firstSwing: 'half', timeLimit: E.reflectionSeconds, onTimeout: 'points' }, record, out);
       if (r.winner === 0) {
         const b = rollBoon(rng, ctx(), 2);
         if (b) addBoon(m, b);
@@ -605,7 +619,7 @@ function chooseEvent(state: RunState, m: MemberState, p: Extract<Pending, { kind
       const echo = ECHOES_BY_ID.get(103) ?? RIFT_ECHOES[0];
       const goblin = { ...riftEnemy(state.tier, state.floor, echo.enemy.id, 'fight1'), name: 'Rift Goblin', hp: 1e15, dps: 0 };
       const me: PlayerSpec = { kind: 'player', stats: memberStats(state, m), start: { hp: m.hp, renewal: 0 } };
-      const r = eventFight(state, m, { sides: [[me], [{ kind: 'foe', def: goblin }]], firstSwing: 'half', timeLimit: E.goblinSeconds, onTimeout: 'draw' }, rng, true, out);
+      const r = eventFight(state, m, p, { sides: [[me], [{ kind: 'foe', def: goblin }]], firstSwing: 'half', timeLimit: E.goblinSeconds, onTimeout: 'draw' }, true, out);
       const hits = r.events.filter(e => e.by === 0 && (e.kind === 'hit' || e.kind === 'crit')).length;
       earn(state, m, hits * E.goblinMotesPerHit, false);
       if (!record) r.events.length = 0;
@@ -645,7 +659,7 @@ function chooseEvent(state: RunState, m: MemberState, p: Extract<Pending, { kind
       const enemyId = RIFT_ECHOES[Math.floor(rng() * RIFT_ECHOES.length)].enemy.id;
       const affix = ELITE_AFFIXES[Math.floor(rng() * ELITE_AFFIXES.length)].id;
       const setup = nodeSetup(state, [m], [{ enemyId, slot: 'elite', affixes: [affix] }]);
-      const r = eventFight(state, m, setup, rng, record, out);
+      const r = eventFight(state, m, p, setup, record, out);
       const f = r.fighters[0]!;
       m.hp = f.hp;
       m.secondWind = f.secondWind;
@@ -858,3 +872,19 @@ export function apply(state: RunState, action: RiftAction, record = false): Appl
   }
   return { state: s, fights, ...(cleared !== undefined && { cleared }) };
 }
+
+// ---------------------------------------------------------------- storage
+
+/** JSON that keeps bigints and Maps (a run's waiting choices, a fight's setup for its replay). */
+export const encodeRift = (x: unknown): string =>
+  JSON.stringify(x, (_k, v) => (typeof v === 'bigint' ? { $big: String(v) } : v instanceof Map ? { $map: [...v] } : v));
+
+export function decodeRift<T>(json: string): T {
+  return JSON.parse(json, (_k, v) => (v && typeof v === 'object' && '$big' in v ? BigInt(v.$big) : v && typeof v === 'object' && '$map' in v ? new Map(v.$map) : v)) as T;
+}
+
+/** A stored fight, without its result (the client plays it again from the setup). */
+export type StoredFight = Omit<RiftFight, 'result'>;
+export const encodeFights = (fights: readonly RiftFight[]): string => encodeRift(fights.map(({ result: _r, ...f }) => f));
+/** Plays a stored fight again, events kept: the same battle the server settled. */
+export const replayFight = (seed: bigint, f: StoredFight): BattleResult => simulateBattle({ ...f.setup, record: true }, riftRng(seed, f.rng));

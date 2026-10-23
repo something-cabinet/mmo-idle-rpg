@@ -15,6 +15,7 @@ export * from './reducers/inspect';
 export * from './reducers/friends';
 export * from './reducers/raid';
 export * from './reducers/abyss';
+export * from './reducers/rift';
 export * from './reducers/skills';
 export * from './reducers/cosmetics';
 export * from './reducers/views';

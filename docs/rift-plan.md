@@ -14,8 +14,8 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 | R1 | Data and generation | **Done** (`npm run test:rift` passes, with every other check) |
 | R2 | Engine hooks | **Done** (`npm run test:combat` has a check per hook; old fights unchanged) |
 | R3 | A node, a run, the bots | **Done** (`npm run test:rift` plays bot runs; floor scaling × 1.6 to review) |
-| R4 | Schema and solo reducers | **Next** |
-| R5 | Client, solo | — |
+| R4 | Schema and solo reducers | **Done** (smoke test: a solo run on the local server) |
+| R5 | Client, solo | **Next** |
 | R6 | Co-op | — |
 | R7 | After launch | — |
 
@@ -164,7 +164,43 @@ on floor 1; the greedy builder clears 45%. A full run is ~23 fights; a node sett
 **Open for later:** the zone bosses' own mechanics on their echoes (the design's "its own
 mechanic"); today a boss echo has its shape and an Elite affix only.
 
-**R4 next:** schema and solo reducers (below), around `apply`.
+**What R4 left in the code:**
+
+- Tables (schema.ts): `rift_run` and `rift_member` (public), `rift_item`, `rift_week`,
+  `rift_log` (last 10), `rift_codex` (private, read through `my_rift_items`, `my_rift_week`,
+  `my_rift_log`, `my_rift_codex`). A member's waiting choices and the last action's battles
+  are JSON (riftRun.ts `encodeRift`, `encodeFights`), like the Deep's `encodeStats`.
+- Reducers (reducers/rift.ts): `riftStart(loadout, tier)`, `riftMove(node)` and
+  `riftBoss(option)` (leader), `riftChoose(choice, target, theme)`, `riftReady()`,
+  `riftLeave()`. Each loads the run, calls `apply`, writes it back; a cleared floor pays every
+  member from their `rift_week`; an ended run writes each member's log and deletes its rows.
+- The client replays a stored battle with `replayFight(run.seed, fight)` (riftRun.ts).
+- rift.ts `rewardOwed`: what a clear owes against the tier already paid.
+- Smoke test: start, the refusals, a gift, node 1 and its replay matching the server's HP, a
+  boon, a shop heal, leaving (rows gone, log kept). Not covered live: a floor boss's payout
+  (`rewardOwed` is checked offline in `test:rift`).
+
+**Decisions taken in R4** (for the user to review):
+
+- **One `riftChoose` reducer** answers every waiting choice (gift, boon, wear or discard,
+  shop, event), in place of `riftPick` / `riftBuy` / `riftTake`.
+- **The phase isn't stored:** the client derives the Threshold (a gift waiting) and the boss
+  (the last row reached) from the run.
+- **A re-clear at a higher tier** pays the gold, XP and Dust difference, the tier's
+  materials, herbs and elixirs again, and Riftstone only once.
+- **Every member is paid** when a floor boss falls, downed ones included.
+- **The weekly reset** ends a run on its next call (`end: 'week'`); what it paid stays paid.
+- **The Codex** records boons offered or held, and the bases and rift effects of Ethereal
+  items seen (offered or worn).
+
+**Local server note:** publishing to the local server needed a confirmation for breaking
+changes that were already in the code before R4 (item and raid columns, views), so
+`npm run spacetime:publish:local` needs a `y` once. The smoke test's port: the local server
+here runs on 3001 (`SPACETIMEDB_HOST=ws://localhost:3001 npm run test:smoke`). The smoke test
+has a failure from before R4: "a tool upgrade is not queued" (and, now and then, "… with as
+much character XP as skill XP").
+
+**R5 next:** the client, solo (below).
 
 ## Shape
 
@@ -279,7 +315,7 @@ compare runs by seed, so they catch any drift.
   greedy clears floor 5 about half the time, and a full run plays ~25 fights. Also: a party
   of 2–4 bots with the factors, and the reducer call stays well under 1 ms per node.
 
-## R4: schema and solo reducers
+## R4: schema and solo reducers — done, 2026-10-23
 
 - **Tables** (new columns get defaults; nothing existing changes):
   - `rift_run` (public, so a party can see it): seed, week, tier, mutation, floor, row,

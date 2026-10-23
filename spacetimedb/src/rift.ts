@@ -660,3 +660,19 @@ export function floorReward(floor: number, tier: number, week: number): FloorRew
   const elixirs = Array.from({ length: def.elixirs }, () => elixirSupplyId(pick(rng, power).kind, gradeOf(matTier)));
   return { ...farmingReward(tier, { gold: def.hours, xp: def.hours, dust: def.hours }), materials, elixirs };
 }
+
+/** The part of tier `tier`'s floor reward still owed when the floor was paid at `paid` (0: nothing yet): the gold, XP and Dust above it, the tier's materials and elixirs in full, Riftstone once. */
+export function rewardOwed(floor: number, tier: number, paid: number, week: number): FloorReward | undefined {
+  if (tier <= paid) return undefined;
+  const full = floorReward(floor, tier, week);
+  if (!paid) return full;
+  const before = floorReward(floor, paid, week);
+  const riftstone = untieredMaterial('Riftstone').id;
+  return {
+    gold: full.gold - before.gold,
+    xp: full.xp - before.xp,
+    dust: full.dust - before.dust,
+    materials: full.materials.filter(([id]) => id !== riftstone),
+    elixirs: full.elixirs,
+  };
+}

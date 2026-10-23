@@ -1,6 +1,6 @@
 // Per-player views over private tables: each client sees only its own rows.
 import { t } from 'spacetimedb/server';
-import { abyssLog, bossKill, character, cosmeticUnlock, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, mail, material, sentMail, raidLog, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
+import { abyssLog, bossKill, character, cosmeticUnlock, discovery, enemyKill, forgeFilter, friend, item, loadout, lootFilter, mail, material, sentMail, raidLog, riftCodex, riftItem, riftLog, riftWeek, scrap, settleLog, skill, spacetimedb, supply, tool } from '../schema';
 
 export const my_items = spacetimedb.view({ name: 'my_items', public: true }, t.array(item.rowType), ctx => {
   const ch = ctx.db.character.owner.find(ctx.sender);
@@ -189,3 +189,25 @@ export const my_mail_items = spacetimedb.view({ name: 'my_mail_items', public: t
 export const admin_sent_mail = spacetimedb.view({ name: 'admin_sent_mail', public: true }, t.array(sentMail.rowType), ctx =>
   ctx.db.account.identity.find(ctx.sender)?.role.tag === 'Admin' ? [...ctx.db.sentMail.iter()] : []
 );
+
+/** The Rift loadouts of everyone in the caller's run (the party shows them). */
+export const my_rift_items = spacetimedb.view({ name: 'my_rift_items', public: true }, t.array(riftItem.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  const member = ch && ctx.db.riftMember.characterId.find(ch.id);
+  return member ? [...ctx.db.riftItem.runId.filter(member.runId)] : [];
+});
+
+export const my_rift_week = spacetimedb.view({ name: 'my_rift_week', public: true }, riftWeek.rowType.optional(), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return (ch && ctx.db.riftWeek.characterId.find(ch.id)) ?? undefined;
+});
+
+export const my_rift_log = spacetimedb.view({ name: 'my_rift_log', public: true }, t.array(riftLog.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.riftLog.characterId.filter(ch.id)] : [];
+});
+
+export const my_rift_codex = spacetimedb.view({ name: 'my_rift_codex', public: true }, t.array(riftCodex.rowType), ctx => {
+  const ch = ctx.db.character.owner.find(ctx.sender);
+  return ch ? [...ctx.db.riftCodex.characterId.filter(ch.id)] : [];
+});

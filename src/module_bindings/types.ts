@@ -413,6 +413,18 @@ export type MyMaterials = __Infer<typeof MyMaterials>;
 export const MyRaidLog = __t.object("MyRaidLog", {});
 export type MyRaidLog = __Infer<typeof MyRaidLog>;
 
+export const MyRiftCodex = __t.object("MyRiftCodex", {});
+export type MyRiftCodex = __Infer<typeof MyRiftCodex>;
+
+export const MyRiftItems = __t.object("MyRiftItems", {});
+export type MyRiftItems = __Infer<typeof MyRiftItems>;
+
+export const MyRiftLog = __t.object("MyRiftLog", {});
+export type MyRiftLog = __Infer<typeof MyRiftLog>;
+
+export const MyRiftWeek = __t.object("MyRiftWeek", {});
+export type MyRiftWeek = __Infer<typeof MyRiftWeek>;
+
 export const MyScrap = __t.object("MyScrap", {});
 export type MyScrap = __Infer<typeof MyScrap>;
 
@@ -519,6 +531,142 @@ export const Rarity = __t.enum("Rarity", {
   Anomaly: __t.unit(),
 });
 export type Rarity = __Infer<typeof Rarity>;
+
+export const RiftBoon = __t.object("RiftBoon", {
+  id: __t.u16(),
+  rarity: __t.u8(),
+});
+export type RiftBoon = __Infer<typeof RiftBoon>;
+
+export const RiftCodex = __t.object("RiftCodex", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  kind: __t.u8(),
+  entryId: __t.u16(),
+});
+export type RiftCodex = __Infer<typeof RiftCodex>;
+
+export const RiftHeadlines = __t.object("RiftHeadlines", {
+  riftEffect: __t.u16(),
+  mark: __t.u8(),
+  growth: __t.bool(),
+  trophies: __t.array(__t.u16()),
+  echo: __t.u16(),
+});
+export type RiftHeadlines = __Infer<typeof RiftHeadlines>;
+
+export const RiftItem = __t.object("RiftItem", {
+  id: __t.u64(),
+  runId: __t.u64(),
+  characterId: __t.u64(),
+  slot: __t.u8(),
+  baseId: __t.u16(),
+  tier: __t.u8(),
+  get rarity() {
+    return Rarity;
+  },
+  get implicits() {
+    return __t.array(StatValue);
+  },
+  get affixes() {
+    return __t.array(Affix);
+  },
+  get legendary() {
+    return __t.option(LegendaryAffix);
+  },
+  uniqueId: __t.option(__t.u16()),
+  get weapon() {
+    return __t.option(WeaponStats);
+  },
+  effects: __t.array(__t.u16()),
+  temper: __t.u8(),
+  boundAffix: __t.u8(),
+  corruption: __t.u8(),
+  get headlines() {
+    return __t.option(RiftHeadlines);
+  },
+  guaranteed: __t.u8(),
+});
+export type RiftItem = __Infer<typeof RiftItem>;
+
+export const RiftLog = __t.object("RiftLog", {
+  id: __t.u64(),
+  characterId: __t.u64(),
+  startedAt: __t.timestamp(),
+  endedAt: __t.timestamp(),
+  tier: __t.u8(),
+  mutation: __t.u8(),
+  floor: __t.u8(),
+  cleared: __t.u8(),
+  end: __t.string(),
+  get boons() {
+    return __t.array(RiftBoon);
+  },
+  build: __t.string(),
+  gold: __t.u64(),
+  xp: __t.u64(),
+  dust: __t.u64(),
+  get materials() {
+    return __t.array(MaterialCount);
+  },
+});
+export type RiftLog = __Infer<typeof RiftLog>;
+
+export const RiftMember = __t.object("RiftMember", {
+  characterId: __t.u64(),
+  runId: __t.u64(),
+  name: __t.string(),
+  joinedAt: __t.timestamp(),
+  level: __t.u8(),
+  hp: __t.f64(),
+  motes: __t.u32(),
+  get boons() {
+    return __t.array(RiftBoon);
+  },
+  curses: __t.array(__t.u16()),
+  marks: __t.byteArray(),
+  thickBlood: __t.bool(),
+  secondWind: __t.f64(),
+  holdTheLine: __t.bool(),
+  won: __t.u8(),
+  downed: __t.bool(),
+  ready: __t.bool(),
+  pending: __t.string(),
+  skipBoon: __t.bool(),
+  freeRare: __t.bool(),
+  spent: __t.u16(),
+  paidGold: __t.u64(),
+  paidXp: __t.u64(),
+  paidDust: __t.u64(),
+  get paidMaterials() {
+    return __t.array(MaterialCount);
+  },
+});
+export type RiftMember = __Infer<typeof RiftMember>;
+
+export const RiftRun = __t.object("RiftRun", {
+  id: __t.u64(),
+  seed: __t.u64(),
+  week: __t.u32(),
+  tier: __t.u8(),
+  mutation: __t.u8(),
+  floor: __t.u8(),
+  row: __t.i8(),
+  col: __t.u8(),
+  leaderId: __t.u64(),
+  cleared: __t.u8(),
+  startedAt: __t.timestamp(),
+  fights: __t.string(),
+  actedAt: __t.timestamp(),
+});
+export type RiftRun = __Infer<typeof RiftRun>;
+
+export const RiftWeek = __t.object("RiftWeek", {
+  characterId: __t.u64(),
+  week: __t.u32(),
+  paid: __t.byteArray(),
+});
+export type RiftWeek = __Infer<typeof RiftWeek>;
 
 // The tagged union or sum type for the algebraic type `Role`.
 export const Role = __t.enum("Role", {

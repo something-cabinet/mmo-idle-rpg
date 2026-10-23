@@ -11,7 +11,7 @@ import {
 import { averageEnemyDps, averageEnemyHp, effectiveHp, farmingReward } from '../spacetimedb/src/data/zones';
 import {
   RIFT_BOSS_ECHOES, RIFT_ECHOES, bossOptions, boonOffer, floorMap, floorReward, headlineCount, lineupSlot, mainTheme, mapProblems,
-  memberRng, nodeLineup, riftEnemy, riftWeek, rollEthereal, rollHeadlines, runRng, runSeed, shopStock, thresholdGifts, weekStartMicros,
+  memberRng, nodeLineup, rewardOwed, riftEnemy, riftWeek, rollEthereal, rollHeadlines, runRng, runSeed, shopStock, thresholdGifts, weekStartMicros,
   weeklyMutation, type HeldBoon, type OfferContext,
 } from '../spacetimedb/src/rift';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
@@ -261,6 +261,18 @@ function hasBloodLeft(ctx: OfferContext): boolean {
   // depthReward moved onto farmingReward: same numbers as the old formula.
   const old = (d: number, tier4: number, g: number) => BigInt(Math.round(1200 * 2.5 * (2.9 ** (tier4 - 1) * g)));
   check('the Deep pays as before', depthReward(1).gold === old(1, 4, 1) && depthReward(150).gold === old(150, 5, 1.03 ** 49));
+}
+
+{
+  const week = 3000;
+  const full = floorReward(2, 5, week);
+  check('a first clear owes the whole floor reward', JSON.stringify(rewardOwed(2, 5, 0, week), (_, v) => (typeof v === 'bigint' ? `${v}` : v)) === JSON.stringify(full, (_, v) => (typeof v === 'bigint' ? `${v}` : v)));
+  check('… a clear at the tier already paid owes nothing', rewardOwed(2, 5, 5, week) === undefined && rewardOwed(2, 5, 6, week) === undefined);
+  const up = rewardOwed(2, 6, 5, week)!;
+  const six = floorReward(2, 6, week);
+  check('… a higher tier owes the gold, XP and Dust above, its materials in full, Riftstone once',
+    up.gold === six.gold - full.gold && up.xp === six.xp - full.xp && up.dust === six.dust - full.dust &&
+    !up.materials.some(([id]) => id === untieredMaterial('Riftstone').id) && six.materials.some(([id]) => id === untieredMaterial('Riftstone').id));
 }
 
 // ---------------------------------------------------------------- a run (riftRun.ts)

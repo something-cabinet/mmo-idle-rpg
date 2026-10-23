@@ -11,6 +11,10 @@ import { decodeBuild, decodeStats, depthRng, simulateDepth } from '../spacetimed
 import { depthReward } from '../spacetimedb/src/data/abyss';
 import { untieredMaterial } from '../spacetimedb/src/data/materials';
 import { phialSupplyId } from '../spacetimedb/src/data/supplies';
+import { floorMap } from '../spacetimedb/src/rift';
+import { decodeRift, replayFight, type Pending, type StoredFight } from '../spacetimedb/src/riftRun';
+
+const near = (x: number, y: number, tol: number) => Math.abs(x - y) <= tol * Math.max(1, Math.abs(y));
 
 const HOST = process.env.SPACETIMEDB_HOST ?? 'ws://localhost:3000';
 const DB = process.env.SPACETIMEDB_DB_NAME ?? 'mmo-idle-rpg';
@@ -461,6 +465,89 @@ await expectError('the Moonwell Deep is locked before Selvara', a.conn.reducers.
   const drunk = newest();
   check('a Phial is used up for one depth and logged', stock() === had - 1 && drunk?.phial === phial, `${had} → ${stock()}`);
   check('… and the replay matches with it', !!drunk && simulateDepth(decodeStats(drunk.stats), drunk.depth, depthRng(drunk.characterId, drunk.startedAt.microsSinceUnixEpoch)).won === drunk.won);
+}
+
+// The Shifting Rift (devUnlockZones above also records the Last Thane's kill that opens it): a solo run
+// through the Threshold, a fight, a pick, a shop and a leave, with its rows gone at the end.
+{
+  const meId = charOf(a)!.id;
+  const member = () => a.conn.db.riftMember.characterId.find(meId);
+  const run = () => (member() ? a.conn.db.riftRun.id.find(member()!.runId) : undefined);
+  const pending = () => (member()?.pending ? decodeRift<Pending[]>(member()!.pending) : []);
+  const R = a.conn.reducers;
+  await expectError('the Rift: no such loadout', R.riftStart({ loadout: 9, tier: 5 }), 'No such loadout');
+  await expectError('the Rift: tiers start at T5', R.riftStart({ loadout: 0, tier: 4 }), 'No such tier');
+  await R.riftStart({ loadout: 0, tier: 5 });
+  await sleep(300);
+  const worn = starterGear(a).filter(Boolean).length;
+  check('a Rift run starts with 3 gifts and a locked copy of the loadout', !!run() && pending()[0]?.kind === 'gifts' && a.conn.db.myRiftItems.count() === BigInt(worn),
+    `${a.conn.db.myRiftItems.count()} items for ${worn} worn`);
+  await expectError('one run at a time', R.riftStart({ loadout: 0, tier: 5 }), 'Already in a Rift run');
+  await expectError('nobody moves before picking a gift', R.riftMove({ node: 0 }), 'Waiting');
+
+  /** Answers whatever waits (a gift, a boon: the first; an item: discard; an event: leave if it can, else what applies). */
+  const answer = async () => {
+    for (let guard = 0; guard < 20 && pending().length; guard++) {
+      const p = pending()[0];
+      if (p.kind === 'shop') return;
+      const tries = p.kind === 'item' ? [0] : p.kind === 'event' ? [9, 8, 7, 6, 5, 4, 3, 2, 1, 0] : [0];
+      for (const choice of tries) {
+        try {
+          await R.riftChoose({ choice, target: -1, theme: 1 });
+          break;
+        } catch {
+          // a choice that doesn't apply: try the next
+        }
+      }
+      await sleep(150);
+    }
+  };
+  await answer();
+  check('the gift is taken', !pending().some(p => p.kind === 'gifts'));
+  // Head for a shop on this floor: always through nodes that lead to one.
+  const map = floorMap(run()!.seed, 1);
+  const leadsToShop = (row: number, col: number): boolean => map.rows[row][col].kind === 'shop' || map.rows[row][col].links.some(j => leadsToShop(row + 1, j));
+  await R.riftMove({ node: map.rows[0].findIndex((_, j) => leadsToShop(0, j)) });
+  await sleep(300);
+  const r1 = run();
+  const fights = r1?.fights ? decodeRift<StoredFight[]>(r1.fights) : [];
+  check('node 1 is a fight, stored for the replay', fights.length === 1 && fights[0].kind === 'node');
+  if (r1 && fights[0]) {
+    const replay = replayFight(r1.seed, fights[0]);
+    check('… and the client replays the battle the server played', near(replay.hp[0], member()!.hp, 1e-6), `${replay.hp[0]} vs ${member()!.hp}`);
+  }
+  const offer = pending()[0];
+  if (offer?.kind === 'boons') {
+    await R.riftChoose({ choice: 0, target: -1, theme: 0 });
+    await sleep(200);
+    check('a boon is picked', member()!.boons.some(b => b.id === offer.choices[0].id && b.rarity === offer.choices[0].rarity));
+  }
+  await answer();
+  for (let guard = 0; guard < 5 && run() && pending()[0]?.kind !== 'shop'; guard++) {
+    const now = run()!;
+    if (now.row >= map.rows.length - 1) break;
+    const next = map.rows[now.row][now.col].links;
+    await R.riftMove({ node: next.find(j => leadsToShop(now.row + 1, j)) ?? next[0] });
+    await sleep(300);
+    await answer();
+  }
+  const shop = pending()[0];
+  if (shop?.kind === 'shop') {
+    const motes = member()!.motes;
+    const heal = shop.stock.findIndex(o => o.kind === 'heal');
+    if (heal >= 0 && shop.stock[heal].price <= motes) {
+      await R.riftChoose({ choice: heal, target: -1, theme: 0 });
+      await sleep(200);
+      check('a shop sells a heal for Motes', member()!.motes === motes - shop.stock[heal].price);
+    }
+    await R.riftChoose({ choice: -1, target: -1, theme: 0 });
+    await sleep(200);
+    check('… and is left', pending()[0]?.kind !== 'shop');
+  } else check('a shop was reached', !run(), run() ? `at row ${run()!.row} col ${run()!.col}, waiting: ${pending().map(p => p.kind + (p.kind === 'event' ? p.event : '')).join(', ')}` : 'the run ended on the way');
+  if (run()) await R.riftLeave({});
+  await sleep(300);
+  check('leaving ends a solo run: its rows are gone, its log kept', !run() && !member() && a.conn.db.myRiftItems.count() === 0n &&
+    [...a.conn.db.myRiftLog.iter()].length === 1);
 }
 
 await expectError('non-admin cannot ban', a.conn.reducers.setBanned({ target: b.me, banned: true }), 'Admins only');

@@ -73,6 +73,12 @@ import RecallMailReducer from "./recall_mail_reducer";
 import RemoveFriendReducer from "./remove_friend_reducer";
 import RenameLoadoutReducer from "./rename_loadout_reducer";
 import RerollAffixReducer from "./reroll_affix_reducer";
+import RiftBossReducer from "./rift_boss_reducer";
+import RiftChooseReducer from "./rift_choose_reducer";
+import RiftLeaveReducer from "./rift_leave_reducer";
+import RiftMoveReducer from "./rift_move_reducer";
+import RiftReadyReducer from "./rift_ready_reducer";
+import RiftStartReducer from "./rift_start_reducer";
 import SalvageReducer from "./salvage_reducer";
 import ScrapItemsReducer from "./scrap_items_reducer";
 import SeeChangelogReducer from "./see_changelog_reducer";
@@ -128,6 +134,10 @@ import MyMailRow from "./my_mail_table";
 import MyMailItemsRow from "./my_mail_items_table";
 import MyMaterialsRow from "./my_materials_table";
 import MyRaidLogRow from "./my_raid_log_table";
+import MyRiftCodexRow from "./my_rift_codex_table";
+import MyRiftItemsRow from "./my_rift_items_table";
+import MyRiftLogRow from "./my_rift_log_table";
+import MyRiftWeekRow from "./my_rift_week_table";
 import MyScrapRow from "./my_scrap_table";
 import MySettleLogRow from "./my_settle_log_table";
 import MySkillsRow from "./my_skills_table";
@@ -139,6 +149,8 @@ import RaidPartyRow from "./raid_party_table";
 import RaidPartyCharactersRow from "./raid_party_characters_table";
 import RaidPartyItemsRow from "./raid_party_items_table";
 import RaidPartyLoadoutsRow from "./raid_party_loadouts_table";
+import RiftMemberRow from "./rift_member_table";
+import RiftRunRow from "./rift_run_table";
 
 /** Type-only namespace exports for generated type groups. */
 
@@ -236,6 +248,31 @@ const tablesSchema = __schema({
       { name: 'raid_party_id_key', constraint: 'unique', columns: ['id'] },
     ],
   }, RaidPartyRow),
+  riftMember: __table({
+    name: 'rift_member',
+    indexes: [
+      { accessor: 'characterId', name: 'rift_member_character_id_idx_btree', algorithm: 'btree', columns: [
+        'characterId',
+      ] },
+      { accessor: 'runId', name: 'rift_member_run_id_idx_btree', algorithm: 'btree', columns: [
+        'runId',
+      ] },
+    ],
+    constraints: [
+      { name: 'rift_member_character_id_key', constraint: 'unique', columns: ['characterId'] },
+    ],
+  }, RiftMemberRow),
+  riftRun: __table({
+    name: 'rift_run',
+    indexes: [
+      { accessor: 'id', name: 'rift_run_id_idx_btree', algorithm: 'btree', columns: [
+        'id',
+      ] },
+    ],
+    constraints: [
+      { name: 'rift_run_id_key', constraint: 'unique', columns: ['id'] },
+    ],
+  }, RiftRunRow),
   adminSentMail: __table({
     name: 'admin_sent_mail',
     indexes: [
@@ -376,6 +413,34 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, MyRaidLogRow),
+  myRiftCodex: __table({
+    name: 'my_rift_codex',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRiftCodexRow),
+  myRiftItems: __table({
+    name: 'my_rift_items',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRiftItemsRow),
+  myRiftLog: __table({
+    name: 'my_rift_log',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRiftLogRow),
+  myRiftWeek: __table({
+    name: 'my_rift_week',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyRiftWeekRow),
   myScrap: __table({
     name: 'my_scrap',
     indexes: [
@@ -475,6 +540,12 @@ const reducersSchema = __reducers(
   __reducerSchema("remove_friend", RemoveFriendReducer),
   __reducerSchema("rename_loadout", RenameLoadoutReducer),
   __reducerSchema("reroll_affix", RerollAffixReducer),
+  __reducerSchema("rift_boss", RiftBossReducer),
+  __reducerSchema("rift_choose", RiftChooseReducer),
+  __reducerSchema("rift_leave", RiftLeaveReducer),
+  __reducerSchema("rift_move", RiftMoveReducer),
+  __reducerSchema("rift_ready", RiftReadyReducer),
+  __reducerSchema("rift_start", RiftStartReducer),
   __reducerSchema("salvage", SalvageReducer),
   __reducerSchema("scrap_items", ScrapItemsReducer),
   __reducerSchema("see_changelog", SeeChangelogReducer),
@@ -550,6 +621,14 @@ type __SchemaWithTableAccessorAliases = Omit<typeof tablesSchema.schemaType, "ta
     readonly "my_materials": Omit<typeof tablesSchema.schemaType.tables["myMaterials"], "accessorName"> & { readonly accessorName: "my_materials" };
     /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
     readonly "my_raid_log": Omit<typeof tablesSchema.schemaType.tables["myRaidLog"], "accessorName"> & { readonly accessorName: "my_raid_log" };
+    /** @deprecated Use `myRiftCodex` instead. This alias will be removed in the next major version. */
+    readonly "my_rift_codex": Omit<typeof tablesSchema.schemaType.tables["myRiftCodex"], "accessorName"> & { readonly accessorName: "my_rift_codex" };
+    /** @deprecated Use `myRiftItems` instead. This alias will be removed in the next major version. */
+    readonly "my_rift_items": Omit<typeof tablesSchema.schemaType.tables["myRiftItems"], "accessorName"> & { readonly accessorName: "my_rift_items" };
+    /** @deprecated Use `myRiftLog` instead. This alias will be removed in the next major version. */
+    readonly "my_rift_log": Omit<typeof tablesSchema.schemaType.tables["myRiftLog"], "accessorName"> & { readonly accessorName: "my_rift_log" };
+    /** @deprecated Use `myRiftWeek` instead. This alias will be removed in the next major version. */
+    readonly "my_rift_week": Omit<typeof tablesSchema.schemaType.tables["myRiftWeek"], "accessorName"> & { readonly accessorName: "my_rift_week" };
     /** @deprecated Use `myScrap` instead. This alias will be removed in the next major version. */
     readonly "my_scrap": Omit<typeof tablesSchema.schemaType.tables["myScrap"], "accessorName"> & { readonly accessorName: "my_scrap" };
     /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
@@ -604,6 +683,10 @@ const tableAccessorAliases = {
   "my_mail_items": "myMailItems",
   "my_materials": "myMaterials",
   "my_raid_log": "myRaidLog",
+  "my_rift_codex": "myRiftCodex",
+  "my_rift_items": "myRiftItems",
+  "my_rift_log": "myRiftLog",
+  "my_rift_week": "myRiftWeek",
   "my_scrap": "myScrap",
   "my_settle_log": "mySettleLog",
   "my_skills": "mySkills",
@@ -672,6 +755,14 @@ export type DbView = __DbViewBase & {
   readonly "my_materials": __DbViewBase["myMaterials"];
   /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
   readonly "my_raid_log": __DbViewBase["myRaidLog"];
+  /** @deprecated Use `myRiftCodex` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_codex": __DbViewBase["myRiftCodex"];
+  /** @deprecated Use `myRiftItems` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_items": __DbViewBase["myRiftItems"];
+  /** @deprecated Use `myRiftLog` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_log": __DbViewBase["myRiftLog"];
+  /** @deprecated Use `myRiftWeek` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_week": __DbViewBase["myRiftWeek"];
   /** @deprecated Use `myScrap` instead. This alias will be removed in the next major version. */
   readonly "my_scrap": __DbViewBase["myScrap"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */
@@ -732,6 +823,14 @@ export type Tables = __TablesBase & {
   readonly "my_materials": __TablesBase["myMaterials"];
   /** @deprecated Use `myRaidLog` instead. This alias will be removed in the next major version. */
   readonly "my_raid_log": __TablesBase["myRaidLog"];
+  /** @deprecated Use `myRiftCodex` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_codex": __TablesBase["myRiftCodex"];
+  /** @deprecated Use `myRiftItems` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_items": __TablesBase["myRiftItems"];
+  /** @deprecated Use `myRiftLog` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_log": __TablesBase["myRiftLog"];
+  /** @deprecated Use `myRiftWeek` instead. This alias will be removed in the next major version. */
+  readonly "my_rift_week": __TablesBase["myRiftWeek"];
   /** @deprecated Use `myScrap` instead. This alias will be removed in the next major version. */
   readonly "my_scrap": __TablesBase["myScrap"];
   /** @deprecated Use `mySettleLog` instead. This alias will be removed in the next major version. */

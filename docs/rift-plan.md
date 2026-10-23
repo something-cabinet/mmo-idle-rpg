@@ -46,8 +46,8 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
   can coexist. A downed member returns at 50% of max HP.
 - A Rift item has the same columns as `item`, plus run, owner, worn slot and headlines.
 - The mutation doubles on the Rift Heart (Storm Front +60%, Glass World × 4).
-- Re-clearing a floor at a higher tier pays the gold, XP and Dust difference, plus the
-  higher tier's materials in full (2026-10-23).
+- A floor pays once a week, at the tier of its first clear; a re-clear pays nothing, at any
+  tier (2026-10-23, replacing "a higher tier pays the difference").
 
 **Decisions taken in R1** (reviewed by the user 2026-10-23: Haggler Common-only, echoes at average strength and offers always showing an upgrade are confirmed; the rest are numbers for R3 to tune):
 
@@ -175,19 +175,19 @@ mechanic"); today a boss echo has its shape and an Elite affix only.
   `riftLeave()`. Each loads the run, calls `apply`, writes it back; a cleared floor pays every
   member from their `rift_week`; an ended run writes each member's log and deletes its rows.
 - The client replays a stored battle with `replayFight(run.seed, fight)` (riftRun.ts).
-- rift.ts `rewardOwed`: what a clear owes against the tier already paid.
+- rift.ts `rewardOwed`: what a clear owes (the whole reward if the floor isn't cleared this week).
 - Smoke test: start, the refusals, a gift, node 1 and its replay matching the server's HP, a
   boon, a shop heal, leaving (rows gone, log kept). Not covered live: a floor boss's payout
   (`rewardOwed` is checked offline in `test:rift`).
 
-**Decisions taken in R4** (for the user to review):
+**Decisions taken in R4** (reviewed by the user 2026-10-23: one `riftChoose` and paying downed members confirmed; the re-clear rule changed, below):
 
 - **One `riftChoose` reducer** answers every waiting choice (gift, boon, wear or discard,
   shop, event), in place of `riftPick` / `riftBuy` / `riftTake`.
 - **The phase isn't stored:** the client derives the Threshold (a gift waiting) and the boss
   (the last row reached) from the run.
-- **A re-clear at a higher tier** pays the gold, XP and Dust difference, the tier's
-  materials, herbs and elixirs again, and Riftstone only once.
+- **A floor pays once a week**, at its first clear's tier; a re-clear pays nothing, at any
+  tier (`rewardOwed`).
 - **Every member is paid** when a floor boss falls, downed ones included.
 - **The weekly reset** ends a run on its next call (`end: 'week'`); what it paid stays paid.
 - **The Codex** records boons offered or held, and the bases and rift effects of Ethereal

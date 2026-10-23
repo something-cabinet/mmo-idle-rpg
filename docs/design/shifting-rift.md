@@ -42,7 +42,7 @@ that falls apart when you leave. "Shifting" is also the rule: a new layout every
   **Ethereal** items found in the run (see "Gear").
 - **HP carries over** between nodes. Dying ends the run.
 - **Rewards are weekly.** Each floor cleared pays once per week (Monday 00:00 UTC).
-  Later runs that week pay nothing new until they beat your best. After a full clear,
+  Later runs that week pay nothing for floors already cleared, at any tier. After a full clear,
   runs are for fun.
 - **Only the mutation is weekly.** The weekly mutation is the same for everyone all week.
   Everything else (maps, enemy line-ups, Elite affixes, events, boss options, offers, shop
@@ -562,11 +562,10 @@ what's good, so even a player who replays for fun meets a new puzzle every week.
 
 ## Rewards
 
-**Weekly, per floor, best tier counts.** Each floor has a weekly reward. A floor's reward is
-paid the first time that week you clear it, right when its boss falls. If you later clear it on a **higher tier**, you
-get the difference: the gold, XP and Dust above what you were paid, plus the higher tier's
-materials in full (they differ per tier, so there's no difference to take). Nothing else pays, so replays are free fun and the weekly total is a
-hard cap.
+**Weekly, per floor, once.** Each floor has a weekly reward, paid the first time that week
+you clear it, right when its boss falls, at the run's tier: a higher tier pays more. Once a
+floor is cleared, clearing it again that week pays nothing, on any tier (2026-10-23), so
+replays are free fun and the weekly total is a hard cap. Pick the tier before the first clear.
 
 Paid in **hours of farming at the run's tier** (T5 or higher), so it scales like
 everything else (× 2.9 per tier):
@@ -590,7 +589,7 @@ everything else (× 2.9 per tier):
   keeps the Rift from competing with zone drops and raid loot.
 - The run tier is picked at the start, from T5 up, among tiers whose zone boss you've
   killed (default: the highest). A player can drop to a lower one (never below T5) to clear
-  floors safely, then try higher.
+  floors safely, but a floor pays only its first clear of the week.
 - **Leftover Motes and Ethereal items are lost** when the run ends. Nothing converts, so
   there's no reason to hoard.
 

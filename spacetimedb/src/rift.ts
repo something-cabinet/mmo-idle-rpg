@@ -661,18 +661,11 @@ export function floorReward(floor: number, tier: number, week: number): FloorRew
   return { ...farmingReward(tier, { gold: def.hours, xp: def.hours, dust: def.hours }), materials, elixirs };
 }
 
-/** The part of tier `tier`'s floor reward still owed when the floor was paid at `paid` (0: nothing yet): the gold, XP and Dust above it, the tier's materials and elixirs in full, Riftstone once. */
+/**
+ * What clearing floor `floor` at tier `tier` pays when this week's clear of it was paid at
+ * tier `paid` (0: not cleared yet): the tier's whole reward the first time, nothing after,
+ * at any tier. A higher tier pays more only as the week's first clear.
+ */
 export function rewardOwed(floor: number, tier: number, paid: number, week: number): FloorReward | undefined {
-  if (tier <= paid) return undefined;
-  const full = floorReward(floor, tier, week);
-  if (!paid) return full;
-  const before = floorReward(floor, paid, week);
-  const riftstone = untieredMaterial('Riftstone').id;
-  return {
-    gold: full.gold - before.gold,
-    xp: full.xp - before.xp,
-    dust: full.dust - before.dust,
-    materials: full.materials.filter(([id]) => id !== riftstone),
-    elixirs: full.elixirs,
-  };
+  return paid ? undefined : floorReward(floor, tier, week);
 }

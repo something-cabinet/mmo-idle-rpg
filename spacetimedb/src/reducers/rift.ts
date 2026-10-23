@@ -115,7 +115,7 @@ function recordCodex(ctx: Ctx, m: MemberState) {
   }
 }
 
-/** Pays every member floor `floor`'s weekly reward (or what a higher tier adds to it). */
+/** Pays every member floor `floor`'s weekly reward, if they haven't cleared it this week. */
 function payFloor(ctx: Ctx, run: RunRow, floor: number) {
   for (const row of membersOf(ctx, run.id)) {
     const week = ctx.db.riftWeek.characterId.find(row.characterId);

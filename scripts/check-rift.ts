@@ -267,12 +267,8 @@ function hasBloodLeft(ctx: OfferContext): boolean {
   const week = 3000;
   const full = floorReward(2, 5, week);
   check('a first clear owes the whole floor reward', JSON.stringify(rewardOwed(2, 5, 0, week), (_, v) => (typeof v === 'bigint' ? `${v}` : v)) === JSON.stringify(full, (_, v) => (typeof v === 'bigint' ? `${v}` : v)));
-  check('… a clear at the tier already paid owes nothing', rewardOwed(2, 5, 5, week) === undefined && rewardOwed(2, 5, 6, week) === undefined);
-  const up = rewardOwed(2, 6, 5, week)!;
-  const six = floorReward(2, 6, week);
-  check('… a higher tier owes the gold, XP and Dust above, its materials in full, Riftstone once',
-    up.gold === six.gold - full.gold && up.xp === six.xp - full.xp && up.dust === six.dust - full.dust &&
-    !up.materials.some(([id]) => id === untieredMaterial('Riftstone').id) && six.materials.some(([id]) => id === untieredMaterial('Riftstone').id));
+  check('… once a week: a re-clear owes nothing, at any tier', rewardOwed(2, 5, 5, week) === undefined && rewardOwed(2, 6, 5, week) === undefined);
+  check('… and a higher tier as the first clear owes more', rewardOwed(2, 6, 0, week)!.gold > full.gold);
 }
 
 // ---------------------------------------------------------------- a run (riftRun.ts)

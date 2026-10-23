@@ -3,9 +3,9 @@
 // (battle.ts, fighter.ts); generation (maps, line-ups, offers, items) is rift.ts.
 //
 // PERMANENT IDS: boon IDs (300 + theme × 10 + n, Wildcard 380), rift effect IDs (201–214),
-// Trophy IDs (250 + Elite affix), curse IDs (401+), gift, event and mutation IDs, and the
+// Trophy IDs (250 + Elite affix), curse IDs (401+), set bonus IDs (`setBonusId`), gift, event and mutation IDs, and the
 // Rift Heart's enemy ID (9200) are stored in run state and logs; never reuse or renumber
-// them. Boon, rift effect, Trophy and curse IDs share one space with the legendary and
+// them. Boon, rift effect, Trophy, curse and set bonus IDs share one space with the legendary and
 // unique effects (1–99), so they can sit in `CombatStats.effects` without clashing.
 
 import { EliteAffix } from './abyss';
@@ -386,3 +386,101 @@ export const FLOOR_REWARDS: FloorRewardDef[] = [
   { hours: 2, riftstone: 4, elixirs: 0, herbs: 2 },
   { hours: 2.75, riftstone: 10, elixirs: 0, herbs: 0 },
 ];
+
+// ---------------------------------------------------------------- in a fight
+
+/**
+ * A theme's set bonus as an effect ID: 300 + theme × 10 + 7 (3 boons) or + 8 (5 boons). Not
+ * held like a boon but derived each stat build; still permanent, since a fight's stats are
+ * stored for its replay (abyss.ts `encodeStats`).
+ */
+export const setBonusId = (theme: ThemeId, at: 3 | 5) => 300 + theme * 10 + (at === 3 ? 7 : 8);
+
+/** Set bonus numbers (THEMES' text). */
+export const SET = {
+  fury3: 0.15, fury5: 3, bastion3: 0.1, bastion5: { every: 10, share: 0.1 }, blood3: 0.05, blood5: 0.08,
+  storm3: 0.15, storm5: 0.3, mist3: 0.06, mist5Glimmer: 0.5, aegis3: 0.08, aegis5: 0.5,
+} as const;
+
+/** Keystones' and other one-version boons' numbers, and the fixed parts of valued boons (BOONS' text). */
+export const BOON_NUM = {
+  /** Opening Salvo and Smoke last this long into a fight, seconds. */
+  openingSeconds: 5,
+  tailwindAttacks: 3,
+  staticEvery: 5,
+  /** Coup de Grâce below, and Hold the Line's drop below, this share of HP. */
+  coupBelow: 0.3,
+  holdBelow: 0.3,
+  redTitheHp: 0.9,
+  clottingBelow: 0.5,
+  fortressTaken: 0.75,
+  fortressSpeed: 0.85,
+  phantomHp: 0.8,
+  shieldwallSpeed: 0.8,
+  thunderStep: 0.03,
+  thunderMax: 0.3,
+  bloodPriceCap: 0.2,
+} as const;
+
+/** Rift effects' numbers (RIFT_EFFECTS' text). */
+export const RIFT_NUM = {
+  glassHeartDamage: 2, glassHeartHp: 0.5, echoEvery: 4, overclockSpeed: 1.6, overclockCost: 0.01, gamblerMax: 3, phoenixHp: 0.4,
+  mirrorReflect: 0.6, mirrorTaken: 1.15, hoarderPer10: 0.01, hoarderMax: 0.4, firstBlood: 5, voidheart: 1.25, conduit: 0.02,
+  wither: 0.01, anchor: 1.2,
+} as const;
+
+/** Trophies' numbers (TROPHIES' text). */
+export const TROPHY_NUM = {
+  vampiric: 0.5, swiftSpeed: 1.5, swiftHit: 0.75, thornedReflect: 0.1, thornedHp: 0.7, unyielding: 0.015, ravenous: { every: 5, step: 0.05 },
+} as const;
+
+export const CURSE_NUM = { frailHp: 0.85, hexedHeal: 0.7, weightedSpeed: 0.9 } as const;
+export const MUTATION_NUM = { bloodMoonDrain: 0.2, stormFrontSpeed: 1.3, glassWorldDamage: 2, ironWeekPen: 2 } as const;
+/** Thick Blood: max HP × this for the run. */
+export const THICK_BLOOD = 1.15;
+
+/** What a member brings to a fight's stat build besides gear and level (combat.ts `combatStats`). */
+export interface RiftBuild {
+  /** Boons held, an Unravelled one left out. */
+  boons: readonly { id: number; rarity: BoonRarity }[];
+  curses?: readonly number[];
+  /** Theme marks: worn Ethereal items' and Marked Path's. */
+  marks?: readonly number[];
+  mutation?: number;
+  /** Motes held (Hoarder's Band). */
+  motes?: number;
+  /** Fight nodes won this floor (Bloodrush). */
+  won?: number;
+  /** The Thick Blood gift. */
+  thickBlood?: boolean;
+}
+
+/**
+ * The effects `rift` adds to a stat build: each boon at its rarity + 1 copies (`boonAmount`
+ * reads it back), each curse, and each set bonus reached (Wildcard counting for every theme).
+ */
+export function riftEffects(rift: RiftBuild): Map<number, number> {
+  const fx = new Map<number, number>();
+  const counts = new Map<number, number>();
+  let wild = 0;
+  for (const h of rift.boons) {
+    fx.set(h.id, h.rarity + 1);
+    const t = BOONS_BY_ID.get(h.id)?.theme;
+    if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
+    else if (h.id === Boon.Wildcard) wild = 1;
+  }
+  for (const t of rift.marks ?? []) counts.set(t, (counts.get(t) ?? 0) + 1);
+  for (const c of rift.curses ?? []) fx.set(c, 1);
+  for (const t of THEMES) {
+    const n = (counts.get(t.id) ?? 0) + wild;
+    if (n >= SET_AT[0]) fx.set(setBonusId(t.id, 3), 1);
+    if (n >= SET_AT[1]) fx.set(setBonusId(t.id, 5), 1);
+  }
+  return fx;
+}
+
+/** A held boon's value (its text's number at its rarity) from its copies in `effects` (rarity + 1); 0 if not held. */
+export function boonAmount(effects: ReadonlyMap<number, number>, id: number): number {
+  const n = effects.get(id) ?? 0;
+  return n > 0 ? (BOONS_BY_ID.get(id)?.values?.[Math.min(3, n) - 1] ?? 0) : 0;
+}

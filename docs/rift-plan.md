@@ -12,8 +12,8 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 |-|-|-|
 | R0 | Decisions | **Done** |
 | R1 | Data and generation | **Done** (`npm run test:rift` passes, with every other check) |
-| R2 | Engine hooks | **Next** |
-| R3 | A node, a run, the bots | — |
+| R2 | Engine hooks | **Done** (`npm run test:combat` has a check per hook; old fights unchanged) |
+| R3 | A node, a run, the bots | **Next** |
 | R4 | Schema and solo reducers | — |
 | R5 | Client, solo | — |
 | R6 | Co-op | — |
@@ -79,10 +79,52 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
   be worn only with a one-handed weapon equipped. The card warns. For R3's `take`.
 - **Riftstone icon** (`m-riftstone`): needed by R5.
 
-**R2 next.** Start with the stat build (`combatStats(level, gear, buffs, rift?)`), then block
-as a stat, then the `Fighter` hooks group by group, each with its check. Rule: a hook draws
-from the generator only when its effect is present, or existing seeded fights change. Run
-`check-sim`, `check-abyss`, `check-raid` and `check-duel` after every group.
+**What R2 left in the code** (every check passes; a snapshot of ~300 seeded zone, Deep, raid
+and duel fights replayed identically before and after):
+
+- `combatStats(level, gear, buffs, rift?)` with `RiftBuild` (data/rift.ts): boons, curses,
+  marks, mutation, Motes, fights won this floor, Thick Blood. `riftEffects` puts each boon in
+  `CombatStats.effects` at rarity + 1 copies (`boonAmount` reads the value back), plus curses
+  and the set bonuses reached (`setBonusId`: 300 + theme × 10 + 7 / 8).
+- New stats: `evadeChance` (flat, capped), `block` (on top of Bulwark), `blockShare`;
+  `evasionCap(s)`.
+- `Fighter` (fighter.ts): every combat boon, rift effect and Trophy. `FighterStart` takes
+  `holdTheLine` and `phoenix` (still available); after a battle read `holdTheLine`,
+  `phoenix`, `burned` (delete the Plume's item) and `secondWind` from `result.fighters`.
+- battle.ts: Phantom, Smoke, Slip Away, blocks (Shield Bash, Steady Guard, the Aegis 5-set),
+  Blood Price, Clotting, kill heals, the Bastion 5-set and Wither Aura (on the regen tick).
+- rift.ts: `mutatedEnemy` (before `withEliteAffix`), then `riftFoe` (Blood Moon's drain, the
+  Rift Heart's Shift from a generator you pass).
+- Checks: a Rift section in `check-combat` (one per hook).
+
+**For R3's `memberStats`:** rift effects, Trophies and an Echo's unique effects go in the
+Ethereal item's `effects` (the stat build reads them like a unique's); marks go in
+`RiftBuild.marks`; leave an Unravelled boon out of `boons`.
+
+**Decisions taken in R2** (my reading of the design where it was open; for the user to review):
+
+- **Percent boons** are "more" multipliers, except Cruel, which adds to crit damage like the
+  stat. Sunder multiplies what penetration leaves, past the 75% cap.
+- **Evade chance** from Fleetfoot, the Mist 3-set and Smoke stays under the evasion cap (Phantom
+  Step raises it; Juggernaut and Spellward stop it).
+- **Voidheart** makes armor penetration count as magic penetration, like Moonlight.
+- **Hexed** cuts heals, regen and lifesteal. Unyielding's regen is 0 under Frozen Blood or
+  Bloodbound. Vampiric adds 50% lifesteal past every cap, even under Frozen Blood.
+- **Overclock's** HP cost never kills (it skips at 1% HP or less).
+- **Echo Strike** doubles every 4th swing that lands (no roll of its own). **Static's** shock
+  is the value × your plain hit on that enemy. **The Storm 5-set's** chained damage waits for
+  the next swing that lands.
+- **The Mist 5-set with Glimmerguard:** parried crits × (1 + 0.5 / crit damage).
+- **Kill heals** (Transfusion, the Blood 5-set): every member still up, whoever killed it.
+- **Wither Aura** ticks with regen, per wearer, and can kill.
+- **Shield Bash and the Aegis 5-set** show as `reflected`. **Bracing** counts specials too.
+  **Braced** counts Elite and Boss ranks.
+- **The Rift Heart's Shift:** 12 shifts rolled in advance for the 3:00. The doubled mutation
+  is on the Heart's side only (the player's own Storm Front or Glass World stays single).
+- **Blood Moon's** drain adds to Vampiric's. **Iron Week** applies before Elite affixes, so
+  a Warded Shell Elite still picks its profile.
+
+**R3 next:** `memberStats`, `simulateNode`, `apply` and the bots (below).
 
 ## Shape
 
@@ -144,7 +186,7 @@ its strength. Event outcomes are R3 (`apply`).
 - **Check** `scripts/check-rift.ts` (`npm run test:rift`): 10,000 maps follow every rule;
   the headline odds match the design's table; the same seed gives the same run.
 
-## R2: engine hooks (battle.ts, fighter.ts, combat.ts)
+## R2: engine hooks (battle.ts, fighter.ts, combat.ts) — done, 2026-10-23
 
 Every existing fight has to replay exactly as before: an empty effect map must change
 nothing, and must draw nothing from the generator. `check-sim` and `check-abyss` already

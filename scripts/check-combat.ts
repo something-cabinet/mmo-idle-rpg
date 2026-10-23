@@ -6,7 +6,14 @@ import { MIGHT_ACCURACY, Stat, accuracyAtLevel, fromStored, toStored } from '../
 import { ENEMIES_BY_ID, WALK_SECONDS } from '../spacetimedb/src/data/zones';
 import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LEGENDARIES_BY_ID, PARRY_RATING, RESONANCE, TRUE_SHOT } from '../spacetimedb/src/data/legendary';
 import { simulateFight } from '../spacetimedb/src/fight';
-import { MAX_LEVEL, bonusHp, combatStats, matchup, type GearItem } from '../spacetimedb/src/combat';
+import { MAX_LEVEL, bonusHp, combatStats, defenseAgainst, matchup, mitigation, type CombatStats, type GearItem } from '../spacetimedb/src/combat';
+import { Fighter, type FighterStart, type SwingContext } from '../spacetimedb/src/fighter';
+import { simulateBattle, type FoeSpec } from '../spacetimedb/src/battle';
+import { encodeStats } from '../spacetimedb/src/abyss';
+import { EliteAffix } from '../spacetimedb/src/data/abyss';
+import { Boon, Curse, Mutation, RIFT_HEART, RiftEffect, Theme, setBonusId, trophyId, type BoonRarity, type RiftBuild } from '../spacetimedb/src/data/rift';
+import { RIFT_ECHOES, mutatedEnemy, riftEnemy, riftFoe } from '../spacetimedb/src/rift';
+import type { EnemyDef } from '../spacetimedb/src/data/zones';
 import { scoreGear } from '../spacetimedb/src/equip';
 import { MAX_OFFLINE_MICROS, offlineCapMicros, project, xpToNext, type Progress } from '../spacetimedb/src/game';
 import { makeItem, seededRng } from '../spacetimedb/src/loot';
@@ -483,6 +490,347 @@ function withEffect(it: GearItem, effect: number): GearItem {
 
   check('auto-equip scoring sees effects (Glass Cannon doubles dummy DPS)',
     near(scoreGear(10, kit(withEffect(sword, Effect.GlassCannon))).dps, 2 * scoreGear(10, kit(sword)).dps, 1e-9));
+}
+
+// ---------------------------------------------------------------- the Shifting Rift (shifting-rift.md, "Where a boon works")
+
+{
+  const L = 50;
+  /** A T5 kit with rift effects or Trophies `fx` on the sword (as an Ethereal item carries them) and an optional ring. */
+  const kit = (fx: number[] = [], ring: [number, number][] = []) => gear({
+    MainHand: { ...item(1, 5, [[Stat.PhysDamagePct, 40], [Stat.MaxHp, 200], [Stat.Armor, 100]]), effects: fx },
+    Chest: item(35, 5, [[Stat.Resistance, 80]]),
+    Feet: item(37, 5),
+    Ring1: item(50, 5, ring),
+  });
+  const plain = combatStats(L, kit());
+  const rift = (boons: [number, BoonRarity][], o: Partial<RiftBuild> = {}, fx: number[] = [], ring: [number, number][] = []) =>
+    combatStats(L, kit(fx, ring), undefined, { boons: boons.map(([id, rarity]) => ({ id, rarity })), ...o });
+  const withFx = (...fx: number[]) => combatStats(L, kit(fx));
+  const hit = (s: CombatStats) => s.sources[0].hit.Physical + s.sources[0].hit.Magic;
+  const speed = (s: CombatStats) => s.sources[0].attacksPerSec;
+  const rel = (a: number, b: number, k: number) => near(a, b * k, 1e-9 * Math.max(1, b));
+  const B = Boon;
+
+  // ---- the stat build
+  check('Rift: an empty build changes nothing', encodeStats(rift([])) === encodeStats(plain));
+  check('Sharpened Will: damage × (1 + value)', rel(hit(rift([[B.SharpenedWill, 1]])), hit(plain), 1.14));
+  {
+    const s = rift([[B.RedTithe, 0]]);
+    check('Red Tithe: max HP × 0.9, damage × 1.12', rel(s.maxHp, plain.maxHp, 0.9) && rel(hit(s), hit(plain), 1.12));
+  }
+  check('Thick Skin: max HP × (1 + value)', rel(rift([[B.ThickSkin, 2]]).maxHp, plain.maxHp, 1.22));
+  {
+    const fury = rift([[B.Sunder, 0], [B.Bloodrush, 0], [B.CoupDeGrace, 0]]);
+    check('three Fury boons: the 3-set (+15% damage)', fury.effects.has(setBonusId(Theme.Fury, 3)) && !fury.effects.has(setBonusId(Theme.Fury, 5)) &&
+      rel(hit(fury), hit(plain), 1.15));
+    check('… Wildcard counts as one of every theme', rift([[B.Sunder, 0], [B.CoupDeGrace, 0], [B.Wildcard, 2]]).effects.has(setBonusId(Theme.Fury, 3)));
+    check('… and so does a theme mark', rift([[B.Sunder, 0], [B.CoupDeGrace, 0]], { marks: [Theme.Fury] }).effects.has(setBonusId(Theme.Fury, 3)));
+    check('… two boons and no mark: no set', !rift([[B.Sunder, 0], [B.CoupDeGrace, 0]]).effects.has(setBonusId(Theme.Fury, 3)));
+    check('five Fury boons: both sets', rift([[B.Sunder, 0], [B.Bloodrush, 0], [B.CoupDeGrace, 0], [B.SharpenedWill, 0], [B.OpeningSalvo, 0]])
+      .effects.has(setBonusId(Theme.Fury, 5)));
+  }
+  check('Bloodrush: + value per fight won this floor', rel(hit(rift([[B.Bloodrush, 2]], { won: 3 })), hit(plain), 1.12));
+  check('Quickened: attack speed × (1 + value)', rel(speed(rift([[B.Quickened, 0]])), speed(plain), 1.08));
+  {
+    const s = rift([[B.Fortress, 2]]);
+    check('Fortress: 25% less damage taken, 15% less attack speed', s.damageTaken === 0.75 && rel(speed(s), speed(plain), 0.85));
+    const w = rift([[B.RaisedShield, 0], [B.Shieldwall, 2]]);
+    check('Shieldwall: blocks stop the whole hit, 20% less attack speed', w.blockShare === 1 && rel(speed(w), speed(plain), 0.8));
+  }
+  check('Keen: flat crit chance after the increase', near(rift([[B.Keen, 2]]).sources[0].critChance, plain.sources[0].critChance + 0.08, 1e-12));
+  check('Cruel: + crit damage', near(rift([[B.Cruel, 1]]).critDamage, plain.critDamage + 0.25, 1e-12));
+  {
+    const glim = withFx(Effect.ParryAndThrust);
+    const keen = rift([[B.Keen, 2]], {}, [Effect.ParryAndThrust]);
+    check('Glimmerguard converts crit chance after Keen', near(keen.evasionRating - glim.evasionRating, PARRY_RATING * 100 * 0.08, 1e-6),
+      f(keen.evasionRating - glim.evasionRating));
+  }
+  check('Sunder: ignores a share of armor and resistance', near(rift([[B.Sunder, 0]]).armorPen, 0.1, 1e-12) && near(rift([[B.Sunder, 0]]).magicPen, 0.1, 1e-12));
+  {
+    const pen = (s: CombatStats) => s.armorPen;
+    const ring: [number, number][] = [[Stat.ArmorPenPct, 20]];
+    check('… on top of capped penetration', near(pen(rift([[B.Sunder, 2]], {}, [], [[Stat.ArmorPenPct, 90]])), 1 - 0.25 * 0.72, 1e-12));
+    check('Iron Week: armor penetration counts double', near(pen(rift([], { mutation: Mutation.IronWeek }, [], ring)), 0.4, 1e-12));
+  }
+  check('Iron Hide: armor and resistance × (1 + value)', rel(rift([[B.IronHide, 0]]).armor, plain.armor, 1.15) && rel(rift([[B.IronHide, 0]]).resistance, plain.resistance, 1.15));
+  {
+    const s = rift([[B.Fleetfoot, 1]]);
+    const base = defenseAgainst(plain, 'Physical', L).evasion;
+    check('Fleetfoot: flat evade chance after rating', near(defenseAgainst(s, 'Physical', L).evasion, base + 0.07, 1e-12));
+    const mist = rift([[B.Fleetfoot, 0], [B.Smoke, 0], [B.Counterstep, 0]]);
+    check('… the Mist 3-set adds 6%', near(mist.evadeChance!, 0.1, 1e-12));
+    check('… up to the evasion cap', defenseAgainst(rift([[B.Fleetfoot, 2]], {}, [], [[Stat.EvasionRating, 5000]]), 'Physical', L).evasion === 0.6);
+    check('… none under Juggernaut', defenseAgainst(rift([[B.Fleetfoot, 2]], {}, [Effect.Juggernaut]), 'Physical', L).evasion === 0);
+  }
+  check('Raised Shield: block chance', rift([[B.RaisedShield, 0]]).block === 0.06);
+  check('… the Aegis 3-set adds 8%', near(rift([[B.RaisedShield, 0], [B.Bracing, 0], [B.ShieldBash, 0]]).block!, 0.14, 1e-12));
+  check('Deep Guard: the share a block stops', rift([[B.DeepGuard, 2]]).blockShare === 0.8);
+  {
+    const ls: [number, number][] = [[Stat.LifestealPct, 20]];
+    check('Leech: lifesteal and its cap rise', near(rift([[B.Leech, 2]]).lifesteal, 0.03, 1e-12) && near(rift([[B.Leech, 2]], {}, [], ls).lifesteal, 0.13, 1e-12));
+    check('the Blood 3-set raises the cap 5%', near(rift([[B.Leech, 0], [B.Afterglow, 0], [B.Clotting, 0]], {}, [], ls).lifesteal, 0.16, 1e-12));
+    const bb = rift([], {}, [RiftEffect.Bloodbound], [...ls, [Stat.HpRegen, 10]]);
+    check('Bloodbound: no lifesteal cap, no regen', near(bb.lifesteal, 0.2, 1e-12) && bb.regen === 0);
+    check('… with Frozen Blood, lifesteal still does nothing', rift([], {}, [RiftEffect.Bloodbound, Effect.FrozenBlood], ls).lifesteal === 0);
+    check('Vampiric (Trophy): heals 50% past the cap', near(rift([], {}, [trophyId(EliteAffix.Vampiric)], ls).lifesteal, 0.6, 1e-12));
+    check('Hexed: heals −30%', near(rift([], { curses: [Curse.Hexed] }, [], ls).lifesteal, 0.07, 1e-12));
+  }
+  check('Glass Heart: damage × 2, max HP × 0.5', rel(hit(withFx(RiftEffect.GlassHeart)), hit(plain), 2) && rel(withFx(RiftEffect.GlassHeart).maxHp, plain.maxHp, 0.5));
+  {
+    const v = withFx(RiftEffect.Voidheart);
+    check('Voidheart: all damage magic, × 1.25', v.sources[0].hit.Physical === 0 && rel(v.sources[0].hit.Magic, hit(plain), 1.25));
+    const sb = withFx(Effect.Spellblade, RiftEffect.Voidheart);
+    check('… over Spellblade too', sb.sources[0].hit.Physical === 0 && sb.sources[0].hit.Magic > 0);
+  }
+  {
+    const a = withFx(RiftEffect.RiftAnchor);
+    check('Rift Anchor: the affixes on your other items × 1.2', near(a.resistance - plain.resistance, 16, 1e-9) && near(hit(a), hit(plain), 1e-9),
+      f(a.resistance - plain.resistance));
+  }
+  {
+    const three: [number, BoonRarity][] = [[B.LuckyCoin, 0], [B.Interest, 0], [B.SecondLook, 1]];
+    const c = rift(three, {}, [RiftEffect.RiftConduit]);
+    check('Rift Conduit: +2% damage and max HP per boon', rel(hit(c), hit(rift(three)), 1.06) && rel(c.maxHp, rift(three).maxHp, 1.06));
+    check("Hoarder's Band: +1% damage per 10 Motes, up to +40%", rel(hit(rift([], { motes: 255 }, [RiftEffect.HoardersBand])), hit(plain), 1.25) &&
+      rel(hit(rift([], { motes: 9000 }, [RiftEffect.HoardersBand])), hit(plain), 1.4));
+  }
+  check('Storm Front: attack speed × 1.3', rel(speed(rift([], { mutation: Mutation.StormFront })), speed(plain), 1.3));
+  check('Glass World: damage × 2', rel(hit(rift([], { mutation: Mutation.GlassWorld })), hit(plain), 2));
+  check('Frail and Weighted: max HP × 0.85, attack speed × 0.9', rel(rift([], { curses: [Curse.Frail, Curse.Weighted] }).maxHp, plain.maxHp, 0.85) &&
+    rel(speed(rift([], { curses: [Curse.Frail, Curse.Weighted] })), speed(plain), 0.9));
+  check('Thick Blood: max HP × 1.15', rel(rift([], { thickBlood: true }).maxHp, plain.maxHp, 1.15));
+  check('Phantom: max HP × 0.8', rel(rift([[B.Phantom, 2]]).maxHp, plain.maxHp, 0.8));
+  check('Thorned (Trophy): max HP × 0.7', rel(withFx(trophyId(EliteAffix.Thorned)).maxHp, plain.maxHp, 0.7));
+  {
+    const s = withFx(trophyId(EliteAffix.Swift));
+    check('Swift (Trophy): 50% faster, hits 25% weaker', rel(speed(s), speed(plain), 1.5) && rel(hit(s), hit(plain), 0.75));
+  }
+  check('Overclock: attack speed × 1.6', rel(speed(withFx(RiftEffect.Overclock)), speed(plain), 1.6));
+  check('Unyielding (Trophy): regen 1.5% of max HP', near(withFx(trophyId(EliteAffix.Unyielding)).regen, 0.015 * plain.maxHp, 1e-9));
+  check('Mirror Mail: 15% more damage taken', withFx(RiftEffect.MirrorMail).damageTaken === 1.15);
+  {
+    const w = withFx(trophyId(EliteAffix.WardedShell));
+    const best = mitigation(Math.max(w.armor, w.resistance), 0, L);
+    check('Warded Shell (Trophy): the better of armor and resistance against both', near(defenseAgainst(w, 'Physical', L).mitigation, best, 1e-12) &&
+      near(defenseAgainst(w, 'Magic', L).mitigation, best, 1e-12));
+  }
+
+  // ---- in a fight (fighter.ts)
+  const never: () => number = () => { throw new Error('drew from the generator'); };
+  const zero = () => 0;
+  const fighter = (boons: [number, BoonRarity][], fx: number[] = [], start: FighterStart = {}, ring: [number, number][] = []) =>
+    new Fighter(rift(boons, {}, fx, ring), start);
+  const ctx = (o: Partial<SwingContext> = {}): SwingContext => ({ target: 9, foeHp: 100, foeMaxHp: 100, at: 10, crit: false, hit: 50, immune: false, ...o });
+  /** A swing's damage through `riftSwing`, after counting the swing. */
+  const swing = (x: Fighter, damage: number, o: Partial<SwingContext> = {}, rng: () => number = never) => {
+    x.nextPeriod(1);
+    return x.riftSwing(damage, ctx(o), rng);
+  };
+  check('Rift: nothing held draws nothing and changes no swing', (() => {
+    const x = new Fighter(plain);
+    return !x.riftSwings && x.shrink(100, zero) === 100 && x.periodNow(1) === 1 && x.evade(0.2, 1) === 0.2;
+  })());
+  check('Stubborn: each fight starts with a shield', near(fighter([[B.Stubborn, 1]]).shield, 0.14 * plain.maxHp, 1e-9));
+  {
+    const x = fighter([[B.Bracing, 1]]);
+    const hits = [x.shrink(100, never), x.shrink(100, never), x.shrink(100, zero)];
+    check('Bracing: the first hits are always blocked, drawing nothing', hits[0] === 50 && hits[1] === 50 && hits[2] === 100, hits.join(' / '));
+  }
+  check('Braced: less damage from Elites and bosses only', fighter([[B.Braced, 2]]).shrink(100, zero, true) === 76 && fighter([[B.Braced, 2]]).shrink(100, zero) === 100);
+  check('Deep Guard: a block stops its share', near(fighter([[B.RaisedShield, 0], [B.DeepGuard, 2]]).shrink(100, zero), 20, 1e-9));
+  check('Raised Shield blocks at its chance', fighter([[B.RaisedShield, 0]]).shrink(100, () => 0.059) === 50 && fighter([[B.RaisedShield, 0]]).shrink(100, () => 0.061) === 100);
+  check('Smoke: evade chance up for the first 5 s, up to the cap', fighter([[B.Smoke, 2]]).evade(0.2, 1) === 0.6 && fighter([[B.Smoke, 0]]).evade(0.2, 4.9) === 0.4 &&
+    fighter([[B.Smoke, 2]]).evade(0.2, 5) === 0.2);
+  {
+    const x = fighter([[B.Opening, 0], [B.Fleetfoot, 0]]);
+    x.dodge();
+    check('Opening: the swing after an evade deals more', near(swing(x, 100), 115, 1e-9) && swing(x, 100) === 100);
+  }
+  check('Opening Salvo: more damage for the first 5 s', near(swing(fighter([[B.OpeningSalvo, 2]]), 100, { at: 1 }), 210, 1e-9) &&
+    swing(fighter([[B.OpeningSalvo, 2]]), 100, { at: 6 }) === 100);
+  check('Coup de Grâce: more damage below 30% HP', near(swing(fighter([[B.CoupDeGrace, 0]]), 100, { foeHp: 20 }), 120, 1e-9) &&
+    swing(fighter([[B.CoupDeGrace, 0]]), 100, { foeHp: 50 }) === 100);
+  {
+    const x = fighter([[B.Frenzy, 2]]);
+    x.hp = 0.25 * x.maxHp;
+    check("Frenzy: +1% damage per 1% HP missing", near(swing(x, 100), 175, 1e-9));
+  }
+  check('Ravenous (Trophy): +5% damage every 5 s', near(swing(fighter([], [trophyId(EliteAffix.Ravenous)]), 100, { at: 12 }), 110, 1e-9));
+  {
+    const x = fighter([[B.Sunder, 0], [B.Bloodrush, 0], [B.CoupDeGrace, 0], [B.SharpenedWill, 0], [B.OpeningSalvo, 0]], [RiftEffect.FirstBlood]);
+    const d = [swing(x, 100, { target: 7 }), swing(x, 100, { target: 7 }), swing(x, 0, { target: 8 }), swing(x, 100, { target: 8 })];
+    check('First Blood and the Fury 5-set: the first hit on each enemy × 5 × 3 (a miss doesn\'t count)', d[0] === 1500 && d[1] === 100 && d[2] === 0 && d[3] === 1500,
+      d.join(' / '));
+  }
+  {
+    const x = fighter([], [RiftEffect.GamblersEdge]);
+    const r = seededRng(3n);
+    const d = Array.from({ length: 20000 }, () => swing(x, 100, {}, r));
+    const avg = d.reduce((a, b) => a + b, 0) / d.length;
+    check("Gambler's Edge: 0–300%, × 1.5 on average", near(avg, 150, 3) && Math.min(...d) >= 0 && Math.max(...d) <= 300, f(avg));
+    check('… a miss draws nothing', swing(x, 0, {}, never) === 0);
+  }
+  {
+    const x = fighter([], [RiftEffect.EchoStrike]);
+    const d = Array.from({ length: 8 }, () => swing(x, 100));
+    check('Echo Strike: every 4th attack repeats', d.join() === '100,100,100,200,100,100,100,200');
+  }
+  {
+    const x = fighter([[B.Static, 0]]);
+    const d = Array.from({ length: 5 }, () => swing(x, 0));
+    check("Static: every 5th swing shocks, even a miss", d.join() === '0,0,0,0,50');
+    const y = fighter([[B.Static, 0]]);
+    for (let i = 0; i < 4; i++) swing(y, 0);
+    check('… but not an enemy that can\'t be damaged', swing(y, 0, { immune: true }) === 0);
+  }
+  {
+    const x = fighter([[B.Quickened, 0], [B.Keen, 0], [B.Cruel, 0], [B.Static, 0], [B.Tailwind, 0]]);
+    const d = [swing(x, 100, { crit: true }), swing(x, 0), swing(x, 100)];
+    check('the Storm 5-set: a crit chains 30% to the next swing that lands', d.join() === '100,0,130', d.join(' / '));
+  }
+  {
+    const x = fighter([[B.Tailwind, 0]]);
+    const first = x.firstPeriod(1);
+    x.nextPeriod(1);
+    x.nextPeriod(1);
+    check('Tailwind: the first 3 attacks are faster', near(first, 1 / 1.5, 1e-12) && near(x.periodNow(1), 1 / 1.5, 1e-12) && (x.nextPeriod(1), x.periodNow(1) === 1));
+  }
+  {
+    const x = fighter([[B.Keen, 0], [B.Thunderhead, 2]]);
+    for (let i = 0; i < 4; i++) swing(x, 100, { crit: true });
+    const four = x.periodNow(1);
+    for (let i = 0; i < 20; i++) swing(x, 100, { crit: true });
+    check('Thunderhead: +3% attack speed a crit, up to +30%', near(four, 1 / 1.12, 1e-12) && near(x.periodNow(1), 1 / 1.3, 1e-12));
+  }
+  {
+    const x = fighter([], [RiftEffect.Overclock]);
+    swing(x, 100);
+    const after = x.hp;
+    x.hp = 0.005 * x.maxHp;
+    swing(x, 0);
+    check('Overclock: each swing costs 1% max HP, never the last of it', near(after, 0.99 * x.maxHp, 1e-9) && x.hp === 0.005 * x.maxHp);
+  }
+  check('Counterstep: an evade counters for a share of your average hit', fighter([[B.Counterstep, 0], [B.Fleetfoot, 0]]).riposte(100, 0, 1) === 30);
+  check('Slip Away: an evade heals', near(fighter([[B.SlipAway, 2], [B.Fleetfoot, 0]]).dodge(), 0.025 * plain.maxHp, 1e-9));
+  {
+    const x = fighter([[B.Fleetfoot, 0], [B.Smoke, 0], [B.Counterstep, 0], [B.SlipAway, 0], [B.Opening, 0]]);
+    x.nextPeriod(1);
+    const plainCrit = x.rollCrit(0, zero);
+    x.dodge();
+    x.nextPeriod(1);
+    check('the Mist 5-set: the swing after an evade crits', !plainCrit && x.rollCrit(0, never));
+  }
+  {
+    const x = fighter([[B.Bracing, 0], [B.ShieldBash, 0], [B.SteadyGuard, 0], [B.RaisedShield, 0], [B.DeepGuard, 0]]);
+    const dealt = x.shrink(100, never);
+    const b = x.onBlock(50, 0.5);
+    check('Shield Bash, Steady Guard and the Aegis 5-set on a block', near(dealt, 40, 1e-9) && near(b.back, 0.4 * 50 + 0.5 * 100 * 0.5, 1e-9) && near(b.heal, 0.01 * x.maxHp, 1e-9),
+      `${f(b.back)} / ${f(b.heal)}`);
+    x.shrink(100, () => 0.99);
+    check('… nothing without a block', x.onBlock(50, 0.5).back === 0);
+  }
+  {
+    const x = fighter([[B.HoldTheLine, 0]]);
+    x.take(0.6 * x.maxHp);
+    const before = x.shield;
+    x.take(0.2 * x.maxHp);
+    const once = x.shield;
+    x.absorb(once);
+    x.heal(x.maxHp);
+    x.take(0.8 * x.maxHp);
+    check('Hold the Line: the first drop below 30% shields, once', before === 0 && near(once, 0.2 * x.maxHp, 1e-9) && x.shield === 0 && !x.holdTheLine);
+    const spent = fighter([[B.HoldTheLine, 0]], [], { holdTheLine: false });
+    spent.take(0.8 * spent.maxHp);
+    check('… once per floor (spent in an earlier node)', spent.shield === 0);
+  }
+  check('Mirror Mail and the Thorned Trophy reflect like Thornshell', near(fighter([], [RiftEffect.MirrorMail, trophyId(EliteAffix.Thorned)]).thorns(100, 1), 70, 1e-9));
+  {
+    const x = fighter([[B.BloodPrice, 2]]);
+    x.hp = x.maxHp - 10;
+    const before = x.hp;
+    x.heal(30);
+    x.overflow(30, before);
+    const first = x.shield;
+    x.overflow(1e9, x.maxHp);
+    check('Blood Price: lifesteal past full HP becomes shield, up to 20% max HP', near(first, 20, 1e-9) && near(x.shield, 0.2 * x.maxHp, 1e-9));
+  }
+  {
+    const x = fighter([[B.Clotting, 0]], [], {}, [[Stat.HpRegen, 10]]);
+    const full = x.regenNow();
+    x.hp = 0.4 * x.maxHp;
+    check('Clotting: regen up below half HP', full === x.stats.regen && near(x.regenNow(), 1.5 * x.stats.regen, 1e-9));
+  }
+  check('Transfusion and the Blood 5-set: a kill heals', near(fighter([[B.Transfusion, 0], [B.Leech, 0], [B.RedTithe, 0], [B.Afterglow, 0], [B.Clotting, 0]]).killHealing(),
+    0.11 * rift([[B.Transfusion, 0], [B.Leech, 0], [B.RedTithe, 0], [B.Afterglow, 0], [B.Clotting, 0]]).maxHp, 1e-9));
+  {
+    const x = fighter([[B.IronHide, 0], [B.ThickSkin, 0], [B.Stubborn, 0], [B.Braced, 0], [B.HoldTheLine, 0]]);
+    const start = x.shield;
+    check('the Bastion 5-set: a shield every 10 s', !x.bastionTick(5) && x.bastionTick(10) && near(x.shield - start, 0.1 * x.maxHp, 1e-9));
+  }
+  {
+    const x = fighter([], [RiftEffect.PhoenixPlume], { secondWind: 0.2 });
+    const wind = x.take(1e9);
+    const atWind = x.hp;
+    const plume = x.take(1e9);
+    check('Phoenix Plume: after Second Wind, a killing blow leaves you at 40%', wind && near(atWind, 0.2 * x.maxHp, 1e-9) && plume && x.burned &&
+      near(x.hp, 0.4 * x.maxHp, 1e-9) && !x.take(1e9) && x.hp === 0);
+  }
+
+  // ---- in a battle (battle.ts)
+  const dummy = (o: Partial<EnemyDef> = {}): EnemyDef => ({ ...enemy(105), level: L, hp: 1e6, dps: 1, speed: 1, armor: 0, resistance: 0, ...o });
+  const duel = (s: CombatStats, foes: FoeSpec[], seconds: number, chain = false) => simulateBattle({
+    sides: [[{ kind: 'player', stats: s }], foes], chain, firstSwing: 'half', timeLimit: seconds, onTimeout: 'draw',
+  }, seededRng(11n));
+  {
+    const s = { ...withFx(RiftEffect.WitherAura), sources: [] };
+    const r = duel(s, [{ kind: 'foe', def: dummy({ hp: 1000 }) }], 10.5);
+    check('Wither Aura: enemies lose 1% max HP a second', near(r.hp[1], 900, 1e-9), f(r.hp[1]));
+    const k = duel(s, [{ kind: 'foe', def: dummy({ hp: 1000 }) }], 120);
+    check('… and can kill', k.winner === 0 && near(k.end, 100, 1e-9), f(k.end));
+  }
+  {
+    const s = rift([[B.Phantom, 2], [B.Fleetfoot, 2]], {}, [], [[Stat.EvasionRating, 300]]);
+    const r = duel({ ...s, sources: [] }, [{ kind: 'foe', def: dummy({ speed: 5 }) }], 1000);
+    const foeSwings = r.events.filter(e => e.by === 1);
+    const dodged = foeSwings.filter(e => e.kind === 'miss').length / foeSwings.length;
+    const ev = defenseAgainst(s, 'Physical', L).evasion;
+    check('Phantom: an enemy hit must pass the evade check twice', near(dodged, 1 - (1 - ev) ** 2, 0.02), `${f(dodged)} vs ${f(1 - (1 - ev) ** 2)}`);
+  }
+  {
+    const s = rift([[B.RaisedShield, 2], [B.Bracing, 0], [B.ShieldBash, 2], [B.SteadyGuard, 0], [B.DeepGuard, 0]]);
+    const r = duel({ ...s, sources: [] }, [{ kind: 'foe', def: dummy({ dps: 50 }) }], 20);
+    const blocked = r.events.filter(e => e.blocked);
+    check('a battle: blocks reflect the Aegis 5-set (no weapon, so no Shield Bash) and heal', blocked.length > 0 && blocked.every(e => (e.reflected ?? 0) > 0 && e.healed[0] > 0),
+      JSON.stringify(blocked.find(e => !((e.reflected ?? 0) > 0 && e.healed[0] > 0))));
+  }
+  {
+    const s = rift([[B.Transfusion, 2]]);
+    const hurtFirst = { kind: 'player' as const, stats: s, start: { hp: s.maxHp / 2 } };
+    const r = simulateBattle({ sides: [[hurtFirst], [{ kind: 'foe', def: dummy({ hp: 50 }) }, { kind: 'foe', def: dummy({ hp: 50 }) }]], chain: true, firstSwing: 'half', timeLimit: 60, onTimeout: 'draw' }, seededRng(2n));
+    const falls = r.events.filter(e => e.kind === 'fall');
+    check('a battle: Transfusion heals on each kill', falls.length === 2 && falls.every(e => near(e.healed[0], 0.08 * s.maxHp, 1e-6)));
+  }
+
+  // ---- the foe side (rift.ts)
+  const heart = riftEnemy(5, 5, RIFT_HEART.id, 'heart');
+  const echo = riftEnemy(5, 1, RIFT_ECHOES[0].enemy.id, 'fight1');
+  check('Blood Moon: enemies drain 20% (the Rift Heart 40%)', riftFoe(echo, Mutation.BloodMoon).drain === 0.2 && riftFoe(heart, Mutation.BloodMoon).drain === 0.4);
+  check('… on top of Vampiric', riftFoe(echo, Mutation.BloodMoon, { drain: 0.5 }).drain === 0.7);
+  check('Storm Front: enemies 30% faster (the Rift Heart 60%)', near(mutatedEnemy(echo, Mutation.StormFront).speed, echo.speed * 1.3, 1e-12) &&
+    near(mutatedEnemy(heart, Mutation.StormFront).dps, heart.dps * 1.6, 1e-9));
+  check('Glass World: enemies deal × 2 (the Rift Heart × 4)', near(mutatedEnemy(echo, Mutation.GlassWorld).dps, echo.dps * 2, 1e-9) &&
+    near(mutatedEnemy(heart, Mutation.GlassWorld).dps, heart.dps * 4, 1e-9));
+  check('Iron Week: enemies are Armored', mutatedEnemy(echo, Mutation.IronWeek).defense === 'Armored');
+  {
+    const foe = riftFoe(heart, 0, {}, seededRng(4n));
+    const list = foe.phases!.list;
+    check('the Rift Heart shifts every 15 s for the whole node, never the same twice running', foe.phases!.every === 15 && list.length === 12 &&
+      list.every((d, i) => i === 0 || d.damageType !== list[i - 1].damageType || d.defense !== list[i - 1].defense) && foe.def === list[0] &&
+      new Set(list.map(d => d.damageType + d.defense)).size > 2);
+    check('… seeded', JSON.stringify(riftFoe(heart, 0, {}, seededRng(4n)).phases) === JSON.stringify(foe.phases));
+    check('… Armored all through Iron Week', riftFoe(heart, Mutation.IronWeek, {}, seededRng(4n)).phases!.list.every(d => d.defense === 'Armored'));
+  }
 }
 
 // ---------------------------------------------------------------- XP curve and settlement

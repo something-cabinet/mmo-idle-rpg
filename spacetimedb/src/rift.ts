@@ -9,13 +9,15 @@ import { ZONE_BASES } from './data/bases';
 import { materialAt, untieredMaterial } from './data/materials';
 import {
   AFFIX_TIER_SPAN, BOONS, BOONS_BY_ID, Boon, CURSES, ETHEREAL_AFFIXES, EVENTS, FLOOR_REWARDS, FLOORS, GIFTS, GIFT_CHOICES, Gift,
-  HEADLINE_CHANCE, HEADLINE_KINDS, KEYSTONE_FLOOR, MATERIALS_PER_HOUR, MUTATIONS, Mutation, PARTY_HP, PRICE, RIFT_DPS, RIFT_EFFECTS, RIFT_HEART, RIFT_HP,
-  RIFT_SLOT, ROWS, ROW_MAX, ROW_MIN, SHOP_MAX, SHOP_MIN, THEMES, Theme, canUpgrade, floorMult, rarityOdds, riftLevel, trophyId,
+  HEADLINE_CHANCE, HEADLINE_KINDS, KEYSTONE_FLOOR, MATERIALS_PER_HOUR, MUTATIONS, MUTATION_NUM, Mutation, NODE_TIME_LIMIT, PARTY_HP, PRICE, RIFT_DPS, RIFT_EFFECTS,
+  RIFT_HEART, RIFT_HP, RIFT_SLOT, ROWS, ROW_MAX, ROW_MIN, SHIFT_EVERY, SHOP_MAX, SHOP_MIN, THEMES, Theme, canUpgrade, floorMult, rarityOdds, riftLevel, trophyId,
   type BoonDef, type BoonGate, type BoonRarity, type HeadlineKind, type RiftSlot, type ThemeId,
 } from './data/rift';
 import { ELIXIRS, SUPPLY_TIERS, elixirSupplyId, gradeOf } from './data/supplies';
 import { UNIQUES } from './data/uniques';
-import { ZONES, averageEnemyDps, averageEnemyHp, effectiveHp, farmingReward, referenceAccuracy, type EnemyDef } from './data/zones';
+import { ZONES, averageEnemyDps, averageEnemyHp, effectiveHp, farmingReward, referenceAccuracy, type Defense, type EnemyDef } from './data/zones';
+import type { FoeSpec } from './battle';
+import { fightFoe, type FightMods } from './fight';
 import { makeItem, rollAffix, seededRng, type NewItem, type Rng } from './loot';
 
 const RIFT_SALT = 0x72696674n; // "rift"
@@ -281,6 +283,68 @@ export function bossOptions(seed: bigint, floor: number): BossOption[] {
   if (floor >= FLOORS) return [{ enemyId: RIFT_HEART.id, affixes: [] }];
   const rng = runRng(seed, Purpose.Boss, floor);
   return shuffle(rng, RIFT_BOSS_ECHOES.map(k => k.enemy.id)).slice(0, 2).map(enemyId => ({ enemyId, affixes: [pick(rng, ELITE_AFFIXES).id] }));
+}
+
+// ---------------------------------------------------------------- the foe side of a fight
+
+/** How strongly the weekly mutation applies to `enemy`: twice on the Rift Heart. */
+const mutationPower = (enemy: EnemyDef) => (enemy.id === RIFT_HEART.id ? 2 : 1);
+
+/**
+ * `enemy` under the weekly mutation, before its Elite affixes: Storm Front's attack speed,
+ * Glass World's damage, Iron Week's Armored profile. The Rift Heart takes the bonus twice
+ * (+60% attack speed, × 4 damage).
+ */
+export function mutatedEnemy(enemy: EnemyDef, mutation: number): EnemyDef {
+  const k = mutationPower(enemy);
+  if (mutation === Mutation.StormFront) {
+    const m = 1 + k * (MUTATION_NUM.stormFrontSpeed - 1);
+    return { ...enemy, speed: enemy.speed * m, dps: enemy.dps * m };
+  }
+  if (mutation === Mutation.GlassWorld) return { ...enemy, dps: enemy.dps * MUTATION_NUM.glassWorldDamage ** k };
+  if (mutation === Mutation.IronWeek) return withDefense(enemy, 'Armored');
+  return enemy;
+}
+
+const withDefense = (e: EnemyDef, defense: Defense): EnemyDef => ({
+  ...e,
+  defense,
+  armor: 2.5 * e.level * PROFILE[defense].armor,
+  resistance: 2.5 * e.level * PROFILE[defense].resistance,
+});
+
+/**
+ * The Rift Heart's Shift: a damage type and defense profile every SHIFT_EVERY seconds, at
+ * random (never the same twice running) for the whole node; Iron Week keeps it Armored.
+ * The first entry is how it starts.
+ */
+export function heartShift(heart: EnemyDef, rng: Rng, mutation = 0): EnemyDef[] {
+  const kinds = (['Physical', 'Magic'] as const).flatMap(damageType =>
+    (mutation === Mutation.IronWeek ? (['Armored'] as const) : (['Armored', 'Warded', 'Balanced'] as const)).map(defense => ({ damageType, defense })));
+  const list: EnemyDef[] = [];
+  let last = -1;
+  for (let i = 0; i < Math.ceil(NODE_TIME_LIMIT / SHIFT_EVERY); i++) {
+    let k = Math.floor(rng() * (kinds.length - 1));
+    if (k >= last && last >= 0) k += 1;
+    last = k;
+    list.push({ ...withDefense(heart, kinds[k].defense), damageType: kinds[k].damageType });
+  }
+  return list;
+}
+
+/**
+ * A Rift enemy as a battle foe (after `mutatedEnemy` and abyss.ts `withEliteAffix`), with
+ * its affixes' `mods`, Blood Moon's lifesteal (as drain, twice on the Rift Heart, on top of
+ * Vampiric's), and the Heart's Shift drawn from `shift`.
+ */
+export function riftFoe(enemy: EnemyDef, mutation: number, mods: FightMods = {}, shift?: Rng): FoeSpec {
+  const drain = (mods.drain ?? 0) + (mutation === Mutation.BloodMoon ? MUTATION_NUM.bloodMoonDrain * mutationPower(enemy) : 0);
+  const foe = fightFoe(enemy, { ...mods, ...(drain > 0 && { drain }) });
+  if (enemy.id === RIFT_HEART.id && shift) {
+    const list = heartShift(enemy, shift, mutation);
+    return { ...foe, def: list[0], phases: { every: SHIFT_EVERY, list } };
+  }
+  return foe;
 }
 
 // ---------------------------------------------------------------- boons

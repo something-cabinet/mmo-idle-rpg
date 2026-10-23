@@ -8,6 +8,8 @@
 import { critMultAgainst, defenseAgainst, mitigation, parrySource, type CombatStats } from './combat';
 import { DRAWING_FIRE, Effect, TWIN_FLAME, effectAmount } from './data/legendary';
 import { THREAT_FOCUS, empoweredSignature, type DuoDef } from './data/raids';
+import { EliteAffix } from './data/abyss';
+import { trophyId } from './data/rift';
 import type { DamageType } from './data/bases';
 import { dodgeChance } from './data/stats';
 import type { EnemyDef } from './data/zones';
@@ -106,15 +108,15 @@ export interface BattleEvent {
   damage: number;
   /** A foe's hit on one target: what got through Warding, Stoneskin, Bulwark, Last Stand and Afterimage (the shield's share included). */
   dealt?: number;
-  /** Bulwark blocked half of it. */
+  /** It was blocked (Bulwark, the Rift's block chance, Bracing). */
   blocked?: boolean;
   /** Moonlight: the swing hit twice. */
   wave?: boolean;
   /** The target couldn't be damaged. */
   immune?: boolean;
-  /** What came back at the attacker: a Thorned foe's reflect, or the target's Thornshell. */
+  /** What came back at the attacker: a Thorned foe's reflect, or the target's Thornshell (with Mirror Mail, and on a block Shield Bash and the Aegis 5-set). */
   reflected?: number;
-  /** Riposte: the target's counter to a dodge. */
+  /** Riposte (and Counterstep): the target's counter to a dodge. */
   countered?: number;
   /** HP the attacking foe drained. */
   drained?: number;
@@ -203,10 +205,11 @@ export function offense(a: CombatStats, target: { kind: 'foe'; def: EnemyDef } |
     evade = a.effects.has(Effect.TrueShot) ? 0 : dodgeChance(e.evasionRating ?? 0, a.accuracy);
   } else {
     const b = target.stats;
-    // Juggernaut and Spellward defend with the better of armor and resistance.
+    // Juggernaut and Spellward (and the Warded Shell Trophy, for both) defend with the better of armor and resistance.
     const best = Math.max(b.armor, b.resistance);
-    const physDef = b.effects.has(Effect.Spellward) ? best : b.armor;
-    const magicDef = b.effects.has(Effect.Juggernaut) ? best : b.resistance;
+    const warded = b.effects.has(trophyId(EliteAffix.WardedShell));
+    const physDef = warded || b.effects.has(Effect.Spellward) ? best : b.armor;
+    const magicDef = warded || b.effects.has(Effect.Juggernaut) ? best : b.resistance;
     mitP = voidtouched ? 0 : mitigation(physDef, a.armorPen, a.level) * (1 - amount(Effect.Rending));
     mitM = voidtouched ? 0 : mitigation(magicDef, a.magicPen, a.level) * (1 - amount(Effect.Spellbreaker));
     evade = a.effects.has(Effect.TrueShot) ? 0 : defenseAgainst(b, mainType(a), a.level, a.accuracy).evasion;
@@ -303,7 +306,7 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
   const n = actors.length;
   const maxHp = actors.map(a => (a.kind === 'player' ? a.f.maxHp : a.maxHp));
   const gained = new Array<number>(n).fill(0);
-  const shielded = actors.some(a => a.kind === 'player' && a.f.shield > 0);
+  const shielded = actors.some(a => a.kind === 'player' && a.f.mayShield);
   const events: BattleEvent[] = [];
   const segments: ChainSegment[] = [];
   // Frostbite: the highest chill on a side shrinks every foe's hits on it.
@@ -509,9 +512,11 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
     }
   };
 
-  // Regen heals once a second, counted from the end of the walk.
-  const regenerates = actors.some(a => (a.kind === 'player' ? a.f.stats.regen > 0 : !!a.def.regen || !!a.spec.phases?.list.some(d => d.regen)));
+  // Regen heals once a second, counted from the end of the walk; Wither Aura and the Bastion 5-set tick with it.
+  const regenerates = actors.some(a => (a.kind === 'player' ? a.f.stats.regen > 0 || a.f.wither > 0 || a.f.bastion : !!a.def.regen || !!a.spec.phases?.list.some(d => d.regen)));
   let nextRegen = regenerates ? walk + 1 : Infinity;
+  /** Regen ticks so far: whole seconds into the fight. */
+  let ticks = 0;
   let absorbing: { foe: number; until: number } | undefined;
   let acted = 0 as 0 | 1;
 
@@ -532,19 +537,27 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
   };
   if (setup.chain) segmentFoe = actors.findIndex(a => a.kind === 'foe' && a.active);
 
-  // A player takes a foe's hit (an attack or a special): their defenses, Thornshell back, the foe's drain.
+  // A player takes a foe's hit (an attack or a special): their defenses, Thornshell back (and on a block, Shield Bash and the Aegis 5-set), the foe's drain.
   const hurt = (p: number, raw: number, f: number, t: number) => {
     const y = actors[p] as PlayerActor;
     const x = actors[f] as FoeActor;
-    const dealt = y.f.shrink(raw, rng);
+    const dealt = y.f.shrink(raw, rng, x.def.rank === 'Elite' || x.def.rank === 'Boss');
     const blocked = y.f.blocked;
     const hpDamage = y.f.absorb(dealt);
-    const reflected = immune(f, t) ? 0 : y.f.thorns(hpDamage, thornsThrough(p, f));
+    let reflected = immune(f, t) ? 0 : y.f.thorns(hpDamage, thornsThrough(p, f));
+    let blockHeal = 0;
+    if (blocked) {
+      const o = off(p, f);
+      const b = y.f.onBlock(o.hit * (1 + o.crit * (o.critX - 1)), thornsThrough(p, f));
+      if (!immune(f, t)) reflected += b.back;
+      blockHeal = b.heal;
+    }
     x.hp = Math.max(0, x.hp - reflected);
     const hpBefore = y.f.hp;
     const saved = y.f.take(hpDamage);
     const drained = x.spec.drain && x.hp > 0 ? Math.min(x.maxHp - x.hp, x.spec.drain * Math.min(hpBefore, hpDamage)) : 0;
     x.hp += drained;
+    if (blockHeal > 0) heal(p, blockHeal * hm[p]);
     return { dealt, blocked, reflected, saved, drained, renewed: y.f.renewed };
   };
 
@@ -560,6 +573,11 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
       x.nextPhase = Infinity;
       if (absorbing?.foe === f) absorbing = undefined;
       updateHealMult();
+      // A kill heals every opponent still up with Transfusion or the Blood 5-set.
+      for (let p = 0; p < n; p++) {
+        const y = actors[p];
+        if (y.kind === 'player' && y.side !== x.side && y.f.hp > 0 && y.f.killHealing() > 0) heal(p, y.f.killHealing() * hm[p]);
+      }
       if (record) push({ t, by: -1, target: f, kind: 'fall', damage: 0 });
       const nextFoe = actors.findIndex((y, j) => y.kind === 'foe' && y.side === x.side && !y.active && j > f);
       if (setup.chain && nextFoe >= 0) {
@@ -632,13 +650,30 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
     }
     if (t === nextRegen) {
       nextRegen += 1;
+      ticks += 1;
+      let shieldUp = false;
+      let withered = false;
       for (let i = 0; i < n; i++) {
         const a = actors[i];
         if (a.kind === 'player') {
-          if (a.f.stats.regen > 0) heal(i, a.f.stats.regen * hm[i]);
+          if (a.f.stats.regen > 0) heal(i, a.f.regenNow() * hm[i]);
+          if (a.f.bastionTick(ticks)) shieldUp = true;
+          // Wither Aura: every foe it faces loses a share of its max HP.
+          if (a.f.wither > 0 && a.f.hp > 0) {
+            for (const j of opponents(i)) {
+              const y = actors[j];
+              if (y.kind !== 'foe' || immune(j, t)) continue;
+              y.hp = Math.max(0, y.hp - a.f.wither * y.maxHp);
+              withered = true;
+            }
+          }
         } else if (a.active && a.def.regen) heal(i, a.def.regen);
       }
-      if (record && gained.some(g => g > 0)) push({ t, by: -1, target: -1, kind: 'regen', damage: 0 });
+      if (record && (gained.some(g => g > 0) || shieldUp || withered)) push({ t, by: -1, target: -1, kind: 'regen', damage: 0 });
+      if (withered) {
+        const over = settle(t);
+        if (over) return over;
+      }
       continue;
     }
 
@@ -721,9 +756,12 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
         const p = pickTarget(i);
         if (p < 0) continue;
         const y = actors[p] as PlayerActor;
-        if (rng() < foeHit(i).evasion[p]) {
-          y.f.dodge();
-          // Riposte: the dodge counters for a share of an average hit.
+        // Phantom: the attack must pass the evade check twice.
+        const ev = y.f.evade(foeHit(i).evasion[p], t - walk);
+        if (rng() < ev || (y.f.phantom && rng() < ev)) {
+          const slip = y.f.dodge();
+          if (slip > 0) heal(p, slip * hm[p]);
+          // Riposte (and Counterstep): the dodge counters for a share of an average hit.
           const o = off(p, i);
           const countered = immune(i, t) ? 0 : y.f.riposte(o.hit, o.crit, o.critX);
           a.hp = Math.max(0, a.hp - countered);
@@ -749,9 +787,10 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
         const isCrit = p.rollCrit(o.crit, rng, missed);
         const wave = p.isWave();
         const shieldedFoe = !missed && immune(b, t);
-        const critX = isCrit ? o.critX : 1;
+        const critX = isCrit ? p.critBoost(o.critX) : 1;
         const y = actors[b];
-        const weapon = missed || shieldedFoe ? 0 : p.swingDamage(o.hit * critX * (0.9 + 0.2 * rng()), hpOf(y), maxHp[b]) * (p.has(Effect.StokeTheFire) ? p.stokeMult(fallen()) : 1);
+        let weapon = missed || shieldedFoe ? 0 : p.swingDamage(o.hit * critX * (0.9 + 0.2 * rng()), hpOf(y), maxHp[b]) * (p.has(Effect.StokeTheFire) ? p.stokeMult(fallen()) : 1);
+        if (p.riftSwings) weapon = p.riftSwing(weapon, { target: b, foeHp: hpOf(y), foeMaxHp: maxHp[b], at: t - walk, crit: isCrit, hit: o.hit, immune: immune(b, t) }, rng);
         if (!shieldedFoe) p.ambush = 1;
         // Heals land even when the swing misses; Zealot's Oath hits with them.
         const healed = o.heal * (isCrit ? o.healCritX : 1);
@@ -764,7 +803,8 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
           y.hp = Math.max(0, y.hp - damage);
           reflected = thorned(i, b) * damage;
         } else if (missed) {
-          y.f.dodge();
+          const slip = y.f.dodge();
+          if (slip > 0) heal(b, slip * hm[b]);
           // Riposte: the target counters for a share of its average hit.
           const c = off(b, i);
           countered = y.f.riposte(c.hit, c.crit, c.critX);
@@ -787,7 +827,9 @@ export function simulateBattle(setup: BattleSetup, rng: Rng): BattleResult {
             if (p.has(Effect.TwinFlame) && hurtFirst[1] !== undefined) heal(hurtFirst[1], TWIN_FLAME * healed * hm[hurtFirst[1]]);
           }
         }
+        const hpBefore = p.hp;
         heal(i, p.stats.lifesteal * hm[i] * damage);
+        p.overflow(p.stats.lifesteal * hm[i] * damage, hpBefore);
         if (reflected + countered > 0 && p.takeDirect(reflected + countered)) (saved ??= []).push(i);
         renewed += reflected + countered > 0 ? p.renewed : 0;
         if (record) push({ t, by: i, target: b, kind: missed || shieldedFoe ? 'miss' : isCrit ? 'crit' : 'hit', damage,

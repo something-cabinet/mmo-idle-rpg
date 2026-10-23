@@ -9,6 +9,11 @@ import { SLOTS } from './data/bases';
 import { ANVIL_ARMOR, ANVIL_SPEED, Effect, LAST_STAND_BELOW, MOONLIGHT_MULT, PARRY_RATING, RESONANCE, TRUE_SHOT, effectAmount, rallyPeriods, waxingAttacks, type EffectCounts } from './data/legendary';
 import { CAPS, MIGHT_ACCURACY, Stat, accuracyAtLevel, dodgeChance, fromStored, roundStat, toStored, wholeValue, type StatId } from './data/stats';
 import { WALK_SECONDS, type EnemyDef } from './data/zones';
+import { EliteAffix } from './data/abyss';
+import {
+  BOON_NUM, Boon, CURSE_NUM, Curse, MUTATION_NUM, Mutation, RIFT_NUM, RiftEffect, SET, THICK_BLOOD, TROPHY_NUM, Theme, boonAmount, riftEffects,
+  setBonusId, trophyId, type RiftBuild, type ThemeId,
+} from './data/rift';
 import type { DamageType, WeaponDamage } from './data/bases';
 import type { Buffs } from './data/supplies';
 
@@ -112,32 +117,43 @@ export interface CombatStats {
   damageTaken?: number;
   /** Once per fight, at half HP, heal this share of max HP (a Phial of Renewal; absent = 0). */
   renewal?: number;
+  /** Evade chance added after rating, up to the cap (the Rift's Fleetfoot and Mist set; absent = 0). */
+  evadeChance?: number;
+  /** Block chance on top of Bulwark's (the Rift's Raised Shield and Aegis set; absent = 0). */
+  block?: number;
+  /** Share of a blocked hit stopped (Deep Guard, Shieldwall; absent = 0.5). */
+  blockShare?: number;
   /** Effect IDs worn → copies. Legendary effects stack (`effectAmount`); unique effects apply once. */
   effects: EffectCounts;
 }
 
 /**
  * Multiplier on all your damage from effects: Glass Cannon × 2, Voidtouched × 0.75
- * (it ignores mitigation in `matchup`). Also applies to Thornshell and Zealot's Oath damage.
+ * (it ignores mitigation in `matchup`), the Rift's Glass Heart × 2. Also applies to
+ * Thornshell and Zealot's Oath damage.
  */
 export function effectDamageMult(effects: EffectCounts): number {
-  return (effects.has(Effect.GlassCannon) ? 2 : 1) * (effects.has(Effect.Voidtouched) ? 0.75 : 1);
+  return (effects.has(Effect.GlassCannon) ? 2 : 1) * (effects.has(Effect.Voidtouched) ? 0.75 : 1) * (effects.has(RiftEffect.GlassHeart) ? RIFT_NUM.glassHeartDamage : 1);
 }
 
 /**
  * Final combat stats of a character at `level` wearing `gear`, with `buffs` (an active
  * elixir, or a Phial for one fight, data/supplies.ts) as separate "more" multipliers
- * after everything else.
+ * after everything else. In the Shifting Rift, `rift` adds the member's boons, curses, set
+ * bonuses and the weekly mutation (shifting-rift.md, "Where a boon works").
  */
-export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatStats {
+export function combatStats(level: number, gear: Gear, buffs?: Buffs, rift?: RiftBuild): CombatStats {
   const sum = new Map<number, number>();
   const effects = new Map<number, number>();
   const add = (s: GearStat) => sum.set(s.stat, (sum.get(s.stat) ?? 0) + fromStored(s.value));
   gear = gear.map(it => it && tempered(it));
-  for (const item of gear) {
+  // Rift Anchor: the affixes on your other items × 1.2.
+  const anchor = gear.findIndex(it => it?.effects?.includes(RiftEffect.RiftAnchor));
+  const anchored = (s: GearStat) => sum.set(s.stat, (sum.get(s.stat) ?? 0) + fromStored(s.value) * RIFT_NUM.anchor);
+  for (const [i, item] of gear.entries()) {
     if (!item) continue;
     item.implicits.forEach(add);
-    item.affixes.forEach(add);
+    item.affixes.forEach(anchor >= 0 && i !== anchor ? anchored : add);
     if (item.legendary) {
       add(item.legendary);
       effects.set(item.legendary.effect, (effects.get(item.legendary.effect) ?? 0) + 1);
@@ -145,11 +161,43 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     // A legendary effect on a unique counts as one copy; unique-only effects apply once anyway.
     for (const e of item.effects ?? []) effects.set(e, (effects.get(e) ?? 0) + 1);
   }
+  if (rift) for (const [id, n] of riftEffects(rift)) effects.set(id, n);
   const has = (e: number) => effects.has(e);
   const amount = (e: number) => effectAmount(effects, e);
   const flat = (s: number) => sum.get(s) ?? 0;
   /** Percent stat as a fraction. */
   const pct = (s: number) => flat(s) / 100;
+  /** A held boon's value as a fraction (boons are percentages). */
+  const boon = (id: number) => boonAmount(effects, id) / 100;
+  const set = (theme: ThemeId, at: 3 | 5) => has(setBonusId(theme, at));
+  const mutation = rift?.mutation ?? 0;
+
+  // The Rift's "more" multipliers after gear, like elixirs (all 1 outside the Rift). Boons
+  // and curses come with `rift`; rift effects and Trophies are on Ethereal items, so gear.
+  let riftDamage = 1;
+  let riftHp = 1;
+  let riftSpeed = 1;
+  if (rift) {
+    const conduit = has(RiftEffect.RiftConduit) ? 1 + RIFT_NUM.conduit * rift.boons.length : 1;
+    const hoard = has(RiftEffect.HoardersBand) ? 1 + Math.min(RIFT_NUM.hoarderMax, RIFT_NUM.hoarderPer10 * Math.floor((rift.motes ?? 0) / 10)) : 1;
+    riftDamage = (1 + boon(Boon.SharpenedWill)) * (1 + boon(Boon.RedTithe)) * (1 + boon(Boon.Bloodrush) * (rift.won ?? 0)) *
+      (set(Theme.Fury, 3) ? 1 + SET.fury3 : 1) * conduit * hoard * (mutation === Mutation.GlassWorld ? MUTATION_NUM.glassWorldDamage : 1);
+    riftHp = (1 + boon(Boon.ThickSkin)) * (has(Boon.RedTithe) ? BOON_NUM.redTitheHp : 1) * (has(Boon.Phantom) ? BOON_NUM.phantomHp : 1) *
+      (has(Curse.Frail) ? CURSE_NUM.frailHp : 1) * (set(Theme.Bastion, 3) ? 1 + SET.bastion3 : 1) * conduit * (rift.thickBlood ? THICK_BLOOD : 1);
+    riftSpeed = (1 + boon(Boon.Quickened)) * (set(Theme.Storm, 3) ? 1 + SET.storm3 : 1) * (has(Boon.Fortress) ? BOON_NUM.fortressSpeed : 1) *
+      (has(Boon.Shieldwall) ? BOON_NUM.shieldwallSpeed : 1) * (has(Curse.Weighted) ? CURSE_NUM.weightedSpeed : 1) *
+      (mutation === Mutation.StormFront ? MUTATION_NUM.stormFrontSpeed : 1);
+  }
+  if (has(trophyId(EliteAffix.Swift))) {
+    riftDamage *= TROPHY_NUM.swiftHit;
+    riftSpeed *= TROPHY_NUM.swiftSpeed;
+  }
+  if (has(RiftEffect.Overclock)) riftSpeed *= RIFT_NUM.overclockSpeed;
+  if (has(RiftEffect.GlassHeart)) riftHp *= RIFT_NUM.glassHeartHp;
+  if (has(trophyId(EliteAffix.Thorned))) riftHp *= TROPHY_NUM.thornedHp;
+  const hexed = has(Curse.Hexed) ? CURSE_NUM.hexedHeal : 1;
+  const ironHide = 1 + boon(Boon.IronHide);
+  const bloodbound = has(RiftEffect.Bloodbound);
 
   // Primaries: `level` from level-ups (1 at level 1) plus gear; each point is a
   // percent bonus to a bundle of stats (attributes.md). Lunar Insight: Might gives
@@ -181,7 +229,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
   const discipline = 1 + (amount(Effect.Discipline) * Math.max(0, might, finesse, mind, vitality)) / 100;
   const attackSpeedPct = pct(Stat.AttackSpeedPct) + 0.001 * finesse + (hymn ? 0.0008 * mind : 0);
   const critIncreased = pct(Stat.CritChancePct) + 0.004 * finesse;
-  const critDamage = 1.5 + pct(Stat.CritDamage) + 0.0025 * mind;
+  const critDamage = 1.5 + pct(Stat.CritDamage) + 0.0025 * mind + boon(Boon.Cruel);
   const healPct = pct(Stat.HealPct) + 0.0045 * mind;
 
   // Resonance: × (1 + RESONANCE) damage and max HP per other unique worn.
@@ -192,14 +240,16 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     (100 + 10 * (level - 1) + flat(Stat.MaxHp)) *
     (1 + pct(Stat.MaxHpPct) + 0.002 * might + 0.0025 * vitality + (lunar ? 0.0025 * mind : 0)) *
     (has(Effect.GlassCannon) ? 0.5 : 1) *
-    resonance,
+    resonance *
+    riftHp,
   );
   const frozenBlood = has(Effect.FrozenBlood);
   // Frozen Blood adds bonus HP / 10 to both. Ironclad and Runeguard convert from armor and
   // resistance before either is added, so they don't loop (max HP never depends on them).
   const fromHp = frozenBlood ? bonusHp(level, maxHp, has(Effect.GlassCannon)) / 10 : 0;
-  const armor = flat(Stat.Armor) * (1 + pct(Stat.ArmorPct) + (hymn ? 0.002 * mind : 0)) + fromHp;
-  const resistance = flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct) + (lunar ? 0.005 * mind : 0)) + fromHp;
+  // Iron Hide: × armor and resistance, before the conversions.
+  const armor = (flat(Stat.Armor) * (1 + pct(Stat.ArmorPct) + (hymn ? 0.002 * mind : 0)) + fromHp) * ironHide;
+  const resistance = (flat(Stat.Resistance) * (1 + pct(Stat.ResistancePct) + (lunar ? 0.005 * mind : 0)) + fromHp) * ironHide;
   const armorTotal = armor + amount(Effect.Runeguard) * resistance;
   const resistanceTotal = resistance + amount(Effect.Ironclad) * armor;
   // Moonshadow: every point of armor and resistance (after the conversions above) becomes evasion rating.
@@ -227,7 +277,7 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     for (const t of ['Physical', 'Magic'] as const) {
       if (moonlight) {
         // Weapon hit and every flat added damage, as magic, scaled by magic % only.
-        hit[t] = t === 'Physical' ? 0 : Math.max(0, (fromStored(w.hit) * baseDamage + addedFlat.Physical + addedFlat.Magic) * (1 + damagePct.Magic) * damageMult * resonance * trueShot * discipline * (buffs?.damage ?? 1));
+        hit[t] = t === 'Physical' ? 0 : Math.max(0, (fromStored(w.hit) * baseDamage + addedFlat.Physical + addedFlat.Magic) * (1 + damagePct.Magic) * damageMult * resonance * trueShot * discipline * (buffs?.damage ?? 1) * riftDamage);
         continue;
       }
       const from = spellblade ? (t === 'Physical' ? 'Magic' : 'Physical') : t;
@@ -236,11 +286,17 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
       const base = share * fromStored(w.hit) * baseDamage;
       // Flat added damage (and heal, below) is a straight bonus per hit: fast weapons get more from it.
       // Floored at 0: an Anomaly's negative affixes never make a hit heal the enemy.
-      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * resonance * trueShot * discipline * (buffs?.damage ?? 1));
+      hit[t] = Math.max(0, (base + addedFlat[from]) * (1 + damagePct[t]) * damageMult * resonance * trueShot * discipline * (buffs?.damage ?? 1) * riftDamage);
+    }
+    // Voidheart: all of it becomes magic, × 1.25 (after Spellblade and Moonlight: the last type change wins).
+    if (has(RiftEffect.Voidheart)) {
+      hit.Magic = (hit.Physical + hit.Magic) * RIFT_NUM.voidheart;
+      hit.Physical = 0;
     }
     const baseHeal = fromStored(w.heal);
-    const heal = baseHeal > 0 ? Math.max(0, (baseHeal + flat(Stat.Heal)) * (1 + healPct)) : 0;
-    const critChance = Math.max(0, (w.baseCritBp / 10_000 + pct(Stat.BaseCritChance)) * (1 + critIncreased));
+    const heal = baseHeal > 0 ? Math.max(0, (baseHeal + flat(Stat.Heal)) * (1 + healPct)) * hexed : 0;
+    // Keen: flat crit chance after the increase, and before Glimmerguard converts it all (below).
+    const critChance = Math.max(0, (w.baseCritBp / 10_000 + pct(Stat.BaseCritChance)) * (1 + critIncreased)) + boon(Boon.Keen);
     // Overcrit: each 1% of crit chance above 100% gives +2% crit damage per copy. A crit never hits softer than a normal hit.
     const critDmg = Math.max(1, critDamage + amount(Effect.Overcrit) * Math.max(0, critChance - 1));
     if (parry) parryRating = PARRY_RATING * 100 * critChance;
@@ -250,28 +306,45 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
       healAll: w.healTarget?.tag === 'All',
       // Ambush (× 0.7), Frozen Blood (× 0.8) and Anvil Strength (× 0.75) apply after the floor, so they always cost speed.
       attacksPerSec: Math.max(baseSpeed * (1 + attackSpeedPct), 0.25 * baseSpeed) * speedFactor * (has(Effect.Ambush) ? 0.7 : 1) * (has(Effect.FrozenBlood) ? 0.8 : 1) *
-        (has(Effect.AnvilStrength) ? ANVIL_SPEED : 1) * (buffs?.attackSpeed ?? 1),
+        (has(Effect.AnvilStrength) ? ANVIL_SPEED : 1) * (buffs?.attackSpeed ?? 1) * riftSpeed,
       critChance: parry ? 0 : critChance,
       // Frostbite: crits deal no extra damage (they chill instead, see `chill`).
       critMult: has(Effect.Frostbite) || parry ? 1 : 1 + Math.min(1, critChance) * (critDmg - 1),
     });
   }
 
+  // Iron Week: armor penetration counts double. Moonlight and Voidheart: it counts as magic penetration.
+  const armorPenPct = mutation === Mutation.IronWeek ? MUTATION_NUM.ironWeekPen * pct(Stat.ArmorPenPct) : pct(Stat.ArmorPenPct);
+  let armorPen = Math.min(CAPS.penetration / 100, armorPenPct);
+  let magicPen = Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct) + (moonlight || has(RiftEffect.Voidheart) ? armorPenPct : 0));
+  // Sunder ignores a share of what's left, past the cap.
+  const sunder = boon(Boon.Sunder);
+  if (sunder > 0) {
+    armorPen = 1 - (1 - armorPen) * (1 - sunder);
+    magicPen = 1 - (1 - magicPen) * (1 - sunder);
+  }
+  const lifesteal = pct(Stat.LifestealPct) + boon(Boon.Leech);
+  const evadeChance = boon(Boon.Fleetfoot) + (set(Theme.Mist, 3) ? SET.mist3 : 0);
+  const block = boon(Boon.RaisedShield) + (set(Theme.Aegis, 3) ? SET.aegis3 : 0);
+  const blockShare = has(Boon.Shieldwall) ? 1 : boon(Boon.DeepGuard);
+  const taken = (has(Boon.Fortress) ? BOON_NUM.fortressTaken : 1) * (has(RiftEffect.MirrorMail) ? RIFT_NUM.mirrorTaken : 1);
+
   return {
     level,
     sources,
     critDamage,
-    armorPen: Math.min(CAPS.penetration / 100, pct(Stat.ArmorPenPct)),
-    // Moonlight: armor penetration counts as magic penetration.
-    magicPen: Math.min(CAPS.penetration / 100, pct(Stat.MagicPenPct) + (moonlight ? pct(Stat.ArmorPenPct) : 0)),
+    armorPen,
+    magicPen,
     maxHp,
-    regen: frozenBlood ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.005 * vitality)),
+    // Frozen Blood and Bloodbound: no regen. Unyielding (a Trophy) regenerates a share of max HP.
+    regen: frozenBlood || bloodbound ? 0 : Math.max(0, flat(Stat.HpRegen) * (1 + 0.005 * vitality) + (has(trophyId(EliteAffix.Unyielding)) ? TROPHY_NUM.unyielding * maxHp : 0)) * hexed,
     armor: moonshadow ? 0 : armorTotal,
     resistance: moonshadow ? 0 : resistanceTotal,
     evasionRating: flat(Stat.EvasionRating) * (1 + pct(Stat.EvasionRatingPct) + 0.0025 * finesse) + (moonshadow ? armorTotal + resistanceTotal : 0) + parryRating,
     accuracy,
-    // Bloodthirst raises the lifesteal cap.
-    lifesteal: frozenBlood ? 0 : Math.max(0, Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst), pct(Stat.LifestealPct))),
+    // Bloodthirst, Leech and the Blood set raise the lifesteal cap; Bloodbound removes it. Vampiric (a Trophy) heals past it.
+    lifesteal: (frozenBlood ? 0 : Math.max(0, bloodbound ? lifesteal : Math.min(CAPS.lifesteal / 100 + amount(Effect.Bloodthirst) + boon(Boon.Leech) + (set(Theme.Blood, 3) ? SET.blood3 : 0), lifesteal)) +
+      (has(trophyId(EliteAffix.Vampiric)) ? TROPHY_NUM.vampiric : 0)) * hexed,
     threat: pct(Stat.ThreatPct) + 0.0025 * vitality,
     // At worst −100%: nothing found, never negative gold or XP. A buff multiplies the total.
     itemFind: more(Math.max(-1, pct(Stat.ItemFindPct)), buffs?.itemFind),
@@ -280,8 +353,11 @@ export function combatStats(level: number, gear: Gear, buffs?: Buffs): CombatSta
     walkTime: WALK_SECONDS * (1 - amount(Effect.SwiftHunter)),
     offlineHours: BASE_OFFLINE_HOURS + amount(Effect.Seasoned),
     chill: has(Effect.Frostbite) ? 0.5 * Math.min(1, sources[0]?.critChance ?? 0) : 0,
-    ...(buffs?.damageTaken !== undefined && { damageTaken: buffs.damageTaken }),
+    ...((buffs?.damageTaken !== undefined || taken !== 1) && { damageTaken: (buffs?.damageTaken ?? 1) * taken }),
     ...(buffs?.renewal && { renewal: buffs.renewal }),
+    ...(evadeChance > 0 && { evadeChance }),
+    ...(block > 0 && { block }),
+    ...(blockShare > 0 && { blockShare }),
     effects,
   };
 }
@@ -336,13 +412,21 @@ export const parrySource = (src: AttackSource, critDamage: number): AttackSource
 export function defenseAgainst(s: CombatStats, type: DamageType, enemyLevel: number, accuracy = accuracyAtLevel(enemyLevel)): { mitigation: number; evasion: number } {
   const juggernaut = s.effects.has(Effect.Juggernaut);
   const spellward = s.effects.has(Effect.Spellward);
+  // Warded Shell (a Trophy): the better of the two against both types, evasion kept.
+  const warded = s.effects.has(trophyId(EliteAffix.WardedShell));
   const best = Math.max(s.armor, s.resistance);
-  const def = type === 'Physical' ? (spellward ? best : s.armor) : juggernaut ? best : s.resistance;
-  const cap = CAPS.evasion / 100 + effectAmount(s.effects, Effect.PhantomStep);
+  const def = warded ? best : type === 'Physical' ? (spellward ? best : s.armor) : juggernaut ? best : s.resistance;
+  const cap = evasionCap(s);
   return {
     mitigation: mitigation(def, 0, enemyLevel, MITIGATION_CAP + effectAmount(s.effects, Effect.Unbreakable)),
-    evasion: juggernaut || spellward ? 0 : dodgeChance(s.evasionRating, accuracy, cap),
+    // The Rift's flat evade chance adds after rating, up to the same cap.
+    evasion: cap > 0 ? Math.min(cap, dodgeChance(s.evasionRating, accuracy, cap) + (s.evadeChance ?? 0)) : 0,
   };
+}
+
+/** The most evade chance `s` can reach: the cap, raised by Phantom Step; 0 under Juggernaut or Spellward. */
+export function evasionCap(s: CombatStats): number {
+  return s.effects.has(Effect.Juggernaut) || s.effects.has(Effect.Spellward) ? 0 : CAPS.evasion / 100 + effectAmount(s.effects, Effect.PhantomStep);
 }
 
 export interface Matchup {
@@ -439,15 +523,15 @@ export function matchup(s: CombatStats, e: EnemyDef): Matchup {
   }
 
   const weaponDps = dps;
-  // Stoneskin takes a share of max HP off each hit; Bulwark blocks half of a share of the hits.
+  // Stoneskin takes a share of max HP off each hit; Bulwark (with the Rift's block chance) blocks half (or `blockShare`) of a share of the hits.
   const stoneskin = amount(Effect.Stoneskin) * s.maxHp;
-  const bulwark = amount(Effect.Bulwark);
+  const bulwark = Math.min(1, amount(Effect.Bulwark) + (s.block ?? 0));
   // A Phial of Warding shrinks what gets through mitigation.
   const taken = (1 - s.chill) * (s.damageTaken ?? 1);
   const enemyHit = Math.max(0, (e.dps / e.speed) * taken * (1 - playerMitigation) - stoneskin);
   const foeHit = (e.dps / e.speed) * (1 - s.chill) * (1 - playerMitigation);
   let incoming = stoneskin > 0 ? enemyHit * e.speed * (1 - evasion) : e.dps * taken * (1 - playerMitigation) * (1 - evasion);
-  if (bulwark > 0) incoming *= 1 - bulwark / 2;
+  if (bulwark > 0) incoming *= 1 - bulwark * (s.blockShare ?? 0.5);
   // Afterimage: a hit right after a dodge (chance = evasion) deals a share less.
   incoming *= 1 - amount(Effect.Afterimage) * evasion;
   // Riposte: each evaded attack counters for a share of your average hit.

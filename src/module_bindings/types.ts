@@ -609,6 +609,7 @@ export const RiftLog = __t.object("RiftLog", {
   get materials() {
     return __t.array(MaterialCount);
   },
+  level: __t.u8(),
 });
 export type RiftLog = __Infer<typeof RiftLog>;
 

@@ -4,7 +4,8 @@
 // of one. Every roll comes from the run's seed and where the run stands (rift.ts `runRng`,
 // `memberRng`), never from the call, so the same actions always play the same run.
 
-import { combatStats, type CombatStats, type GearItem } from './combat';
+import { combatStats, matchup, type CombatStats, type GearItem } from './combat';
+import { fightEvents, type Fight } from './fight';
 import { simulateBattle, type BattleResult, type BattleSetup, type FoeSpec, type PlayerSpec } from './battle';
 import { withEliteAffix } from './abyss';
 import { ELITE_AFFIXES } from './data/abyss';
@@ -118,6 +119,8 @@ export interface RiftFight {
   kind: 'node' | 'boss' | 'event';
   /** Whose fight an event's was. */
   characterId?: bigint;
+  /** Who fought, in the order of side 0's seats. */
+  fighters: bigint[];
   setup: BattleSetup;
   rng: RiftRng;
   result: BattleResult;
@@ -380,7 +383,7 @@ function playNode(state: RunState, kind: 'fight' | 'elite', record: boolean, out
   const setup = nodeSetup(state, fighters, foes);
   const rng: RiftRng = { member: 0n, purpose: Purpose.Fight, parts: [state.floor, state.row, state.col] };
   const result = fight(fighters, setup, riftRng(state.seed, rng), record);
-  out.push({ kind: 'node', setup, rng, result });
+  out.push({ kind: 'node', fighters: fighters.map(m => m.characterId), setup, rng, result });
   if (!finishFight(state, result)) return;
   const elite = foes.find(f => f.affixes.length);
   for (const m of living(state)) {
@@ -417,7 +420,7 @@ function playBoss(state: RunState, option: number, record: boolean, out: RiftFig
   const setup = nodeSetup(state, fighters, [{ enemyId: opt.enemyId, slot: heart ? 'heart' : 'boss', affixes: opt.affixes }]);
   const rng: RiftRng = { member: 0n, purpose: Purpose.Fight, parts: [state.floor, ROWS, 0] };
   const result = fight(fighters, setup, riftRng(state.seed, rng), record);
-  out.push({ kind: 'boss', setup, rng, result });
+  out.push({ kind: 'boss', fighters: fighters.map(m => m.characterId), setup, rng, result });
   if (!finishFight(state, result)) return undefined;
   const floor = state.floor;
   const echo = heart ? ('any' as const) : (ENEMIES_BY_ID.get(opt.enemyId)?.zone.tier ?? 'any');
@@ -458,6 +461,11 @@ function startFloor(state: RunState, floor: number) {
 
 // ---------------------------------------------------------------- shops
 
+/** × shop prices for `m`: the Fortune 3-set and Bargain Bin. */
+export const shopDiscount = (state: RunState, m: MemberState) => (hasSet(m, Theme.Fortune, 3) ? 0.8 : 1) * (state.mutation === Mutation.BargainBin ? 0.7 : 1);
+/** What rerolling a shop rerolled `rerolls` times costs `m`. */
+export const rerollCost = (state: RunState, m: MemberState, rerolls: number) => Math.round(rerollPrice(rerolls) * shopDiscount(state, m));
+
 function rollShop(state: RunState, m: MemberState, rerolls: number): ShopOffer[] {
   const rng = memberRng(state.seed, m.characterId, Purpose.Shop, state.floor, state.row, state.col, rerolls);
   const stock = shopStock(rng, {
@@ -467,7 +475,7 @@ function rollShop(state: RunState, m: MemberState, rerolls: number): ShopOffer[]
     cursed: m.curses.length > 0,
     headlineMult: headlineMult(m),
   });
-  const k = (hasSet(m, Theme.Fortune, 3) ? 0.8 : 1) * (state.mutation === Mutation.BargainBin ? 0.7 : 1);
+  const k = shopDiscount(state, m);
   const priced = stock.map(o => ({ ...o, price: Math.round(o.price * k) }));
   // Haggler: one offer half price.
   if (holds(m, Boon.Haggler)) {
@@ -496,8 +504,7 @@ function chooseShop(state: RunState, m: MemberState, p: Extract<Pending, { kind:
     return;
   }
   if (a.choice === SHOP_REROLL) {
-    const k = (hasSet(m, Theme.Fortune, 3) ? 0.8 : 1) * (state.mutation === Mutation.BargainBin ? 0.7 : 1);
-    spend(state, m, Math.round(rerollPrice(p.rerolls) * k));
+    spend(state, m, rerollCost(state, m, p.rerolls));
     const stock = rollShop(state, m, p.rerolls + 1);
     m.pending[0] = { kind: 'shop', stock, sold: stock.map(() => false), rerolls: p.rerolls + 1 };
     return;
@@ -545,7 +552,7 @@ function chooseShop(state: RunState, m: MemberState, p: Extract<Pending, { kind:
 function eventFight(state: RunState, m: MemberState, p: Extract<Pending, { kind: 'event' }>, setup: BattleSetup, record: boolean, out: RiftFight[]): BattleResult {
   const rng: RiftRng = { member: m.characterId, purpose: Purpose.Fight, parts: [state.floor, state.row, state.col, p.event, p.used.length] };
   const result = simulateBattle({ ...setup, record }, riftRng(state.seed, rng));
-  out.push({ kind: 'event', characterId: m.characterId, setup, rng, result });
+  out.push({ kind: 'event', characterId: m.characterId, fighters: [m.characterId], setup, rng, result });
   return result;
 }
 
@@ -752,7 +759,7 @@ function chooseEvent(state: RunState, m: MemberState, p: Extract<Pending, { kind
 
 // ---------------------------------------------------------------- the Threshold
 
-function chooseGift(state: RunState, m: MemberState, p: Extract<Pending, { kind: 'gifts' }>, a: Extract<RiftAction, { type: 'choose' }>) {
+function chooseGift(m: MemberState, p: Extract<Pending, { kind: 'gifts' }>, a: Extract<RiftAction, { type: 'choose' }>) {
   const g = p.gifts[a.choice] ?? fail('No such gift');
   m.pending.shift();
   if (g.gift === Gift.EmberOfWill && g.boon) addBoon(m, g.boon);
@@ -849,7 +856,7 @@ export function apply(state: RunState, action: RiftAction, record = false): Appl
     const m = member(action.member);
     const p = m.pending[0] ?? fail('Nothing to choose');
     const before = maxHpOf(s, m);
-    if (p.kind === 'gifts') chooseGift(s, m, p, action);
+    if (p.kind === 'gifts') chooseGift(m, p, action);
     else if (p.kind === 'boons') {
       m.pending.shift();
       if (action.choice !== SKIP) addBoon(m, p.choices[action.choice] ?? fail('No such boon'));
@@ -888,3 +895,38 @@ export type StoredFight = Omit<RiftFight, 'result'>;
 export const encodeFights = (fights: readonly RiftFight[]): string => encodeRift(fights.map(({ result: _r, ...f }) => f));
 /** Plays a stored fight again, events kept: the same battle the server settled. */
 export const replayFight = (seed: bigint, f: StoredFight): BattleResult => simulateBattle({ ...f.setup, record: true }, riftRng(seed, f.rng));
+
+/**
+ * A stored node's battle as player `player` (a seat on side 0) saw it, one fight per enemy
+ * in the order they entered (the Deep's split, abyss.ts `simulateDepth`), with when each
+ * started; undefined for a battle against a player (Your Reflection).
+ */
+export function fightParts(setup: BattleSetup, result: BattleResult, player = 0): { fights: Fight[]; starts: number[]; foes: number[] } | undefined {
+  const players = setup.sides[0].length;
+  const foeSpecs = setup.sides[1];
+  if (foeSpecs.some(c => c.kind !== 'foe')) return undefined;
+  const stats = (setup.sides[0][player] as PlayerSpec).stats;
+  const segments = result.segments.length ? result.segments : [{ foe: players, start: 0, end: result.end, hp: result.hp, secondWind: 0, renewal: 0 }];
+  const parts: (typeof result.events)[] = segments.map(() => []);
+  let k = 0;
+  for (const e of result.events) {
+    if (e.kind === 'enter') k++;
+    parts[Math.min(k, parts.length - 1)].push(e);
+  }
+  const last = segments.length - 1;
+  const fights: Fight[] = segments.map((seg, i) => {
+    const enemy = (foeSpecs[seg.foe - players] as FoeSpec).def;
+    const m = matchup(stats, enemy);
+    return {
+      stats, matchup: m, enemy, walk: 0,
+      events: fightEvents(parts[i], player, seg.foe, seg.start, m.shield > 0 || result.events.some(e => (e.shield?.[player] ?? 0) > 0), (enemy.regen ?? 0) > 0),
+      end: seg.end - seg.start,
+      outcome: i < last || result.winner === 0 ? 'kill' : result.winner === 1 ? 'defeat' : 'stalemate',
+      startHp: i === 0 ? ((setup.sides[0][player] as PlayerSpec).start?.hp ?? stats.maxHp) : segments[i - 1].hp[player],
+      hpLeft: seg.hp[player],
+      secondWindLeft: seg.secondWind,
+      renewalLeft: 0,
+    };
+  });
+  return { fights, starts: segments.map(seg => seg.start), foes: segments.map(seg => seg.foe - players) };
+}

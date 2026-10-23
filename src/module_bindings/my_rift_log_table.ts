@@ -35,4 +35,5 @@ export default __t.row({
   get materials() {
     return __t.array(MaterialCount);
   },
+  level: __t.u8(),
 });

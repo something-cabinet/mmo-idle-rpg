@@ -15,7 +15,7 @@ How to build [design/shifting-rift.md](design/shifting-rift.md), co-op included.
 | R2 | Engine hooks | **Done** (`npm run test:combat` has a check per hook; old fights unchanged) |
 | R3 | A node, a run, the bots | **Done** (`npm run test:rift` plays bot runs; floor scaling × 1.6 to review) |
 | R4 | Schema and solo reducers | **Done** (smoke test: a solo run on the local server) |
-| R5 | Client, solo | **Next** |
+| R5 | Client, solo | **In progress** (page built; see "R5: what's left") |
 | R6 | Co-op | — |
 | R7 | After launch | — |
 
@@ -200,7 +200,42 @@ here runs on 3001 (`SPACETIMEDB_HOST=ws://localhost:3001 npm run test:smoke`). T
 has a failure from before R4: "a tool upgrade is not queued" (and, now and then, "… with as
 much character XP as skill XP").
 
-**R5 next:** the client, solo (below).
+**What R5 has so far** (2026-10-23, not finished):
+
+- `src/ui/views/RiftView.tsx`, under Adventure as **Rift** (`#rift`): the start (tier, loadout,
+  the week's mutation, each floor's reward and the floors paid), the Threshold, the floor map
+  with the reachable nodes and each fight node's line-up in its tooltip, the boss pick
+  (affix, echo's zone, the Rift Heart's Unravel), the last action's fights replayed on the
+  fight stage (1× / 2× / 4×, Skip, one after another), boon offers, wear or discard (ring
+  slot, what it replaces, override warnings, a stat compare), Thane's Vault, the shop
+  (targets for attune and removals, reroll price), events (choices that can't apply greyed
+  out with why, checked with `apply`), boons with set progress, curses, the Rift loadout with
+  headlines, the run history with each run's final build, the Codex.
+- Shared: `riftRows.ts` (rows to `RunState`, for the reducers and the client),
+  riftRun.ts `fightParts` (a node's battle split per enemy for the stage), `shopDiscount`,
+  `rerollCost`, `RiftFight.fighters` (who fought, by seat, for R6).
+- `rift_log` keeps the final build and the locked level (no fight replay, by the user's
+  call: the build is kept to show later, not the run's fights).
+- Ethereal colour (`--r-ethereal`, a shifting pale teal) and the page's styles; the client
+  subscribes to the Rift tables (net.ts); the fight scene takes a `clock` (replay speed).
+- Seen working in a browser against the local server: the start, the Threshold, the map, a
+  fight replay and the boon offer after it.
+
+**R5: what's left**
+
+- **Look at the rest in a browser:** shop, events, wear or discard, Thane's Vault, a floor
+  boss, the end of a run (summary and build), the history and Codex, a phone-width layout.
+  (Driving it: a guest made with the dev cheats, `devUnlockZones`, `devSetLevel`, T5 gear,
+  its token put in localStorage; the dev server with `VITE_SPACETIMEDB_HOST=ws://localhost:3001`.)
+- **Draw the links** between map nodes (today only the reachable ones light up).
+- **During a replay**, the top bar already shows the HP and Motes after the fight: show the
+  HP from before it until the replay ends.
+- **Changelog** (`src/changelog.ts`): a `new` entry for the Rift. Proposed: "New: the
+  Shifting Rift, opened by your first Last Thane kill. A weekly roguelike run of 5 floors:
+  pick your path through fights, shops and events, collect boons and Ethereal gear that only
+  exists inside, and beat each floor's boss. Each floor pays once a week, more on a higher
+  tier. Online only; farming carries on meanwhile."
+- Mark R5 done here, then R6 (co-op).
 
 ## Shape
 

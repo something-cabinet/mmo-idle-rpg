@@ -42,6 +42,8 @@ export interface FightSceneOptions {
   noRespawn?: boolean;
   /** Status line for a fight that ran out of time (default: a stalemate's). */
   stalemate?: string;
+  /** The scene's clock (default: the server's, `nowMicros`): a replay at 2× runs its own. */
+  clock?: () => bigint;
 }
 
 /**
@@ -163,7 +165,7 @@ export function startFight(first: CurrentFight, next: (now: bigint) => CurrentFi
 
   function step() {
     if (!document.getElementById('scene')) return stopFight(); // view was replaced
-    const now = nowMicros();
+    const now = (opts.clock ?? nowMicros)();
     draw(cur, now);
     // A kill, or a defeat after its respawn: on to the next fight, which starts with the
     // walk. A defeat without a respawn stays on screen.

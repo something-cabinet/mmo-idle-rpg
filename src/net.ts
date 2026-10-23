@@ -80,6 +80,12 @@ export function subscribeAll(conn: DbConnection, me: Identity, onReady: () => vo
       tables.raidPartyItems,
       tables.abyssRecord,
       tables.myAbyssLog,
+      tables.riftRun,
+      tables.riftMember,
+      tables.myRiftItems,
+      tables.myRiftWeek,
+      tables.myRiftLog,
+      tables.myRiftCodex,
       tables.mySkills,
       tables.myTools,
       tables.mySupplies,
@@ -98,14 +104,16 @@ export function watchAll(conn: DbConnection, onChange: () => void) {
   const { inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters } = conn.db;
   const { raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter } = conn.db;
   const { abyssRecord, myAbyssLog, look, myCosmetics, myMail, myMailItems, adminSentMail } = conn.db;
+  const { riftRun, riftMember, myRiftItems, myRiftWeek, myRiftLog, myRiftCodex } = conn.db;
   for (const table of [myAccount, character, presence, chatMessage, myItems, myMaterials, myLoadouts, myLootFilter, myBossKills, myEnemyKills, myDiscoveries, mySettleLog,
-    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog, look, myCosmetics, myMail, myMailItems, adminSentMail]) {
+    inspectedCharacter, inspectedLoadout, inspectedItems, myFriends, myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog, look, myCosmetics, myMail, myMailItems, adminSentMail,
+    riftRun, riftMember, myRiftItems, myRiftWeek, myRiftLog, myRiftCodex]) {
     table.onInsert(onChange);
     table.onDelete(onChange);
   }
   // Rows with a primary key (views included) change in place.
   for (const table of [character, presence, myItems, myMaterials, myLoadouts, myLootFilter, myEnemyKills, inspectedCharacter, inspectedLoadout, inspectedItems,
-    myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog, look, myMail, myMailItems, adminSentMail])
+    myFriendCharacters, raidParty, raidMember, myRaidLog, raidPartyCharacters, raidPartyLoadouts, raidPartyItems, mySkills, myTools, mySupplies, myForgeFilter, abyssRecord, myAbyssLog, look, myMail, myMailItems, adminSentMail, riftRun, riftMember, myRiftItems, myRiftWeek])
     table.onUpdate(onChange);
 }
 

@@ -30,6 +30,7 @@ import { FilterView } from './views/FilterView';
 import { ItemIndexView } from './views/ItemIndexView';
 import { RaidsView } from './views/RaidsView';
 import { AbyssView } from './views/AbyssView';
+import { RiftView } from './views/RiftView';
 import { MailView, liveMail } from './views/MailView';
 import { SettingsView } from './views/SettingsView';
 import { SkillView, activityText } from './views/SkillView';
@@ -39,7 +40,7 @@ import { SKILLS } from '../../spacetimedb/src/data/skills';
 import { ZonesView } from './views/ZonesView';
 
 const NAV: [string, [View, string, string][]][] = [
-  ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones'], ['raids', 'crown', 'Raids'], ['deep', 'moon', 'Moonwell'], ['skills', 'pickaxe', 'Skills']]],
+  ['Adventure', [['combat', 'swords', 'Combat'], ['zones', 'map', 'Zones'], ['raids', 'crown', 'Raids'], ['deep', 'moon', 'Moonwell'], ['rift', 'sparkles', 'Rift'], ['skills', 'pickaxe', 'Skills']]],
   ['Character', [['character', 'user', 'Character'], ['equipment', 'shield', 'Equipment'], ['bag', 'bag', 'Bag']]],
   ['Workshop', [['crafting', 'hammer', 'Crafting'], ['filter', 'filter', 'Loot filter']]],
   ['Codex', [['index', 'book', 'Item index']]],
@@ -270,6 +271,7 @@ function CurrentView({ view, s }: { view: View; s: Snapshot }) {
     case 'zones': return <ZonesView s={s} />;
     case 'raids': return <RaidsView s={s} />;
     case 'deep': return <AbyssView s={s} />;
+    case 'rift': return <RiftView s={s} />;
     case 'skills': return <SkillsView s={s} />;
     case 'character': return <CharacterView s={s} />;
     case 'equipment': return <EquipmentView s={s} />;

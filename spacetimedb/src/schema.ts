@@ -899,12 +899,15 @@ export const riftLog = table(
     /** riftRun.ts `RunState.end`. */
     end: t.string(),
     boons: t.array(RiftBoon),
-    /** The final Rift loadout (abyss.ts `encodeBuild`). */
+    /** The final Rift loadout (abyss.ts `encodeBuild`), kept to show the run's build later. */
     build: t.string(),
     gold: t.u64(),
     xp: t.u64(),
     dust: t.u64(),
     materials: t.array(MaterialCount),
+    // New columns need defaults so existing rows migrate.
+    /** The level locked in. */
+    level: t.u8().default(0),
   }
 );
 

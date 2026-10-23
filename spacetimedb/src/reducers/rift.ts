@@ -10,10 +10,9 @@ import { MAX_LEVEL } from '../combat';
 import { FLOORS, RIFT_MIN_TIER, RIFT_UNLOCK_ZONE } from '../data/rift';
 import { ZONES, ZONES_BY_ID, bossOf } from '../data/zones';
 import { encodeBuild } from '../abyss';
-import { rewardOwed, riftWeek, runSeed, weeklyMutation, type Headlines } from '../rift';
-import {
-  RiftError, apply, decodeRift, encodeFights, encodeRift, startRun, type MemberState, type Pending, type RiftAction, type RiftItem, type RunState,
-} from '../riftRun';
+import { rewardOwed, riftWeek, runSeed, weeklyMutation } from '../rift';
+import { RiftError, apply, encodeFights, encodeRift, startRun, type MemberState, type RiftAction, type RiftItem, type RunState } from '../riftRun';
+import { byJoin, itemOf, stateFromRows } from '../riftRows';
 import { SLOT_COUNT } from '../data/bases';
 import { addMaterials, addSupply, grantCosmetics, hasKilledBoss, requireActive, settle, type Character, type Ctx } from '../helpers';
 import type { NewItem } from '../loot';
@@ -24,23 +23,7 @@ type ItemRow = Infer<typeof riftItem.rowType>;
 
 /** Runs kept in a character's history. */
 const RIFT_LOG_KEEP = 10;
-const GUARANTEED = [undefined, 'trophy', 'echo'] as const;
-
 // ---------------------------------------------------------------- rows ↔ state
-
-const toHeadlines = (h: ItemRow['headlines']): Headlines | undefined =>
-  h && {
-    ...(h.riftEffect && { riftEffect: h.riftEffect }),
-    ...(h.mark && { mark: h.mark as Headlines['mark'] }),
-    ...(h.growth && { growth: true }),
-    ...(h.trophies.length && { trophies: [...h.trophies] }),
-    ...(h.echo && { echo: h.echo }),
-  };
-
-function itemOf(r: ItemRow): RiftItem {
-  const { id: _i, runId: _r, characterId: _c, slot: _s, headlines, guaranteed, ...it } = r;
-  return { ...it, effects: [...it.effects], headlines: toHeadlines(headlines), ...(GUARANTEED[guaranteed] && { guaranteed: GUARANTEED[guaranteed] }) } as RiftItem;
-}
 
 function itemRow(runId: bigint, characterId: bigint, slot: number, it: RiftItem): ItemRow {
   const h = it.headlines;
@@ -53,23 +36,9 @@ function itemRow(runId: bigint, characterId: bigint, slot: number, it: RiftItem)
   };
 }
 
-const membersOf = (ctx: Ctx, runId: bigint) => [...ctx.db.riftMember.runId.filter(runId)].sort((a, b) => (a.joinedAt.microsSinceUnixEpoch < b.joinedAt.microsSinceUnixEpoch ? -1 : 1));
+const membersOf = (ctx: Ctx, runId: bigint) => byJoin([...ctx.db.riftMember.runId.filter(runId)]);
 
-function loadState(ctx: Ctx, run: RunRow): RunState {
-  const items = [...ctx.db.riftItem.runId.filter(run.id)];
-  const members: MemberState[] = membersOf(ctx, run.id).map(r => {
-    const gear: (RiftItem | undefined)[] = new Array(SLOT_COUNT).fill(undefined);
-    for (const it of items) if (it.characterId === r.characterId) gear[it.slot] = itemOf(it);
-    return {
-      characterId: r.characterId, level: r.level, hp: r.hp, motes: r.motes, boons: r.boons.map(b => ({ id: b.id, rarity: b.rarity as 0 | 1 | 2 })),
-      curses: [...r.curses], marks: [...r.marks], thickBlood: r.thickBlood, gear, secondWind: r.secondWind, holdTheLine: r.holdTheLine, won: r.won,
-      downed: r.downed, ready: r.ready, pending: r.pending ? decodeRift<Pending[]>(r.pending) : [], skipBoon: r.skipBoon, freeRare: r.freeRare, spent: r.spent,
-    };
-  });
-  return {
-    seed: run.seed, tier: run.tier, mutation: run.mutation, floor: run.floor, row: run.row, col: run.col, phase: 'map', cleared: run.cleared, members,
-  };
-}
+const loadState = (ctx: Ctx, run: RunRow): RunState => stateFromRows(run, membersOf(ctx, run.id), [...ctx.db.riftItem.runId.filter(run.id)]);
 
 /** Writes `state` back over `run`'s rows: the run, each member, their worn items; members gone are removed. */
 function saveState(ctx: Ctx, run: RunRow, state: RunState, fights: string) {
@@ -150,7 +119,7 @@ function removeMember(ctx: Ctx, run: RunRow, row: MemberRow, state: RunState) {
   const gear: (NewItem | undefined)[] = new Array(SLOT_COUNT).fill(undefined);
   for (const it of ctx.db.riftItem.characterId.filter(row.characterId)) if (it.runId === run.id) gear[it.slot] = itemOf(it);
   ctx.db.riftLog.insert({
-    id: 0n, characterId: row.characterId, startedAt: run.startedAt, endedAt: ctx.timestamp, tier: run.tier, mutation: run.mutation,
+    id: 0n, characterId: row.characterId, startedAt: run.startedAt, endedAt: ctx.timestamp, tier: run.tier, mutation: run.mutation, level: row.level,
     floor: state.floor, cleared: state.cleared, end: state.end ?? 'left', boons: row.boons, build: encodeBuild(gear),
     gold: row.paidGold, xp: row.paidXp, dust: row.paidDust, materials: row.paidMaterials,
   });

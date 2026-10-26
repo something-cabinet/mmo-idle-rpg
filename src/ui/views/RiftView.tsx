@@ -2,7 +2,7 @@
 // mutation and floors paid), then the run: the Threshold's gifts, the floor map and its boss,
 // each node's fight replayed (riftRun.ts `replayFight`, the battle the server settled), boon
 // offers, wear or discard, shops and events (the Adventure tab), the Rift loadout and boons (the
-// Inventory tab); and the history and Codex. A party forms first (create, join from the list, the leader sets off), then
+// Inventory tab); and, before a run, the history (the Rift Codex is its own page, RiftCodexView). A party forms first (create, join from the list, the leader sets off), then
 // shows its members, who is ready, and every member's HP in the replay. The client builds the same run state as the server (riftRows.ts) and checks
 // each choice with the same rules (`apply`), so what can't apply is greyed out with why.
 
@@ -14,7 +14,7 @@ import { ELITE_AFFIXES_BY_ID } from '../../../spacetimedb/src/data/abyss';
 import { UNIQUES_BY_ID } from '../../../spacetimedb/src/data/uniques';
 import { ZONES, ZONES_BY_ID, ENEMIES_BY_ID, bossOf } from '../../../spacetimedb/src/data/zones';
 import {
-  BOONS_BY_ID, BOON_RARITIES, CURSES_BY_ID, EVENTS_BY_ID, FLOORS, FLOOR_REWARDS, GIFTS_BY_ID, Gift, MUTATIONS_BY_ID, NODE_TIME_LIMIT, RIFT_EFFECTS,
+  BOONS_BY_ID, BOON_RARITIES, CURSES_BY_ID, EVENTS_BY_ID, FLOORS, FLOOR_REWARDS, GIFTS_BY_ID, Gift, MUTATIONS_BY_ID, NODE_TIME_LIMIT,
   RIFT_EFFECTS_BY_ID, RIFT_HEART, RIFT_KICK_OFFLINE_MINUTES, RIFT_PARTY_SIZE, PARTY_HP, RiftEffect, RIFT_MIN_TIER, RIFT_UNLOCK_ZONE, ROWS, SET_AT, THEMES, THEMES_BY_ID, TROPHIES_BY_ID, boonText,
   type BoonDef,
 } from '../../../spacetimedb/src/data/rift';
@@ -59,7 +59,7 @@ const FRESH_MICROS = 15_000_000n;
 const asItem = (it: RiftItem | undefined) => it as unknown as Item | undefined;
 const themeName = (t: number) => THEMES_BY_ID.get(t as never)?.name ?? '?';
 const enemyName = (id: number) => (id === RIFT_HEART.id ? RIFT_HEART.name : (ECHOES_BY_ID.get(id)?.enemy.name ?? `Enemy ${id}`));
-const boonLabel = (def: BoonDef) => `${def.name}${def.theme ? ` · ${themeName(def.theme)}` : ''}`;
+export const boonLabel = (def: BoonDef) => `${def.name}${def.theme ? ` · ${themeName(def.theme)}` : ''}`;
 
 /** What applying `action` would refuse with, or undefined if it applies. */
 function refusal(state: RunState, action: RiftAction): string | undefined {
@@ -97,15 +97,14 @@ export const RiftView = memo(function RiftView({ s }: { s: Snapshot }) {
       </p>
       {!unlocked ? (
         <div className="lock-note"><Icon name="lock" />Defeat {bossOf(zone)?.name} in {zone.name} to open the Shifting Rift</div>
-      ) : run && member && run.lobby ? (
-        <Lobby s={s} run={run} />
-      ) : run && member ? (
+      ) : run && member && !run.lobby ? (
         <Run s={s} run={run} />
       ) : (
-        <Start s={s} />
+        <>
+          {run && member ? <Lobby s={s} run={run} /> : <Start s={s} />}
+          <History s={s} />
+        </>
       )}
-      <History s={s} />
-      <Codex s={s} />
     </>
   );
 });
@@ -1082,7 +1081,7 @@ function LoadoutCard({ me, stats }: { me: MemberState; stats: CombatStats }) {
   );
 }
 
-// ---------------------------------------------------------------- history and the Codex
+// ---------------------------------------------------------------- history
 
 function BuildButton({ log }: { log: RiftLog }) {
   const [open, setOpen] = useState(false);
@@ -1140,26 +1139,6 @@ function History({ s }: { s: Snapshot }) {
           </li>
         ))}
       </ol>
-    </section>
-  );
-}
-
-function Codex({ s }: { s: Snapshot }) {
-  const rows = [...s.conn.db.myRiftCodex.iter()];
-  if (!rows.length) return null;
-  const of = (kind: number) => rows.filter(r => r.kind === kind).map(r => r.entryId);
-  const boons = of(1).map(id => BOONS_BY_ID.get(id)).filter(Boolean) as BoonDef[];
-  const effects = of(3).map(id => RIFT_EFFECTS_BY_ID.get(id)).filter(Boolean);
-  const bases = of(2);
-  return (
-    <section className="card rift-codex">
-      <CardHead title="Rift Codex"><span className="muted">What you've seen in the Rift</span></CardHead>
-      <h3>Boons <span className="muted">{boons.length} / {BOONS_BY_ID.size}</span></h3>
-      <div className="rift-chips">{boons.sort((a, b) => a.id - b.id).map(b => <span key={b.id} className="tag" title={boonText(b)}>{boonLabel(b)}</span>)}</div>
-      <h3>Rift effects <span className="muted">{effects.length} / {RIFT_EFFECTS.length}</span></h3>
-      <div className="rift-chips">{effects.map(e => <span key={e!.id} className="tag c-rift" title={e!.text}>{e!.name}</span>)}</div>
-      <h3>Ethereal bases <span className="muted">{bases.length}</span></h3>
-      <div className="rift-chips">{bases.map(id => <span key={id} className="tag">{base(id).name(5)}</span>)}</div>
     </section>
   );
 }

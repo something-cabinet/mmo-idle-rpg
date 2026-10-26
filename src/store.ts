@@ -113,7 +113,7 @@ export function useTick(ms: number) {
 }
 
 /** The view named in the URL hash (#bag), or 'combat'. */
-export const VIEWS = ['combat', 'zones', 'raids', 'deep', 'rift', 'skills', 'mining', 'woodcutting', 'foraging', 'smithing', 'alchemy', 'character', 'equipment', 'bag', 'crafting', 'filter', 'index', 'mail', 'settings'] as const;
+export const VIEWS = ['combat', 'zones', 'raids', 'deep', 'rift', 'skills', 'mining', 'woodcutting', 'foraging', 'smithing', 'alchemy', 'character', 'equipment', 'bag', 'crafting', 'filter', 'index', 'riftCodex', 'mail', 'settings'] as const;
 export type View = (typeof VIEWS)[number];
 const hashView = (): View => {
   const h = location.hash.slice(1) as View;

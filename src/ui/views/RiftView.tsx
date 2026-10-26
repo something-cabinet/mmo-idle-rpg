@@ -754,10 +754,12 @@ function Gifts({ ctx, p }: { ctx: ChoiceCtx; p: Extract<Pending, { kind: 'gifts'
             <div key={i} className="rift-card gift">
               <strong>{def.name}</strong>
               <span className="muted">{def.text}</span>
-              {g.boon && <BoonLine id={g.boon.id} rarity={g.boon.rarity} />}
-              {g.curse && <span className="c-bad">Curse: {CURSES_BY_ID.get(g.curse)?.name} ({CURSES_BY_ID.get(g.curse)?.text})</span>}
-              {g.item && <RiftItemCard it={g.item} />}
-              {g.gift === Gift.MarkedPath && <ThemePicker value={theme} onChange={setTheme} />}
+              <div className="rift-card-body">
+                {g.boon && <BoonCard id={g.boon.id} rarity={g.boon.rarity} />}
+                {g.curse && <CurseLine id={g.curse} />}
+                {g.item && <RiftItemCard it={g.item} />}
+                {g.gift === Gift.MarkedPath && <ThemePicker value={theme} onChange={setTheme} />}
+              </div>
               <button className="btn primary" onClick={() => ctx.choose(i, undefined, theme)}>Take</button>
             </div>
           );
@@ -767,13 +769,39 @@ function Gifts({ ctx, p }: { ctx: ChoiceCtx; p: Extract<Pending, { kind: 'gifts'
   );
 }
 
-function BoonLine({ id, rarity, upgrade }: { id: number; rarity: number; upgrade?: boolean }) {
+const THEME_ICON: Record<number, string> = { 0: 'sparkles', 1: 'flame', 2: 'shield', 3: 'heart', 4: 'zap', 5: 'wind', 6: 'ward', 7: 'coins' };
+const BOON_RARITY_CLS = ['common', 'rare', 'epic'] as const;
+
+/** A boon as a card like an item's: its theme's icon, coloured by rarity. */
+function BoonCard({ id, rarity, upgrade }: { id: number; rarity: number; upgrade?: boolean }) {
   const def = BOONS_BY_ID.get(id)!;
   return (
-    <span className={`rift-boon r${rarity}`} title={boonText(def, rarity as 0)}>
-      <strong>{def.name}</strong> <span className="muted">{BOON_RARITIES[rarity]}{upgrade ? ' · upgrade' : ''}{def.keystone ? ' · keystone' : ''}</span>
-      <span className="rift-boon-text">{boonText(def, rarity as 0)}</span>
-    </span>
+    <div className={`item-card compact boon-card r-${BOON_RARITY_CLS[rarity]}`}>
+      <div className="item-top">
+        <span className="boon-art"><Icon name={THEME_ICON[def.theme] ?? 'sparkles'} /></span>
+        <div className="item-top-text">
+          <div className="item-head">
+            <span className="item-name">{def.name}</span>
+            {def.keystone && <span className="badge">Keystone</span>}
+          </div>
+          <div className="item-sub">
+            <span>{BOON_RARITIES[rarity]} boon{upgrade ? ' · upgrade' : ''}</span>
+            <span>{def.theme ? themeName(def.theme) : 'Any theme'}</span>
+          </div>
+        </div>
+      </div>
+      <div className="boon-text">{boonText(def, rarity as 0)}</div>
+    </div>
+  );
+}
+
+function CurseLine({ id }: { id: number }) {
+  const def = CURSES_BY_ID.get(id);
+  return (
+    <div className="rift-curse-block">
+      <Icon name="skull" />
+      <span><strong>Curse: {def?.name}</strong> {def?.text}</span>
+    </div>
   );
 }
 
@@ -784,17 +812,14 @@ function BoonOffer({ ctx, choices }: { ctx: ChoiceCtx; choices: BoonChoice[] }) 
         <button className="btn small ghost" onClick={() => ctx.choose(SKIP)}>Take none</button>
       </CardHead>
       <div className="rift-cards">
-        {choices.map((c, i) => {
-          const def = BOONS_BY_ID.get(c.id)!;
-          return (
-            <button key={i} className={`rift-card boon r${c.rarity}`} onClick={() => ctx.choose(i)}>
-              <span className="rift-card-theme">{def.theme ? themeName(def.theme) : 'Any theme'}</span>
-              <strong>{def.name}</strong>
-              <span className="muted">{BOON_RARITIES[c.rarity]}{c.upgrade ? ' · upgrade' : ''}{def.keystone ? ' · keystone' : ''}</span>
-              <span>{boonText(def, c.rarity)}</span>
-            </button>
-          );
-        })}
+        {choices.map((c, i) => (
+          <div key={i} className="rift-card">
+            <div className="rift-card-body">
+              <BoonCard id={c.id} rarity={c.rarity} upgrade={c.upgrade} />
+            </div>
+            <button className="btn primary" onClick={() => ctx.choose(i)}>Take</button>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -1051,7 +1076,7 @@ function BoonsCard({ me }: { me: MemberState }) {
       </div>
       {me.boons.length ? (
         <div className="rift-boon-list">
-          {me.boons.map(b => <BoonLine key={b.id} id={b.id} rarity={b.rarity} />)}
+          {me.boons.map(b => <BoonCard key={b.id} id={b.id} rarity={b.rarity} />)}
         </div>
       ) : (
         <p className="muted">None yet: win a fight to pick one.</p>
@@ -1114,7 +1139,7 @@ function BuildPopup({ log, onClose }: { log: RiftLog; onClose: () => void }) {
       </div>
       {opened && <RiftItemCard it={opened} />}
       <div className="rift-boon-list">
-        {log.boons.map(b => <BoonLine key={b.id} id={b.id} rarity={b.rarity} />)}
+        {log.boons.map(b => <BoonCard key={b.id} id={b.id} rarity={b.rarity} />)}
       </div>
     </Modal>
   );

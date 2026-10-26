@@ -192,11 +192,11 @@ Enemy HP and DPS include `climb(T)` (below); player numbers are the reference pl
 
 Every tier is harder than the last. Enemy HP and DPS outgrow the reference player's
 curve by **× 1.05 a tier, compounding** (`CLIMB_FACTOR` in zones.ts), plus a one-time
-**× 1.1 step at T5** carried into every tier above (`TIER_STEP`, `STEP_FROM_TIER`). T1 is
+**× 1.05 step at T5** carried into every tier above (`TIER_STEP`, `STEP_FROM_TIER`). T1 is
 the tutorial and sits on the curve.
 
 ```
-climb(T) = 1.05^(T−1) × (T ≥ 5 ? 1.1 : 1)   // T2 1.05, T3 1.10, T4 1.16, T5 1.34, T7 1.47, T9 1.63
+climb(T) = 1.05^(T−1) × (T ≥ 5 ? 1.05 : 1)  // T2 1.05, T3 1.10, T4 1.16, T5 1.28, T7 1.41, T9 1.55
 ```
 
 | Tier | climb | Felt difficulty vs reference* | Reference player vs average enemy (kill / die) |
@@ -204,7 +204,7 @@ climb(T) = 1.05^(T−1) × (T ≥ 5 ? 1.1 : 1)   // T2 1.05, T3 1.10, T4 1.16, T
 | 2 | 1.05 | 1.10× | 10.5 s / 23.8 s |
 | 3 | 1.10 | 1.22× | 11.0 s / 22.7 s |
 | 4 | 1.16 | 1.34× | 11.6 s / 21.6 s |
-| 5 | 1.34 | 1.79× | 13.4 s / 18.7 s |
+| 5 | 1.28 | 1.64× | 12.8 s / 19.5 s |
 | 7 | 1.47 | 2.17× | 14.7 s / 17.0 s |
 | 9 | 1.63 | 2.64× | 16.3 s / 15.4 s |
 

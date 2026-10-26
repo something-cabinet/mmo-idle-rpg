@@ -1,8 +1,8 @@
 // The Shifting Rift (docs/design/shifting-rift.md): the start (tier, loadout, this week's
 // mutation and floors paid), then the run: the Threshold's gifts, the floor map and its boss,
 // each node's fight replayed (riftRun.ts `replayFight`, the battle the server settled), boon
-// offers, wear or discard, shops and events, the Rift loadout and boons; and the history
-// and Codex. A party forms first (create, join from the list, the leader sets off), then
+// offers, wear or discard, shops and events (the Adventure tab), the Rift loadout and boons (the
+// Inventory tab); and the history and Codex. A party forms first (create, join from the list, the leader sets off), then
 // shows its members, who is ready, and every member's HP in the replay. The client builds the same run state as the server (riftRows.ts) and checks
 // each choice with the same rules (`apply`), so what can't apply is greyed out with why.
 
@@ -343,28 +343,51 @@ function Run({ s, run }: { s: Snapshot; run: RiftRun }) {
   const before = watching ? fights.find(f => f.fighters.includes(me.characterId)) : undefined;
   const hpBefore = (before?.setup.sides[0][before.fighters.indexOf(me.characterId)] as PlayerSpec | undefined)?.start?.hp;
 
+  // A new choice or a fresh replay brings you back to the Adventure tab.
+  const [tab, setTab] = useSticky<'adventure' | 'inventory'>('riftTab', 'adventure');
+  const pendingKey = p ? `${me.pending.length}${p.kind}` : '';
+  useEffect(() => {
+    if (p) setTab('adventure');
+  }, [pendingKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (fresh) setTab('adventure');
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <>
       <RunBar s={s} run={run} state={state} me={me} stats={stats} hpBefore={hpBefore} />
-      {/* During a replay the party's bars are in it; the list would show the outcome. */}
-      {party && !(watching && fights.length) && <PartyCard s={s} run={run} state={state} members={members} leadId={leadId} />}
-      {watching && fights.length ? (
-        <Replay s={s} run={run} fights={fights} onClose={() => {
-          setWatched(key);
-          setWatching(false);
-        }} />
-      ) : p ? (
-        <Choice ctx={ctx} p={p} />
-      ) : (
-        <FloorMapCard s={s} state={state} me={me} canMove={leadId === s.row.id && !waiting.length} note={moveNote} />
-      )}
-      {!watching && fights.length > 0 && !p && (
-        <div className="row rift-rewatch"><button className="btn small ghost" onClick={() => setWatching(true)}><Icon name="swords" />Watch the last fight again</button></div>
-      )}
-      <div className="rift-side">
-        <BoonsCard me={me} />
-        <LoadoutCard me={me} stats={stats} />
+      <div className="skill-tabs rift-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'adventure'} className={`skill-tab${tab === 'adventure' ? ' active' : ''}`} onClick={() => setTab('adventure')}>
+          <Icon name="swords" />Rift adventure{tab !== 'adventure' && (p || watching) && <span className="rift-tab-dot" title="Something is waiting for you" />}
+        </button>
+        <button role="tab" aria-selected={tab === 'inventory'} className={`skill-tab${tab === 'inventory' ? ' active' : ''}`} onClick={() => setTab('inventory')}>
+          <Icon name="sparkles" />Rift inventory <span className="muted">{me.boons.length} boon{me.boons.length === 1 ? '' : 's'}</span>
+        </button>
       </div>
+      {tab === 'adventure' ? (
+        <>
+          {/* During a replay the party's bars are in it; the list would show the outcome. */}
+          {party && !(watching && fights.length) && <PartyCard s={s} run={run} state={state} members={members} leadId={leadId} />}
+          {watching && fights.length ? (
+            <Replay s={s} run={run} fights={fights} onClose={() => {
+              setWatched(key);
+              setWatching(false);
+            }} />
+          ) : p ? (
+            <Choice ctx={ctx} p={p} />
+          ) : (
+            <FloorMapCard s={s} state={state} me={me} canMove={leadId === s.row.id && !waiting.length} note={moveNote} />
+          )}
+          {!watching && fights.length > 0 && !p && (
+            <div className="row rift-rewatch"><button className="btn small ghost" onClick={() => setWatching(true)}><Icon name="swords" />Watch the last fight again</button></div>
+          )}
+        </>
+      ) : (
+        <div className="rift-side">
+          <LoadoutCard me={me} stats={stats} />
+          <BoonsCard me={me} />
+        </div>
+      )}
     </>
   );
 }
